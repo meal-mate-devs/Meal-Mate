@@ -1,36 +1,44 @@
-import LoadingIndicator from "@/components/atoms/LoadingIndicator";
+import CustomSplashScreen from "@/components/molecules/CustomSplashScreen";
 import { AuthContextProvider } from "@/context/authContext";
 import useAuth from "@/hooks/useAuth";
+import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
 import { Slot, SplashScreen } from "expo-router";
 import React from "react";
-import { StatusBar, View } from "react-native";
+import { StatusBar } from "react-native";
 import "../globals.css";
+
+
+
+
 export default function RootLayout() {
   return (
     <AuthContextProvider>
-      <StatusBar barStyle="default" />
       <RootLayoutContent />
     </AuthContextProvider>
   );
 }
 
-
 function RootLayoutContent() {
   const { isLoading } = useAuth();
+  const [fontsLoaded] = useFonts({
+    Poppins_700Bold,
+    Poppins_400Regular,
+  });
 
   React.useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && fontsLoaded) {
       SplashScreen.hideAsync();
     }
-  }, [isLoading]);
+  }, [isLoading, fontsLoaded]);
 
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white">
-        <LoadingIndicator />
-      </View>
-    );
+  if (isLoading || !fontsLoaded) {
+    return <CustomSplashScreen />;
   }
 
-  return <Slot />;
+  return (
+    <>
+      <StatusBar barStyle="dark-content" />
+      <Slot />
+    </>
+  );
 }
