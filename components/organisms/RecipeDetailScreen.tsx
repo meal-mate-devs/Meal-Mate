@@ -17,7 +17,7 @@ const RecipeDetailScreen = () => {
     const recipe = dummyRecipes.find(r => r.id === id) || dummyRecipes[0];
 
     return (
-        <ScrollView className="flex-1 bg-gray-50">
+        <ScrollView className="flex-1 bg-gray-50 p-4">
             <Image
                 source={{ uri: recipe.image }}
                 className="w-full h-60"

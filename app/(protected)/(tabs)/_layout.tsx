@@ -18,24 +18,33 @@ export default function TabsLayout() {
                 name="home/index"
                 options={{
                     href: '/home',
-                }}
-            />
-            <Tabs.Screen
-                name="explore/index"
-                options={{
-                    href: '/explore',
+                    title: 'Home',
+                    tabBarLabel: 'Home',
+                    tabBarIcon: () => null,
                 }}
             />
             <Tabs.Screen
                 name="profile/index"
                 options={{
                     href: '/profile',
+                    title: 'Profile',
+                    tabBarLabel: 'Profile',
+                }}
+            />
+            <Tabs.Screen
+                name="statistics/index"
+                options={{
+                    href: '/statistics',
+                    title: 'Statistics',
+                    tabBarLabel: 'Statistics',
                 }}
             />
             <Tabs.Screen
                 name="settings/index"
                 options={{
                     href: '/settings',
+                    title: 'Settings',
+                    tabBarLabel: 'Settings',
                 }}
             />
         </Tabs>
