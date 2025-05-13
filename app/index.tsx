@@ -21,5 +21,5 @@ export default function Index() {
     return <Redirect href="/(auth)/verify-email" />;
   }
 
-  return <Redirect href="/(protected)/home" />;
+  return <Redirect href="/(protected)/(tabs)/home" />;
 }
