@@ -11,14 +11,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-
-
-
-
-
 // Dummy data
-
-
 export default function HomeScreen() {
     const [activeTab, setActiveTab] = useState<string>('Breakfast');
     const router = useRouter();

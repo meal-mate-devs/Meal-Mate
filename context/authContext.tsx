@@ -1,6 +1,6 @@
 // context/AuthContext.tsx
 import { auth } from "@/lib/config/clientApp";
-import { onAuthStateChanged, User } from "firebase/auth";
+import { fetchSignInMethodsForEmail, onAuthStateChanged, User } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
     login as firebaseLogin,
@@ -21,6 +21,7 @@ type AuthState = {
     loginWithGoogle: () => Promise<void>;
     sendPasswordReset: (email: string) => Promise<void>;
     sendEmailVerificationLink: (user: User) => Promise<void>;
+    doesAccountExist: (email: string) => Promise<boolean>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -35,7 +36,19 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
             setIsLoading(false);
         });
         return () => unsubscribe();
-    }, [auth]);
+    }, []);
+
+    const doesAccountExist = async (email: string): Promise<boolean> => {
+        try {
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            // If there are any sign-in methods available, the account exists
+            return methods.length > 0;
+        } catch (error) {
+            console.error("Error checking if account exists:", error);
+            // In case of error, we return false to be safe
+            return false;
+        }
+    };
 
     const values: AuthState = {
         user,
@@ -46,7 +59,8 @@ export const AuthContextProvider = ({ children }: { children: React.ReactNode })
         logout: firebaseLogout,
         loginWithGoogle: firebaseLoginWithGoogle,
         sendPasswordReset: firebaseSendPasswordReset,
-        sendEmailVerificationLink: firebaseSendEmailVerificationLink
+        sendEmailVerificationLink: firebaseSendEmailVerificationLink,
+        doesAccountExist,
     };
 
     return (
