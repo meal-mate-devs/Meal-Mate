@@ -63,35 +63,39 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 {state.routes.map((route, index) => {
                     const isFocused = state.index === index;
 
-                    const getTabIcon = (): keyof typeof Ionicons.glyphMap => {
-                        switch (route.name) {
+                    const getTabIcon = (name: string): keyof typeof Ionicons.glyphMap => {
+                        const cleanedName = name.split('/')[0];
+                        switch (cleanedName) {
                             case 'home':
-                                return isFocused ? 'home' : 'home-outline';
-                            case 'explore':
-                                return isFocused ? 'compass' : 'compass-outline';
+                                return 'home';
                             case 'profile':
-                                return isFocused ? 'person' : 'person-outline';
+                                return 'person';
+                            case 'statistics':
+                                return 'bar-chart';
                             case 'settings':
-                                return isFocused ? 'settings' : 'settings-outline';
+                                return 'settings';
                             default:
                                 return 'help-circle-outline';
                         }
                     };
 
-                    const getTabLabel = (): string => {
-                        switch (route.name) {
+                    const getTabLabel = (name: string): string => {
+                        const cleanedName = name.split('/')[0];
+                        switch (cleanedName) {
                             case 'home':
                                 return 'Home';
-                            case 'explore':
-                                return 'Explore';
                             case 'profile':
                                 return 'Profile';
                             case 'settings':
                                 return 'Settings';
+                            case 'statistics':
+                                return 'Statistics';
                             default:
-                                return route.name;
+                                return cleanedName;
                         }
                     };
+
+
 
                     const onPress = () => {
                         const event = navigation.emit({
@@ -121,8 +125,8 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                                 }}
                             >
                                 <Ionicons
-                                    name={getTabIcon()}
-                                    size={26}
+                                    name={getTabIcon(route.name)}
+                                    size={22}
                                     color={isFocused ? '#2ECC71' : '#95A5A6'}
                                 />
                                 <Text
@@ -133,7 +137,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                                         fontWeight: isFocused ? '600' : '400',
                                     }}
                                 >
-                                    {getTabLabel()}
+                                    {getTabLabel(route.name)}
                                 </Text>
                             </Animated.View>
                         </Pressable>
