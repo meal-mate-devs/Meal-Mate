@@ -1,3 +1,4 @@
+// app/(auth)/signup.tsx (or wherever your registration form is located)
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
@@ -5,50 +6,59 @@ import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Image,
+    KeyboardAvoidingView,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import Dialog from '../atoms/Dialog';
 
 export default function RegistrationForm() {
+    // Existing state variables
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [confirmPasswordError, setConfirmPasswordError] = useState('');
-    const [generalError, setGeneralError] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
-    const [acceptTerms, setAcceptTerms] = useState(false);
-    const [termsError, setTermsError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const router = useRouter();
 
+    // Error states
+    const [emailError, setEmailError] = useState('');
+    const [usernameError, setUsernameError] = useState('');
+    const [phoneError, setPhoneError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [confirmPasswordError, setConfirmPasswordError] = useState('');
+
+    // Dialog state
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
+    const [dialogTitle, setDialogTitle] = useState('');
+    const [dialogMessage, setDialogMessage] = useState('');
+
+    const router = useRouter();
     const { register, doesAccountExist } = useAuthContext();
 
-    // Regex for email validation
+    // Regex for validations
     const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-
-    const validateEmail = (email: string) => {
-        return emailRegex.test(email);
-    };
+    const phoneRegex = /^\+?[0-9]{10,15}$/;
 
     // Clear all errors
     const clearErrors = () => {
         setEmailError('');
+        setUsernameError('');
+        setPhoneError('');
         setPasswordError('');
         setConfirmPasswordError('');
-        setTermsError('');
-        setGeneralError('');
     };
 
-    // Helper function to check network connectivity
+    // Helper function to check network connectivity (keeping your existing implementation)
     const checkNetworkConnectivity = async () => {
         try {
-            // For newer React Native versions (>= 0.63)
             if (Platform.OS === 'web') {
                 return navigator.onLine;
             } else {
@@ -57,55 +67,58 @@ export default function RegistrationForm() {
             }
         } catch (error) {
             console.log('Network check error:', error);
-            // Fall back to assuming online if check fails
             return true;
         }
     };
 
-    // Helper to identify network-related issues in errors
+    // Helper for network-related errors (keeping your existing implementation)
     const isNetworkRelatedError = (error: any): boolean => {
+        // Your existing implementation
         if (!error) return false;
-        
-        // Extract error information
+
         let errorMessage = '';
         let errorCode = '';
-        
+
         if (typeof error === 'object') {
             errorMessage = error.message || error.toString();
             errorCode = error.code || '';
-            
-            // Check for connection timeout errors
+
             if (error.name === 'TimeoutError') return true;
-            
-            // Check for fetch/XMLHttpRequest errors
-            if (error instanceof TypeError && 
-                (errorMessage.includes('Failed to fetch') || 
-                 errorMessage.includes('Network request failed'))) {
+
+            if (error instanceof TypeError &&
+                (errorMessage.includes('Failed to fetch') ||
+                    errorMessage.includes('Network request failed'))) {
                 return true;
             }
         } else {
             errorMessage = String(error);
         }
-        
-        // Check common network error codes
-        if (errorCode === 'auth/network-request-failed' || 
-            errorCode === 'NETWORK_ERROR' || 
+
+        if (errorCode === 'auth/network-request-failed' ||
+            errorCode === 'NETWORK_ERROR' ||
             errorCode === 'ENOTFOUND' ||
             errorCode === 'ECONNREFUSED' ||
             errorCode === 'ECONNRESET' ||
             errorCode === 'ETIMEDOUT') {
             return true;
         }
-        
-        // Check for network-related phrases in the error message
+
         const networkErrorPhrases = [
-            'network', 'connection', 'internet', 'offline', 'timeout', 
+            'network', 'connection', 'internet', 'offline', 'timeout',
             'unreachable', 'connect', 'dns', 'host', 'socket', 'request failed',
             'cannot reach', 'server unavailable', 'no internet'
         ];
-        
-        return networkErrorPhrases.some(phrase => 
+
+        return networkErrorPhrases.some(phrase =>
             errorMessage.toLowerCase().includes(phrase));
+    };
+
+    // Show dialog helper function
+    const showDialog = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string = '') => {
+        setDialogType(type);
+        setDialogTitle(title);
+        setDialogMessage(message);
+        setDialogVisible(true);
     };
 
     const handleSignup = async () => {
@@ -113,156 +126,148 @@ export default function RegistrationForm() {
         clearErrors();
 
         // Client-side validation
+        let hasError = false;
+
         if (!email.trim()) {
             setEmailError('Please enter your email address');
-            return;
-        }
-
-        if (!validateEmail(email)) {
+            hasError = true;
+        } else if (!emailRegex.test(email)) {
             setEmailError('Please enter a valid email address');
-            return;
+            hasError = true;
         }
 
-        // Basic domain validation
-        const domain = email.substring(email.indexOf('@') + 1);
-        if (!domain.includes('.') || domain.length < 3) {
-            setEmailError('The email domain is invalid');
-            return;
+        if (!username.trim()) {
+            setUsernameError('Please enter a username');
+            hasError = true;
         }
 
-        // Check for disposable email domains
-        const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
-        if (disposableDomains.includes(domain)) {
-            setEmailError('Disposable email addresses are not allowed');
-            return;
+        if (phoneNumber && !phoneRegex.test(phoneNumber)) {
+            setPhoneError('Please enter a valid phone number');
+            hasError = true;
         }
-        
+
         if (!password.trim()) {
             setPasswordError('Please enter a password');
-            return;
-        }
-
-        if (password.length < 6) {
+            hasError = true;
+        } else if (password.length < 6) {
             setPasswordError('Password must be at least 6 characters long');
-            return;
+            hasError = true;
         }
 
         if (password !== confirmPassword) {
             setConfirmPasswordError('Passwords do not match');
-            return;
+            hasError = true;
         }
 
-        if (!acceptTerms) {
-            setTermsError('You must accept the terms and conditions');
-            return;
-        }
+        if (hasError) return;
 
         // Check network connectivity before proceeding
         const isConnected = await checkNetworkConnectivity();
         if (!isConnected) {
-            setGeneralError('No internet connection. Please check your network and try again.');
+            showDialog('error', 'Network Error', 'No internet connection. Please check your network and try again.');
             return;
         }
 
         try {
             setIsLoading(true);
+            showDialog('loading', 'Creating Account', 'Please wait while we set up your account...');
 
-            // Check if account already exists with improved error handling
+            // Check if account already exists
             let accountExists = false;
-            
+
             try {
-                // Set a timeout for the account check
                 const accountCheckPromise = doesAccountExist(email.trim());
                 const accountCheckWithTimeout = Promise.race([
                     accountCheckPromise,
-                    new Promise((_, reject) => 
+                    new Promise((_, reject) =>
                         setTimeout(() => reject(new Error('Account check timed out')), 10000)
                     )
                 ]);
-                
-                // Await the result with timeout protection
+
                 accountExists = await accountCheckWithTimeout as boolean;
-                
+
                 if (accountExists) {
-                    setEmailError('Account already exists. Please login instead.');
                     setIsLoading(false);
+                    setDialogVisible(false);
+                    setEmailError('Account already exists. Please login instead.');
                     return;
                 }
             } catch (accountCheckError) {
                 console.log('Account check error:', accountCheckError);
-                
-                // Check again if we lost connection during the account check
+
                 const isStillConnected = await checkNetworkConnectivity();
                 if (!isStillConnected) {
-                    setGeneralError('Network connection lost. Please check your internet and try again.');
                     setIsLoading(false);
+                    setDialogVisible(false);
+                    showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
                     return;
                 }
-                
-                // Process the error from account check
+
                 if (isNetworkRelatedError(accountCheckError)) {
-                    setGeneralError('Network error while checking your account. Please check your connection and try again.');
                     setIsLoading(false);
+                    setDialogVisible(false);
+                    showDialog('error', 'Network Error', 'Network error while checking your account. Please check your connection and try again.');
                     return;
                 }
-                
-                // For other types of errors during account check
+
                 let errorMessage = '';
                 if (typeof accountCheckError === 'object' && accountCheckError !== null) {
                     errorMessage = (accountCheckError as any).message || accountCheckError.toString();
                 } else {
                     errorMessage = String(accountCheckError);
                 }
-                
+
+                setIsLoading(false);
+                setDialogVisible(false);
+
                 if (errorMessage.toLowerCase().includes('email')) {
                     setEmailError('Error validating email. Please check your email and try again.');
-                } else if (errorMessage.toLowerCase().includes('timeout') || 
-                           errorMessage.toLowerCase().includes('timed out')) {
-                    setGeneralError('Request timed out. Please try again later.');
+                } else if (errorMessage.toLowerCase().includes('timeout') ||
+                    errorMessage.toLowerCase().includes('timed out')) {
+                    showDialog('error', 'Request Timeout', 'Request timed out. Please try again later.');
                 } else {
-                    setGeneralError('Error checking account. Please try again later.');
+                    showDialog('error', 'Account Check Error', 'Error checking account. Please try again later.');
                 }
-                
-                setIsLoading(false);
                 return;
             }
 
             // Attempt registration
             await register(email.trim(), password.trim());
-            router.push('/verify-email');
+
+            setIsLoading(false);
+            showDialog('success', 'Congratulations!', 'Your account has been created successfully.');
+
+            // After showing success dialog, we'll navigate to verify-email page when user confirms
         } catch (error) {
             console.log('Registration error:', error);
-            
+            setIsLoading(false);
+            setDialogVisible(false);
+
             // Check if we lost connection during registration
             const isStillConnected = await checkNetworkConnectivity();
             if (!isStillConnected) {
-                setGeneralError('Network connection lost. Please check your internet and try again.');
-                setIsLoading(false);
+                showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
                 return;
             }
-            
+
             // Extract error message and code properly
             let errorMessage = '';
             let errorCode = '';
 
             // Type guard for error
             if (typeof error === 'object' && error !== null) {
-                // Check if error is a FirebaseError by inspecting its message property
                 const errorStr = (error as { message?: string }).message ?? error.toString();
                 if (errorStr.includes('FirebaseError:')) {
-                    // Extract error code from the error message
                     const match = errorStr.match(/\(([^)]+)\)/);
                     if (match && match[1]) {
                         errorCode = match[1];
                     }
                     errorMessage = errorStr;
                 } else {
-                    // For other types of errors
                     errorMessage = (error as { message?: string }).message || '';
                     errorCode = (error as { code?: string }).code || '';
                 }
             } else {
-                // error is not an object, fallback to string conversion
                 const errorStr = String(error);
                 if (errorStr.includes('FirebaseError:')) {
                     const match = errorStr.match(/\(([^)]+)\)/);
@@ -275,13 +280,13 @@ export default function RegistrationForm() {
                     errorCode = '';
                 }
             }
-            
+
             console.log('Error code:', errorCode);
             console.log('Error message:', errorMessage);
-            
+
             // Network-related error detection
             if (isNetworkRelatedError(error)) {
-                setGeneralError('Network error. Please check your internet connection and try again.');
+                showDialog('error', 'Network Error', 'Network error. Please check your internet connection and try again.');
             } else if (errorCode) {
                 switch (errorCode) {
                     case 'auth/email-already-in-use':
@@ -294,56 +299,56 @@ export default function RegistrationForm() {
                         setPasswordError('Password is too weak. Please use a stronger password.');
                         break;
                     case 'auth/operation-not-allowed':
-                        setGeneralError('Registration is currently not allowed. Please try again later.');
+                        showDialog('error', 'Registration Error', 'Registration is currently not allowed. Please try again later.');
                         break;
                     case 'auth/network-request-failed':
-                        setGeneralError('Network issue. Please check your connection and try again.');
+                        showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
                         break;
                     case 'auth/invalid-credential':
-                        setGeneralError('Invalid credentials. Please check your information and try again.');
+                        showDialog('error', 'Invalid Credentials', 'Invalid credentials. Please check your information and try again.');
                         break;
                     case 'auth/too-many-requests':
-                        setGeneralError('Too many attempts. Please try again later.');
+                        showDialog('warning', 'Too Many Attempts', 'Too many attempts. Please try again later.');
                         break;
                     default:
-                        // If we have a Firebase error code but it's not in our list
                         if (errorCode.startsWith('auth/')) {
-                            // It's an auth error, but not one we specifically handled
                             if (errorMessage.toLowerCase().includes('password')) {
                                 setPasswordError('Password issue. Please try again with a different password.');
                             } else if (errorMessage.toLowerCase().includes('email')) {
                                 setEmailError('Email issue. Please check again.');
                             } else {
-                                setGeneralError('Registration failed. Please try again.');
+                                showDialog('error', 'Registration Failed', 'Registration failed. Please try again.');
                             }
                         } else {
-                            // Some other Firebase error
-                            setGeneralError('Unable to register. Please try again later.');
+                            showDialog('error', 'Registration Error', 'Unable to register. Please try again later.');
                         }
                 }
             } else if (errorMessage) {
-                // We have an error message but no code
                 if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('connection')) {
-                    setGeneralError('Network issue. Please check your connection and try again.');
-                    console.log('Network error:', errorMessage);
+                    showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
                 } else if (errorMessage.toLowerCase().includes('password')) {
                     setPasswordError('Password issue. Please try with a different password.');
                 } else if (errorMessage.toLowerCase().includes('email')) {
                     setEmailError('Email issue. Please check again.');
                 } else {
-                    setGeneralError('Registration failed. Please try again later.');
+                    showDialog('error', 'Registration Failed', 'Registration failed. Please try again later.');
                 }
             } else {
-                // Fallback for when we have no useful error information
-                setGeneralError('Registration failed. Please try again or contact support if the issue persists.');
+                showDialog('error', 'Registration Failed', 'Registration failed. Please try again or contact support if the issue persists.');
             }
-        } finally {
-            setIsLoading(false);
+        }
+    };
+
+    const handleDialogConfirm = () => {
+        setDialogVisible(false);
+
+        if (dialogType === 'success') {
+            router.push('/(auth)/verify-email');
         }
     };
 
     const handleSignIn = () => {
-        router.push('/login');
+        router.push('/(auth)/login');
     };
 
     const togglePasswordVisibility = () => {
@@ -354,171 +359,178 @@ export default function RegistrationForm() {
         setIsConfirmPasswordVisible(!isConfirmPasswordVisible);
     };
 
-    const toggleAcceptTerms = () => {
-        setAcceptTerms(!acceptTerms);
-        if (termsError) setTermsError('');
-    };
-
     return (
-        <View className="flex-1 bg-green-500">
-            <View className="flex-1 bg-green-500 p-6 pt-0 pb-12 items-center justify-center">
-                <View className="items-center">
-                    <Image
-                        source={require('@/assets/images/plants.png')}
-                        className="w-64 h-64"
-                        resizeMode="contain"
-                    />
-                </View>
-            </View>
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            className="flex-1 bg-black"
+        >
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
+                <View className="flex-1 pt-24 px-6 pb-6">
+                    <Text className="text-center text-white text-4xl font-bold mb-6">
+                        Create An Account
+                    </Text>
 
-            <View className="flex-1 px-6 pt-6 -mt-6">
-                <View className="bg-white rounded-3xl shadow-md p-6 -mt-12">
-                    <Text className="text-2xl font-bold text-gray-800 mb-6 text-center">Create Your Account</Text>
-
-                    {generalError ? (
-                        <View className="mb-4 p-3 bg-red-50 rounded-lg" testID="general-error-container">
-                            <Text className="text-red-600 text-center" testID="general-error">{generalError}</Text>
+                    <View className="items-center mb-6">
+                        <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
+                            <Image
+                                source={require('../../assets/images/avatar.png')}
+                                className="w-full h-full"
+                                resizeMode="cover"
+                            />
                         </View>
-                    ) : null}
+                    </View>
 
-                    <View className="mb-4 space-y-2">
-                        <View className={`bg-green-100 rounded-full h-14 flex-row items-center px-4 mb-1 ${emailError ? 'border border-red-400' : ''}`}>
+                    {/* Email Input */}
+                    <View className="mb-4">
+                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                            <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
                             <TextInput
-                                className="flex-1 text-base text-gray-800"
+                                className="flex-1 text-white text-base ml-3"
                                 placeholder="Email"
-                                placeholderTextColor="#90A4AE"
+                                placeholderTextColor="#9CA3AF"
                                 value={email}
                                 onChangeText={(text) => {
                                     setEmail(text);
                                     if (emailError) setEmailError('');
-                                    // Clear general error when typing in any field
-                                    if (generalError) setGeneralError('');
                                 }}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
-                                testID="email-input"
                             />
                         </View>
                         {emailError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-2" testID="email-error">{emailError}</Text>
-                        ) : (
-                            <View className="mb-2" />
-                        )}
+                            <Text className="text-red-500 text-xs ml-4 mt-1">{emailError}</Text>
+                        ) : null}
+                    </View>
 
-                        <View className={`bg-green-100 rounded-full h-14 flex-row items-center px-4 mb-1 ${passwordError ? 'border border-red-400' : ''}`}>
+                    {/* Username Input */}
+                    <View className="mb-4">
+                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                            <Ionicons name="person-outline" size={20} color="#FFFFFF" />
                             <TextInput
-                                className="flex-1 text-base text-gray-800"
+                                className="flex-1 text-white text-base ml-3"
+                                placeholder="Username"
+                                placeholderTextColor="#9CA3AF"
+                                value={username}
+                                onChangeText={(text) => {
+                                    setUsername(text);
+                                    if (usernameError) setUsernameError('');
+                                }}
+                                autoCapitalize="none"
+                            />
+                        </View>
+                        {usernameError ? (
+                            <Text className="text-red-500 text-xs ml-4 mt-1">{usernameError}</Text>
+                        ) : null}
+                    </View>
+
+                    {/* Phone Number Input */}
+                    <View className="mb-4">
+                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                            <Ionicons name="call-outline" size={20} color="#FFFFFF" />
+                            <TextInput
+                                className="flex-1 text-white text-base ml-3"
+                                placeholder="Phone Number"
+                                placeholderTextColor="#9CA3AF"
+                                value={phoneNumber}
+                                onChangeText={(text) => {
+                                    setPhoneNumber(text);
+                                    if (phoneError) setPhoneError('');
+                                }}
+                                keyboardType="phone-pad"
+                            />
+                        </View>
+                        {phoneError ? (
+                            <Text className="text-red-500 text-xs ml-4 mt-1">{phoneError}</Text>
+                        ) : null}
+                    </View>
+
+                    {/* Password Input */}
+                    <View className="mb-4">
+                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                            <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
+                            <TextInput
+                                className="flex-1 text-white text-base ml-3"
                                 placeholder="Password"
-                                placeholderTextColor="#90A4AE"
+                                placeholderTextColor="#9CA3AF"
                                 value={password}
                                 onChangeText={(text) => {
                                     setPassword(text);
                                     if (passwordError) setPasswordError('');
-                                    // Clear general error when typing in any field
-                                    if (generalError) setGeneralError('');
                                 }}
                                 secureTextEntry={!isPasswordVisible}
-                                testID="password-input"
                             />
-                            <TouchableOpacity onPress={togglePasswordVisibility} className="p-2">
+                            <TouchableOpacity onPress={togglePasswordVisibility}>
                                 <Ionicons
-                                    name={isPasswordVisible ? "eye-off" : "eye"}
+                                    name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
                                     size={20}
-                                    color="#66BB6A"
+                                    color="#FFFFFF"
                                 />
                             </TouchableOpacity>
                         </View>
                         {passwordError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-0" testID="password-error">{passwordError}</Text>
-                        ) : (
-                            <View className="mb-0" />
-                        )}
+                            <Text className="text-red-500 text-xs ml-4 mt-1">{passwordError}</Text>
+                        ) : null}
+                    </View>
 
-                        <View className={`bg-green-100 rounded-full h-14 flex-row items-center px-4 mb-1 mt-2 ${confirmPasswordError ? 'border border-red-400' : ''}`}>
+                    {/* Confirm Password Input */}
+                    <View className="mb-6">
+                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                            <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
                             <TextInput
-                                className="flex-1 text-base text-gray-800"
+                                className="flex-1 text-white text-base ml-3"
                                 placeholder="Confirm Password"
-                                placeholderTextColor="#90A4AE"
+                                placeholderTextColor="#9CA3AF"
                                 value={confirmPassword}
                                 onChangeText={(text) => {
                                     setConfirmPassword(text);
                                     if (confirmPasswordError) setConfirmPasswordError('');
-                                    // Clear general error when typing in any field
-                                    if (generalError) setGeneralError('');
                                 }}
                                 secureTextEntry={!isConfirmPasswordVisible}
-                                testID="confirm-password-input"
                             />
-                            <TouchableOpacity onPress={toggleConfirmPasswordVisibility} className="p-2">
+                            <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
                                 <Ionicons
-                                    name={isConfirmPasswordVisible ? "eye-off" : "eye"}
+                                    name={isConfirmPasswordVisible ? "eye-off-outline" : "eye-outline"}
                                     size={20}
-                                    color="#66BB6A"
+                                    color="#FFFFFF"
                                 />
                             </TouchableOpacity>
                         </View>
                         {confirmPasswordError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-1" testID="confirm-password-error">{confirmPasswordError}</Text>
-                        ) : (
-                            <View className="mb-1" />
-                        )}
+                            <Text className="text-red-500 text-xs ml-4 mt-1">{confirmPasswordError}</Text>
+                        ) : null}
+                    </View>
 
-                        <TouchableOpacity
-                            className={`flex-row items-center mt-0 mb-0 py-2 ${termsError ? 'border-red-400' : ''}`}
-                            onPress={toggleAcceptTerms}
-                            testID="terms-checkbox"
-                        >
-                            <View className={`w-5 h-5 rounded-sm mr-3 border ${acceptTerms ? 'bg-green-500 border-green-500' : 'border-gray-300'}`}>
-                                {acceptTerms && <Ionicons name="checkmark" size={16} color="white" />}
-                            </View>
-                            <Text className="text-gray-600 text-sm flex-1">I accept the terms and conditions</Text>
+                    {/* Sign Up Button */}
+                    <TouchableOpacity
+                        className="bg-orange-400 rounded-full h-14 justify-center items-center mb-4"
+                        onPress={handleSignup}
+                        disabled={isLoading}
+                    >
+                        <Text className="text-white text-base font-bold">
+                            Sign Up
+                        </Text>
+                    </TouchableOpacity>
+
+                    {/* Already have account */}
+                    <View className="flex-row justify-center items-center">
+                        <Text className="text-gray-400 text-sm">Already have an account? </Text>
+                        <TouchableOpacity onPress={handleSignIn}>
+                            <Text className="text-yellow-400 text-sm font-bold">Sign In</Text>
                         </TouchableOpacity>
-                        {termsError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-0" testID="terms-error">{termsError}</Text>
-                        ) : (
-                            <View className="mb-0" />
-                        )}
-
-                        <TouchableOpacity
-                            className="bg-green-500 rounded-full h-12 justify-center items-center shadow-md mb-6 mt-2"
-                            onPress={handleSignup}
-                            disabled={isLoading}
-                            testID="signup-button"
-                        >
-                            <Text className="text-white text-base font-semibold">
-                                {isLoading ? "Signing up..." : "Sign up"}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <View className="flex-row justify-center items-center my-0 mb-4">
-                            <View className="flex-1 h-px bg-gray-200" />
-                            <Text className="text-gray-500 px-4 text-sm">OR</Text>
-                            <View className="flex-1 h-px bg-gray-200" />
-                        </View>
-
-                        <View className="flex-row justify-center space-x-5 mb-4">
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">G</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">F</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">T</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View className="flex-row justify-center">
-                            <Text className="text-gray-500 text-sm">Already have an account? </Text>
-                            <TouchableOpacity onPress={handleSignIn}>
-                                <Text className="text-green-600 text-sm font-semibold">Login</Text>
-                            </TouchableOpacity>
-                        </View>
                     </View>
                 </View>
-            </View>
-        </View>
+            </ScrollView>
+
+            {/* Dialog Component */}
+            <Dialog
+                visible={dialogVisible}
+                type={dialogType}
+                title={dialogTitle}
+                message={dialogMessage}
+                onClose={() => setDialogVisible(false)}
+                onConfirm={handleDialogConfirm}
+                confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
+            />
+        </KeyboardAvoidingView>
     );
-};
+}

@@ -11,7 +11,7 @@ import {
 
 export default function AuthLayout() {
     return (
-        <SafeAreaView className="flex-1 bg-[#4CAF50]">
+        <SafeAreaView className="flex-1 bg-black">
             <StatusBar barStyle="dark-content" backgroundColor="#4CAF50" />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

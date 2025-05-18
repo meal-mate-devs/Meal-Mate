@@ -31,7 +31,7 @@ function RootLayoutContent() {
     }
   }, [isLoading, fontsLoaded]);
 
-  if (isLoading || !fontsLoaded) {
+  if (isLoading) {
     return <CustomSplashScreen />;
   }
 
