@@ -1,5 +1,6 @@
 import { dummyRecipes } from '@/lib/utils';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -13,16 +14,18 @@ import {
 } from 'react-native';
 import BottomProfileDrawer from '../molecules/BottomProfileDrawer';
 import HomeHeader from '../molecules/HomeHeader';
-
+import ProfileSidebar from '../molecules/ProfileSidebar';
 
 const userData = {
-    name: 'Mark',
-    profileImage: 'https://randomuser.me/api/portraits/men/32.jpg',
+    name: 'Umar Farooq',
+    email: 'umarf9834@gmail.com',
+    profileImage: '',
 };
 
 const HomeScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>('Breakfast');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     const filteredRecipes = dummyRecipes.filter(recipe =>
         recipe.category === activeTab || activeTab === 'All'
@@ -34,21 +37,25 @@ const HomeScreen: React.FC = () => {
         setIsDrawerOpen(!isDrawerOpen);
     };
 
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
     return (
-        <SafeAreaView className="flex-1 bg-gray-50">
+        <SafeAreaView className="flex-1 bg-black">
             <ScrollView className="flex-1 px-4">
                 <HomeHeader
                     username={userData.name}
                     profileImage={userData.profileImage}
-                    onProfilePress={toggleDrawer}
+                    onProfilePress={toggleSidebar}
                 />
 
-                <View className="bg-gray-100 rounded-full flex-row items-center px-4 py-2 mb-6">
-                    <Feather name="search" size={20} color="gray" />
+                <View className="bg-zinc-800 rounded-full flex-row items-center px-4 py-3 mb-6">
+                    <Feather name="search" size={20} color="#9CA3AF" />
                     <TextInput
                         placeholder="Search by recipes"
-                        className="ml-2 flex-1 text-gray-700"
-                        placeholderTextColor="gray"
+                        className="ml-2 flex-1 text-white"
+                        placeholderTextColor="#9CA3AF"
                     />
                 </View>
 
@@ -74,11 +81,19 @@ const HomeScreen: React.FC = () => {
                         <TouchableOpacity
                             key={tab}
                             onPress={() => setActiveTab(tab)}
-                            className={`py-2 px-6 mr-2 rounded-full ${activeTab === tab ? 'bg-green-700' : 'bg-gray-100'
+                            className={`py-2 px-6 mr-2 rounded-full ${activeTab === tab ? 'overflow-hidden' : 'bg-zinc-800'
                                 }`}
                         >
+                            {activeTab === tab ? (
+                                <LinearGradient
+                                    colors={['#FACC15', '#F97316']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    className="absolute inset-0"
+                                />
+                            ) : null}
                             <Text
-                                className={`${activeTab === tab ? 'text-white' : 'text-gray-600'
+                                className={`${activeTab === tab ? 'text-white' : 'text-gray-400'
                                     } font-medium`}
                             >
                                 {tab}
@@ -90,7 +105,7 @@ const HomeScreen: React.FC = () => {
                 {filteredRecipes.map((recipe) => (
                     <TouchableOpacity
                         key={recipe.id}
-                        className="bg-white mb-6 rounded-3xl overflow-hidden shadow-sm"
+                        className="bg-zinc-800 mb-6 rounded-3xl overflow-hidden"
                         onPress={() => router.push(`/recipe/${recipe.id}`)}
                     >
                         <Image
@@ -98,26 +113,38 @@ const HomeScreen: React.FC = () => {
                             className="w-full h-44"
                             resizeMode="cover"
                         />
-                        <View className="p-3">
+                        <View className="p-4">
                             <View className="flex-row justify-between items-center">
-                                <Text className="text-gray-800 font-bold text-lg">{recipe.title}</Text>
+                                <Text className="text-white font-bold text-lg">{recipe.title}</Text>
                                 <View className="flex-row items-center">
-                                    <Ionicons name="star" size={16} color="#FFD700" />
-                                    <Text className="text-gray-600 ml-1">{recipe.rating}</Text>
+                                    <Ionicons name="star" size={16} color="#FACC15" />
+                                    <Text className="text-gray-300 ml-1">{recipe.rating}</Text>
                                 </View>
                             </View>
                             <View className="flex-row items-center mt-2">
-                                <Text className="text-gray-500 font-medium">{recipe.author}</Text>
+                                <Text className="text-gray-400 font-medium">{recipe.author}</Text>
                                 <View className="flex-row items-center ml-4">
-                                    <Ionicons name="time-outline" size={16} color="gray" />
-                                    <Text className="text-gray-500 ml-1">{recipe.prepTime} min</Text>
+                                    <Ionicons name="time-outline" size={16} color="#9CA3AF" />
+                                    <Text className="text-gray-400 ml-1">{recipe.prepTime} min</Text>
                                 </View>
                             </View>
                         </View>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
-            <BottomProfileDrawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+
+            <ProfileSidebar
+                isOpen={isSidebarOpen}
+                onClose={() => setIsSidebarOpen(false)}
+                userData={userData}
+                onProfilePress={toggleDrawer}
+            />
+
+            <BottomProfileDrawer
+                isOpen={isDrawerOpen}
+                onClose={() => setIsDrawerOpen(false)}
+                userData={userData}
+            />
         </SafeAreaView>
     );
 };
