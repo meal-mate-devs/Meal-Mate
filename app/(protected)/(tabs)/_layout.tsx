@@ -1,7 +1,6 @@
 import CustomTabBar from "@/components/organisms/CustomTabBar";
 import { Tabs } from "expo-router";
 
-
 const screenOptions = {
     headerShown: false,
     tabBarShowLabel: false,
@@ -24,14 +23,6 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="profile/index"
-                options={{
-                    href: '/profile',
-                    title: 'Profile',
-                    tabBarLabel: 'Profile',
-                }}
-            />
-            <Tabs.Screen
                 name="statistics/index"
                 options={{
                     href: '/statistics',
@@ -40,11 +31,19 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="settings/index"
+                name="create/index"
                 options={{
-                    href: '/settings',
-                    title: 'Settings',
-                    tabBarLabel: 'Settings',
+                    href: '/create',
+                    title: 'Create',
+                    tabBarLabel: 'Create',
+                }}
+            />
+            <Tabs.Screen
+                name="community/index"
+                options={{
+                    href: '/community',
+                    title: 'Community',
+                    tabBarLabel: 'Community',
                 }}
             />
         </Tabs>

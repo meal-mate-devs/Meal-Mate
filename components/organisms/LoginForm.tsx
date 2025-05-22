@@ -1,26 +1,38 @@
+// app/(auth)/login.tsx
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Image,
+    ImageBackground,
+    KeyboardAvoidingView,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import Dialog from '../atoms/Dialog';
 
 export default function LoginForm() {
-    
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
-    const [generalError, setGeneralError] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    // Dialog state
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
+    const [dialogTitle, setDialogTitle] = useState('');
+    const [dialogMessage, setDialogMessage] = useState('');
+
     const router = useRouter();
     const { login, doesAccountExist } = useAuthContext();
 
@@ -35,7 +47,14 @@ export default function LoginForm() {
     const clearErrors = () => {
         setEmailError('');
         setPasswordError('');
-        setGeneralError('');
+    };
+
+    // Show dialog helper function
+    const showDialog = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string = '') => {
+        setDialogType(type);
+        setDialogTitle(title);
+        setDialogMessage(message);
+        setDialogVisible(true);
     };
 
     // Helper function to check network connectivity
@@ -53,49 +72,44 @@ export default function LoginForm() {
         }
     };
 
-    // Helper to identify network-related issues in errors
+    // Helper to identify network-related issues in errors - reusing your existing function
     const isNetworkRelatedError = (error: any): boolean => {
         if (!error) return false;
-        
-        // Extract error information
+
         let errorMessage = '';
         let errorCode = '';
-        
+
         if (typeof error === 'object') {
             errorMessage = error.message || error.toString();
             errorCode = error.code || '';
-            
-            // Check for connection timeout errors
+
             if (error.name === 'TimeoutError') return true;
-            
-            // Check for fetch/XMLHttpRequest errors
-            if (error instanceof TypeError && 
-                (errorMessage.includes('Failed to fetch') || 
-                 errorMessage.includes('Network request failed'))) {
+
+            if (error instanceof TypeError &&
+                (errorMessage.includes('Failed to fetch') ||
+                    errorMessage.includes('Network request failed'))) {
                 return true;
             }
         } else {
             errorMessage = String(error);
         }
-        
-        // Check common network error codes
-        if (errorCode === 'auth/network-request-failed' || 
-            errorCode === 'NETWORK_ERROR' || 
+
+        if (errorCode === 'auth/network-request-failed' ||
+            errorCode === 'NETWORK_ERROR' ||
             errorCode === 'ENOTFOUND' ||
             errorCode === 'ECONNREFUSED' ||
             errorCode === 'ECONNRESET' ||
             errorCode === 'ETIMEDOUT') {
             return true;
         }
-        
-        // Check for network-related phrases in the error message
+
         const networkErrorPhrases = [
-            'network', 'connection', 'internet', 'offline', 'timeout', 
+            'network', 'connection', 'internet', 'offline', 'timeout',
             'unreachable', 'connect', 'dns', 'host', 'socket', 'request failed',
             'cannot reach', 'server unavailable', 'no internet'
         ];
-        
-        return networkErrorPhrases.some(phrase => 
+
+        return networkErrorPhrases.some(phrase =>
             errorMessage.toLowerCase().includes(phrase));
     };
 
@@ -104,125 +118,144 @@ export default function LoginForm() {
         clearErrors();
 
         // Client-side validation
-        if (!email.trim()) {
-            setEmailError('Please enter your email address');
-            return;
-        }
+        let hasError = false;
 
-        if (!validateEmail(email)) {
+        if (!email.trim()) {
+            setEmailError('Please enter your email or username');
+            hasError = true;
+        } else if (email.includes('@') && !validateEmail(email)) {
             setEmailError('Please enter a valid email address');
-            return;
+            hasError = true;
         }
 
         if (!password.trim()) {
             setPasswordError('Please enter your password');
-            return;
+            hasError = true;
         }
+
+        if (hasError) return;
 
         // Check network connectivity before proceeding
         const isConnected = await checkNetworkConnectivity();
         if (!isConnected) {
-            setGeneralError('No internet connection. Please check your network and try again.');
+            showDialog('error', 'Network Error', 'No internet connection. Please check your network and try again.');
             return;
         }
 
         try {
             setIsLoading(true);
+            showDialog('loading', 'Signing In', 'Please wait while we sign you in...');
 
-            // Basic domain validation
-            const domain = email.substring(email.indexOf('@') + 1);
-            if (!domain.includes('.') || domain.length < 3) {
-                setEmailError('The email domain is invalid');
-                setIsLoading(false);
-                return;
-            }
-
-            // Check for disposable email domains
-            const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
-            if (disposableDomains.includes(domain)) {
-                setEmailError('Disposable email addresses are not allowed');
-                setIsLoading(false);
-                return;
-            }
-
-            // Check if account exists before attempting login
-            let accountExists = false;
-            try {
-                // Set a timeout for the account check
-                const accountCheckPromise = doesAccountExist(email.trim());
-                const accountCheckWithTimeout = Promise.race([
-                    accountCheckPromise,
-                    new Promise((_, reject) => 
-                        setTimeout(() => reject(new Error('Account check timed out')), 10000)
-                    )
-                ]);
-                
-                // Await the result with timeout protection
-                accountExists = await accountCheckWithTimeout as boolean;
-                
-                if (!accountExists) {
-                    setEmailError('Account does not exist. Please sign up first.');
+            // If email contains @, perform additional validations
+            if (email.includes('@')) {
+                // Basic domain validation
+                const domain = email.substring(email.indexOf('@') + 1);
+                if (!domain.includes('.') || domain.length < 3) {
+                    setDialogVisible(false);
+                    setEmailError('The email domain is invalid');
                     setIsLoading(false);
                     return;
                 }
-            } catch (accountCheckError) {
-                console.log('Account check error:', accountCheckError);
-                
-                // Check again if we lost connection during the account check
-                const isStillConnected = await checkNetworkConnectivity();
-                if (!isStillConnected) {
-                    setGeneralError('Network connection lost. Please check your internet and try again.');
+
+                // Check for disposable email domains
+                const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
+                if (disposableDomains.includes(domain)) {
+                    setDialogVisible(false);
+                    setEmailError('Disposable email addresses are not allowed');
                     setIsLoading(false);
                     return;
                 }
-                
-                // Process the error from account check
-                if (isNetworkRelatedError(accountCheckError)) {
-                    setGeneralError('Network error while checking your account. Please check your connection and try again.');
+
+                // Check if account exists before attempting login
+                try {
+                    // Set a timeout for the account check
+                    const accountCheckPromise = doesAccountExist(email.trim());
+                    const accountCheckWithTimeout = Promise.race([
+                        accountCheckPromise,
+                        new Promise((_, reject) =>
+                            setTimeout(() => reject(new Error('Account check timed out')), 10000)
+                        )
+                    ]);
+
+                    const accountExists = await accountCheckWithTimeout as boolean;
+
+                    if (!accountExists) {
+                        setDialogVisible(false);
+                        setEmailError('Account does not exist. Please sign up first.');
+                        setIsLoading(false);
+                        return;
+                    }
+                } catch (accountCheckError) {
+                    console.log('Account check error:', accountCheckError);
+
+                    setDialogVisible(false);
+
+                    // Check again if we lost connection during the account check
+                    const isStillConnected = await checkNetworkConnectivity();
+                    if (!isStillConnected) {
+                        showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    // Process the error from account check
+                    if (isNetworkRelatedError(accountCheckError)) {
+                        showDialog('error', 'Network Error', 'Network error while checking your account. Please check your connection and try again.');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    // For other types of errors during account check
+                    let errorMessage = '';
+                    if (typeof accountCheckError === 'object' && accountCheckError !== null) {
+                        errorMessage = (accountCheckError as any).message || accountCheckError.toString();
+                    } else {
+                        errorMessage = String(accountCheckError);
+                    }
+
+                    if (errorMessage.toLowerCase().includes('email')) {
+                        setEmailError('Error validating email. Please check your email and try again.');
+                    } else if (errorMessage.toLowerCase().includes('timeout') ||
+                        errorMessage.toLowerCase().includes('timed out')) {
+                        showDialog('error', 'Request Timeout', 'Request timed out. Please try again later.');
+                    } else {
+                        showDialog('error', 'Account Check Error', 'Error checking account. Please try again later.');
+                    }
+
                     setIsLoading(false);
                     return;
                 }
-                
-                // For other types of errors during account check
-                let errorMessage = '';
-                if (typeof accountCheckError === 'object' && accountCheckError !== null) {
-                    errorMessage = (accountCheckError as any).message || accountCheckError.toString();
-                } else {
-                    errorMessage = String(accountCheckError);
-                }
-                
-                if (errorMessage.toLowerCase().includes('email')) {
-                    setEmailError('Error validating email. Please check your email and try again.');
-                } else if (errorMessage.toLowerCase().includes('timeout') || 
-                           errorMessage.toLowerCase().includes('timed out')) {
-                    setGeneralError('Request timed out. Please try again later.');
-                } else {
-                    setGeneralError('Error checking account. Please try again later.');
-                }
-                
-                setIsLoading(false);
-                return;
             }
 
             // Attempt login
             await login(email.trim(), password.trim());
-            router.push('/home');
+
+            // Show success dialog before navigating
+            setDialogVisible(false);
+            showDialog('success', 'Success!', 'You have been successfully logged in.');
+
+            // Navigate after a short delay to show the success message
+            setTimeout(() => {
+                setDialogVisible(false);
+                router.push('/(protected)/(tabs)/home');
+            }, 1500);
 
         } catch (error) {
             console.log('Login error:', error);
-            
+            setDialogVisible(false);
+
             // Check if we lost connection during login
             const isStillConnected = await checkNetworkConnectivity();
             if (!isStillConnected) {
-                setGeneralError('Network connection lost. Please check your internet and try again.');
+                showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
                 setIsLoading(false);
                 return;
             }
-            
+
             // Extract error message and code properly
             let errorMessage = '';
             let errorCode = '';
-            
+
             // Check if error is a FirebaseError
             const errorStr = typeof error === 'string' ? error : (error && typeof error === 'object' && 'toString' in error) ? (error as any).toString() : '';
             if (errorStr.includes('FirebaseError:')) {
@@ -242,13 +275,13 @@ export default function LoginForm() {
                     errorCode = '';
                 }
             }
-            
+
             console.log('Error code:', errorCode);
             console.log('Error message:', errorMessage);
 
             // Network-related error detection
             if (isNetworkRelatedError(error)) {
-                setGeneralError('Network error. Please check your internet connection and try again.');
+                showDialog('error', 'Network Error', 'Network error. Please check your internet connection and try again.');
             } else if (errorCode) {
                 switch (errorCode) {
                     case 'auth/user-not-found':
@@ -261,33 +294,26 @@ export default function LoginForm() {
                         setEmailError('Invalid email format');
                         break;
                     case 'auth/user-disabled':
-                        setEmailError('Account disabled. Contact support.');
+                        showDialog('error', 'Account Disabled', 'Your account has been disabled. Please contact support.');
                         break;
                     case 'auth/too-many-requests':
-                        setGeneralError('Too many attempts. Please try again later or reset your password.');
+                        showDialog('warning', 'Too Many Attempts', 'Too many attempts. Please try again later or reset your password.');
                         break;
                     case 'auth/invalid-credential':
-                        // More specific message when credentials are invalid
-                        setGeneralError('Your email or password is incorrect. Please try again.');
-                        break;
                     case 'auth/invalid-login-credentials':
-                        // Similar to invalid-credential
-                        setGeneralError('Wrong email or password');
+                        showDialog('error', 'Invalid Credentials', 'Your email/username or password is incorrect. Please try again.');
                         break;
                     case 'auth/network-request-failed':
-                        setGeneralError('Network issue. Please check your connection and try again.');
+                        showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
                         break;
                     case 'auth/account-exists-with-different-credential':
-                        setEmailError('This email is registered with a different sign-in method. Try another option.');
+                        showDialog('error', 'Sign-in Method Error', 'This email is registered with a different sign-in method. Try another option.');
                         break;
                     case 'auth/operation-not-allowed':
-                        setGeneralError('This sign-in method is not available. Please try another option.');
-                        break;
-                    case 'auth/email-already-in-use':
-                        setEmailError('Email already registered. Please log in instead of signing up.');
+                        showDialog('error', 'Sign-in Error', 'This sign-in method is not available. Please try another option.');
                         break;
                     case 'auth/requires-recent-login':
-                        setGeneralError('For security, please log out and log in again before retrying.');
+                        showDialog('warning', 'Session Expired', 'For security, please log out and log in again before retrying.');
                         break;
                     default:
                         // If we have a Firebase error code but it's not in our list
@@ -298,27 +324,27 @@ export default function LoginForm() {
                             } else if (errorMessage.toLowerCase().includes('email')) {
                                 setEmailError('Email issue. Please check again.');
                             } else {
-                                setGeneralError('Sign-in failed. Please try again.');
+                                showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again.');
                             }
                         } else {
                             // Some other Firebase error
-                            setGeneralError('Unable to sign in. Please try again later.');
+                            showDialog('error', 'Sign-in Error', 'Unable to sign in. Please try again later.');
                         }
                 }
             } else if (errorMessage) {
                 // We have an error message but no code
                 if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('connection')) {
-                    setGeneralError('Network issue. Please check your connection and try again.');
+                    showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
                 } else if (errorMessage.toLowerCase().includes('password')) {
                     setPasswordError('Password issue. Please try again or reset your password.');
                 } else if (errorMessage.toLowerCase().includes('email')) {
                     setEmailError('Email issue. Please check again.');
                 } else {
-                    setGeneralError('Sign-in failed. Please try again later.');
+                    showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again later.');
                 }
             } else {
                 // Fallback for when we have no useful error information
-                setGeneralError('Sign-in failed. Please try again or contact support if the issue persists.');
+                showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again or contact support if the issue persists.');
             }
         } finally {
             setIsLoading(false);
@@ -326,133 +352,199 @@ export default function LoginForm() {
     };
 
     const handleSignUp = () => {
-        router.push('/register');
+        router.push('/(auth)/register');
     };
 
     const handleForgetPassword = () => {
-        router.push('/forgot-password');
+        router.push('/(auth)/forgot-password');
     };
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
+    const toggleRememberMe = () => {
+        setRememberMe(!rememberMe);
+    };
+
+    const handleDialogConfirm = () => {
+        setDialogVisible(false);
+    };
+
     return (
-        <View className="flex-1 bg-green-500">
-            <View className="flex-1 bg-green-500 rounded-b-3xl p-6 pt-12 pb-12 items-center justify-center">
-                <View className="items-center">
-                    <Image
-                        source={require('@/assets/images/plants.png')}
-                        className="w-64 h-64"
-                        resizeMode="contain"
-                    />
-                </View>
-            </View>
+        <>
+            <ImageBackground 
+                source={require('../../assets/images/authbg.png')} 
+                resizeMode="cover" 
+                style={{ width: '100%', height: '100%' }}
+                imageStyle={{ opacity: 0.8 }}
+            >
+                <LinearGradient
+                    colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={{ flex: 1, width: '100%', height: '100%' }}
+                >
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
+                    >
+                        <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
+                            <View className="flex-1 pt-24 px-6 pb-6">
+                                <Text className="text-center text-white text-4xl font-bold mb-16">
+                                    Login To Account
+                                </Text>
 
-            <View className="flex-1 px-6 pt-6 -mt-6">
-                <View className="bg-white rounded-3xl shadow-md p-6 -mt-12">
-                    <Text className="text-2xl font-bold text-gray-800 mb-6 text-center">Login</Text>
+                                <View className="items-center mb-6">
+                                    <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
+                                        <Image
+                                            source={require('../../assets/images/avatar.png')}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                </View>
+                                
+                                {/* Email/Username Input */}
+                                <View className="mb-4">
+                                    <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
+                                        <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
+                                        <TextInput
+                                            className="flex-1 text-white text-base ml-3"
+                                            placeholder="Email/Username"
+                                            placeholderTextColor="#9CA3AF"
+                                            value={email}
+                                            onChangeText={(text) => {
+                                                setEmail(text);
+                                                if (emailError) setEmailError('');
+                                            }}
+                                            keyboardType={email.includes('@') ? "email-address" : "default"}
+                                            autoCapitalize="none"
+                                        />
+                                    </View>
+                                    {emailError ? (
+                                        <Text className="text-red-500 text-s ml-4 mt-1">{emailError}</Text>
+                                    ) : null}
+                                </View>
 
-                    {generalError ? (
-                        <View className="mb-4 p-3 bg-red-50 rounded-lg" testID="general-error-container">
-                            <Text className="text-red-600 text-center" testID="general-error">{generalError}</Text>
-                        </View>
-                    ) : null}
+                                {/* Password Input */}
+                                <View className="mb-4">
+                                    <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${passwordError ? 'border-red-400' : ''}`}>
+                                        <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
+                                        <TextInput
+                                            className="flex-1 text-white text-base ml-3"
+                                            placeholder="Password"
+                                            placeholderTextColor="#9CA3AF"
+                                            value={password}
+                                            onChangeText={(text) => {
+                                                setPassword(text);
+                                                if (passwordError) setPasswordError('');
+                                            }}
+                                            secureTextEntry={!isPasswordVisible}
+                                        />
+                                        <TouchableOpacity onPress={togglePasswordVisibility}>
+                                            <Ionicons
+                                                name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                                                size={20}
+                                                color="#FFFFFF"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {passwordError ? (
+                                        <Text className="text-red-500 text-s ml-4 mt-1">{passwordError}</Text>
+                                    ) : null}
+                                </View>
 
-                    <View className="mb-4">
-                        <View className={`bg-green-100 rounded-full h-14 flex-row items-center px-4 mb-1 ${emailError ? 'border border-red-400' : ''}`}>
-                            <TextInput
-                                className="flex-1 text-base text-gray-800"
-                                placeholder="Email"
-                                placeholderTextColor="#90A4AE"
-                                value={email}
-                                onChangeText={(text) => {
-                                    setEmail(text);
-                                    if (emailError) setEmailError('');
-                                    // Clear general error when typing in any field
-                                    if (generalError) setGeneralError('');
-                                }}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                                testID="email-input"
-                            />
-                        </View>
-                        {emailError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-2" testID="email-error">{emailError}</Text>
-                        ) : (
-                            <View className="mb-4" />
-                        )}
+                                {/* Remember Me Checkbox */}
+                                <View className='flex-row items-center justify-between py-4 pb-6'>
+                                    <TouchableOpacity
+                                        className="flex-row items-center"
+                                        onPress={toggleRememberMe}
+                                    >
+                                        <View className={`w-5 h-5 rounded-sm mr-3 ${rememberMe ? 'bg-yellow-400' : 'border border-zinc-500'}`}>
+                                            {rememberMe && <Ionicons name="checkmark" size={16} color="black" />}
+                                        </View>
+                                        <Text className="text-zinc-400 text-sm">Remember me</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleForgetPassword} className="items-end">
+                                        <Text className="text-yellow-400 text-sm font-semibold">Forgot password?</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                
+                                {/* Sign In Button - Now with Gradient */}
+                                <TouchableOpacity
+                                    className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
+                                    onPress={handleLogin}
+                                    disabled={isLoading}
+                                >
+                                    <LinearGradient
+                                        colors={['#FBBF24', '#F97416']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        className="w-full h-full absolute"
+                                    />
+                                    <Text className="text-white text-base font-bold">
+                                        Sign In
+                                    </Text>
+                                </TouchableOpacity>
 
-                        <View className={`bg-green-100 rounded-full h-14 flex-row items-center px-4 mb-3 ${passwordError ? 'border border-red-400' : ''}`}>
-                            <TextInput
-                                className="flex-1 text-base text-gray-800"
-                                placeholder="Password"
-                                placeholderTextColor="#90A4AE"
-                                value={password}
-                                onChangeText={(text) => {
-                                    setPassword(text);
-                                    if (passwordError) setPasswordError('');
-                                    // Clear general error when typing in any field
-                                    if (generalError) setGeneralError('');
-                                }}
-                                secureTextEntry={!isPasswordVisible}
-                                testID="password-input"
-                            />
-                            <TouchableOpacity onPress={togglePasswordVisibility} className="p-2">
-                                <Ionicons
-                                    name={isPasswordVisible ? "eye-off" : "eye"}
-                                    size={20}
-                                    color="#66BB6A"
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        {passwordError ? (
-                            <Text className="text-red-500 text-sm ml-4 mb-2" testID="password-error">{passwordError}</Text>
-                        ) : null}
+                                {/* Divider */}
+                                <View className="flex-row items-center justify-center mb-8">
+                                    <View className="h-px bg-zinc-700 flex-1" />
+                                </View>
 
-                        <TouchableOpacity onPress={handleForgetPassword} className="items-end mb-3">
-                            <Text className="text-green-600 text-sm font-semibold">Forgot password?</Text>
-                        </TouchableOpacity>
+                                {/* Or continue with */}
+                                <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
 
-                        <TouchableOpacity
-                            className="bg-green-500 rounded-full h-12 justify-center items-center shadow-md"
-                            onPress={handleLogin}
-                            disabled={isLoading}
-                        >
-                            <Text className="text-white text-base font-semibold">
-                                {isLoading ? "Signing in..." : "Login"}
-                            </Text>
-                        </TouchableOpacity>
+                                {/* Social Login Buttons */}
+                                <View className="flex-row gap-4 justify-center mb-8">
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/fblogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
 
-                        <View className="flex-row justify-center items-center my-4">
-                            <View className="flex-1 h-px bg-gray-200" />
-                            <Text className="text-gray-500 px-4 text-sm">OR</Text>
-                            <View className="flex-1 h-px bg-gray-200" />
-                        </View>
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/googlelogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
 
-                        <View className="flex-row justify-center space-x-5 mb-6">
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">G</Text>
-                            </TouchableOpacity>
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white border border-white justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/applelogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
 
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">F</Text>
-                            </TouchableOpacity>
+                                {/* Sign Up Link */}
+                                <View className="flex-row justify-center items-center">
+                                    <Text className="text-zinc-400 text-sm">Don't have an account? </Text>
+                                    <TouchableOpacity onPress={handleSignUp}>
+                                        <Text className="text-yellow-400 text-sm font-bold">Sign Up</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </ScrollView>
 
-                            <TouchableOpacity className="w-14 h-14 rounded-full border border-gray-200 justify-center items-center">
-                                <Text className="text-lg font-medium text-gray-800">T</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View className="flex-row justify-center">
-                            <Text className="text-gray-500 text-sm">Don't have an account? </Text>
-                            <TouchableOpacity onPress={handleSignUp}>
-                                <Text className="text-green-600 text-sm font-semibold">Sign up</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                </View>
-            </View>
-        </View>
+                        <Dialog
+                            visible={dialogVisible}
+                            type={dialogType}
+                            title={dialogTitle}
+                            message={dialogMessage}
+                            onClose={() => setDialogVisible(false)}
+                            onConfirm={handleDialogConfirm}
+                            confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
+                        />
+                    </KeyboardAvoidingView>
+                </LinearGradient>
+            </ImageBackground>
+        </>
     );
-};
+}

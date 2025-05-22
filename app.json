@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "auth-app",
-    "slug": "auth-app",
+    "name": "Meal Mate",
+    "slug": "Meal Mate",
+    "owner": "Meal Mate Devs",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icon.png",
     "scheme": "authapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
@@ -16,7 +17,16 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "statusBar": {
+        "backgroundColor": "#000000",
+        "barStyle": "light-content",
+        "translucent": true
+      },
+      "navigationBar": {
+        "backgroundColor": "#000000",
+        "barStyle": "light-content"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +41,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#000000"
         }
       ]
     ],
