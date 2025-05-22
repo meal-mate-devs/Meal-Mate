@@ -2,10 +2,12 @@
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Image,
+    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -370,155 +372,179 @@ export default function LoginForm() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-black"
-        >
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
-                <View className="flex-1 pt-24 px-6 pb-6">
-                    <Text className="text-center text-white text-4xl font-bold mb-6">
-                        Login To Account
-                    </Text>
-
-                    <View className="items-center mb-6">
-                        <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
-                            <Image
-                                source={require('../../assets/images/avatar.png')}
-                                className="w-full h-full"
-                                resizeMode="cover"
-                            />
-                        </View>
-                    </View>
-                    {/* Email/Username Input */}
-                    <View className="mb-4">
-                        <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
-                            <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Email/Username"
-                                placeholderTextColor="#9CA3AF"
-                                value={email}
-                                onChangeText={(text) => {
-                                    setEmail(text);
-                                    if (emailError) setEmailError('');
-                                }}
-                                keyboardType={email.includes('@') ? "email-address" : "default"}
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {emailError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{emailError}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Password Input */}
-                    <View className="mb-4">
-                        <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${passwordError ? 'border-red-400' : ''}`}>
-                            <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Password"
-                                placeholderTextColor="#9CA3AF"
-                                value={password}
-                                onChangeText={(text) => {
-                                    setPassword(text);
-                                    if (passwordError) setPasswordError('');
-                                }}
-                                secureTextEntry={!isPasswordVisible}
-                            />
-                            <TouchableOpacity onPress={togglePasswordVisibility}>
-                                <Ionicons
-                                    name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color="#FFFFFF"
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        {passwordError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{passwordError}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Remember Me Checkbox */}
-                    <View className='flex-row items-center justify-between py-4 pb-6'>
-                        <TouchableOpacity
-                            className="flex-row items-center"
-                            onPress={toggleRememberMe}
-                        >
-                            <View className={`w-5 h-5 rounded-sm mr-3 ${rememberMe ? 'bg-yellow-400' : 'border border-zinc-500'}`}>
-                                {rememberMe && <Ionicons name="checkmark" size={16} color="black" />}
-                            </View>
-                            <Text className="text-zinc-400 text-sm">Remember me</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={handleForgetPassword} className="items-end">
-                            <Text className="text-orange-400 text-sm font-semibold">Forgot password?</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {/* Sign In Button */}
-                    <TouchableOpacity
-                        className="bg-orange-400 rounded-full h-14 justify-center items-center mb-8"
-                        onPress={handleLogin}
-                        disabled={isLoading}
+        <>
+            <ImageBackground 
+                source={require('../../assets/images/authbg.png')} 
+                resizeMode="cover" 
+                style={{ width: '100%', height: '100%' }}
+                imageStyle={{ opacity: 0.8 }}
+            >
+                <LinearGradient
+                    colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                    style={{ flex: 1, width: '100%', height: '100%' }}
+                >
+                    <KeyboardAvoidingView
+                        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                        style={{ flex: 1 }}
                     >
-                        <Text className="text-white text-base font-bold">
-                            Sign In
-                        </Text>
-                    </TouchableOpacity>
+                        <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
+                            <View className="flex-1 pt-24 px-6 pb-6">
+                                <Text className="text-center text-white text-4xl font-bold mb-16">
+                                    Login To Account
+                                </Text>
 
-                    {/* Divider */}
-                    <View className="flex-row items-center justify-center mb-8">
-                        <View className="h-px bg-zinc-700 flex-1" />
-                    </View>
+                                <View className="items-center mb-6">
+                                    <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
+                                        <Image
+                                            source={require('../../assets/images/avatar.png')}
+                                            className="w-full h-full"
+                                            resizeMode="cover"
+                                        />
+                                    </View>
+                                </View>
+                                
+                                {/* Email/Username Input */}
+                                <View className="mb-4">
+                                    <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
+                                        <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
+                                        <TextInput
+                                            className="flex-1 text-white text-base ml-3"
+                                            placeholder="Email/Username"
+                                            placeholderTextColor="#9CA3AF"
+                                            value={email}
+                                            onChangeText={(text) => {
+                                                setEmail(text);
+                                                if (emailError) setEmailError('');
+                                            }}
+                                            keyboardType={email.includes('@') ? "email-address" : "default"}
+                                            autoCapitalize="none"
+                                        />
+                                    </View>
+                                    {emailError ? (
+                                        <Text className="text-red-500 text-s ml-4 mt-1">{emailError}</Text>
+                                    ) : null}
+                                </View>
 
-                    {/* Or continue with */}
-                    <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
+                                {/* Password Input */}
+                                <View className="mb-4">
+                                    <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${passwordError ? 'border-red-400' : ''}`}>
+                                        <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
+                                        <TextInput
+                                            className="flex-1 text-white text-base ml-3"
+                                            placeholder="Password"
+                                            placeholderTextColor="#9CA3AF"
+                                            value={password}
+                                            onChangeText={(text) => {
+                                                setPassword(text);
+                                                if (passwordError) setPasswordError('');
+                                            }}
+                                            secureTextEntry={!isPasswordVisible}
+                                        />
+                                        <TouchableOpacity onPress={togglePasswordVisibility}>
+                                            <Ionicons
+                                                name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                                                size={20}
+                                                color="#FFFFFF"
+                                            />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {passwordError ? (
+                                        <Text className="text-red-500 text-s ml-4 mt-1">{passwordError}</Text>
+                                    ) : null}
+                                </View>
 
-                    {/* Social Login Buttons */}
-                    <View className="flex-row gap-4 justify-center  mb-8">
-                        <TouchableOpacity className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center">
-                            <Image
-                                source={require('../../assets/images/fblogo.png')} // Add Google logo image to your assets
-                                className="w-8 h-8"
-                                resizeMode="contain"
-                            />
-                        </TouchableOpacity>
+                                {/* Remember Me Checkbox */}
+                                <View className='flex-row items-center justify-between py-4 pb-6'>
+                                    <TouchableOpacity
+                                        className="flex-row items-center"
+                                        onPress={toggleRememberMe}
+                                    >
+                                        <View className={`w-5 h-5 rounded-sm mr-3 ${rememberMe ? 'bg-yellow-400' : 'border border-zinc-500'}`}>
+                                            {rememberMe && <Ionicons name="checkmark" size={16} color="black" />}
+                                        </View>
+                                        <Text className="text-zinc-400 text-sm">Remember me</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleForgetPassword} className="items-end">
+                                        <Text className="text-yellow-400 text-sm font-semibold">Forgot password?</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                
+                                {/* Sign In Button - Now with Gradient */}
+                                <TouchableOpacity
+                                    className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
+                                    onPress={handleLogin}
+                                    disabled={isLoading}
+                                >
+                                    <LinearGradient
+                                        colors={['#FBBF24', '#F97416']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        className="w-full h-full absolute"
+                                    />
+                                    <Text className="text-white text-base font-bold">
+                                        Sign In
+                                    </Text>
+                                </TouchableOpacity>
 
-                        <TouchableOpacity className="w-12 h-12 rounded-full bg-white justify-center items-center">
-                            <Image
-                                source={require('../../assets/images/googlelogo.png')} // Add Google logo image to your assets
-                                className="w-8 h-8"
-                                resizeMode="contain"
-                            />
-                        </TouchableOpacity>
+                                {/* Divider */}
+                                <View className="flex-row items-center justify-center mb-8">
+                                    <View className="h-px bg-zinc-700 flex-1" />
+                                </View>
 
-                        <TouchableOpacity className="w-12 h-12 rounded-full bg-white border border-white justify-center items-center">
-                            <Image
-                                source={require('../../assets/images/applelogo.png')} // Add Google logo image to your assets
-                                className="w-8 h-8"
-                                resizeMode="contain"
-                            />
-                        </TouchableOpacity>
-                    </View>
+                                {/* Or continue with */}
+                                <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
 
-                    {/* Sign Up Link */}
-                    <View className="flex-row justify-center items-center">
-                        <Text className="text-zinc-400 text-sm">Don't have an account? </Text>
-                        <TouchableOpacity onPress={handleSignUp}>
-                            <Text className="text-yellow-400 text-sm font-bold">Sign Up</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
+                                {/* Social Login Buttons */}
+                                <View className="flex-row gap-4 justify-center mb-8">
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/fblogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
 
-            <Dialog
-                visible={dialogVisible}
-                type={dialogType}
-                title={dialogTitle}
-                message={dialogMessage}
-                onClose={() => setDialogVisible(false)}
-                onConfirm={handleDialogConfirm}
-                confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
-            />
-        </KeyboardAvoidingView>
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/googlelogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
+
+                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white border border-white justify-center items-center">
+                                        <Image
+                                            source={require('../../assets/images/applelogo.png')}
+                                            className="w-8 h-8"
+                                            resizeMode="contain"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Sign Up Link */}
+                                <View className="flex-row justify-center items-center">
+                                    <Text className="text-zinc-400 text-sm">Don't have an account? </Text>
+                                    <TouchableOpacity onPress={handleSignUp}>
+                                        <Text className="text-yellow-400 text-sm font-bold">Sign Up</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </ScrollView>
+
+                        <Dialog
+                            visible={dialogVisible}
+                            type={dialogType}
+                            title={dialogTitle}
+                            message={dialogMessage}
+                            onClose={() => setDialogVisible(false)}
+                            onConfirm={handleDialogConfirm}
+                            confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
+                        />
+                    </KeyboardAvoidingView>
+                </LinearGradient>
+            </ImageBackground>
+        </>
     );
 }

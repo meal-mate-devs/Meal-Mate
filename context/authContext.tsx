@@ -1,79 +1,142 @@
 // context/AuthContext.tsx
-import { auth } from "@/lib/config/clientApp";
-import { fetchSignInMethodsForEmail, onAuthStateChanged, User } from "firebase/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import { auth } from '@/lib/config/clientApp';
 import {
-    login as firebaseLogin,
-    loginWithGoogle as firebaseLoginWithGoogle,
-    logout as firebaseLogout,
-    register as firebaseRegister,
-    sendEmailVerificationLink as firebaseSendEmailVerificationLink,
-    sendPasswordReset as firebaseSendPasswordReset
-} from "../lib/modules/firebase/authService";
+    createUserWithEmailAndPassword,
+    fetchSignInMethodsForEmail,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signOut
+} from 'firebase/auth';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-type AuthState = {
-    user: User | null;
-    isAuthenticated: boolean;
-    isLoading: boolean;
-    login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string) => Promise<void>;
-    logout: () => Promise<void>;
-    loginWithGoogle: () => Promise<void>;
-    sendPasswordReset: (email: string) => Promise<void>;
-    sendEmailVerificationLink: (user: User) => Promise<void>;
-    doesAccountExist: (email: string) => Promise<boolean>;
+// Define the types
+type User = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+  emailVerified: boolean;
+  // Add other user properties you need
 };
 
-const AuthContext = createContext<AuthState | undefined>(undefined);
+type AuthContextType = {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<any>;
+  register: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
+  sendPasswordReset: (email: string) => Promise<void>;
+  doesAccountExist: (email: string) => Promise<boolean>;
+};
 
-export const AuthContextProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+// Create context
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-            setUser(firebaseUser);
-            setIsLoading(false);
+// Provider component
+export function AuthContextProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Set user object with typesafe properties
+        setUser({
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified,
         });
-        return () => unsubscribe();
-    }, []);
+        setIsAuthenticated(firebaseUser.emailVerified);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setIsLoading(false);
+    });
 
-    const doesAccountExist = async (email: string): Promise<boolean> => {
-        try {
-            const methods = await fetchSignInMethodsForEmail(auth, email);
-            // If there are any sign-in methods available, the account exists
-            return methods.length > 0;
-        } catch (error) {
-            console.error("Error checking if account exists:", error);
-            // In case of error, we return false to be safe
-            return false;
-        }
-    };
+    return () => unsubscribe();
+  }, []);
 
-    const values: AuthState = {
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        login: firebaseLogin,
-        register: firebaseRegister,
-        logout: firebaseLogout,
-        loginWithGoogle: firebaseLoginWithGoogle,
-        sendPasswordReset: firebaseSendPasswordReset,
-        sendEmailVerificationLink: firebaseSendEmailVerificationLink,
-        doesAccountExist,
-    };
-
-    return (
-        <AuthContext.Provider value={values}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
-
-export const useAuthContext = (): AuthState => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error("useAuth must be used within an AuthContextProvider");
+  // Login function
+  const login = async (email: string, password: string) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error) {
+      throw error;
     }
-    return context;
-};
+  };
+
+  // Register function
+  const register = async (email: string, password: string) => {
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      return userCredential.user;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  // Logout function
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Error signing out:', error);
+      throw error;
+    }
+  };
+
+  // Password reset function
+  const sendPasswordReset = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+    } catch (error) {
+      console.error('Error sending password reset:', error);
+      throw error;
+    }
+  };
+
+  // Check if account exists
+  const doesAccountExist = async (email: string): Promise<boolean> => {
+    try {
+      const methods = await fetchSignInMethodsForEmail(auth, email);
+      return methods.length > 0;
+    } catch (error) {
+      console.error('Error checking account existence:', error);
+      return false;
+    }
+  };
+
+  return (
+    <AuthContext.Provider 
+      value={{ 
+        user, 
+        isAuthenticated, 
+        isLoading,
+        login,
+        register,
+        logout,
+        sendPasswordReset,
+        doesAccountExist
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+// Hook to use the auth context
+export function useAuthContext() {
+  const context = useContext(AuthContext);
+  
+  if (context === undefined) {
+    throw new Error('useAuthContext must be used within an AuthContextProvider');
+  }
+  
+  return context;
+}

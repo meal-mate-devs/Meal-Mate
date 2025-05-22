@@ -2,15 +2,18 @@
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    ImageBackground,
     KeyboardAvoidingView,
     Platform,
+    ScrollView,
     Text,
     TextInput,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import Dialog from '../atoms/Dialog';
 
@@ -332,76 +335,97 @@ export default function ResetPasswordForm() {
         router.push('/(auth)/login');
 
     }
-
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-black"
+        <ImageBackground 
+            source={require('../../assets/images/authbg.png')} 
+            resizeMode="cover" 
+            style={{ width: '100%', height: '100%' }}
+            imageStyle={{ opacity: 0.7 }}
         >
-            <View className="flex-1 justify-center px-6">
-                <View className="mb-8">
-                    <Text className="text-white text-3xl font-bold mb-3">
-                        Forgot Password
-                    </Text>
-                    <Text className="text-gray-400 text-base">
-                        Fill in current email to reset your password.
-                    </Text>
-                </View>
+            <LinearGradient
+                colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={{ flex: 1, width: '100%', height: '100%' }}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                        <View className="flex-1 justify-center px-6">
+                            <View className="mb-8">
+                                <Text className="text-white text-3xl font-bold mb-3">
+                                    Forgot Password
+                                </Text>
+                                <Text className="text-gray-400 text-base">
+                                    Fill in current email to reset your password.
+                                </Text>
+                            </View>
 
-                {/* Email/Username Input */}
-                <View className="mb-4">
-                    <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
-                        <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
-                        <TextInput
-                            className="flex-1 text-white text-base ml-3"
-                            placeholder="Email/Username"
-                            placeholderTextColor="#9CA3AF"
-                            value={email}
-                            onChangeText={(text) => {
-                                setEmail(text);
-                                if (emailError) setEmailError('');
-                            }}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            editable={!isSubmitting}
-                        />
-                    </View>
-                    {emailError ? (
-                        <Text className="text-red-500 text-xs ml-4 mt-1">{emailError}</Text>
-                    ) : null}
-                </View>
+                            {/* Email/Username Input */}
+                            <View className="mb-4">
+                                <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
+                                    <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Email/Username"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={email}
+                                        onChangeText={(text) => {
+                                            setEmail(text);
+                                            if (emailError) setEmailError('');
+                                        }}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                        editable={!isSubmitting}
+                                    />
+                                </View>
+                                {emailError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{emailError}</Text>
+                                ) : null}
+                            </View>
 
-                <Text className="text-gray-400 text-sm mb-6">
-                    To recover your account, an OTP will be sent to the mail you provided.
-                </Text>
+                            <Text className="text-gray-400 text-sm mb-6">
+                                To recover your account, an OTP will be sent to the mail you provided.
+                            </Text>
 
-                {/* Proceed Button */}
-                <View className='flex pt-6'>
-                    <TouchableOpacity
-                        className="bg-orange-400 rounded-full h-14 justify-center items-center mb-8"
-                        onPress={handleResetRequest}
-                        disabled={isSubmitting}
-                    >
-                        <Text className="text-white text-base font-bold">
-                            Proceed
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={handleBackToLogin} className="items-center">
-                        <Text className="text-orange-400 text-sm font-semibold">Back To Login</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
+                            {/* Proceed Button with Gradient */}
+                            <View className='flex pt-6'>
+                                <TouchableOpacity
+                                    className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
+                                    onPress={handleResetRequest}
+                                    disabled={isSubmitting}
+                                >
+                                    <LinearGradient
+                                        colors={['#FBBF24', '#F97416']}
+                                        start={{ x: 0, y: 0 }}
+                                        end={{ x: 1, y: 0 }}
+                                        className="w-full h-full absolute"
+                                    />
+                                    <Text className="text-white text-base font-bold">
+                                        Proceed
+                                    </Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={handleBackToLogin} className="items-center">
+                                    <Text className="text-yellow-400 text-sm font-semibold">Back To Login</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </ScrollView>
 
-            {/* Dialog Component */}
-            <Dialog
-                visible={dialogVisible}
-                type={dialogType}
-                title={dialogTitle}
-                message={dialogMessage}
-                onClose={() => setDialogVisible(false)}
-                onConfirm={handleDialogConfirm}
-                confirmText={dialogType === 'success' ? 'Back to Login' : 'OK'}
-            />
-        </KeyboardAvoidingView>
+                    {/* Dialog Component */}
+                    <Dialog
+                        visible={dialogVisible}
+                        type={dialogType}
+                        title={dialogTitle}
+                        message={dialogMessage}
+                        onClose={() => setDialogVisible(false)}
+                        onConfirm={handleDialogConfirm}
+                        confirmText={dialogType === 'success' ? 'Back to Login' : 'OK'}
+                    />
+                </KeyboardAvoidingView>
+            </LinearGradient>
+        </ImageBackground>
     );
 }

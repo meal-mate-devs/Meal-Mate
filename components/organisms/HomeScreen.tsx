@@ -7,6 +7,7 @@ import {
     Image,
     SafeAreaView,
     ScrollView,
+    StatusBar,
     Text,
     TextInput,
     TouchableOpacity,
@@ -43,25 +44,31 @@ const HomeScreen: React.FC = () => {
 
     return (
         <SafeAreaView className="flex-1 bg-black">
-            <ScrollView className="flex-1 px-4">
+            <StatusBar barStyle="light-content" />
+            {/* Header with extra top margin */}
+            <View style={{ paddingTop: 38, backgroundColor: 'black' }}>
                 <HomeHeader
                     username={userData.name}
                     profileImage={userData.profileImage}
                     onProfilePress={toggleSidebar}
                 />
+            </View>
 
-                <View className="bg-zinc-800 rounded-full flex-row items-center px-4 py-3 mb-6">
-                    <Feather name="search" size={20} color="#9CA3AF" />
-                    <TextInput
-                        placeholder="Search by recipes"
-                        className="ml-2 flex-1 text-white"
-                        placeholderTextColor="#9CA3AF"
-                    />
-                </View>
+            {/* Static Search Bar */}
+            <View className="bg-zinc-800 rounded-full flex-row items-center px-4 py-3 mb-4 mx-4 mt-2">
+                <Feather name="search" size={20} color="#9CA3AF" />
+                <TextInput
+                    placeholder="Search by recipes"
+                    className="ml-2 flex-1 text-white"
+                    placeholderTextColor="#9CA3AF"
+                />
+            </View>
 
+            {/* Only the content below header and search is scrollable */}
+            <ScrollView className="flex-1 px-4 pt-2">
                 <TouchableOpacity className="rounded-3xl overflow-hidden mb-6 relative">
                     <Image
-                        source={{ uri: 'https://images.unsplash.com/photo-1556761223-4c4282c73f77?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1548&q=80' }}
+                        source={{ uri: 'https://plus.unsplash.com/premium_photo-1694141253763-209b4c8f8ace?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
                         className="w-full h-40"
                         resizeMode="cover"
                     />
@@ -137,7 +144,7 @@ const HomeScreen: React.FC = () => {
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
                 userData={userData}
-                onProfilePress={toggleDrawer}
+                onEditProfile={() => setIsDrawerOpen(true)}
             />
 
             <BottomProfileDrawer

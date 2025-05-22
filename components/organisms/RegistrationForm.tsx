@@ -2,10 +2,12 @@
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
     Image,
+    ImageBackground,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -360,177 +362,197 @@ export default function RegistrationForm() {
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-black"
+        <ImageBackground 
+            source={require('../../assets/images/authbg.png')} 
+            resizeMode="cover" 
+            style={{ width: '100%', height: '100%' }}  // Explicit dimensions
+            imageStyle={{ opacity: 0.7 }}  // Makes overlay more effective
         >
-            <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
-                <View className="flex-1 pt-24 px-6 pb-6">
-                    <Text className="text-center text-white text-4xl font-bold mb-6">
-                        Create An Account
-                    </Text>
+            <LinearGradient
+                colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={{ flex: 1, width: '100%', height: '100%' }}
+            >
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1 }}
+                >
+                    <ScrollView contentContainerStyle={{ flexGrow: 1 }} className="flex-1">
+                        <View className="flex-1 pt-24 px-6 pb-6">
+                            <Text className="text-center text-white text-4xl font-bold mb-6">
+                                Create An Account
+                            </Text>
 
-                    <View className="items-center mb-6">
-                        <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
-                            <Image
-                                source={require('../../assets/images/avatar.png')}
-                                className="w-full h-full"
-                                resizeMode="cover"
-                            />
-                        </View>
-                    </View>
+                            <View className="items-center mb-6">
+                                <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
+                                    <Image
+                                        source={require('../../assets/images/avatar.png')}
+                                        className="w-full h-full"
+                                        resizeMode="cover"
+                                    />
+                                </View>
+                            </View>
 
-                    {/* Email Input */}
-                    <View className="mb-4">
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Email"
-                                placeholderTextColor="#9CA3AF"
-                                value={email}
-                                onChangeText={(text) => {
-                                    setEmail(text);
-                                    if (emailError) setEmailError('');
-                                }}
-                                keyboardType="email-address"
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {emailError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{emailError}</Text>
-                        ) : null}
-                    </View>
+                            {/* Email Input */}
+                            <View className="mb-4">
+                                <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                                    <Ionicons name="mail-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Email"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={email}
+                                        onChangeText={(text) => {
+                                            setEmail(text);
+                                            if (emailError) setEmailError('');
+                                        }}
+                                        keyboardType="email-address"
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                {emailError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{emailError}</Text>
+                                ) : null}
+                            </View>
 
-                    {/* Username Input */}
-                    <View className="mb-4">
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Username"
-                                placeholderTextColor="#9CA3AF"
-                                value={username}
-                                onChangeText={(text) => {
-                                    setUsername(text);
-                                    if (usernameError) setUsernameError('');
-                                }}
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {usernameError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{usernameError}</Text>
-                        ) : null}
-                    </View>
+                            {/* Username Input */}
+                            <View className="mb-4">
+                                <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                                    <Ionicons name="person-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Username"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={username}
+                                        onChangeText={(text) => {
+                                            setUsername(text);
+                                            if (usernameError) setUsernameError('');
+                                        }}
+                                        autoCapitalize="none"
+                                    />
+                                </View>
+                                {usernameError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{usernameError}</Text>
+                                ) : null}
+                            </View>
 
-                    {/* Phone Number Input */}
-                    <View className="mb-4">
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="call-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Phone Number"
-                                placeholderTextColor="#9CA3AF"
-                                value={phoneNumber}
-                                onChangeText={(text) => {
-                                    setPhoneNumber(text);
-                                    if (phoneError) setPhoneError('');
-                                }}
-                                keyboardType="phone-pad"
-                            />
-                        </View>
-                        {phoneError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{phoneError}</Text>
-                        ) : null}
-                    </View>
+                            {/* Phone Number Input */}
+                            <View className="mb-4">
+                                <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                                    <Ionicons name="call-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Phone Number"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={phoneNumber}
+                                        onChangeText={(text) => {
+                                            setPhoneNumber(text);
+                                            if (phoneError) setPhoneError('');
+                                        }}
+                                        keyboardType="phone-pad"
+                                    />
+                                </View>
+                                {phoneError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{phoneError}</Text>
+                                ) : null}
+                            </View>
 
-                    {/* Password Input */}
-                    <View className="mb-4">
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Password"
-                                placeholderTextColor="#9CA3AF"
-                                value={password}
-                                onChangeText={(text) => {
-                                    setPassword(text);
-                                    if (passwordError) setPasswordError('');
-                                }}
-                                secureTextEntry={!isPasswordVisible}
-                            />
-                            <TouchableOpacity onPress={togglePasswordVisibility}>
-                                <Ionicons
-                                    name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color="#FFFFFF"
+                            {/* Password Input */}
+                            <View className="mb-4">
+                                <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                                    <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Password"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={password}
+                                        onChangeText={(text) => {
+                                            setPassword(text);
+                                            if (passwordError) setPasswordError('');
+                                        }}
+                                        secureTextEntry={!isPasswordVisible}
+                                    />
+                                    <TouchableOpacity onPress={togglePasswordVisibility}>
+                                        <Ionicons
+                                            name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                                            size={20}
+                                            color="#FFFFFF"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                                {passwordError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{passwordError}</Text>
+                                ) : null}
+                            </View>
+
+                            {/* Confirm Password Input */}
+                            <View className="mb-6">
+                                <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                                    <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Confirm Password"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={confirmPassword}
+                                        onChangeText={(text) => {
+                                            setConfirmPassword(text);
+                                            if (confirmPasswordError) setConfirmPasswordError('');
+                                        }}
+                                        secureTextEntry={!isConfirmPasswordVisible}
+                                    />
+                                    <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
+                                        <Ionicons
+                                            name={isConfirmPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                                            size={20}
+                                            color="#FFFFFF"
+                                        />
+                                    </TouchableOpacity>
+                                </View>
+                                {confirmPasswordError ? (
+                                    <Text className="text-red-500 text-s ml-4 mt-1">{confirmPasswordError}</Text>
+                                ) : null}
+                            </View>
+
+                            {/* Sign Up Button - Updated with Gradient */}
+                            <TouchableOpacity
+                                className="rounded-full h-14 justify-center items-center mb-4 overflow-hidden"
+                                onPress={handleSignup}
+                                disabled={isLoading}
+                            >
+                                <LinearGradient
+                                    colors={['#FBBF24', '#F97416']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    className="w-full h-full absolute"
                                 />
+                                <Text className="text-white text-base font-bold">
+                                    Sign Up
+                                </Text>
                             </TouchableOpacity>
+
+                            {/* Already have account */}
+                            <View className="flex-row justify-center items-center">
+                                <Text className="text-gray-400 text-sm">Already have an account? </Text>
+                                <TouchableOpacity onPress={handleSignIn}>
+                                    <Text className="text-yellow-400 text-sm font-bold">Sign In</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
-                        {passwordError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{passwordError}</Text>
-                        ) : null}
-                    </View>
+                    </ScrollView>
 
-                    {/* Confirm Password Input */}
-                    <View className="mb-6">
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="lock-closed-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Confirm Password"
-                                placeholderTextColor="#9CA3AF"
-                                value={confirmPassword}
-                                onChangeText={(text) => {
-                                    setConfirmPassword(text);
-                                    if (confirmPasswordError) setConfirmPasswordError('');
-                                }}
-                                secureTextEntry={!isConfirmPasswordVisible}
-                            />
-                            <TouchableOpacity onPress={toggleConfirmPasswordVisibility}>
-                                <Ionicons
-                                    name={isConfirmPasswordVisible ? "eye-off-outline" : "eye-outline"}
-                                    size={20}
-                                    color="#FFFFFF"
-                                />
-                            </TouchableOpacity>
-                        </View>
-                        {confirmPasswordError ? (
-                            <Text className="text-red-500 text-xs ml-4 mt-1">{confirmPasswordError}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Sign Up Button */}
-                    <TouchableOpacity
-                        className="bg-orange-400 rounded-full h-14 justify-center items-center mb-4"
-                        onPress={handleSignup}
-                        disabled={isLoading}
-                    >
-                        <Text className="text-white text-base font-bold">
-                            Sign Up
-                        </Text>
-                    </TouchableOpacity>
-
-                    {/* Already have account */}
-                    <View className="flex-row justify-center items-center">
-                        <Text className="text-gray-400 text-sm">Already have an account? </Text>
-                        <TouchableOpacity onPress={handleSignIn}>
-                            <Text className="text-yellow-400 text-sm font-bold">Sign In</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </ScrollView>
-
-            {/* Dialog Component */}
-            <Dialog
-                visible={dialogVisible}
-                type={dialogType}
-                title={dialogTitle}
-                message={dialogMessage}
-                onClose={() => setDialogVisible(false)}
-                onConfirm={handleDialogConfirm}
-                confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
-            />
-        </KeyboardAvoidingView>
+                    {/* Dialog Component */}
+                    <Dialog
+                        visible={dialogVisible}
+                        type={dialogType}
+                        title={dialogTitle}
+                        message={dialogMessage}
+                        onClose={() => setDialogVisible(false)}
+                        onConfirm={handleDialogConfirm}
+                        confirmText={dialogType === 'success' ? 'Continue' : 'OK'}
+                    />
+                </KeyboardAvoidingView>
+            </LinearGradient>
+        </ImageBackground>
     );
 }
