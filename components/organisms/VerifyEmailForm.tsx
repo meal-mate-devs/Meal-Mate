@@ -1,14 +1,15 @@
 import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
+    ScrollView,
     Text,
     TouchableOpacity,
     View
 } from 'react-native';
+import Dialog from '../atoms/Dialog';
 
 export default function VerifyEmailForm() {
     const router = useRouter();
@@ -16,6 +17,12 @@ export default function VerifyEmailForm() {
     const [countdown, setCountdown] = useState(0);
     const [isResending, setIsResending] = useState(false);
     const { user, sendEmailVerificationLink } = useAuthContext();
+
+    // Dialog state
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
+    const [dialogTitle, setDialogTitle] = useState('');
+    const [dialogMessage, setDialogMessage] = useState('');
 
     useEffect(() => {
         if (countdown > 0) {
@@ -26,94 +33,136 @@ export default function VerifyEmailForm() {
         }
     }, [countdown]);
 
+    // Show dialog helper function
+    const showDialog = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string = '') => {
+        setDialogType(type);
+        setDialogTitle(title);
+        setDialogMessage(message);
+        setDialogVisible(true);
+    };
+
     const handleResendEmail = async () => {
         if (countdown > 0) return;
         if (!user) return;
+
         setIsResending(true);
+        showDialog('loading', 'Sending Email', 'Please wait while we send you a new verification email...');
+
         try {
-            await sendEmailVerificationLink(user)
+            await sendEmailVerificationLink(user);
             setCountdown(60);
-            Alert.alert('Success', 'Verification email has been resent.');
+            setDialogVisible(false);
+            showDialog('success', 'Email Sent', 'Verification email has been resent. Please check your inbox.');
         } catch (error) {
-            Alert.alert('Error', 'Failed to resend verification email.');
+            setDialogVisible(false);
+            showDialog('error', 'Failed to Send', 'We could not resend the verification email. Please try again later.');
         } finally {
             setIsResending(false);
         }
     };
 
-    const handleChangeEmail = async () => {
-        try {
-            // logout the user and send him to register screen to again register with new email !
-        } catch (error) {
-
-        }
+    const handleContinueToLogin = () => {
+        router.push('/(auth)/login');
     };
 
-    const handleContinueToLogin = () => {
-        router.push('/login');
+    const handleDialogConfirm = () => {
+        setDialogVisible(false);
     };
 
     return (
-        <React.Fragment>
-            <View className="w-24 h-24 rounded-full bg-blue-100 items-center justify-center mb-8 mx-auto">
-                <Ionicons name="mail-open-outline" size={50} color="#3b82f6" />
-            </View>
+        <View className="flex-1 bg-black">
+            <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+                <View className="flex-1 pt-12 px-6 pb-6">
+                    <Text className="text-white text-3xl font-bold mb-8">
+                        Verify Your Email
+                    </Text>
 
-            <Text className="text-2xl font-bold text-gray-800 mb-3 text-center">
-                Verify Your Email
-            </Text>
+                    <View className="items-center mb-10">
+                        <View className="w-24 h-24 rounded-full bg-zinc-800 items-center justify-center mb-6">
+                            <Ionicons name="mail-open-outline" size={48} color="#FACC15" />
+                        </View>
+                    </View>
 
-            <Text className="text-base text-gray-500 mb-2 text-center">
-                We've sent a verification email to:
-            </Text>
+                    <View className="mb-8">
+                        <Text className="text-gray-300 text-base mb-4 text-center">
+                            We've sent a verification email to:
+                        </Text>
 
-            <Text className="text-lg font-semibold text-blue-600 mb-6 text-center">
-                {user?.email}
-            </Text>
+                        <Text className="text-yellow-400 text-lg font-semibold mb-8 text-center">
+                            {user?.email}
+                        </Text>
 
-            <Text className="text-base text-gray-500 mb-8 text-center">
-                Please check your inbox and click the verification link to complete your registration.
-            </Text>
+                        <Text className="text-gray-400 text-base mb-2 text-center">
+                            Please check your inbox and click the verification link to complete your registration.
+                        </Text>
+                    </View>
 
-            <View className="w-full mb-6">
-                <TouchableOpacity
-                    className={`flex-row items-center justify-center rounded-xl h-14 shadow-sm ${countdown > 0 || isResending ? 'bg-gray-300' : 'bg-blue-600'
-                        }`}
-                    onPress={handleResendEmail}
-                    disabled={countdown > 0 || isResending}
-                >
-                    {isResending ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <>
-                            <Ionicons
-                                name="refresh-outline"
-                                size={20}
-                                color="#fff"
-                                style={{ marginRight: 8 }}
-                            />
-                            <Text className="text-white text-base font-semibold">
-                                {countdown > 0 ? `Resend in ${countdown}s` : 'Resend Email'}
-                            </Text>
-                        </>
-                    )}
-                </TouchableOpacity>
-            </View>
+                    <View className="w-full mb-6">
+                        <TouchableOpacity
+                            className={`rounded-full overflow-hidden ${(countdown > 0 || isResending) ? 'opacity-70' : ''}`}
+                            onPress={handleResendEmail}
+                            disabled={countdown > 0 || isResending}
+                        >
+                            {countdown > 0 ? (
+                                <View className="h-14 bg-zinc-800 items-center justify-center flex-row">
+                                    <Ionicons
+                                        name="time-outline"
+                                        size={20}
+                                        color="#FFFFFF"
+                                        style={{ marginRight: 8 }}
+                                    />
+                                    <Text className="text-white text-base font-semibold">
+                                        Resend in {countdown}s
+                                    </Text>
+                                </View>
+                            ) : (
+                                <LinearGradient
+                                    colors={['#FACC15', '#F97316']} // yellow-400 to orange-400
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    className="h-14 items-center justify-center flex-row"
+                                >
+                                    <Ionicons
+                                        name="refresh-outline"
+                                        size={20}
+                                        color="#FFFFFF"
+                                        style={{ marginRight: 8 }}
+                                    />
+                                    <Text className="text-white text-base font-bold">
+                                        Resend Email
+                                    </Text>
+                                </LinearGradient>
+                            )}
+                        </TouchableOpacity>
+                    </View>
 
-            <Text className="text-gray-500 text-center mb-8">
-                Didn't receive an email? Check your spam folder or try resending.
-            </Text>
+                    <Text className="text-gray-400 text-center mb-8">
+                        Didn't receive an email? Check your spam folder or try resending.
+                    </Text>
 
-            <TouchableOpacity
-                className="w-full rounded-xl h-14 border border-blue-600 justify-center items-center"
-                onPress={handleContinueToLogin}
-            >
-                <Text className="text-blue-600 text-base font-semibold">Continue to Login</Text>
-            </TouchableOpacity>
+                    <TouchableOpacity
+                        className="w-full rounded-full border border-zinc-700 h-14 justify-center items-center mb-8"
+                        onPress={handleContinueToLogin}
+                    >
+                        <Text className="text-white text-base font-semibold">Continue to Login</Text>
+                    </TouchableOpacity>
 
-            <TouchableOpacity className="mt-8">
-                <Text className="text-blue-600 text-sm font-semibold">Need Help? Contact Support</Text>
-            </TouchableOpacity>
-        </React.Fragment >
+                    <TouchableOpacity className="items-center">
+                        <Text className="text-yellow-400 text-sm font-semibold">Need Help? Contact Support</Text>
+                    </TouchableOpacity>
+                </View>
+            </ScrollView>
+
+            {/* Dialog Component */}
+            <Dialog
+                visible={dialogVisible}
+                type={dialogType}
+                title={dialogTitle}
+                message={dialogMessage}
+                onClose={() => setDialogVisible(false)}
+                onConfirm={handleDialogConfirm}
+                confirmText="OK"
+            />
+        </View>
     );
-};
+}

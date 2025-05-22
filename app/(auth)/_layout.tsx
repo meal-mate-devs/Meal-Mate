@@ -1,28 +1,49 @@
-import { Slot } from 'expo-router';
-import React from 'react';
-import {
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar, View
-} from 'react-native';
-
+import { useAuthContext } from '@/context/authContext';
+import * as NavigationBar from 'expo-navigation-bar';
+import { Stack, useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Platform, StatusBar } from 'react-native';
 
 export default function AuthLayout() {
-    return (
-        <SafeAreaView className="flex-1 bg-white">
-            <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-            <KeyboardAvoidingView
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                className="flex-1"
-            >
-                <ScrollView contentContainerClassName="flex-grow" showsVerticalScrollIndicator={false}>
-                    <View className="px-10 py-10 flex-1 justify-center">
-                        <Slot />
-                    </View>
-                </ScrollView>
-            </KeyboardAvoidingView>
-        </SafeAreaView>
-    );
+  const router = useRouter();
+  const { user } = useAuthContext();
+  
+  // Redirect logged-in users away from auth screens
+  useEffect(() => {
+    if (user) {
+      if (user.emailVerified) {
+        router.replace('/(protected)/(tabs)/home');
+      } else {
+        router.replace('/(auth)/verify-email');
+      }
+    }
+  }, [user]);
+
+  // Navigation bar styling
+  useEffect(() => {
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#000000');
+      NavigationBar.setButtonStyleAsync('light');
+    }
+  }, []);
+
+  return (
+    <>
+      <StatusBar 
+        backgroundColor="black" 
+        barStyle="light-content" 
+        translucent={true}
+      />
+      
+      <Stack 
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: '#000000' },
+          animation: 'fade',
+          animationDuration: 200,
+          presentation: 'transparentModal',
+        }} 
+      />
+    </>
+  );
 }
