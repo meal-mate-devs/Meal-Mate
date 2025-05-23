@@ -7,31 +7,37 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
+
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
-    const tabWidth = SCREEN_WIDTH / state.routes.length;
+    const visibleRoutes = state.routes.filter(route => !route.name.startsWith('(hidden)'));
+    const tabWidth = SCREEN_WIDTH / visibleRoutes.length;
+    const focusedRouteName = state.routes[state.index]?.name;
+    const focusedIndex = visibleRoutes.findIndex(r => r.name === focusedRouteName);
 
     const tabIndicatorPosition = useRef(new Animated.Value(0)).current;
     const iconScales = useRef(
-        state.routes.map((_, i) => new Animated.Value(i === 0 ? 1.2 : 1))
+        visibleRoutes.map((_, i) => new Animated.Value(i === focusedIndex ? 1.2 : 1))
     ).current;
 
     useEffect(() => {
+        if (focusedIndex < 0) return;
+
         Animated.spring(tabIndicatorPosition, {
-            toValue: state.index * tabWidth,
+            toValue: focusedIndex * tabWidth,
             useNativeDriver: true,
             friction: 8,
             tension: 70,
         }).start();
 
-        state.routes.forEach((_, i) => {
+        visibleRoutes.forEach((_, i) => {
             Animated.spring(iconScales[i], {
-                toValue: i === state.index ? 1.2 : 1,
+                toValue: i === focusedIndex ? 1.2 : 1,
                 useNativeDriver: true,
                 friction: 8,
             }).start();
         });
-    }, [state.index]);
+    }, [focusedIndex]);
 
     return (
         <View
@@ -54,9 +60,11 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                     width: 5,
                     height: 5,
                     borderRadius: 2.5,
-                    transform: [{ translateX: Animated.add(tabIndicatorPosition, tabWidth * 0.5 - 2.5) }],
+                    transform: [
+                        { translateX: Animated.add(tabIndicatorPosition, tabWidth * 0.5 - 2.5) },
+                    ],
                     zIndex: 1,
-                    overflow: 'hidden'
+                    overflow: 'hidden',
                 }}
             >
                 <LinearGradient
@@ -67,9 +75,9 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 />
             </Animated.View>
 
-            <View style={{ flexDirection: 'row', height: 60 }}>
-                {state.routes.map((route, index) => {
-                    const isFocused = state.index === index;
+            <View style={{ flexDirection: 'row', height: 68 }}>
+                {visibleRoutes.map((route, index) => {
+                    const isFocused = focusedIndex === index;
 
                     const getTabIcon = (name: string, focused: boolean) => {
                         const cleanedName = name.split('/')[0];
@@ -101,15 +109,20 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                                 </View>
                             );
                         }
+                        else if (cleanedName === 'statistics') {
+                            return focused ?
+                                <Ionicons name="stats-chart" size={24} color="#FFFFFF" /> :
+                                <Ionicons name="stats-chart-outline" size={24} color="#9CA3AF" />;
+                        }
                         else if (cleanedName === 'community') {
                             return focused ?
                                 <Ionicons name="people" size={24} color="#FFFFFF" /> :
                                 <Ionicons name="people-outline" size={24} color="#9CA3AF" />;
                         }
-                        else if (cleanedName === 'statistics') {
+                        else if (cleanedName === 'chef') {
                             return focused ?
-                                <Ionicons name="stats-chart" size={24} color="#FFFFFF" /> :
-                                <Ionicons name="stats-chart-outline" size={24} color="#9CA3AF" />;
+                                <Ionicons name="restaurant" size={24} color="#FFFFFF" /> :
+                                <Ionicons name="restaurant-outline" size={24} color="#9CA3AF" />;
                         }
                         else {
                             return focused ?

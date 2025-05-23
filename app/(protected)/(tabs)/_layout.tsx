@@ -1,5 +1,6 @@
 import CustomTabBar from "@/components/organisms/CustomTabBar";
 import { Tabs } from "expo-router";
+import React from "react";
 
 const screenOptions = {
     headerShown: false,
@@ -14,38 +15,43 @@ export default function TabsLayout() {
             tabBar={(props) => <CustomTabBar {...props} />}
         >
             <Tabs.Screen
+                name="chef/index"
+                options={{
+                    title: 'Chef',
+                    tabBarLabel: 'Chef',
+                    tabBarIcon: () => null,
+                }}
+            />
+            <Tabs.Screen
                 name="home/index"
                 options={{
-                    href: '/home',
                     title: 'Home',
                     tabBarLabel: 'Home',
                     tabBarIcon: () => null,
                 }}
             />
             <Tabs.Screen
-                name="statistics/index"
-                options={{
-                    href: '/statistics',
-                    title: 'Statistics',
-                    tabBarLabel: 'Statistics',
-                }}
-            />
-            <Tabs.Screen
                 name="create/index"
                 options={{
-                    href: '/create',
                     title: 'Create',
                     tabBarLabel: 'Create',
                 }}
             />
             <Tabs.Screen
+                name="statistics/index"
+                options={{
+                    title: 'Statistics',
+                    tabBarLabel: 'Statistics',
+                }}
+            />
+            <Tabs.Screen
                 name="community/index"
                 options={{
-                    href: '/community',
                     title: 'Community',
                     tabBarLabel: 'Community',
                 }}
             />
+            <Tabs.Screen name="(hidden)" options={{ href: null }} />
         </Tabs>
     );
 }

@@ -1,10 +1,6 @@
+import CommunityScreen from '@/components/organisms/CommunityScreen'
 import React from 'react'
-import { Text, View } from 'react-native'
 
 export default function Community() {
-    return (
-        <View>
-            <Text>Community</Text>
-        </View>
-    )
+    return <CommunityScreen />
 }
