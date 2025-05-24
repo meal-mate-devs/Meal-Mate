@@ -1,6 +1,6 @@
 "use client"
 
-import { Comment, Post, User } from "@/lib/types"
+import { Comment, Post, User } from "@/lib/types/community"
 import { INITIAL_POSTS } from "@/lib/utils"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"

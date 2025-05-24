@@ -1,4 +1,5 @@
-import { Post } from "../types";
+import { Post } from "../types/community";
+import { Cuisine, DietaryPreference, FoodCategory, MealTime } from "../types/recipeGeneration";
 
 export const isValidEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -277,3 +278,50 @@ export const INITIAL_POSTS: Post[] = [
         commentsList: [],
     },
 ]
+
+
+
+export const CUISINES: Cuisine[] = [
+    { id: "italian", name: "Italian", icon: "🍝" },
+    { id: "chinese", name: "Chinese", icon: "🥢" },
+    { id: "mexican", name: "Mexican", icon: "🌮" },
+    { id: "indian", name: "Indian", icon: "🍛" },
+    { id: "japanese", name: "Japanese", icon: "🍣" },
+    { id: "french", name: "French", icon: "🥐" },
+    { id: "thai", name: "Thai", icon: "🍜" },
+    { id: "american", name: "American", icon: "🍔" },
+]
+
+export const FOOD_CATEGORIES: FoodCategory[] = [
+    { id: "appetizer", name: "Appetizer", icon: "🥗" },
+    { id: "main-course", name: "Main Course", icon: "🍖" },
+    { id: "dessert", name: "Dessert", icon: "🍰" },
+    { id: "soup", name: "Soup", icon: "🍲" },
+    { id: "salad", name: "Salad", icon: "🥙" },
+    { id: "pasta", name: "Pasta", icon: "🍝" },
+    { id: "seafood", name: "Seafood", icon: "🐟" },
+    { id: "vegetarian", name: "Vegetarian", icon: "🥕" },
+    { id: "snack", name: "Snack", icon: "🍿" },
+    { id: "beverage", name: "Beverage", icon: "🥤" },
+]
+
+export const DIETARY_PREFERENCES: DietaryPreference[] = [
+    { id: "vegan", name: "Vegan", icon: "🌱" },
+    { id: "vegetarian", name: "Vegetarian", icon: "🥬" },
+    { id: "keto", name: "Keto", icon: "🥑" },
+    { id: "paleo", name: "Paleo", icon: "🥩" },
+    { id: "gluten-free", name: "Gluten-Free", icon: "🌾" },
+    { id: "dairy-free", name: "Dairy-Free", icon: "🥛" },
+    { id: "low-carb", name: "Low-Carb", icon: "🥒" },
+    { id: "high-protein", name: "High-Protein", icon: "💪" },
+]
+
+export const MEAL_TIMES: MealTime[] = [
+    { id: "breakfast", name: "Breakfast", icon: "🌅" },
+    { id: "lunch", name: "Lunch", icon: "☀️" },
+    { id: "dinner", name: "Dinner", icon: "🌙" },
+    { id: "snack", name: "Snack", icon: "🍪" },
+    { id: "brunch", name: "Brunch", icon: "🥞" },
+]
+
+
