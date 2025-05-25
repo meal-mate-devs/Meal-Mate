@@ -2,7 +2,7 @@ import { dummyRecipes } from '@/lib/utils';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Image,
     SafeAreaView,
@@ -13,20 +13,32 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
+import { useProfileStore } from '../../hooks/useProfileStore'; // Add this import
 import BottomProfileDrawer from '../molecules/BottomProfileDrawer';
 import HomeHeader from '../molecules/HomeHeader';
 import ProfileSidebar from '../molecules/ProfileSidebar';
-
-const userData = {
-    name: 'Umar Farooq',
-    email: 'umarf9834@gmail.com',
-    profileImage: '',
-};
 
 const HomeScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>('Breakfast');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    // Use the profile store instead of static userData
+    const { profileData, subscribe } = useProfileStore();
+    const [localUserData, setLocalUserData] = useState(profileData);
+
+    // Subscribe to profile updates
+    useEffect(() => {
+        const unsubscribe = subscribe((updatedData) => {
+            console.log('HomeScreen received profile update:', updatedData);
+            setLocalUserData(updatedData);
+        });
+        
+        // Initialize with current data
+        setLocalUserData(profileData);
+        
+        return unsubscribe;
+    }, [subscribe, profileData]);
 
     const filteredRecipes = dummyRecipes.filter(recipe =>
         recipe.category === activeTab || activeTab === 'All'
@@ -50,14 +62,19 @@ const HomeScreen: React.FC = () => {
         setIsSidebarOpen(!isSidebarOpen);
     };
 
+    const handleEditProfile = () => {
+        setIsSidebarOpen(false); // Close sidebar first
+        setTimeout(() => {
+            setIsDrawerOpen(true); // Then open bottom drawer
+        }, 300);
+    };
+
     return (
         <SafeAreaView className="flex-1 bg-black">
             <StatusBar barStyle="light-content" />
             {/* Header with extra top margin */}
             <View style={{ paddingTop: 38, backgroundColor: 'black' }}>
                 <HomeHeader
-                    username={userData.name}
-                    profileImage={userData.profileImage}
                     onProfilePress={toggleSidebar}
                 />
             </View>
@@ -151,14 +168,12 @@ const HomeScreen: React.FC = () => {
             <ProfileSidebar
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
-                userData={userData}
-                onEditProfile={() => setIsDrawerOpen(true)}
+                onEditProfile={handleEditProfile}
             />
 
             <BottomProfileDrawer
                 isOpen={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
-                userData={userData}
             />
         </SafeAreaView>
     );
