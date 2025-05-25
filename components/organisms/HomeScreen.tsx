@@ -1,8 +1,8 @@
 import { dummyRecipes } from '@/lib/utils';
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import {
     Image,
     SafeAreaView,
@@ -33,6 +33,14 @@ const HomeScreen: React.FC = () => {
     );
 
     const tabs = ['Lunch', 'Breakfast', 'Dinner', 'Dessert'];
+
+    // Preload or reset state when the screen is focused
+    useFocusEffect(
+        useCallback(() => {
+            // Reset any state or preload data here
+            setActiveTab('Breakfast'); // Example: Reset active tab
+        }, [])
+    );
 
     const toggleDrawer = () => {
         setIsDrawerOpen(!isDrawerOpen);

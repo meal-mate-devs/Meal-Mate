@@ -19,12 +19,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Menu items definition
 const menuItems = [
-    { icon: 'home', label: 'Home', route: '/' },
-    { icon: 'heart', label: 'Favorites', route: '/favorites' },
-    { icon: 'clipboard', label: 'Your Orders', route: '/orders' },
-    { icon: 'credit-card', label: 'Payment Methods', route: '/payment' },
+    { icon: 'home', label: 'Home', route: '/home' },
+    { icon: 'heart', label: 'Favorites', route: 'recipe/favorites' },
+    { icon: 'bell', label: 'Notifications', route: '/settings/notifications' },
+    { icon: 'credit-card', label: 'Payment Methods', route: '/settings/payment' },
     { icon: 'settings', label: 'Settings', route: '/settings' },
-    { icon: 'help-circle', label: 'Help Center', route: '/help' },
+    { icon: 'help-circle', label: 'Help Center', route: '/settings/help' },
 ];
 
 interface ProfileSidebarProps {
@@ -56,8 +56,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
     // Use the correct hook name from your auth context
     const { logout } = useAuthContext();
 
+    const menuItemAnimations = useRef(
+        menuItems.map(() => new Animated.Value(0)) // Initialize an animation value for each menu item
+    ).current;
+
     useEffect(() => {
         if (isOpen) {
+            // Sidebar opening animation
             Animated.parallel([
                 Animated.spring(translateX, {
                     toValue: 0,
@@ -71,7 +76,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     useNativeDriver: true,
                 }),
             ]).start();
+
+            // Staggered animation for menu items
+            menuItemAnimations.forEach((anim, index) => {
+                Animated.timing(anim, {
+                    toValue: 1,
+                    duration: 320,
+                    delay: index * 150, // Stagger each item by 100ms
+                    useNativeDriver: true,
+                }).start();
+            });
         } else {
+            // Sidebar closing animation
             Animated.parallel([
                 Animated.spring(translateX, {
                     toValue: -SCREEN_WIDTH,
@@ -85,28 +101,50 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                     useNativeDriver: true,
                 }),
             ]).start();
+
+            // Reset menu item animations
+            menuItemAnimations.forEach((anim) => {
+                Animated.timing(anim, {
+                    toValue: 0,
+                    duration: 100,
+                    useNativeDriver: true,
+                }).start();
+            });
         }
     }, [isOpen]);
 
     const handleNavigation = (route: string) => {
-        // First close the sidebar
+        // Close the sidebar immediately
         onClose();
-        
-        // Then navigate after a slight delay to ensure sidebar is closed first
-        setTimeout(() => {
-            router.push(route as any);
-        }, 100);
+
+        // Navigate to the specified route
+        if (route === 'close') {
+            // If the route is 'close', just close the sidebar without navigation
+            return;
+        }
+
+        if (route === '/settings/payment') {
+            // Pass "from" parameter to indicate navigation from the sidebar
+            router.push({ pathname: route, params: { from: 'sidebar' } });
+        } else {
+            router.push({ pathname: route as any });
+        }
+
+        if (route === '/settings/favorites') {
+            // Special case for FavoritesScreen
+            router.push({ pathname: route as any, params: { from: 'sidebar' } });
+        }else {
+            router.push({ pathname: route as any });
+        }
     };
 
     const handleEditProfile = () => {
-        // First close the sidebar
+        // Close the sidebar immediately
         onClose();
-        
-        // Then open the profile drawer after sidebar is closed
+
+        // Open the profile drawer
         if (typeof onEditProfile === 'function') {
-            setTimeout(() => {
-                onEditProfile();
-            }, 300);
+            onEditProfile();
         }
     };
 
@@ -178,15 +216,29 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 {/* Menu items */}
                 <View style={styles.menuContainer}>
                     {menuItems.map((item, index) => (
-                        <TouchableOpacity
+                        <Animated.View
                             key={index}
-                            style={styles.menuItem}
-                            onPress={() => handleNavigation(item.route)}
-                            activeOpacity={0.7}
+                            style={{
+                                opacity: menuItemAnimations[index],
+                                transform: [
+                                    {
+                                        translateY: menuItemAnimations[index].interpolate({
+                                            inputRange: [0, 1],
+                                            outputRange: [20, 0], // Slide up effect
+                                        }),
+                                    },
+                                ],
+                            }}
                         >
-                            <Feather name={item.icon as any} size={20} color="#F5F5F5" />
-                            <Text style={styles.menuItemText}>{item.label}</Text>
-                        </TouchableOpacity>
+                            <TouchableOpacity
+                                style={styles.menuItem}
+                                onPress={() => handleNavigation(item.route)}
+                                activeOpacity={0.7}
+                            >
+                                <Feather name={item.icon as any} size={20} color="#F5F5F5" />
+                                <Text style={styles.menuItemText}>{item.label}</Text>
+                            </TouchableOpacity>
+                        </Animated.View>
                     ))}
                 </View>
 

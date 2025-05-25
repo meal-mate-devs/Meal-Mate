@@ -10,7 +10,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     const insets = useSafeAreaInsets();
-    const visibleRoutes = state.routes.filter(route => !route.name.startsWith('(hidden)'));
+    const order = ['home/index', 'community/index', 'create/index', 'chef/index', 'statistics/index'];
+
+    const visibleRoutes = order
+        .map((name) => state.routes.find((route) => route.name === name))
+        .filter((route): route is any => route !== undefined);
+        
     const tabWidth = SCREEN_WIDTH / visibleRoutes.length;
     const focusedRouteName = state.routes[state.index]?.name;
     const focusedIndex = visibleRoutes.findIndex(r => r.name === focusedRouteName);
@@ -87,6 +92,11 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                                 <Ionicons name="home" size={24} color="#FFFFFF" /> :
                                 <Ionicons name="home-outline" size={24} color="#9CA3AF" />;
                         }
+                        else if (cleanedName === 'community') {
+                            return focused ?
+                                <Ionicons name="people" size={24} color="#FFFFFF" /> :
+                                <Ionicons name="people-outline" size={24} color="#9CA3AF" />;
+                        }
                         else if (cleanedName === 'create') {
                             return (
                                 <View style={{
@@ -109,20 +119,15 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                                 </View>
                             );
                         }
-                        else if (cleanedName === 'statistics') {
-                            return focused ?
-                                <Ionicons name="stats-chart" size={24} color="#FFFFFF" /> :
-                                <Ionicons name="stats-chart-outline" size={24} color="#9CA3AF" />;
-                        }
-                        else if (cleanedName === 'community') {
-                            return focused ?
-                                <Ionicons name="people" size={24} color="#FFFFFF" /> :
-                                <Ionicons name="people-outline" size={24} color="#9CA3AF" />;
-                        }
                         else if (cleanedName === 'chef') {
                             return focused ?
                                 <Ionicons name="restaurant" size={24} color="#FFFFFF" /> :
                                 <Ionicons name="restaurant-outline" size={24} color="#9CA3AF" />;
+                        }
+                        else if (cleanedName === 'statistics') {
+                            return focused ?
+                                <Ionicons name="stats-chart" size={24} color="#FFFFFF" /> :
+                                <Ionicons name="stats-chart-outline" size={24} color="#9CA3AF" />;
                         }
                         else {
                             return focused ?

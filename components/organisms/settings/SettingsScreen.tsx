@@ -1,133 +1,252 @@
-import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React from 'react';
-import {
-    SafeAreaView,
-    ScrollView,
-    Text,
-    TouchableOpacity,
-    View,
-} from 'react-native';
+"use client"
+
+import { Ionicons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
+import { useRouter } from "expo-router"
+import React from "react"
+import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 interface SettingItem {
-    id: string;
-    title: string;
-    subtitle?: string;
-    link: any;
-    showBadge?: boolean;
-    icon?: string;
+  id: string
+  title: string
+  subtitle?: string
+  link: any
+  showBadge?: boolean
+  icon?: string
+  badgeColor?: string
 }
 
 const SettingsScreen: React.FC = () => {
-    const router = useRouter();
+  const router = useRouter()
 
-    const accountItems: SettingItem[] = [
-        {
-            id: 'profile',
-            title: 'Max Mustermann',
-            subtitle: 'max@mustermann.com',
-            link: '/settings/profile',
-            showBadge: false,
-        },
-        {
-            id: 'subscription',
-            title: 'Pro Subscription',
-            subtitle: 'valid until 03/24',
-            link: '/settings/subscription',
-            showBadge: true,
-        },
-    ];
+  const accountItems: SettingItem[] = [
+    {
+      id: "profile",
+      title: "Max Mustermann",
+      subtitle: "max@mustermann.com",
+      link: "/settings/profile",
+      showBadge: false,
+      icon: "person-circle-outline",
+    },
+    {
+      id: "subscription",
+      title: "Pro Subscription",
+      subtitle: "valid until 03/24",
+      link: "/settings/subscription",
+      showBadge: true,
+      badgeColor: "#10B981",
+      icon: "diamond-outline",
+    },
+  ]
 
-    const devicesItems: SettingItem[] = [
-        {
-            id: 'iphone',
-            title: 'Max Mustermann\'s iPhone 13 Pro',
-            link: '/settings/device-details',
-        },
-        {
-            id: 'amazon',
-            title: 'Mustermann\'s Amazon Fire TV',
-            link: '/settings/device-details',
-        },
-    ];
+  const devicesItems: SettingItem[] = [
+    {
+      id: "iphone",
+      title: "Max Mustermann's iPhone 13 Pro",
+      subtitle: "This device",
+      link: "/settings/device-details",
+      icon: "phone-portrait-outline",
+    },
+    {
+      id: "amazon",
+      title: "Mustermann's Amazon Fire TV",
+      subtitle: "Connected",
+      link: "/settings/device-details",
+      icon: "tv-outline",
+      showBadge: true,
+      badgeColor: "#3B82F6",
+    },
+  ]
 
-    const appSettingsItems: SettingItem[] = [
-        {
-            id: 'general',
-            icon: 'settings',
-            title: 'General',
-            link: '/settings/general',
-        },
-        {
-            id: 'privacy',
-            icon: 'shield',
-            title: 'Privacy',
-            link: '/settings/privacy',
-        },
-        {
-            id: 'notifications',
-            icon: 'bell',
-            title: 'Notifications',
-            link: '/settings/notifications',
-        },
-        {
-            id: 'payment',
-            icon: 'credit-card',
-            title: 'Payment',
-            link: '/settings/payment',
-        },
-    ];
+  const appSettingsItems: SettingItem[] = [
+    {
+      id: "general",
+      icon: "settings-outline",
+      title: "General",
+      subtitle: "Language, region, accessibility",
+      link: "/settings/general",
+    },
+    {
+      id: "privacy",
+      icon: "shield-checkmark-outline",
+      title: "Privacy & Security",
+      subtitle: "Data protection, permissions",
+      link: "/settings/privacy",
+    },
+    {
+      id: "notifications",
+      icon: "notifications-outline",
+      title: "Notifications",
+      subtitle: "Push notifications, email alerts",
+      link: "/settings/notifications",
+    },
+    {
+      id: "payment",
+      icon: "card-outline",
+      title: "Payment & Billing",
+      subtitle: "Payment methods, invoices",
+      link: "/settings/payment",
+    },
+    {
+      id: "storage",
+      icon: "cloud-outline",
+      title: "Storage & Backup",
+      subtitle: "Cloud sync, local storage",
+      link: "/settings/storage",
+    },
+    {
+      id: "help",
+      icon: "help-circle-outline",
+      title: "Help & Support",
+      subtitle: "FAQ, contact support",
+      link: "/settings/help",
+    },
+  ]
 
-    const renderSettingItem = (item: SettingItem, hasIcon: boolean = false) => (
-        <TouchableOpacity
-            key={item.id}
-            className="flex-row items-center justify-between py-3"
-            onPress={() => router.push(item.link)}
-        >
-            <View className="flex-row items-center">
-                {hasIcon && item.icon && (
-                    <View className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center mr-3">
-                        <Feather name={item.icon as any} size={16} color="#666" />
-                    </View>
-                )}
-                <View>
-                    <Text className="text-gray-800 font-medium">{item.title}</Text>
-                    {item.subtitle && (
-                        <Text className="text-gray-500 text-sm">{item.subtitle}</Text>
-                    )}
-                </View>
+  const renderSettingItem = (item: SettingItem, isLast = false) => (
+    <View key={item.id}>
+      <TouchableOpacity
+        className="flex-row items-center justify-between py-4 px-4"
+        onPress={() => router.push(item.link)}
+      >
+        <View className="flex-row items-center flex-1">
+          {item.icon && (
+            <View className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center mr-4">
+              <Ionicons name={item.icon as any} size={20} color="#FACC15" />
             </View>
-            <View className="flex-row items-center">
-                {item.showBadge && (
-                    <View className="h-4 w-4 rounded-full bg-green-500 mr-2" />
-                )}
-                <Feather name="chevron-right" size={20} color="#ccc" />
-            </View>
-        </TouchableOpacity>
-    );
-
-    const renderSettingsSection = (title: string | null, items: SettingItem[], hasIcon: boolean = false) => (
-        <View className="mb-6">
-            {title && <Text className="text-gray-500 text-sm mb-1">{title}</Text>}
-            <View className="bg-gray-100 rounded-xl p-3">
-                {items.map((item) => renderSettingItem(item, hasIcon))}
-            </View>
+          )}
+          <View className="flex-1">
+            <Text className="text-white font-semibold text-base">{item.title}</Text>
+            {item.subtitle && <Text className="text-gray-400 text-sm mt-1">{item.subtitle}</Text>}
+          </View>
         </View>
-    );
+        <View className="flex-row items-center">
+          {item.showBadge && (
+            <View className="h-3 w-3 rounded-full mr-3" style={{ backgroundColor: item.badgeColor || "#10B981" }} />
+          )}
+          <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+        </View>
+      </TouchableOpacity>
+      {!isLast && <View className="h-px bg-zinc-700 ml-14" />}
+    </View>
+  )
 
-    return (
-        <SafeAreaView className="flex-1 bg-white p-4">
-            <View className="px-4 py-4">
-                <Text className="text-xl font-bold text-gray-800">Settings</Text>
+  const renderSettingsSection = (title: string | null, items: SettingItem[]) => (
+    <View className="mb-6">
+      {title && <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">{title}</Text>}
+      <View className="bg-zinc-800 rounded-2xl overflow-hidden">
+        {items.map((item, index) => renderSettingItem(item, index === items.length - 1))}
+      </View>
+    </View>
+  )
+
+  return (
+    <SafeAreaView className="flex-1 bg-black">
+      <StatusBar barStyle="light-content" />
+
+      {/* Header with proper spacing */}
+      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-6">
+        <View className="flex-row items-center justify-between mb-2">
+          <TouchableOpacity onPress={() => router.push("/home")}>
+            <Ionicons name="arrow-back" size={24} color="white" />
+          </TouchableOpacity>
+          <Text className="text-white text-xl font-bold">Settings</Text>
+          <View className="w-6" />
+        </View>
+        <Text className="text-gray-400 text-center">Manage your account and preferences</Text>
+      </View>
+
+      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+        {/* Quick Actions */}
+        <View className="mb-6">
+          <View className="flex-row space-x-3">
+            <TouchableOpacity className="flex-1 overflow-hidden rounded-2xl">
+              <LinearGradient
+                colors={["#FACC15", "#F97316"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="p-4 flex-row items-center justify-center"
+              >
+                <Ionicons name="star" size={20} color="white" />
+                <Text className="text-white font-semibold ml-2">Upgrade to Pro</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity className="bg-zinc-800 p-4 rounded-2xl flex-row items-center">
+              <Ionicons name="share-outline" size={20} color="white" />
+              <Text className="text-white font-semibold ml-2">Share App</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {renderSettingsSection("Account", accountItems)}
+        {renderSettingsSection("Connected Devices", devicesItems)}
+        {renderSettingsSection("App Settings", appSettingsItems)}
+
+        {/* Danger Zone */}
+        <View className="mb-6">
+          <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">Danger Zone</Text>
+          <View className="bg-zinc-800 rounded-2xl overflow-hidden">
+            <TouchableOpacity
+              className="flex-row items-center justify-between py-4 px-4"
+              onPress={async () => {
+                try {
+                  console.log('Logout pressed');
+                  await router.replace('/(auth)/login');
+                  console.log('Navigation completed');
+                } catch (error) {
+                  console.error('Navigation failed:', error);
+                }
+              }}
+            >
+              <View className="flex-row items-center flex-1">
+                <View className="w-10 h-10 rounded-full bg-red-900/30 items-center justify-center mr-4">
+                  <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-red-400 font-semibold text-base">Sign Out</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Sign out of your account</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+
+            <View className="h-px bg-zinc-700 ml-14" />
+
+            <TouchableOpacity
+              className="flex-row items-center justify-between py-4 px-4"
+              onPress={() => {
+                // Handle delete account
+              }}
+            >
+              <View className="flex-row items-center flex-1">
+                <View className="w-10 h-10 rounded-full bg-red-900/30 items-center justify-center mr-4">
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-red-400 font-semibold text-base">Delete Account</Text>
+                  <Text className="text-gray-500 text-sm mt-1">Permanently delete your account</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* App Info */}
+        <View className="bg-zinc-800 rounded-2xl p-4 mb-8">
+          <View className="items-center">
+            <View className="w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl items-center justify-center mb-3">
+              <Ionicons name="restaurant" size={32} color="white" />
             </View>
+            <Text className="text-white font-bold text-lg">Recipe Master</Text>
+            <Text className="text-gray-400 text-sm">Version 2.1.0</Text>
+            <Text className="text-gray-500 text-xs mt-2 text-center">Made with ❤️ for food lovers everywhere</Text>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  )
+}
 
-            <ScrollView className="flex-1 px-4">
-                {renderSettingsSection('Account', accountItems)}
-                {renderSettingsSection('Devices', devicesItems)}
-                {renderSettingsSection('App Settings', appSettingsItems, true)}
-            </ScrollView>
-        </SafeAreaView>
-    );
-};
-
-export default SettingsScreen;
+export default SettingsScreen
