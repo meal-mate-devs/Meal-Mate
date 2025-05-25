@@ -5,15 +5,15 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import React, { useState } from "react"
 import {
-    Alert,
-    Linking,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native"
 
 interface FAQ {
@@ -180,26 +180,6 @@ const HelpCenterScreen: React.FC = () => {
       </View>
 
       <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-        {/* Quick Actions */}
-        <View className="mb-6">
-          <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">Quick Help</Text>
-          <View className="flex-row space-x-3">
-            {quickActions.map((action) => (
-              <TouchableOpacity
-                key={action.id}
-                onPress={action.action}
-                className="flex-1 bg-zinc-800 rounded-2xl p-4 items-center"
-              >
-                <View className="w-12 h-12 rounded-full bg-zinc-700 items-center justify-center mb-3">
-                  <Ionicons name={action.icon as any} size={24} color="#FACC15" />
-                </View>
-                <Text className="text-white font-semibold text-center text-sm">{action.title}</Text>
-                <Text className="text-gray-400 text-xs text-center mt-1">{action.subtitle}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
         {/* FAQ Categories */}
         <View className="mb-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">

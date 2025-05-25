@@ -119,7 +119,7 @@ const PaymentScreen: React.FC = () => {
       {/* Header with proper spacing */}
       <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => router.push("/settings")}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text className="text-white text-xl font-bold">Payment Methods</Text>
