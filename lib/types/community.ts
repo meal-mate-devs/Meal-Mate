@@ -2,7 +2,22 @@ export interface User {
     id: string
     name: string
     username: string
-    avatar: any
+    avatar: any // For require() images
+    isVerified?: boolean
+    followerCount?: number
+    recipeCount?: number
+    totalLikes?: number
+    badges?: Badge[]
+    rank?: number
+}
+
+export interface Badge {
+    id: string
+    name: string
+    icon: string
+    color: string
+    description: string
+    unlockedAt?: string
 }
 
 export interface Comment {
@@ -10,6 +25,8 @@ export interface Comment {
     author: User
     text: string
     timeAgo: string
+    likes?: number
+    isLiked?: boolean
 }
 
 export interface Post {
@@ -17,22 +34,46 @@ export interface Post {
     author: User
     timeAgo: string
     content: string
-    image?: any | string
+    images: (any | string)[]
     likes: number
     comments: number
+    saves: number
     isLiked: boolean
+    isSaved: boolean
     commentsList?: Comment[]
     showComments?: boolean
     recipeDetails?: {
+        title?: string
         cookTime?: string
         servings?: number
         difficulty?: string
         ingredients?: string[]
         instructions?: string[]
+        category?: string
+        tags?: string[]
     }
 }
 
 export interface CreatePostData {
     content: string
-    image?: any
+    images?: (any | string)[]
+    recipeDetails?: {
+        title: string
+        cookTime: string
+        servings: number
+        difficulty: string
+        ingredients: string[]
+        instructions: string[]
+        category: string
+        tags: string[]
+    }
+}
+
+export interface LeaderboardEntry {
+    user: User
+    position: number
+    totalLikes: number
+    totalPosts: number
+    engagementScore: number
+    change: number
 }

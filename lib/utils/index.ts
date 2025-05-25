@@ -97,14 +97,18 @@ export const INITIAL_POSTS: Post[] = [
         timeAgo: "2h ago",
         content:
             "Just perfected my grandmother's homemade pasta recipe! The secret is in kneading the dough for exactly 8 minutes. Who else loves making pasta from scratch?",
-        image: "https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1000&auto=format&fit=crop",
+        images: ["https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1000&auto=format&fit=crop"],
         likes: 24,
         comments: 8,
+        saves: 3,
         isLiked: false,
+        isSaved: false,
         recipeDetails: {
+            title: "Grandmother's Homemade Pasta",
             cookTime: "45 minutes",
             servings: 4,
             difficulty: "Medium",
+            category: "Main Course",
             ingredients: ["2 cups all-purpose flour", "3 large eggs", "1/2 tsp salt", "1 tbsp olive oil"],
             instructions: [
                 "Mix flour and salt in a bowl",
@@ -114,6 +118,7 @@ export const INITIAL_POSTS: Post[] = [
                 "Rest for 30 minutes covered",
                 "Roll and cut as desired",
             ],
+            tags: ["pasta", "homemade", "italian", "traditional"],
         },
         commentsList: [
             {
@@ -140,14 +145,21 @@ export const INITIAL_POSTS: Post[] = [
         timeAgo: "5h ago",
         content:
             "Made this incredible Thai red curry last night! The key is balancing the spice with coconut milk. Swipe for the full recipe and let me know if you try it!",
-        image: "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?q=80&w=1000&auto=format&fit=crop",
+        images: [
+            "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1562565652-a0d8f0c59eb4?q=80&w=1000&auto=format&fit=crop",
+        ],
         likes: 56,
         comments: 12,
+        saves: 7,
         isLiked: true,
+        isSaved: true,
         recipeDetails: {
+            title: "Authentic Thai Red Curry",
             cookTime: "30 minutes",
             servings: 4,
             difficulty: "Easy",
+            category: "Main Course",
             ingredients: [
                 "2 tbsp red curry paste",
                 "1 can coconut milk",
@@ -167,6 +179,7 @@ export const INITIAL_POSTS: Post[] = [
                 "Season with fish sauce and sugar",
                 "Garnish with fresh basil",
             ],
+            tags: ["thai", "curry", "spicy", "coconut"],
         },
         commentsList: [
             {
@@ -193,14 +206,22 @@ export const INITIAL_POSTS: Post[] = [
         timeAgo: "1d ago",
         content:
             "Just got my hands on this amazing new stand mixer! Made these chocolate chip cookies as the first test - they turned out perfect with crispy edges and chewy centers!",
-        image: "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=1000&auto=format&fit=crop",
+        images: [
+            "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1558961363-fa8fdf82db35?q=80&w=1000&auto=format&fit=crop",
+            "https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?q=80&w=1000&auto=format&fit=crop",
+        ],
         likes: 18,
         comments: 5,
+        saves: 2,
         isLiked: false,
+        isSaved: false,
         recipeDetails: {
+            title: "Perfect Chocolate Chip Cookies",
             cookTime: "25 minutes",
             servings: 24,
             difficulty: "Easy",
+            category: "Dessert",
             ingredients: [
                 "2 1/4 cups all-purpose flour",
                 "1 tsp baking soda",
@@ -222,6 +243,7 @@ export const INITIAL_POSTS: Post[] = [
                 "Drop by rounded tablespoon onto baking sheets",
                 "Bake for 9-11 minutes until golden brown",
             ],
+            tags: ["cookies", "chocolate", "baking", "dessert"],
         },
         commentsList: [
             {
@@ -248,14 +270,18 @@ export const INITIAL_POSTS: Post[] = [
         timeAgo: "2d ago",
         content:
             "Weekend BBQ success! Smoked these ribs for 6 hours using my 3-2-1 method. The meat was falling off the bone! Who wants the recipe for my special dry rub?",
-        image: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop",
+        images: ["https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1000&auto=format&fit=crop"],
         likes: 42,
         comments: 15,
+        saves: 5,
         isLiked: false,
+        isSaved: false,
         recipeDetails: {
+            title: "3-2-1 Smoked Ribs",
             cookTime: "6 hours",
             servings: 6,
             difficulty: "Medium",
+            category: "Main Course",
             ingredients: [
                 "2 racks pork ribs",
                 "1/4 cup brown sugar",
@@ -274,6 +300,7 @@ export const INITIAL_POSTS: Post[] = [
                 "Unwrap and cook for 1 final hour, applying sauce if desired",
                 "Rest for 15 minutes before cutting",
             ],
+            tags: ["bbq", "ribs", "smoking", "pork"],
         },
         commentsList: [],
     },
