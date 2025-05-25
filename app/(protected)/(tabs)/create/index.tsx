@@ -1,10 +1,6 @@
+import RecipeGenerationScreen from '@/components/organisms/Recipe/RecipeGenerationScreen'
 import React from 'react'
-import { Text, View } from 'react-native'
 
 export default function Create() {
-    return (
-        <View>
-            <Text>Create</Text>
-        </View>
-    )
+    return <RecipeGenerationScreen />
 }

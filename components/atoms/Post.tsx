@@ -1,5 +1,5 @@
 
-import { Post } from "@/lib/types"
+import { Post } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { JSX, default as React } from "react"
