@@ -163,7 +163,7 @@ export default function CommunityScreen(): JSX.Element {
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
                     <Animated.View style={{ opacity: headerOpacity }} className="pt-16 px-4 pb-4">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white text-2xl font-bold">Recipe Community</Text>
+                            <Text className="text-white text-2xl font-bold">Meal Mate Community</Text>
                             <TouchableOpacity
                                 className="bg-zinc-800 rounded-full p-2 border border-zinc-700"
                                 onPress={() => setShowLeaderboard(true)}

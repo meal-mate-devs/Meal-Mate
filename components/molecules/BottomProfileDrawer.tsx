@@ -461,28 +461,6 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
             </BlurView>
           </View>
         </Animated.View>
-
-        {/* Success indicator */}
-        <Animated.View
-          style={[
-            styles.successIndicator,
-            {
-              opacity: successAnimation,
-              transform: [
-                {
-                  scale: successAnimation.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.5, 1],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <View style={styles.successCircle}>
-            <Ionicons name="checkmark" size={16} color="white" />
-          </View>
-        </Animated.View>
       </TouchableOpacity>
     )
   }
