@@ -34,19 +34,19 @@ const SettingsScreen: React.FC = () => {
   const devicesItems = [
     {
       id: "iphone",
-      title: "Max Mustermann's iPhone 13 Pro",
+      title: "Usman's Galaxy a52s",
       subtitle: "This device",
       icon: "phone-portrait-outline",
       deviceDetails: {
         lastActive: "Currently active",
         loginTime: "Dec 15, 2024 at 9:30 AM",
-        location: "New York, NY",
+        location: "Islamabad, Pakistan",
         canRemove: false
       }
     },
     {
       id: "amazon",
-      title: "Mustermann's Amazon Fire TV",
+      title: "Umar's Amazon Fire TV",
       subtitle: "Connected",
       icon: "tv-outline",
       showBadge: true,
@@ -54,7 +54,7 @@ const SettingsScreen: React.FC = () => {
       deviceDetails: {
         lastActive: "2 hours ago",
         loginTime: "Dec 10, 2024 at 3:15 PM",
-        location: "Living Room",
+        location: "Bahawalnagar, Pakistan",
         canRemove: true
       }
     },
