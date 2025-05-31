@@ -18,9 +18,9 @@ const menuItems = [
   { icon: "home", label: "Home", route: "/home", description: "Dashboard & Overview" },
   { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
   { icon: "bell", label: "Notifications", route: "settings/notifications", description: "Updates & Alerts" },
-  { icon: "credit-card", label: "Payment Methods", route: "/settings/payment", description: "Billing & Cards" },
+  { icon: "package", label: "Pantry", route: "/recipe/pantry", description: "Billing & Cards" },
   { icon: "settings", label: "Settings", route: "/settings", description: "App Preferences" },
-  { icon: "help-circle", label: "Help Center", route: "/settings/help", description: "Support & FAQ" },
+  { icon: "shopping-cart", label: "Grocery List", route: "/settings/help", description: "Support & FAQ" },
 ]
 
 interface ProfileSidebarProps {
