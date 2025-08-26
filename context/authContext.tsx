@@ -1,12 +1,13 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    onAuthStateChanged,
-    sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -28,6 +29,7 @@ type AuthContextType = {
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   doesAccountExist: (email: string) => Promise<boolean>;
+  resendVerificationEmail: () => Promise<void>;
 };
 
 // Create context
@@ -112,17 +114,32 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Add resend verification email function
+  const resendVerificationEmail = async () => {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+      } else {
+        throw new Error('No user is currently signed in');
+      }
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isAuthenticated, 
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
         isLoading,
         login,
         register,
         logout,
         sendPasswordReset,
-        doesAccountExist
+        doesAccountExist,
+        resendVerificationEmail
       }}
     >
       {children}
@@ -133,10 +150,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 // Hook to use the auth context
 export function useAuthContext() {
   const context = useContext(AuthContext);
-  
+
   if (context === undefined) {
     throw new Error('useAuthContext must be used within an AuthContextProvider');
   }
-  
+
   return context;
 }
