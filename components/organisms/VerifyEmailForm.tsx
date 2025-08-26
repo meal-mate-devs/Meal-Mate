@@ -16,7 +16,7 @@ export default function VerifyEmailForm() {
     const params = useLocalSearchParams();
     const [countdown, setCountdown] = useState(0);
     const [isResending, setIsResending] = useState(false);
-    const { user, sendEmailVerificationLink } = useAuthContext();
+    const { user, resendVerificationEmail: sendEmailVerificationLink } = useAuthContext();
 
     // Dialog state
     const [dialogVisible, setDialogVisible] = useState(false);
@@ -43,13 +43,12 @@ export default function VerifyEmailForm() {
 
     const handleResendEmail = async () => {
         if (countdown > 0) return;
-        if (!user) return;
 
         setIsResending(true);
         showDialog('loading', 'Sending Email', 'Please wait while we send you a new verification email...');
 
         try {
-            await sendEmailVerificationLink(user);
+            await sendEmailVerificationLink();
             setCountdown(60);
             setDialogVisible(false);
             showDialog('success', 'Email Sent', 'Verification email has been resent. Please check your inbox.');

@@ -1,8 +1,7 @@
 {
   "expo": {
     "name": "Meal Mate",
-    "slug": "Meal Mate",
-    "owner": "Meal Mate Devs",
+    "slug": "meal-mate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -47,6 +46,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {}
     }
   }
 }
