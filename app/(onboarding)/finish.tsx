@@ -24,7 +24,7 @@ export default function FinishOnboarding() {
 
     return (
         <View className="flex-1 bg-black justify-between items-center px-8 pt-16 pb-12">
-            <StatusBar barStyle="light-content" backgroundColor="black" />
+            <StatusBar barStyle="light-content" />
 
             <View className="items-center">
                 <Text className="text-3xl font-bold text-yellow-400 font-poppins-bold mb-4">

@@ -4,7 +4,7 @@ import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-font
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import React, { useEffect } from "react";
-import { BackHandler, Platform, StyleSheet, View, StatusBar } from "react-native";
+import { BackHandler, Platform, StatusBar, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../globals.css";
@@ -112,7 +112,6 @@ function RootLayoutContent() {
             <View style={styles.statusBarBackground} />
             
             <ExpoStatusBar 
-              backgroundColor="black" 
               style="light" 
               translucent={true}
             />

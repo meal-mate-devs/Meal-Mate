@@ -63,7 +63,7 @@ export default function OnboardingScreen() {
 
     return (
         <View className="flex-1 bg-black pt-12">
-            <StatusBar barStyle="light-content" backgroundColor="black" />
+            <StatusBar barStyle="light-content" />
             <FlatList
                 ref={flatListRef}
                 data={slides}

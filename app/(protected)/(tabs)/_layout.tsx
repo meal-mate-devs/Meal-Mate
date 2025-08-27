@@ -15,14 +15,6 @@ export default function TabsLayout() {
             tabBar={(props) => <CustomTabBar {...props} />}
         >
             <Tabs.Screen
-                name="../home/index"
-                options={{
-                    title: 'Home',
-                    tabBarLabel: 'Home',
-                    tabBarIcon: () => null,
-                }}
-            />
-            <Tabs.Screen
                 name="home/index"
                 options={{
                     title: 'Home',
@@ -49,6 +41,13 @@ export default function TabsLayout() {
                 options={{
                     title: 'Community',
                     tabBarLabel: 'Community',
+                }}
+            />
+            <Tabs.Screen
+                name="chef/index"
+                options={{
+                    title: 'Chef',
+                    tabBarLabel: 'Chef',
                 }}
             />
             <Tabs.Screen name="(hidden)" options={{ href: null }} />
