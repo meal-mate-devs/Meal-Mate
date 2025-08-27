@@ -1,6 +1,6 @@
 import { dummyRecipes } from '@/lib/utils';
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import React from 'react';
 import {
     Image,
@@ -86,7 +86,10 @@ const RecipeDetailScreen = () => {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity className="flex-1 bg-green-700 py-4 rounded-full flex-row items-center justify-center">
+                <TouchableOpacity 
+                    className="flex-1 bg-green-700 py-4 rounded-full flex-row items-center justify-center"
+                    onPress={() => router.push('/recipe/cooking')}
+                >
                     <Text className="text-white font-bold text-lg mr-2">Start cooking</Text>
                     <Feather name="play" size={18} color="white" />
                 </TouchableOpacity>
