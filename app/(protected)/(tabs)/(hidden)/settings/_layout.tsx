@@ -17,6 +17,7 @@ export default function SettingsLayout() {
             <Stack.Screen name="device-details" />
             <Stack.Screen name="card-details" />
             <Stack.Screen name="add-card" />
+            <Stack.Screen name="grocery-list" />
         </Stack>
     );
 }
