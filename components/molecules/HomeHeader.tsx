@@ -28,9 +28,10 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
   // Get time-based greeting
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return "Good Morning"
-    if (hour < 17) return "Good Afternoon"
-    if (hour < 20) return "Good Evening"
+    if (hour >= 4 && hour < 12) return "Good Morning"
+    if (hour >= 12 && hour < 17) return "Good Afternoon"
+    if (hour >= 17 && hour < 20) return "Good Evening"
+    if (hour >= 20 || hour < 4) return "Good Night"
     return "Good Evening"
   }
 
@@ -97,7 +98,7 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
       />
 
       {/* Main Header Content */}
-      <View className="flex-row items-center justify-between px-6 py-6 pt-6 pb-2">
+      <View className="flex-row items-center justify-between px-6 py-6 pt-3 pb-2">
         {/* Greeting Section */}
         <Animated.View
           className="flex-1"

@@ -202,6 +202,10 @@ const NotificationsScreen: React.FC = () => {
     setNotifications(notifications.map((notif) => (notif.id === id ? { ...notif, isRead: true } : notif)))
   }
 
+  const deleteNotification = (id: string) => {
+    setNotifications(notifications.filter((notif) => notif.id !== id))
+  }
+
   const markAllAsRead = () => {
     setNotifications(notifications.map((notif) => ({ ...notif, isRead: true })))
   }
@@ -251,7 +255,28 @@ const NotificationsScreen: React.FC = () => {
                 </View>
                 {!notification.isRead && <View className="w-2 h-2 bg-orange-500 rounded-full" />}
               </View>
-              <Text className="text-gray-400 text-xs">{notification.timestamp}</Text>
+              <View className="items-end">
+                <Text className="text-gray-400 text-xs mb-2">{notification.timestamp}</Text>
+                <TouchableOpacity
+                  onPress={() => notification.isRead ? deleteNotification(notification.id) : markAsRead(notification.id)}
+                  className={`px-3 py-1.5 rounded-lg flex-row items-center ${
+                    notification.isRead ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"
+                  }`}
+                >
+                  <Ionicons 
+                    name={notification.isRead ? "trash-outline" : "checkmark-circle-outline"} 
+                    size={14} 
+                    color={notification.isRead ? "#ef4444" : "#10b981"} 
+                  />
+                  <Text 
+                    className={`text-xs font-medium ml-1 ${
+                      notification.isRead ? "text-red-400" : "text-green-400"
+                    }`}
+                  >
+                    {notification.isRead ? "Delete" : "Mark Read"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             {/* Title and Message */}
@@ -352,7 +377,7 @@ const NotificationsScreen: React.FC = () => {
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.push('/home')}>
             <Ionicons name="arrow-back" size={24} color="white" />

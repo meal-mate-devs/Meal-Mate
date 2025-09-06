@@ -194,7 +194,7 @@ const FavoritesScreen: React.FC = () => {
       <StatusBar barStyle="light-content" />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between">
           <TouchableOpacity onPress={() => router.push("/home")}>
             <Ionicons name="arrow-back" size={24} color="white" />

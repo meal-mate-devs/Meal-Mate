@@ -69,6 +69,7 @@ interface Feedback {
 
 const ChefDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
+  const scrollRef = useRef<FlatList>(null)
   const [userType, setUserType] = useState<"user" | "chef">("user")
   const [selectedChef, setSelectedChef] = useState<string | null>(null)
   const [showRecipeModal, setShowRecipeModal] = useState(false)
@@ -189,6 +190,40 @@ const ChefDashboardScreen: React.FC = () => {
     ]).start()
     setUserType(type)
   }
+
+  const toggleFeedbackDropdown = () => {
+    const newState = !showFeedbackDropdown;
+    
+    if (newState && userType === "chef") {
+      // If opening the dropdown, scroll to the feedback section
+      setShowFeedbackDropdown(newState);
+      setTimeout(() => {
+        const sections = getSections();
+        const feedbackIndex = sections.findIndex(section => section.type === 'feedbackDropdown');
+        if (feedbackIndex !== -1 && scrollRef.current) {
+          scrollRef.current.scrollToIndex({
+            index: feedbackIndex,
+            animated: true,
+            viewPosition: 0.3, // Position the item at 30% from the top
+          });
+        }
+      }, 100); // Small delay to ensure the dropdown starts opening
+    } else if (!newState && scrollRef.current) {
+      // If closing the dropdown, scroll to top first, then collapse
+      scrollRef.current.scrollToOffset({
+        offset: 0,
+        animated: true,
+      });
+      
+      // Delay the dropdown collapse to let scroll finish
+      setTimeout(() => {
+        setShowFeedbackDropdown(newState);
+      }, 200); // Wait for scroll animation to complete
+    } else {
+      setShowFeedbackDropdown(newState);
+    }
+  };
+
   useEffect(() => {
     Animated.timing(feedbackAnimation, {
       toValue: showFeedbackDropdown ? 1 : 0,
@@ -383,7 +418,7 @@ const ChefDashboardScreen: React.FC = () => {
     <View style={styles.feedbackContainer}>
       <TouchableOpacity
         style={styles.feedbackHeader}
-        onPress={() => setShowFeedbackDropdown(!showFeedbackDropdown)}
+        onPress={toggleFeedbackDropdown}
         activeOpacity={0.8}
       >
         <View style={styles.feedbackHeaderContent}>
@@ -472,11 +507,25 @@ const ChefDashboardScreen: React.FC = () => {
 
       {/* Replace ScrollView with FlatList */}
       <FlatList
+        ref={scrollRef}
         data={getSections()}
         renderItem={renderSection}
         keyExtractor={(item, index) => index.toString()}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{
+          flexGrow: 1,
+          paddingBottom: showFeedbackDropdown ? 40 : 0,
+        }}
+        scrollEnabled={true}
+        bounces={showFeedbackDropdown}
+        onScrollToIndexFailed={(info) => {
+          // Fallback if scrollToIndex fails
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            scrollRef.current?.scrollToIndex({ index: info.index, animated: true });
+          });
+        }}
+        removeClippedSubviews={false}
       />
 
       {/* Recipe Upload Modal */}
@@ -769,9 +818,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000000",
-  },
-  scrollContent: {
-    paddingBottom: 120, // Increased from 100 to give more space at bottom
   },
   contentContainer: {
     flex: 1,
