@@ -3,14 +3,17 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
+    Alert,
     FlatList,
     SafeAreaView,
+    Share,
     StatusBar,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface GroceryItem {
     id: string;
@@ -22,6 +25,7 @@ interface GroceryItem {
 }
 
 const GroceryListScreen: React.FC = () => {
+    const insets = useSafeAreaInsets();
     const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([
         { id: '1', name: 'Tomatoes', quantity: '2 kg', category: 'Vegetables', isCompleted: false, isUrgent: true },
         { id: '2', name: 'Chicken Breast', quantity: '1 kg', category: 'Meat', isCompleted: false },
@@ -79,29 +83,74 @@ const GroceryListScreen: React.FC = () => {
     const pendingItems = groceryItems.filter(item => !item.isCompleted);
     const urgentItems = pendingItems.filter(item => item.isUrgent);
 
+    // Clear all completed items
+    const clearCompletedItems = () => {
+        Alert.alert(
+            "Clear Completed Items",
+            "Are you sure you want to remove all completed items from your list?",
+            [
+                {
+                    text: "Cancel",
+                    style: "cancel"
+                },
+                {
+                    text: "Clear",
+                    style: "destructive",
+                    onPress: () => {
+                        setGroceryItems(prev => prev.filter(item => !item.isCompleted));
+                    }
+                }
+            ]
+        );
+    };
+
+    // Share grocery list
+    const shareGroceryList = async () => {
+        if (pendingItems.length === 0) {
+            Alert.alert("Nothing to Share", "Your grocery list is empty or all items are completed.");
+            return;
+        }
+
+        const listText = pendingItems.map((item, index) => {
+            const urgentTag = item.isUrgent ? " [URGENT]" : "";
+            return `${index + 1}. ${item.name} - ${item.quantity}${urgentTag}`;
+        }).join('\n');
+
+        const shareContent = `🛒 My Grocery List\n\nItems to buy (${pendingItems.length}):\n${listText}\n\n📱 Shared from Meal Mate`;
+
+        try {
+            await Share.share({
+                message: shareContent,
+                title: "My Grocery List"
+            });
+        } catch (error) {
+            Alert.alert("Error", "Failed to share the list. Please try again.");
+        }
+    };
+
     const renderGroceryItem = ({ item }: { item: GroceryItem }) => (
-        <View className={`bg-zinc-800 rounded-xl p-4 mb-3 ${item.isUrgent && !item.isCompleted ? 'border border-orange-500' : ''}`}>
+        <View className={`bg-zinc-800 rounded-xl p-4 mb-3 ${item.isUrgent && !item.isCompleted ? 'border-2 border-orange-500' : ''}`}>
             <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                     <TouchableOpacity
                         onPress={() => toggleItemCompletion(item.id)}
-                        className="mr-3"
+                        className="mr-4"
                     >
-                        <View className={`w-6 h-6 rounded-full border-2 items-center justify-center ${
+                        <View className={`w-7 h-7 rounded-full border-2 items-center justify-center ${
                             item.isCompleted 
                                 ? 'bg-green-500 border-green-500' 
                                 : 'border-gray-400'
                         }`}>
                             {item.isCompleted && (
-                                <Ionicons name="checkmark" size={14} color="white" />
+                                <Ionicons name="checkmark" size={16} color="white" />
                             )}
                         </View>
                     </TouchableOpacity>
                     
-                    <Text className="text-2xl mr-3">{getCategoryIcon(item.category)}</Text>
+                    <Text className="text-2xl mr-4">{getCategoryIcon(item.category)}</Text>
                     
                     <View className="flex-1">
-                        <View className="flex-row items-center">
+                        <View className="flex-row items-center flex-wrap">
                             <Text className={`text-lg font-semibold ${
                                 item.isCompleted ? 'text-gray-500 line-through' : 'text-white'
                             }`}>
@@ -113,7 +162,7 @@ const GroceryListScreen: React.FC = () => {
                                 </View>
                             )}
                         </View>
-                        <Text className={`text-sm ${
+                        <Text className={`text-sm mt-1 ${
                             item.isCompleted ? 'text-gray-600' : 'text-gray-400'
                         }`}>
                             {item.quantity} • {item.category}
@@ -123,7 +172,7 @@ const GroceryListScreen: React.FC = () => {
                 
                 <TouchableOpacity
                     onPress={() => deleteItem(item.id)}
-                    className="ml-2 p-2"
+                    className="ml-3 p-2 rounded-lg bg-red-500/20"
                 >
                     <Ionicons name="trash-outline" size={20} color="#EF4444" />
                 </TouchableOpacity>
@@ -136,7 +185,10 @@ const GroceryListScreen: React.FC = () => {
             <StatusBar barStyle="light-content" />
             
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4">
+            <View 
+                className="flex-row items-center justify-between px-4 pb-4"
+                style={{ paddingTop: Math.max(insets.top + 16, 32) }}
+            >
                 <TouchableOpacity
                     onPress={() => router.back()}
                     className="w-10 h-10 rounded-full bg-zinc-800 items-center justify-center"
@@ -155,23 +207,26 @@ const GroceryListScreen: React.FC = () => {
             </View>
 
             {/* Stats */}
-            <View className="px-4 mb-4">
-                <View className="flex-row space-x-4">
+            <View className="px-4 mb-6">
+                <View className="flex-row justify-between">
                     <LinearGradient
                         colors={['#FACC15', '#F97316']}
-                        className="flex-1 rounded-xl p-4"
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{ borderRadius: 12 }}
+                        className="flex-1 p-4 mr-2"
                     >
                         <Text className="text-white text-2xl font-bold">{pendingItems.length}</Text>
                         <Text className="text-white/80 text-sm">Items Left</Text>
                     </LinearGradient>
                     
-                    <View className="flex-1 bg-zinc-800 rounded-xl p-4">
+                    <View className="flex-1 bg-zinc-800 rounded-xl p-4 mx-2">
                         <Text className="text-white text-2xl font-bold">{completedItems.length}</Text>
                         <Text className="text-gray-400 text-sm">Completed</Text>
                     </View>
                     
                     {urgentItems.length > 0 && (
-                        <View className="flex-1 bg-red-600 rounded-xl p-4">
+                        <View className="flex-1 bg-red-600 rounded-xl p-4 ml-2">
                             <Text className="text-white text-2xl font-bold">{urgentItems.length}</Text>
                             <Text className="text-white/80 text-sm">Urgent</Text>
                         </View>
@@ -181,7 +236,8 @@ const GroceryListScreen: React.FC = () => {
 
             {/* Add New Item Form */}
             {showAddForm && (
-                <View className="mx-4 mb-4 bg-zinc-800 rounded-xl p-4">
+                <View className="mx-4 mb-6 bg-zinc-800 rounded-xl p-4">
+                    <Text className="text-white text-lg font-semibold mb-4">Add New Item</Text>
                     <TextInput
                         value={newItem}
                         onChangeText={setNewItem}
@@ -194,18 +250,24 @@ const GroceryListScreen: React.FC = () => {
                         onChangeText={setNewQuantity}
                         placeholder="Quantity (e.g., 2 kg, 500g)..."
                         placeholderTextColor="#9CA3AF"
-                        className="bg-zinc-700 text-white p-3 rounded-lg mb-3"
+                        className="bg-zinc-700 text-white p-3 rounded-lg mb-4"
                     />
-                    <View className="flex-row space-x-3">
+                    <View className="flex-row justify-between">
                         <TouchableOpacity
                             onPress={addNewItem}
-                            className="flex-1 bg-green-600 py-3 rounded-lg items-center"
+                            className="flex-1 mr-2"
                         >
-                            <Text className="text-white font-semibold">Add Item</Text>
+                            <LinearGradient
+                                colors={['#10B981', '#059669']}
+                                style={{ borderRadius: 8 }}
+                                className="py-3 items-center"
+                            >
+                                <Text className="text-white font-semibold">Add Item</Text>
+                            </LinearGradient>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setShowAddForm(false)}
-                            className="flex-1 bg-gray-600 py-3 rounded-lg items-center"
+                            className="flex-1 bg-gray-600 py-3 rounded-lg items-center ml-2"
                         >
                             <Text className="text-white font-semibold">Cancel</Text>
                         </TouchableOpacity>
@@ -218,30 +280,69 @@ const GroceryListScreen: React.FC = () => {
                 data={groceryItems}
                 renderItem={renderGroceryItem}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View className="items-center justify-center py-20">
                         <Text className="text-6xl mb-4">🛒</Text>
                         <Text className="text-white text-xl font-semibold mb-2">Your grocery list is empty</Text>
-                        <Text className="text-gray-400 text-center">
+                        <Text className="text-gray-400 text-center px-8">
                             Add items to your grocery list to keep track of what you need to buy
                         </Text>
+                        <TouchableOpacity
+                            onPress={() => setShowAddForm(true)}
+                            className="mt-6"
+                        >
+                            <LinearGradient
+                                colors={['#FACC15', '#F97316']}
+                                style={{ borderRadius: 8 }}
+                                className="px-6 py-3"
+                            >
+                                <Text className="text-white font-semibold">Add Your First Item</Text>
+                            </LinearGradient>
+                        </TouchableOpacity>
                     </View>
                 }
             />
 
             {/* Quick Actions Footer */}
-            <View className="absolute bottom-0 left-0 right-0 bg-black/90 border-t border-zinc-800 p-4">
-                <View className="flex-row space-x-3">
-                    <TouchableOpacity className="flex-1 bg-zinc-800 py-3 rounded-lg flex-row items-center justify-center">
-                        <Feather name="share" size={18} color="white" />
-                        <Text className="text-white font-semibold ml-2">Share List</Text>
+            <View className="absolute bottom-0 left-0 right-0 bg-black/95 border-t border-zinc-800 p-4">
+                <View className="flex-row justify-between">
+                    <TouchableOpacity 
+                        onPress={shareGroceryList}
+                        className="flex-1 mr-2"
+                    >
+                        <LinearGradient
+                            colors={['#3B82F6', '#1D4ED8']}
+                            style={{ borderRadius: 8 }}
+                            className="py-3 flex-row items-center justify-center"
+                        >
+                            <Feather name="share" size={18} color="white" />
+                            <Text className="text-white font-semibold ml-2">Share List</Text>
+                        </LinearGradient>
                     </TouchableOpacity>
                     
-                    <TouchableOpacity className="flex-1 bg-zinc-800 py-3 rounded-lg flex-row items-center justify-center">
-                        <Ionicons name="checkmark-done" size={18} color="white" />
-                        <Text className="text-white font-semibold ml-2">Clear All</Text>
+                    <TouchableOpacity 
+                        onPress={clearCompletedItems}
+                        className="flex-1 ml-2"
+                        disabled={completedItems.length === 0}
+                    >
+                        <LinearGradient
+                            colors={completedItems.length > 0 ? ['#EF4444', '#DC2626'] : ['#374151', '#374151']}
+                            style={{ borderRadius: 8 }}
+                            className="py-3 flex-row items-center justify-center"
+                        >
+                            <Ionicons 
+                                name="checkmark-done" 
+                                size={18} 
+                                color={completedItems.length > 0 ? "white" : "#9CA3AF"} 
+                            />
+                            <Text className={`font-semibold ml-2 ${
+                                completedItems.length > 0 ? 'text-white' : 'text-gray-400'
+                            }`}>
+                                Clear Completed ({completedItems.length})
+                            </Text>
+                        </LinearGradient>
                     </TouchableOpacity>
                 </View>
             </View>
