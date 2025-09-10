@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/context/authContext';
+import { auth } from '@/lib/config/clientApp';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -16,6 +17,7 @@ export default function VerifyEmailForm() {
     const params = useLocalSearchParams();
     const [countdown, setCountdown] = useState(0);
     const [isResending, setIsResending] = useState(false);
+    const [isCheckingVerification, setIsCheckingVerification] = useState(false);
     const { user, resendVerificationEmail: sendEmailVerificationLink } = useAuthContext();
 
     // Dialog state
@@ -60,6 +62,38 @@ export default function VerifyEmailForm() {
         }
     };
 
+    const handleCheckVerification = async () => {
+        if (isCheckingVerification) return;
+
+        setIsCheckingVerification(true);
+        showDialog('loading', 'Checking Verification', 'Please wait while we check your email verification status...');
+
+        try {
+            if (auth.currentUser) {
+                await auth.currentUser.reload();
+                
+                if (auth.currentUser.emailVerified) {
+                    setDialogVisible(false);
+                    showDialog('success', 'Email Verified!', 'Your email has been successfully verified. The app will automatically take you to the home screen.');
+                    
+                    // Don't redirect manually, let the main navigation logic handle it
+                    // The app/index.tsx will detect the change and redirect automatically
+                } else {
+                    setDialogVisible(false);
+                    showDialog('warning', 'Not Verified Yet', 'Your email is not verified yet. Please check your inbox and click the verification link.');
+                }
+            } else {
+                setDialogVisible(false);
+                showDialog('error', 'User Not Found', 'Please log in again and try verification.');
+            }
+        } catch (error) {
+            setDialogVisible(false);
+            showDialog('error', 'Check Failed', 'We could not check your verification status. Please try again later.');
+        } finally {
+            setIsCheckingVerification(false);
+        }
+    };
+
     const handleContinueToLogin = () => {
         router.push('/(auth)/login');
     };
@@ -93,6 +127,10 @@ export default function VerifyEmailForm() {
 
                         <Text className="text-gray-400 text-base mb-2 text-center">
                             Please check your inbox and click the verification link to complete your registration.
+                        </Text>
+                        
+                        <Text className="text-gray-400 text-sm text-center mt-2">
+                            After clicking the verification link, return here and tap "I've Verified My Email" to continue.
                         </Text>
                     </View>
 
@@ -138,6 +176,29 @@ export default function VerifyEmailForm() {
                     <Text className="text-gray-400 text-center mb-8">
                         Didn't receive an email? Check your spam folder or try resending.
                     </Text>
+
+                    <TouchableOpacity
+                        className={`w-full rounded-full overflow-hidden mb-4 ${isCheckingVerification ? 'opacity-70' : ''}`}
+                        onPress={handleCheckVerification}
+                        disabled={isCheckingVerification}
+                    >
+                        <LinearGradient
+                            colors={['#10B981', '#059669']} // green-500 to green-600
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            className="h-14 items-center justify-center flex-row"
+                        >
+                            <Ionicons
+                                name="checkmark-circle-outline"
+                                size={20}
+                                color="#FFFFFF"
+                                style={{ marginRight: 8 }}
+                            />
+                            <Text className="text-white text-base font-bold">
+                                {isCheckingVerification ? 'Checking...' : 'I\'ve Verified My Email'}
+                            </Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
 
                     <TouchableOpacity
                         className="w-full rounded-full border border-zinc-700 h-14 justify-center items-center mb-8"

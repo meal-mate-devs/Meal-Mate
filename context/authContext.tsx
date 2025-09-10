@@ -1,13 +1,13 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
 import {
-  createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut
+    createUserWithEmailAndPassword,
+    fetchSignInMethodsForEmail,
+    onAuthStateChanged,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -77,6 +77,19 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const register = async (email: string, password: string) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Automatically send email verification after successful registration
+      if (userCredential.user) {
+        try {
+          await sendEmailVerification(userCredential.user);
+          console.log('Email verification sent successfully to:', userCredential.user.email);
+        } catch (emailError) {
+          console.error('Failed to send verification email:', emailError);
+          // Don't throw here, as the account was created successfully
+          // The user can still request verification later
+        }
+      }
+      
       return userCredential.user;
     } catch (error) {
       throw error;
@@ -119,6 +132,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       if (auth.currentUser) {
         await sendEmailVerification(auth.currentUser);
+        console.log('Verification email resent successfully to:', auth.currentUser.email);
       } else {
         throw new Error('No user is currently signed in');
       }

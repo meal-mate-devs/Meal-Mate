@@ -228,7 +228,17 @@ export default function LoginForm() {
             }
 
             // Attempt login
-            await login(email.trim(), password.trim());
+            const userCredential = await login(email.trim(), password.trim());
+
+            // Check if email is verified after successful login
+            if (userCredential && !userCredential.emailVerified) {
+                setDialogVisible(false);
+                showDialog('warning', 'Email Not Verified', 'Please verify your email address before continuing. Check your inbox for the verification email.');
+                
+                // Let the main navigation handle redirect to verify email page
+                // The app/index.tsx will automatically redirect unverified users
+                return;
+            }
 
             // Show success dialog before navigating
             setDialogVisible(false);
@@ -301,7 +311,14 @@ export default function LoginForm() {
                         break;
                     case 'auth/invalid-credential':
                     case 'auth/invalid-login-credentials':
-                        showDialog('error', 'Invalid Credentials', 'Your email/username or password is incorrect. Please try again.');
+                        // Check if this might be an unverified email issue
+                        if (errorMessage.toLowerCase().includes('verify') || 
+                            errorMessage.toLowerCase().includes('verification')) {
+                            showDialog('warning', 'Email Not Verified', 'Please verify your email address first. Check your inbox for the verification email.');
+                            // Let main navigation handle redirect to verify email page
+                        } else {
+                            showDialog('error', 'Invalid Credentials', 'Your email/username or password is incorrect. Please try again.');
+                        }
                         break;
                     case 'auth/network-request-failed':
                         showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');

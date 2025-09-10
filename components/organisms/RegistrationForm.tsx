@@ -237,7 +237,7 @@ export default function RegistrationForm() {
             await register(email.trim(), password.trim());
 
             setIsLoading(false);
-            showDialog('success', 'Congratulations!', 'Your account has been created successfully.');
+            showDialog('success', 'Account Created!', 'Your account has been created successfully. We\'ve sent a verification email to your inbox. Please verify your email to complete registration.');
 
             // After showing success dialog, we'll navigate to verify-email page when user confirms
         } catch (error) {
