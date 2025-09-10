@@ -8,6 +8,11 @@
     "scheme": "authapp",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "statusBar": {
+      "style": "light",
+      "backgroundColor": "#000000",
+      "translucent": true
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -17,15 +22,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "statusBar": {
-        "backgroundColor": "#000000",
-        "barStyle": "light-content",
-        "translucent": true
-      },
       "navigationBar": {
-        "backgroundColor": "#000000",
-        "barStyle": "light-content"
-      }
+        "visible": "sticky-immersive",
+        "behavior": "inset-swipe"
+      },
+      "package": "com.umar911.mealmate"
     },
     "web": {
       "bundler": "metro",
@@ -48,7 +49,10 @@
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
+      "router": {},
+      "eas": {
+        "projectId": "33db3b40-965e-40a8-8190-4a50654743e7"
+      }
     }
   }
 }
