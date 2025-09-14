@@ -1,13 +1,13 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    onAuthStateChanged,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -25,12 +25,15 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<any>;
-  register: (email: string, password: string) => Promise<any>;
+  register: (email: string, password: string, username: string, phoneNumber: string,) => Promise<any>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   doesAccountExist: (email: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<void>;
 };
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+
 
 // Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,6 +43,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
 
   // Listen for auth state changes
   useEffect(() => {
@@ -74,23 +78,33 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   };
 
   // Register function
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string, username: string, phoneNumber: string,) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      
-      // Automatically send email verification after successful registration
       if (userCredential.user) {
         try {
           await sendEmailVerification(userCredential.user);
           console.log('Email verification sent successfully to:', userCredential.user.email);
         } catch (emailError) {
           console.error('Failed to send verification email:', emailError);
-          // Don't throw here, as the account was created successfully
-          // The user can still request verification later
         }
       }
-      
-      return userCredential.user;
+      const token = await userCredential.user.getIdToken();
+
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          phoneNumber: phoneNumber,
+          userName: username
+        }),
+      });
+
+      return response;
+
     } catch (error) {
       throw error;
     }

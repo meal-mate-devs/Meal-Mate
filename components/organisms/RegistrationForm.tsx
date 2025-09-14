@@ -234,7 +234,7 @@ export default function RegistrationForm() {
             }
 
             // Attempt registration
-            await register(email.trim(), password.trim());
+            await register(email.trim(), password.trim(), username.trim(), phoneNumber.trim());
 
             setIsLoading(false);
             showDialog('success', 'Account Created!', 'Your account has been created successfully. We\'ve sent a verification email to your inbox. Please verify your email to complete registration.');
@@ -362,9 +362,9 @@ export default function RegistrationForm() {
     };
 
     return (
-        <ImageBackground 
-            source={require('../../assets/images/authbg.png')} 
-            resizeMode="cover" 
+        <ImageBackground
+            source={require('../../assets/images/authbg.png')}
+            resizeMode="cover"
             style={{ width: '100%', height: '100%' }}  // Explicit dimensions
             imageStyle={{ opacity: 0.7 }}  // Makes overlay more effective
         >
