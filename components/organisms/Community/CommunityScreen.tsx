@@ -98,12 +98,6 @@ export default function CommunityScreen(): JSX.Element {
         }, 1500)
     }
 
-    const headerOpacity = scrollY.interpolate({
-        inputRange: [0, 50, 100],
-        outputRange: [1, 0.8, 0],
-        extrapolate: "clamp",
-    })
-
     const handleUserPress = (user: User): void => {
         setSelectedUser(user)
         setShowUserProfile(true)
@@ -161,7 +155,7 @@ export default function CommunityScreen(): JSX.Element {
                 style={{ flex: 1, width: "100%", height: "100%" }}
             >
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-                    <Animated.View style={{ opacity: headerOpacity }} className="pt-16 px-4 pb-4">
+                    <View className="pt-16 px-4 pb-4">
                         <View className="flex-row justify-between items-center">
                             <Text className="text-white text-2xl font-bold">Meal Mate Community</Text>
                             <TouchableOpacity
@@ -171,7 +165,7 @@ export default function CommunityScreen(): JSX.Element {
                                 <Ionicons name="trophy" size={20} color="#FBBF24" />
                             </TouchableOpacity>
                         </View>
-                    </Animated.View>
+                    </View>
 
                     <TouchableOpacity
                         className="mx-4 mb-4 bg-zinc-800 rounded-xl p-4 border border-zinc-700"
