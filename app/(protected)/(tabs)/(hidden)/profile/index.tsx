@@ -1,10 +1,6 @@
-import React from 'react'
-import { Text, View } from 'react-native'
+import ProfileScreen from '@/components/organisms/ProfileScreen';
+import React from 'react';
 
 export default function Profile() {
-    return (
-        <View>
-            <Text>Profile</Text>
-        </View>
-    )
+    return <ProfileScreen />;
 }

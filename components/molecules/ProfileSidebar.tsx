@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuthContext } from "@/context/authContext"
 import { logout } from "@/lib/modules/firebase/authService"
 import { Feather, Ionicons } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
@@ -32,10 +33,11 @@ interface ProfileSidebarProps {
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEditProfile }) => {
   const insets = useSafeAreaInsets()
   const { profileData, updateProfileImage, subscribe } = useProfileStore()
-  
+  const { profile, user, updateUserProfile } = useAuthContext()
+
   // Add local state to force re-renders
   const [localProfileData, setLocalProfileData] = useState(profileData)
-  
+
   const translateX = useRef(new Animated.Value(-SCREEN_WIDTH)).current
   const backdropOpacity = useRef(new Animated.Value(0)).current
   const scaleAnimation = useRef(new Animated.Value(0.95)).current
@@ -49,23 +51,59 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
   const glowAnimation = useRef(new Animated.Value(0)).current
   const profileImageScale = useRef(new Animated.Value(1)).current
 
-  // Subscribe to profile updates
+  // Get data from auth context (primary source of truth)
   useEffect(() => {
-    const unsubscribe = subscribe((updatedData) => {
-      console.log('ProfileSidebar received update:', updatedData) // Debug log
-      setLocalProfileData(updatedData) // Update local state
-    })
-    
-    // Initialize with current data
-    setLocalProfileData(profileData)
-    
-    return unsubscribe
-  }, [subscribe, profileData])
+    if (profile) {
+      // Create user data from auth profile
+      const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+      const realUserData = {
+        name: fullName || profile.userName || (user?.displayName || 'User'),
+        email: profile.email || user?.email || '',
+        profileImage: profile.profileImage?.url || ''
+      };
 
-  // Also update when profileData changes directly
+      console.log('ProfileSidebar: Using real profile data:', realUserData);
+      setLocalProfileData(realUserData);
+    } else if (user) {
+      // Fallback to Firebase user object
+      const fallbackData = {
+        name: user.displayName || 'User',
+        email: user.email || '',
+        profileImage: ''
+      };
+
+      console.log('ProfileSidebar: Using fallback user data:', fallbackData);
+      setLocalProfileData(fallbackData);
+    }
+  }, [
+    profile?.firstName,
+    profile?.lastName,
+    profile?.userName,
+    profile?.email,
+    profile?.profileImage?.url,
+    user?.displayName,
+    user?.email
+  ])
+
+  // Subscribe to profile store updates as backup
   useEffect(() => {
-    setLocalProfileData(profileData)
-  }, [profileData])
+    // Only use profile store data if we don't have direct profile data
+    if (!profile && !user) {
+      console.log('ProfileSidebar: Using store data as fallback:', profileData);
+      setLocalProfileData(profileData);
+    }
+
+    const unsubscribe = subscribe((updatedData) => {
+      console.log('ProfileSidebar received store update:', updatedData);
+
+      // Only use store updates if we don't have direct profile data
+      if (!profile && !user) {
+        setLocalProfileData(updatedData);
+      }
+    });
+
+    return unsubscribe;
+  }, [subscribe, profileData])
 
   // Continuous glow animation
   useEffect(() => {
@@ -236,7 +274,28 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri
+
+        // Update both profile store and real user profile
         updateProfileImage(imageUri)
+
+        try {
+          // Update the real user profile in the auth context
+          if (updateUserProfile) {
+            console.log('Updating user profile with new image');
+            // The image object expected by updateUserProfile
+            const imageObject = {
+              uri: imageUri,
+              type: 'image/jpeg',
+              name: `profile_${Date.now()}.jpg`,
+            };
+
+            await updateUserProfile({}, imageObject);
+            console.log('Real user profile updated with new image');
+          }
+        } catch (updateError) {
+          console.error('Error updating real user profile:', updateError);
+          // Continue with local update even if server update fails
+        }
 
         // Success animation
         Animated.sequence([
@@ -276,7 +335,28 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
 
       if (!result.canceled && result.assets[0]) {
         const imageUri = result.assets[0].uri
+
+        // Update profile store for immediate UI feedback
         updateProfileImage(imageUri)
+
+        try {
+          // Update the real user profile in the auth context
+          if (updateUserProfile) {
+            console.log('Updating user profile with new image from gallery');
+            // The image object expected by updateUserProfile
+            const imageObject = {
+              uri: imageUri,
+              type: result.assets[0].type || 'image/jpeg',
+              name: `profile_${Date.now()}.${result.assets[0].type?.split('/')[1] || 'jpg'}`,
+            };
+
+            await updateUserProfile({}, imageObject);
+            console.log('Real user profile updated with new image from gallery');
+          }
+        } catch (updateError) {
+          console.error('Error updating real user profile:', updateError);
+          // Continue with local update even if server update fails
+        }
 
         // Success animation
         Animated.sequence([
@@ -314,10 +394,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           onClose();
           logout()
             .then(() => {
-                router.replace('/login');
+              router.replace('/login');
             })
             .catch((error: unknown) => {
-                console.error('Logout failed:', error);
+              console.error('Logout failed:', error);
             });
         },
       },
@@ -385,16 +465,22 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           />
 
           {/* Profile image content - USE localProfileData */}
-          {localProfileData.profileImage ? (
-            <Image 
-              source={{ uri: localProfileData.profileImage }} 
+          {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
+            <Image
+              source={{ uri: localProfileData.profileImage }}
               style={styles.avatar}
               key={localProfileData.profileImage} // Force re-render
+              onError={(error) => {
+                console.log('Error loading profile image:', error);
+                // Image loading failed, but we'll show the fallback gradient in the UI
+              }}
             />
           ) : (
             <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.avatarGradient}>
               <Text style={styles.avatarText}>
-                {localProfileData.name.charAt(0).toUpperCase()}
+                {localProfileData.name && localProfileData.name.length > 0
+                  ? localProfileData.name.charAt(0).toUpperCase()
+                  : "U"}
               </Text>
             </LinearGradient>
           )}
@@ -474,15 +560,33 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
             <Text style={styles.userName}>{localProfileData.name}</Text>
             <Text style={styles.userEmail}>{localProfileData.email}</Text>
 
-            <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-              <LinearGradient
-                colors={["rgba(250, 204, 21, 0.2)", "rgba(249, 115, 22, 0.2)"]}
-                style={styles.buttonGradient}
+            <View style={{ flexDirection: 'row' }}>
+              <TouchableOpacity
+                style={[styles.editProfileButton, { marginRight: 8 }]}
+                onPress={() => {
+                  onClose();
+                  router.push('/profile');
+                }}
               >
-                <Ionicons name="create-outline" size={16} color="#FACC15" />
-                <Text style={styles.editProfileText}>Edit Profile</Text>
-              </LinearGradient>
-            </TouchableOpacity>
+                <LinearGradient
+                  colors={["rgba(250, 204, 21, 0.2)", "rgba(249, 115, 22, 0.2)"]}
+                  style={styles.buttonGradient}
+                >
+                  <Ionicons name="person-outline" size={16} color="#FACC15" />
+                  <Text style={styles.editProfileText}>View Profile</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
+                <LinearGradient
+                  colors={["rgba(250, 204, 21, 0.2)", "rgba(249, 115, 22, 0.2)"]}
+                  style={styles.buttonGradient}
+                >
+                  <Ionicons name="create-outline" size={16} color="#FACC15" />
+                  <Text style={styles.editProfileText}>Edit Profile</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </Animated.View>
 

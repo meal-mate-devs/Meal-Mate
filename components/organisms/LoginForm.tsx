@@ -1,7 +1,6 @@
-// app/(auth)/login.tsx
 import { useAuthContext } from '@/context/authContext';
+import { checkNetworkConnectivity, handleLoginError, validateEmail } from '@/lib/utils/loginAuthHelpers';
 import { Ionicons } from '@expo/vector-icons';
-import NetInfo from '@react-native-community/netinfo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
@@ -27,7 +26,6 @@ export default function LoginForm() {
     const [rememberMe, setRememberMe] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Dialog state
     const [dialogVisible, setDialogVisible] = useState(false);
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
@@ -36,20 +34,11 @@ export default function LoginForm() {
     const router = useRouter();
     const { login, doesAccountExist } = useAuthContext();
 
-    // Regex for email validation
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-
-    const validateEmail = (email: string): boolean => {
-        return emailRegex.test(email);
-    };
-
-    // Clear all errors
     const clearErrors = () => {
         setEmailError('');
         setPasswordError('');
     };
 
-    // Show dialog helper function
     const showDialog = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string = '') => {
         setDialogType(type);
         setDialogTitle(title);
@@ -57,69 +46,10 @@ export default function LoginForm() {
         setDialogVisible(true);
     };
 
-    // Helper function to check network connectivity
-    const checkNetworkConnectivity = async () => {
-        try {
-            if (Platform.OS === 'web') {
-                return navigator.onLine;
-            } else {
-                const netInfoState = await NetInfo.fetch();
-                return netInfoState.isConnected && netInfoState.isInternetReachable;
-            }
-        } catch (error) {
-            console.log('Network check error:', error);
-            return true;
-        }
-    };
-
-    // Helper to identify network-related issues in errors - reusing your existing function
-    const isNetworkRelatedError = (error: any): boolean => {
-        if (!error) return false;
-
-        let errorMessage = '';
-        let errorCode = '';
-
-        if (typeof error === 'object') {
-            errorMessage = error.message || error.toString();
-            errorCode = error.code || '';
-
-            if (error.name === 'TimeoutError') return true;
-
-            if (error instanceof TypeError &&
-                (errorMessage.includes('Failed to fetch') ||
-                    errorMessage.includes('Network request failed'))) {
-                return true;
-            }
-        } else {
-            errorMessage = String(error);
-        }
-
-        if (errorCode === 'auth/network-request-failed' ||
-            errorCode === 'NETWORK_ERROR' ||
-            errorCode === 'ENOTFOUND' ||
-            errorCode === 'ECONNREFUSED' ||
-            errorCode === 'ECONNRESET' ||
-            errorCode === 'ETIMEDOUT') {
-            return true;
-        }
-
-        const networkErrorPhrases = [
-            'network', 'connection', 'internet', 'offline', 'timeout',
-            'unreachable', 'connect', 'dns', 'host', 'socket', 'request failed',
-            'cannot reach', 'server unavailable', 'no internet'
-        ];
-
-        return networkErrorPhrases.some(phrase =>
-            errorMessage.toLowerCase().includes(phrase));
-    };
-
     const handleLogin = async () => {
-        // Clear previous errors
         clearErrors();
 
-        // Client-side validation
         let hasError = false;
-
         if (!email.trim()) {
             setEmailError('Please enter your email or username');
             hasError = true;
@@ -135,7 +65,6 @@ export default function LoginForm() {
 
         if (hasError) return;
 
-        // Check network connectivity before proceeding
         const isConnected = await checkNetworkConnectivity();
         if (!isConnected) {
             showDialog('error', 'Network Error', 'No internet connection. Please check your network and try again.');
@@ -146,9 +75,7 @@ export default function LoginForm() {
             setIsLoading(true);
             showDialog('loading', 'Signing In', 'Please wait while we sign you in...');
 
-            // If email contains @, perform additional validations
             if (email.includes('@')) {
-                // Basic domain validation
                 const domain = email.substring(email.indexOf('@') + 1);
                 if (!domain.includes('.') || domain.length < 3) {
                     setDialogVisible(false);
@@ -157,7 +84,6 @@ export default function LoginForm() {
                     return;
                 }
 
-                // Check for disposable email domains
                 const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
                 if (disposableDomains.includes(domain)) {
                     setDialogVisible(false);
@@ -166,17 +92,12 @@ export default function LoginForm() {
                     return;
                 }
 
-                // Check if account exists before attempting login
                 try {
-                    // Set a timeout for the account check
                     const accountCheckPromise = doesAccountExist(email.trim());
                     const accountCheckWithTimeout = Promise.race([
                         accountCheckPromise,
-                        new Promise((_, reject) =>
-                            setTimeout(() => reject(new Error('Account check timed out')), 10000)
-                        )
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Account check timed out')), 10000))
                     ]);
-
                     const accountExists = await accountCheckWithTimeout as boolean;
 
                     if (!accountExists) {
@@ -187,10 +108,8 @@ export default function LoginForm() {
                     }
                 } catch (accountCheckError) {
                     console.log('Account check error:', accountCheckError);
-
                     setDialogVisible(false);
 
-                    // Check again if we lost connection during the account check
                     const isStillConnected = await checkNetworkConnectivity();
                     if (!isStillConnected) {
                         showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
@@ -198,53 +117,23 @@ export default function LoginForm() {
                         return;
                     }
 
-                    // Process the error from account check
-                    if (isNetworkRelatedError(accountCheckError)) {
-                        showDialog('error', 'Network Error', 'Network error while checking your account. Please check your connection and try again.');
-                        setIsLoading(false);
-                        return;
-                    }
-
-                    // For other types of errors during account check
-                    let errorMessage = '';
-                    if (typeof accountCheckError === 'object' && accountCheckError !== null) {
-                        errorMessage = (accountCheckError as any).message || accountCheckError.toString();
-                    } else {
-                        errorMessage = String(accountCheckError);
-                    }
-
-                    if (errorMessage.toLowerCase().includes('email')) {
-                        setEmailError('Error validating email. Please check your email and try again.');
-                    } else if (errorMessage.toLowerCase().includes('timeout') ||
-                        errorMessage.toLowerCase().includes('timed out')) {
-                        showDialog('error', 'Request Timeout', 'Request timed out. Please try again later.');
-                    } else {
-                        showDialog('error', 'Account Check Error', 'Error checking account. Please try again later.');
-                    }
-
+                    handleLoginError(accountCheckError, setEmailError, setPasswordError, showDialog);
                     setIsLoading(false);
                     return;
                 }
             }
 
-            // Attempt login
             const userCredential = await login(email.trim(), password.trim());
 
-            // Check if email is verified after successful login
             if (userCredential && !userCredential.emailVerified) {
                 setDialogVisible(false);
                 showDialog('warning', 'Email Not Verified', 'Please verify your email address before continuing. Check your inbox for the verification email.');
-                
-                // Let the main navigation handle redirect to verify email page
-                // The app/index.tsx will automatically redirect unverified users
                 return;
             }
 
-            // Show success dialog before navigating
             setDialogVisible(false);
             showDialog('success', 'Success!', 'You have been successfully logged in.');
 
-            // Navigate after a short delay to show the success message
             setTimeout(() => {
                 setDialogVisible(false);
                 router.push('/(protected)/(tabs)/home');
@@ -253,116 +142,7 @@ export default function LoginForm() {
         } catch (error) {
             console.log('Login error:', error);
             setDialogVisible(false);
-
-            // Check if we lost connection during login
-            const isStillConnected = await checkNetworkConnectivity();
-            if (!isStillConnected) {
-                showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
-                setIsLoading(false);
-                return;
-            }
-
-            // Extract error message and code properly
-            let errorMessage = '';
-            let errorCode = '';
-
-            // Check if error is a FirebaseError
-            const errorStr = typeof error === 'string' ? error : (error && typeof error === 'object' && 'toString' in error) ? (error as any).toString() : '';
-            if (errorStr.includes('FirebaseError:')) {
-                // Extract error code from the error message
-                const match = errorStr.match(/\(([^)]+)\)/);
-                if (match && match[1]) {
-                    errorCode = match[1];
-                }
-                errorMessage = errorStr;
-            } else {
-                // For other types of errors
-                if (typeof error === 'object' && error !== null) {
-                    errorMessage = (error as any).message || errorStr;
-                    errorCode = (error as any).code || '';
-                } else {
-                    errorMessage = errorStr;
-                    errorCode = '';
-                }
-            }
-
-            console.log('Error code:', errorCode);
-            console.log('Error message:', errorMessage);
-
-            // Network-related error detection
-            if (isNetworkRelatedError(error)) {
-                showDialog('error', 'Network Error', 'Network error. Please check your internet connection and try again.');
-            } else if (errorCode) {
-                switch (errorCode) {
-                    case 'auth/user-not-found':
-                        setEmailError('Account does not exist. Please sign up first.');
-                        break;
-                    case 'auth/wrong-password':
-                        setPasswordError('Wrong password. Please try again.');
-                        break;
-                    case 'auth/invalid-email':
-                        setEmailError('Invalid email format');
-                        break;
-                    case 'auth/user-disabled':
-                        showDialog('error', 'Account Disabled', 'Your account has been disabled. Please contact support.');
-                        break;
-                    case 'auth/too-many-requests':
-                        showDialog('warning', 'Too Many Attempts', 'Too many attempts. Please try again later or reset your password.');
-                        break;
-                    case 'auth/invalid-credential':
-                    case 'auth/invalid-login-credentials':
-                        // Check if this might be an unverified email issue
-                        if (errorMessage.toLowerCase().includes('verify') || 
-                            errorMessage.toLowerCase().includes('verification')) {
-                            showDialog('warning', 'Email Not Verified', 'Please verify your email address first. Check your inbox for the verification email.');
-                            // Let main navigation handle redirect to verify email page
-                        } else {
-                            showDialog('error', 'Invalid Credentials', 'Your email/username or password is incorrect. Please try again.');
-                        }
-                        break;
-                    case 'auth/network-request-failed':
-                        showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
-                        break;
-                    case 'auth/account-exists-with-different-credential':
-                        showDialog('error', 'Sign-in Method Error', 'This email is registered with a different sign-in method. Try another option.');
-                        break;
-                    case 'auth/operation-not-allowed':
-                        showDialog('error', 'Sign-in Error', 'This sign-in method is not available. Please try another option.');
-                        break;
-                    case 'auth/requires-recent-login':
-                        showDialog('warning', 'Session Expired', 'For security, please log out and log in again before retrying.');
-                        break;
-                    default:
-                        // If we have a Firebase error code but it's not in our list
-                        if (errorCode.startsWith('auth/')) {
-                            // It's an auth error, but not one we specifically handled
-                            if (errorMessage.toLowerCase().includes('password')) {
-                                setPasswordError('Password issue. Please try again or reset your password.');
-                            } else if (errorMessage.toLowerCase().includes('email')) {
-                                setEmailError('Email issue. Please check again.');
-                            } else {
-                                showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again.');
-                            }
-                        } else {
-                            // Some other Firebase error
-                            showDialog('error', 'Sign-in Error', 'Unable to sign in. Please try again later.');
-                        }
-                }
-            } else if (errorMessage) {
-                // We have an error message but no code
-                if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('connection')) {
-                    showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
-                } else if (errorMessage.toLowerCase().includes('password')) {
-                    setPasswordError('Password issue. Please try again or reset your password.');
-                } else if (errorMessage.toLowerCase().includes('email')) {
-                    setEmailError('Email issue. Please check again.');
-                } else {
-                    showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again later.');
-                }
-            } else {
-                // Fallback for when we have no useful error information
-                showDialog('error', 'Sign-in Failed', 'Sign-in failed. Please try again or contact support if the issue persists.');
-            }
+            handleLoginError(error, setEmailError, setPasswordError, showDialog);
         } finally {
             setIsLoading(false);
         }
@@ -390,9 +170,9 @@ export default function LoginForm() {
 
     return (
         <>
-            <ImageBackground 
-                source={require('../../assets/images/authbg.png')} 
-                resizeMode="cover" 
+            <ImageBackground
+                source={require('../../assets/images/authbg.png')}
+                resizeMode="cover"
                 style={{ width: '100%', height: '100%' }}
                 imageStyle={{ opacity: 0.8 }}
             >
@@ -421,7 +201,7 @@ export default function LoginForm() {
                                         />
                                     </View>
                                 </View>
-                                
+
                                 {/* Email/Username Input */}
                                 <View className="mb-4">
                                     <View className={`bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700 ${emailError ? 'border-red-400' : ''}`}>
@@ -487,7 +267,7 @@ export default function LoginForm() {
                                         <Text className="text-yellow-400 text-sm font-semibold">Forgot password?</Text>
                                     </TouchableOpacity>
                                 </View>
-                                
+
                                 {/* Sign In Button - Now with Gradient */}
                                 <TouchableOpacity
                                     className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
