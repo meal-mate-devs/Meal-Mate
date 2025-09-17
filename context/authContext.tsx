@@ -11,45 +11,116 @@ import {
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
-// Define the types
 type User = {
   uid: string;
   email: string | null;
   displayName: string | null;
   emailVerified: boolean;
-  // Add other user properties you need
+};
+
+type Profile = {
+  firebaseUid: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  age: number;
+  gender: string;
+  // dateOfBirth is stored as Date in DB but handled as string in frontend
+  dateOfBirth: string;
+  phoneNumber: string;
+  email: string;
+  profileImage?: {
+    url: string | null;
+    publicId: string | null;
+  };
+  isProfileComplete: boolean;
+  isChef: boolean;
+  isPro: boolean;
 };
 
 type AuthContextType = {
   user: User | null;
+  profile: Profile | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<any>;
-  register: (email: string, password: string, username: string, phoneNumber: string,) => Promise<any>;
+  register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage?: any) => Promise<any>;
+  updateUserProfile: (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => Promise<any>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   doesAccountExist: (email: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
 
-
-// Create context
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Provider component
 export function AuthContextProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const fetchUserProfile = async (firebaseUser: any) => {
+    try {
+      console.log('Fetching user profile...');
+      const token = await firebaseUser.getIdToken();
+      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-  // Listen for auth state changes
+      if (!response.ok) {
+        throw new Error(`Profile fetch failed with status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Profile fetch successful:', data.user?.userName);
+      setProfile(data.user);
+      // Only update the profile if there are actual changes
+      if (JSON.stringify(data.user) !== JSON.stringify(profile)) {
+        console.log('Updating profile state with new data');
+        setProfile(data.user);
+      } else {
+        console.log('Profile data unchanged, skipping state update');
+      }
+
+      return data.user;
+    } catch (error) {
+      console.log('Error fetching profile:', error);
+      setProfile(null);
+      return null;
+    }
+  };
+
+  // Add a ref to track the last profile refresh time
+  const lastProfileRefreshRef = React.useRef<number>(0);
+
+  const refreshProfile = async () => {
+    if (!auth.currentUser) {
+      console.log('No authenticated user found');
+      return;
+    }
+
+    // Add debounce to prevent excessive API calls (min 2 seconds between refreshes)
+    const now = Date.now();
+    if (now - lastProfileRefreshRef.current < 2000) {
+      console.log('Profile refresh throttled - too many requests');
+      return;
+    }
+
+    lastProfileRefreshRef.current = now;
+    await fetchUserProfile(auth.currentUser);
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // Set user object with typesafe properties
         setUser({
           uid: firebaseUser.uid,
           email: firebaseUser.email,
@@ -57,8 +128,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           emailVerified: firebaseUser.emailVerified,
         });
         setIsAuthenticated(firebaseUser.emailVerified);
+        await fetchUserProfile(firebaseUser);
       } else {
         setUser(null);
+        setProfile(null);
         setIsAuthenticated(false);
       }
       setIsLoading(false);
@@ -78,7 +151,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   };
 
   // Register function
-  const register = async (email: string, password: string, username: string, phoneNumber: string,) => {
+  const register = async (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage: any) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       if (userCredential.user) {
@@ -91,24 +164,63 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
       const token = await userCredential.user.getIdToken();
 
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const dobDate = new Date(dateOfBirth);
+      const formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
+
+      const formData = new FormData();
+      formData.append('userName', username);
+      formData.append('firstName', firstName);
+      formData.append('lastName', lastName);
+      formData.append('age', age.toString());
+      formData.append('gender', gender);
+      formData.append('dateOfBirth', formattedDOB);
+      formData.append('phoneNumber', phoneNumber);
+
+      if (profileImage) {
+        const imageType = profileImage.type || profileImage.mimeType || 'image/jpeg';
+        const fileName = profileImage.fileName || `profile_${Date.now()}.${imageType.split('/')[1]}`;
+
+        formData.append('profileImage', {
+          uri: profileImage.uri,
+          type: imageType,
+          name: fileName,
+        } as any);
+
+        console.log('Appending profile image to form data:', {
+          uri: profileImage.uri,
+          type: imageType,
+          name: fileName
+        });
+      }
+
+
+
+      // Important: When sending FormData, don't manually set Content-Type header
+      // The browser/fetch API will set it automatically with the correct boundary
+      const backendResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          // Don't set Content-Type when sending FormData
         },
-        body: JSON.stringify({
-          phoneNumber: phoneNumber,
-          userName: username
-        }),
+        body: formData,
       });
 
-      return response;
+      console.log('Backend registration response status:', backendResponse.status);
+      const responseData = await backendResponse.json();
+      console.log('Backend registration response:', responseData);
+
+      return backendResponse;
 
     } catch (error) {
       throw error;
     }
   };
+
+
+
+
+
 
   // Logout function
   const logout = async () => {
@@ -130,7 +242,6 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Check if account exists
   const doesAccountExist = async (email: string): Promise<boolean> => {
     try {
       const methods = await fetchSignInMethodsForEmail(auth, email);
@@ -141,7 +252,6 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Add resend verification email function
   const resendVerificationEmail = async () => {
     try {
       if (auth.currentUser) {
@@ -156,18 +266,92 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateUserProfile = async (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      const token = await auth.currentUser.getIdToken();
+
+      const formData = new FormData();
+
+      // Add user data to formData
+      if (userData.userName) formData.append('userName', userData.userName);
+      if (userData.firstName) formData.append('firstName', userData.firstName);
+      if (userData.lastName) formData.append('lastName', userData.lastName);
+      if (userData.age) formData.append('age', userData.age.toString());
+      if (userData.gender) formData.append('gender', userData.gender);
+
+      // Handle date of birth with proper formatting
+      if (userData.dateOfBirth) {
+        const dobDate = new Date(userData.dateOfBirth);
+        const formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
+        formData.append('dateOfBirth', formattedDOB);
+      }
+
+      if (userData.phoneNumber) formData.append('phoneNumber', userData.phoneNumber);
+
+      if (profileImage) {
+        const imageType = profileImage.type || profileImage.mimeType || 'image/jpeg';
+        const fileName = profileImage.fileName || `profile_${Date.now()}.${imageType.split('/')[1]}`;
+
+        formData.append('profileImage', {
+          uri: profileImage.uri,
+          type: imageType,
+          name: fileName,
+        } as any);
+
+        console.log('Appending profile image to form data:', {
+          uri: profileImage.uri,
+          type: imageType,
+          name: fileName
+        });
+      }
+
+      const response = await fetch(`${API_BASE_URL}/auth/update-profile`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Profile update failed with status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Profile update response:', responseData);
+
+      if (responseData.user) {
+        console.log('New profile image URL:', responseData.user.profileImage?.url);
+        setProfile(responseData.user);
+      }
+
+      return responseData;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
         user,
+        profile,
         isAuthenticated,
         isLoading,
         login,
         register,
+        updateUserProfile,
         logout,
         sendPasswordReset,
         doesAccountExist,
-        resendVerificationEmail
+        resendVerificationEmail,
+        refreshProfile
       }}
     >
       {children}
@@ -175,7 +359,6 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook to use the auth context
 export function useAuthContext() {
   const context = useContext(AuthContext);
 

@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuthContext } from "@/context/authContext"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef, useState } from "react"
 import { Animated, Image, Text, TouchableOpacity, View } from "react-native"
@@ -12,18 +13,64 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
   onProfilePress,
 }) => {
   const { profileData, subscribe } = useProfileStore()
+  const { profile, user } = useAuthContext()
   const [localProfileData, setLocalProfileData] = useState(profileData)
   const greetingAnimation = useRef(new Animated.Value(0)).current
   const profilePulse = useRef(new Animated.Value(1)).current
-  // Subscribe to profile updates
-  useEffect(() => {
-    const unsubscribe = subscribe((updatedData) => {
-      console.log("Header received update:", updatedData) // Debug log
-      setLocalProfileData(updatedData)
-    })
 
-    return unsubscribe
-  }, [subscribe])
+  // Get real user data from auth context
+  useEffect(() => {
+    if (profile) {
+      const fullName = `${profile.firstName || ''} ${profile.lastName || ''}`.trim();
+      const realUserData = {
+        name: fullName || profile.userName || (user?.displayName || 'User'),
+        email: profile.email || user?.email || '',
+        profileImage: profile.profileImage?.url || ''
+      };
+
+      console.log("HomeHeader: Using real profile data:", realUserData);
+      setLocalProfileData(realUserData);
+    } else if (user) {
+      // Fallback to Firebase user
+      const fallbackData = {
+        name: user.displayName || 'User',
+        email: user.email || '',
+        profileImage: ''
+      };
+
+      console.log("HomeHeader: Using fallback user data:", fallbackData);
+      setLocalProfileData(fallbackData);
+    }
+  }, [
+    profile?.firstName,
+    profile?.lastName,
+    profile?.userName,
+    profile?.email,
+    profile?.profileImage?.url,
+    user?.displayName,
+    user?.email
+  ]);
+
+  // Subscribe to profile store updates as backup
+  useEffect(() => {
+    console.log("HomeHeader: Profile store data:", profileData);
+
+    // Only use profile store data if we don't have direct data
+    if (!profile && !user) {
+      setLocalProfileData(profileData);
+    }
+
+    const unsubscribe = subscribe((updatedData) => {
+      console.log("HomeHeader received store update:", updatedData);
+
+      // Only use store updates if we don't have direct profile data
+      if (!profile && !user) {
+        setLocalProfileData(updatedData);
+      }
+    });
+
+    return unsubscribe;
+  }, [subscribe, profileData])
 
   // Get time-based greeting
   const getGreeting = () => {
@@ -128,7 +175,7 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
           </View>
         </Animated.View>
 
-        <View className="flex-row items-center space-x-4">  
+        <View className="flex-row items-center space-x-4">
           {/* Profile Picture */}
           <TouchableOpacity onPress={handleProfilePress} activeOpacity={0.8} className="relative">
             <Animated.View
@@ -155,14 +202,17 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
 
                 {/* Profile Image/Avatar */}
                 <View className="absolute inset-1 rounded-full overflow-hidden">
-                  {localProfileData.profileImage ? (
+                  {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
                     <Image
                       key={localProfileData.profileImage}
                       source={{ uri: localProfileData.profileImage }}
                       className="w-full h-full"
                       resizeMode="cover"
                       onLoad={() => console.log("Image loaded:", localProfileData.profileImage)} // Debug
-                      onError={(error) => console.log("Image error:", error)} // Debug
+                      onError={(error) => {
+                        console.log("Image error:", error); // Debug
+                        // If image fails to load, show the fallback gradient
+                      }}
                     />
                   ) : (
                     <LinearGradient
@@ -172,7 +222,7 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
                       className="w-full h-full items-center justify-center"
                     >
                       <Text className="text-white text-xl font-bold">
-                        {firstName.charAt(0).toUpperCase()}
+                        {firstName && firstName.length > 0 ? firstName.charAt(0).toUpperCase() : "U"}
                       </Text>
                     </LinearGradient>
                   )}
