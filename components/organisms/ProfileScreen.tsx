@@ -1,6 +1,7 @@
 import { useAuthContext } from '@/context/authContext';
 import { getProfileImagePermission } from '@/lib/utils/registerValidation';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
@@ -44,6 +45,9 @@ const ProfileScreen: React.FC = () => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [profileImage, setProfileImage] = useState<EnhancedImageAsset | null>(null);
     const [currentProfileImageUrl, setCurrentProfileImageUrl] = useState<string | null>(null);
+
+    // UI state
+    const [showDatePicker, setShowDatePicker] = useState(false);
 
     // Form errors
     const [formErrors, setFormErrors] = useState({
@@ -183,18 +187,22 @@ const ProfileScreen: React.FC = () => {
     };
 
     // Helper function to format date string as YYYY-MM-DD
-    const formatDateString = (dateStr: string) => {
-        if (!dateStr) return '';
+    const formatDateString = (date: Date) => {
         try {
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr;
-
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         } catch (error) {
-            return dateStr;
+            return '';
+        }
+    };
+    
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setDateOfBirth(formatDateString(selectedDate));
+            if (formErrors.dateOfBirth) setFormErrors({ ...formErrors, dateOfBirth: '' });
         }
     };
 
@@ -552,27 +560,26 @@ const ProfileScreen: React.FC = () => {
                     {/* Date of Birth */}
                     <View className="mb-4">
                         <Text className="text-gray-400 mb-2 text-sm pl-2">Date of Birth</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
+                        <TouchableOpacity 
+                            className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700"
+                            onPress={() => setShowDatePicker(true)}
+                        >
                             <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Date of Birth (YYYY-MM-DD)"
-                                placeholderTextColor="#9CA3AF"
-                                value={dateOfBirth}
-                                onChangeText={(text) => {
-                                    setDateOfBirth(text);
-                                    if (formErrors.dateOfBirth) setFormErrors({ ...formErrors, dateOfBirth: '' });
-                                }}
-                                onBlur={() => {
-                                    // Format the date properly when user finishes typing
-                                    setDateOfBirth(formatDateString(dateOfBirth));
-                                }}
+                            <Text className="flex-1 text-white text-base ml-3">
+                                {dateOfBirth ? dateOfBirth : "Select Date of Birth"}
+                            </Text>
+                        </TouchableOpacity>
+                        {showDatePicker && (
+                            <DateTimePicker
+                                value={dateOfBirth ? new Date(dateOfBirth) : new Date()}
+                                mode="date"
+                                display="default"
+                                onChange={handleDateChange}
+                                maximumDate={new Date()}
                             />
-                        </View>
-                        {formErrors.dateOfBirth ? (
+                        )}
+                        {formErrors.dateOfBirth && (
                             <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.dateOfBirth}</Text>
-                        ) : (
-                            <Text className="text-gray-400 text-xs ml-4 mt-1">Format: YYYY-MM-DD (e.g., 1990-01-31)</Text>
                         )}
                     </View>
 
