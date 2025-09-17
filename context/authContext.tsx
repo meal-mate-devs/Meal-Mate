@@ -51,9 +51,10 @@ type AuthContextType = {
   doesAccountExist: (email: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshAuthState: () => Promise<void>;
 };
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -67,7 +68,13 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Fetching user profile...');
       const token = await firebaseUser.getIdToken();
-      const response = await fetch(`${API_BASE_URL}/auth/profile`, {
+      
+      // Use the correct endpoint from the backend API: /api/auth/profile
+      const profileEndpoint = `${API_BASE_URL}/auth/profile`;
+      
+      console.log('Making request to:', profileEndpoint);
+      
+      const response = await fetch(profileEndpoint, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -76,12 +83,49 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        throw new Error(`Profile fetch failed with status: ${response.status}`);
+        console.error('Profile fetch failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: profileEndpoint
+        });
+        
+        // Create a basic fallback profile if the API call fails
+        // This allows the app to function with minimal data
+        const basicProfile: Profile = {
+          firebaseUid: firebaseUser.uid,
+          email: firebaseUser.email || '',
+          userName: firebaseUser.email?.split('@')[0] || 'User',
+          firstName: '',
+          lastName: '',
+          age: 0,
+          gender: '',
+          dateOfBirth: '',
+          phoneNumber: '',
+          profileImage: {
+            url: null,
+            publicId: null
+          },
+          isProfileComplete: false,
+          isChef: false,
+          isPro: false
+        };
+        
+        console.log('Using basic fallback profile due to API error:', basicProfile);
+        setProfile(basicProfile);
+        
+        return basicProfile;
       }
 
+      // Parse the response and extract the user object
       const data = await response.json();
-      console.log('Profile fetch successful:', data.user?.userName);
-      setProfile(data.user);
+      
+      if (!data || !data.user) {
+        console.error('Profile fetch response missing user data:', data);
+        throw new Error('Invalid profile data received');
+      }
+      
+      console.log('Profile fetch successful:', data.user.userName);
+      
       // Only update the profile if there are actual changes
       if (JSON.stringify(data.user) !== JSON.stringify(profile)) {
         console.log('Updating profile state with new data');
@@ -93,8 +137,30 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       return data.user;
     } catch (error) {
       console.log('Error fetching profile:', error);
-      setProfile(null);
-      return null;
+      
+      // Create a fallback profile as a last resort when even error handling fails
+      const emergencyFallback: Profile = {
+        firebaseUid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        userName: firebaseUser.email?.split('@')[0] || 'User',
+        firstName: '',
+        lastName: '',
+        age: 0,
+        gender: '',
+        dateOfBirth: '',
+        phoneNumber: '',
+        profileImage: {
+          url: null,
+          publicId: null
+        },
+        isProfileComplete: false,
+        isChef: false,
+        isPro: false
+      };
+      
+      console.log('Using emergency fallback profile after catch block:', emergencyFallback);
+      setProfile(emergencyFallback);
+      return emergencyFallback;
     }
   };
 
@@ -116,6 +182,30 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
     lastProfileRefreshRef.current = now;
     await fetchUserProfile(auth.currentUser);
+  };
+
+  const refreshAuthState = async () => {
+    if (!auth.currentUser) {
+      console.log('No authenticated user found for auth state refresh');
+      return;
+    }
+
+    try {
+      await auth.currentUser.reload();
+      const firebaseUser = auth.currentUser;
+      
+      setUser({
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        emailVerified: firebaseUser.emailVerified,
+      });
+      setIsAuthenticated(firebaseUser.emailVerified);
+      
+      console.log('Auth state refreshed - emailVerified:', firebaseUser.emailVerified);
+    } catch (error) {
+      console.error('Error refreshing auth state:', error);
+    }
   };
 
   useEffect(() => {
@@ -193,11 +283,19 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         });
       }
 
+      console.log('Making registration request to:', `${API_BASE_URL}/auth/register`);
+      console.log('Request details:', {
+        method: 'POST',
+        url: `${API_BASE_URL}/auth/register`,
+        hasToken: !!token,
+        hasImage: !!profileImage
+      });
+
 
 
       // Important: When sending FormData, don't manually set Content-Type header
       // The browser/fetch API will set it automatically with the correct boundary
-      const backendResponse = await fetch(`${process.env.EXPO_PUBLIC_API_URL}/auth/register`, {
+      const backendResponse = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -209,6 +307,15 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       console.log('Backend registration response status:', backendResponse.status);
       const responseData = await backendResponse.json();
       console.log('Backend registration response:', responseData);
+
+      if (!backendResponse.ok) {
+        console.error('Backend registration failed:', {
+          status: backendResponse.status,
+          statusText: backendResponse.statusText,
+          responseData
+        });
+        throw new Error(`Backend registration failed: ${responseData.error || responseData.message || 'Unknown error'}`);
+      }
 
       return backendResponse;
 
@@ -351,7 +458,8 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         sendPasswordReset,
         doesAccountExist,
         resendVerificationEmail,
-        refreshProfile
+        refreshProfile,
+        refreshAuthState
       }}
     >
       {children}

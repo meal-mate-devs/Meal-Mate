@@ -2,7 +2,7 @@
 
 import { auth } from "../config/clientApp";
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
     private async getAuthToken(): Promise<string | null> {

@@ -2,6 +2,7 @@ import { useAuthContext } from '@/context/authContext';
 import { getAuthErrorMessage } from '@/lib/utils/registerErrorHandlers';
 import { getProfileImagePermission, validateSignupForm } from '@/lib/utils/registerValidation';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import NetInfo from '@react-native-community/netinfo';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -35,6 +36,7 @@ export default function RegistrationForm() {
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showGenderPicker, setShowGenderPicker] = useState(false);
+    const [showDatePicker, setShowDatePicker] = useState(false);
     interface EnhancedImageAsset {
         uri: string;
         width?: number;
@@ -259,19 +261,22 @@ export default function RegistrationForm() {
     };
 
     // Helper function to format date string as YYYY-MM-DD
-    const formatDateString = (dateStr: string) => {
-        if (!dateStr) return '';
+    const formatDateString = (date: Date) => {
         try {
-            // Handle different date formats the user might input
-            const date = new Date(dateStr);
-            if (isNaN(date.getTime())) return dateStr;
-
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         } catch (error) {
-            return dateStr;
+            return '';
+        }
+    };
+    
+    const handleDateChange = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(false);
+        if (selectedDate) {
+            setDateOfBirth(formatDateString(selectedDate));
+            if (dateOfBirthError) setDateOfBirthError('');
         }
     };
 
@@ -598,26 +603,27 @@ export default function RegistrationForm() {
                             <View className="mb-4">
                                 <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
                                     <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                                    <TextInput
-                                        className="flex-1 text-white text-base ml-3"
-                                        placeholder="Date of Birth (YYYY-MM-DD)"
-                                        placeholderTextColor="#9CA3AF"
-                                        value={dateOfBirth}
-                                        onChangeText={(text) => {
-                                            setDateOfBirth(text);
-                                            if (dateOfBirthError) setDateOfBirthError('');
-                                        }}
-                                        onBlur={() => {
-                                            // Format the date properly when user finishes typing
-                                            setDateOfBirth(formatDateString(dateOfBirth));
-                                        }}
-                                    />
+                                    <TouchableOpacity 
+                                        className="flex-1"
+                                        onPress={() => setShowDatePicker(true)}
+                                    >
+                                        <Text className="text-white text-base ml-3">
+                                            {dateOfBirth ? dateOfBirth : "Select Date of Birth"}
+                                        </Text>
+                                    </TouchableOpacity>
                                 </View>
+                                {showDatePicker && (
+                                    <DateTimePicker
+                                        value={dateOfBirth ? new Date(dateOfBirth) : new Date()}
+                                        mode="date"
+                                        display="default"
+                                        onChange={handleDateChange}
+                                        maximumDate={new Date()}
+                                    />
+                                )}
                                 {dateOfBirthError ? (
                                     <Text className="text-red-500 text-s ml-4 mt-1">{dateOfBirthError}</Text>
-                                ) : (
-                                    <Text className="text-gray-400 text-xs ml-4 mt-1">Format: YYYY-MM-DD (e.g., 1990-01-31)</Text>
-                                )}
+                                ) : null}
                             </View>
 
                             <View className="mb-4">

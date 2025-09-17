@@ -18,13 +18,24 @@ export default function VerifyEmailForm() {
     const [countdown, setCountdown] = useState(0);
     const [isResending, setIsResending] = useState(false);
     const [isCheckingVerification, setIsCheckingVerification] = useState(false);
-    const { user, resendVerificationEmail: sendEmailVerificationLink } = useAuthContext();
+    const { user, resendVerificationEmail: sendEmailVerificationLink, refreshAuthState } = useAuthContext();
 
     // Dialog state
     const [dialogVisible, setDialogVisible] = useState(false);
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
+
+    // Auto-redirect when email becomes verified
+    useEffect(() => {
+        if (user?.emailVerified) {
+            // Small delay to ensure state is stable, then redirect
+            const timer = setTimeout(() => {
+                router.replace('/(protected)/(tabs)/home');
+            }, 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [user?.emailVerified, router]);
 
     useEffect(() => {
         if (countdown > 0) {
@@ -72,12 +83,18 @@ export default function VerifyEmailForm() {
             if (auth.currentUser) {
                 await auth.currentUser.reload();
                 
+                // Refresh the auth state in context to trigger navigation
+                await refreshAuthState();
+                
                 if (auth.currentUser.emailVerified) {
                     setDialogVisible(false);
-                    showDialog('success', 'Email Verified!', 'Your email has been successfully verified. The app will automatically take you to the home screen.');
+                    showDialog('success', 'Email Verified!', 'Your email has been successfully verified. Redirecting to home screen...');
                     
-                    // Don't redirect manually, let the main navigation logic handle it
-                    // The app/index.tsx will detect the change and redirect automatically
+                    // Wait a moment for the dialog to show, then redirect
+                    setTimeout(() => {
+                        setDialogVisible(false);
+                        router.replace('/(protected)/(tabs)/home');
+                    }, 2000);
                 } else {
                     setDialogVisible(false);
                     showDialog('warning', 'Not Verified Yet', 'Your email is not verified yet. Please check your inbox and click the verification link.');
