@@ -76,13 +76,22 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       
       console.log('Making request to:', profileEndpoint);
       
-      const response = await fetch(profileEndpoint, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+      );
+      
+      // Race between fetch and timeout
+      const response = await Promise.race([
+        fetch(profileEndpoint, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }),
+        timeoutPromise
+      ]) as Response;
 
       if (!response.ok) {
         console.error('Profile fetch failed:', {
@@ -96,13 +105,21 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           console.log('User not found, retrying profile fetch after delay...');
           await new Promise(resolve => setTimeout(resolve, 1000));
           
-          const retryResponse = await fetch(profileEndpoint, {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
+          // Create timeout for retry request
+          const retryTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Retry request timeout')), 10000)
+          );
+          
+          const retryResponse = await Promise.race([
+            fetch(profileEndpoint, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            }),
+            retryTimeoutPromise
+          ]) as Response;
           
           if (retryResponse.ok) {
             const retryData = await retryResponse.json();
