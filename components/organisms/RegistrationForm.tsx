@@ -67,9 +67,11 @@ export default function RegistrationForm() {
     const [dialogMessage, setDialogMessage] = useState('');
 
     const router = useRouter();
-    const { register, doesAccountExist } = useAuthContext() as {
+    const { register, doesAccountExist, doesUsernameExist, refreshProfile } = useAuthContext() as {
         register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage: any) => Promise<any>,
-        doesAccountExist: (email: string) => Promise<boolean>
+        doesAccountExist: (email: string) => Promise<boolean>,
+        doesUsernameExist: (username: string) => Promise<boolean>,
+        refreshProfile: () => Promise<void>
     };
 
     const clearErrors = () => {
@@ -148,6 +150,7 @@ export default function RegistrationForm() {
             showDialog('loading', 'Creating Account', 'Please wait while we set up your account...');
 
             let accountExists = false;
+            let usernameExists = false;
             try {
                 const accountCheckPromise = doesAccountExist(email.trim());
                 const accountCheckWithTimeout = Promise.race([
@@ -165,8 +168,26 @@ export default function RegistrationForm() {
                     setEmailError('Account already exists. Please login instead.');
                     return;
                 }
-            } catch (accountCheckError) {
-                console.log('Account check error:', accountCheckError);
+
+                // Check username availability
+                const usernameCheckPromise = doesUsernameExist(username.trim());
+                const usernameCheckWithTimeout = Promise.race([
+                    usernameCheckPromise,
+                    new Promise((_, reject) =>
+                        setTimeout(() => reject(new Error('Username check timed out')), 10000)
+                    )
+                ]);
+
+                usernameExists = await usernameCheckWithTimeout as boolean;
+
+                if (usernameExists) {
+                    setIsLoading(false);
+                    setDialogVisible(false);
+                    setUsernameError('Username already taken. Please choose a different username.');
+                    return;
+                }
+            } catch (checkError) {
+                console.log('Account/Username check error:', checkError);
                 const isStillConnected = await checkNetworkConnectivity();
                 if (!isStillConnected) {
                     setIsLoading(false);
@@ -174,13 +195,13 @@ export default function RegistrationForm() {
                     showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
                     return;
                 }
-                const { errorCode, errorMessage } = getAuthErrorMessage(accountCheckError);
+                const { errorCode, errorMessage } = getAuthErrorMessage(checkError);
                 if (errorCode === 'network-error') {
-                    showDialog('error', 'Network Error', 'Network error while checking your account. Please check your connection and try again.');
+                    showDialog('error', 'Network Error', 'Network error while checking account availability. Please check your connection and try again.');
                 } else if (errorMessage.toLowerCase().includes('timeout')) {
                     showDialog('error', 'Request Timeout', 'Request timed out. Please try again later.');
                 } else {
-                    showDialog('error', 'Account Check Error', 'Error checking account. Please try again later.');
+                    showDialog('error', 'Check Error', 'Error checking account availability. Please try again later.');
                 }
                 setIsLoading(false);
                 setDialogVisible(false);
@@ -207,6 +228,16 @@ export default function RegistrationForm() {
             );
 
             console.log('Registration response:', response);
+            
+            // Refresh the profile to ensure the UI has the latest user data
+            try {
+                await refreshProfile();
+                console.log('Profile refreshed after registration');
+            } catch (profileError) {
+                console.log('Profile refresh failed after registration:', profileError);
+                // Don't fail the registration process if profile refresh fails
+            }
+            
             setIsLoading(false);
             showDialog('success', 'Account Created!', 'Your account has been created successfully. We\'ve sent a verification email to your inbox. Please verify your email to complete registration.');
 
@@ -463,6 +494,23 @@ export default function RegistrationForm() {
                                         onChangeText={(text) => {
                                             setUsername(text);
                                             if (usernameError) setUsernameError('');
+                                        }}
+                                        onBlur={async () => {
+                                            const trimmedUsername = username.trim();
+                                            if (trimmedUsername.length > 0) {
+                                                try {
+                                                    const exists = await doesUsernameExist(trimmedUsername);
+                                                    if (exists) {
+                                                        setUsernameError('Username already taken. Please choose a different username.');
+                                                    } else {
+                                                        // Clear any existing error if username is available
+                                                        if (usernameError) setUsernameError('');
+                                                    }
+                                                } catch (error) {
+                                                    console.log('Username check error:', error);
+                                                    // Don't show error to user for network issues during real-time check
+                                                }
+                                            }
                                         }}
                                         autoCapitalize="none"
                                     />

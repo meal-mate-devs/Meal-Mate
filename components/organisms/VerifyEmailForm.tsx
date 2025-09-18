@@ -26,16 +26,16 @@ export default function VerifyEmailForm() {
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
 
-    // Auto-redirect when email becomes verified
+    // Auto-redirect when email becomes verified (only if not currently showing a dialog)
     useEffect(() => {
-        if (user?.emailVerified) {
+        if (user?.emailVerified && !dialogVisible) {
             // Small delay to ensure state is stable, then redirect
             const timer = setTimeout(() => {
                 router.replace('/(protected)/(tabs)/home');
             }, 1000);
             return () => clearTimeout(timer);
         }
-    }, [user?.emailVerified, router]);
+    }, [user?.emailVerified, router, dialogVisible]);
 
     useEffect(() => {
         if (countdown > 0) {
@@ -88,13 +88,7 @@ export default function VerifyEmailForm() {
                 
                 if (auth.currentUser.emailVerified) {
                     setDialogVisible(false);
-                    showDialog('success', 'Email Verified!', 'Your email has been successfully verified. Redirecting to home screen...');
-                    
-                    // Wait a moment for the dialog to show, then redirect
-                    setTimeout(() => {
-                        setDialogVisible(false);
-                        router.replace('/(protected)/(tabs)/home');
-                    }, 2000);
+                    showDialog('success', 'Email Verified!', 'Your email has been successfully verified. Click OK to continue to home screen.');
                 } else {
                     setDialogVisible(false);
                     showDialog('warning', 'Not Verified Yet', 'Your email is not verified yet. Please check your inbox and click the verification link.');
@@ -117,6 +111,11 @@ export default function VerifyEmailForm() {
 
     const handleDialogConfirm = () => {
         setDialogVisible(false);
+        
+        // If the dialog was a success dialog for email verification, navigate to home
+        if (dialogType === 'success' && dialogTitle === 'Email Verified!') {
+            router.replace('/(protected)/(tabs)/home');
+        }
     };
 
     return (

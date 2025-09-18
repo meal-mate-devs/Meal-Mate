@@ -49,6 +49,7 @@ type AuthContextType = {
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
   doesAccountExist: (email: string) => Promise<boolean>;
+  doesUsernameExist: (username: string) => Promise<boolean>;
   resendVerificationEmail: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshAuthState: () => Promise<void>;
@@ -88,6 +89,29 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           statusText: response.statusText,
           url: profileEndpoint
         });
+        
+        // If it's a 404, the user might have just been created - try one more time after a short delay
+        if (response.status === 404) {
+          console.log('User not found, retrying profile fetch after delay...');
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          const retryResponse = await fetch(profileEndpoint, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+          
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            if (retryData && retryData.user) {
+              console.log('Profile fetch successful on retry:', retryData.user.userName);
+              setProfile(retryData.user);
+              return retryData.user;
+            }
+          }
+        }
         
         // Create a basic fallback profile if the API call fails
         // This allows the app to function with minimal data
@@ -317,6 +341,12 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         throw new Error(`Backend registration failed: ${responseData.error || responseData.message || 'Unknown error'}`);
       }
 
+      // Update the profile state with the newly created user data
+      if (responseData.user) {
+        console.log('Updating profile state with registration data:', responseData.user);
+        setProfile(responseData.user);
+      }
+
       return backendResponse;
 
     } catch (error) {
@@ -355,6 +385,32 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       return methods.length > 0;
     } catch (error) {
       console.error('Error checking account existence:', error);
+      return false;
+    }
+  };
+
+  const doesUsernameExist = async (username: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/check-username`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: username.trim() }),
+      });
+
+      if (!response.ok) {
+        console.error('Username check failed:', response.status, response.statusText);
+        // If server error, we assume username might be available (fail-safe)
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('Username check response:', data);
+      return data.exists === true;
+    } catch (error) {
+      console.error('Error checking username existence:', error);
+      // If network error, we assume username might be available (fail-safe)
       return false;
     }
   };
@@ -457,6 +513,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         logout,
         sendPasswordReset,
         doesAccountExist,
+        doesUsernameExist,
         resendVerificationEmail,
         refreshProfile,
         refreshAuthState
