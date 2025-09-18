@@ -5,10 +5,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import DeleteAccountModal from "../../molecules/DeleteAccountModal";
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter()
   const [expandedDevice, setExpandedDevice] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const accountItems = [
     {
@@ -276,9 +278,7 @@ const SettingsScreen: React.FC = () => {
 
             <TouchableOpacity
               className="flex-row items-center justify-between py-4 px-4"
-              onPress={() => {
-                // Handle delete account
-              }}
+              onPress={() => setShowDeleteModal(true)}
             >
               <View className="flex-row items-center flex-1">
                 <View className="w-10 h-10 rounded-full bg-red-900/30 items-center justify-center mr-4">
@@ -306,6 +306,12 @@ const SettingsScreen: React.FC = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </SafeAreaView>
   )
 }

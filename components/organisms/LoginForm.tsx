@@ -23,7 +23,6 @@ export default function LoginForm() {
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const [dialogVisible, setDialogVisible] = useState(false);
@@ -160,10 +159,6 @@ export default function LoginForm() {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
-    const toggleRememberMe = () => {
-        setRememberMe(!rememberMe);
-    };
-
     const handleDialogConfirm = () => {
         setDialogVisible(false);
     };
@@ -252,17 +247,8 @@ export default function LoginForm() {
                                     ) : null}
                                 </View>
 
-                                {/* Remember Me Checkbox */}
-                                <View className='flex-row items-center justify-between py-4 pb-6'>
-                                    <TouchableOpacity
-                                        className="flex-row items-center"
-                                        onPress={toggleRememberMe}
-                                    >
-                                        <View className={`w-5 h-5 rounded-sm mr-3 ${rememberMe ? 'bg-yellow-400' : 'border border-zinc-500'}`}>
-                                            {rememberMe && <Ionicons name="checkmark" size={16} color="black" />}
-                                        </View>
-                                        <Text className="text-zinc-400 text-sm">Remember me</Text>
-                                    </TouchableOpacity>
+                                {/* Forget Password */}
+                                <View className='py-4 pb-6'>
                                     <TouchableOpacity onPress={handleForgetPassword} className="items-end">
                                         <Text className="text-yellow-400 text-sm font-semibold">Forgot password?</Text>
                                     </TouchableOpacity>

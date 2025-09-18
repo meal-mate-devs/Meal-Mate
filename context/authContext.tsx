@@ -53,6 +53,7 @@ type AuthContextType = {
   resendVerificationEmail: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   refreshAuthState: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 };
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -369,6 +370,42 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Delete account function
+  const deleteAccount = async () => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      const token = await auth.currentUser.getIdToken();
+      
+      // Call backend to delete user data
+      const response = await fetch(`${API_BASE_URL}/auth/account`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to delete account');
+      }
+
+      console.log('Account deleted successfully from backend');
+      
+      // Clear local state
+      setUser(null);
+      setProfile(null);
+      setIsAuthenticated(false);
+      
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
+  };
+
   // Password reset function
   const sendPasswordReset = async (email: string) => {
     try {
@@ -511,6 +548,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         register,
         updateUserProfile,
         logout,
+        deleteAccount,
         sendPasswordReset,
         doesAccountExist,
         doesUsernameExist,

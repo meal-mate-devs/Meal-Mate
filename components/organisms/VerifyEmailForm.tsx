@@ -18,6 +18,7 @@ export default function VerifyEmailForm() {
     const [countdown, setCountdown] = useState(0);
     const [isResending, setIsResending] = useState(false);
     const [isCheckingVerification, setIsCheckingVerification] = useState(false);
+    const [showingManualVerificationDialog, setShowingManualVerificationDialog] = useState(false);
     const { user, resendVerificationEmail: sendEmailVerificationLink, refreshAuthState } = useAuthContext();
 
     // Dialog state
@@ -26,16 +27,16 @@ export default function VerifyEmailForm() {
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
 
-    // Auto-redirect when email becomes verified (only if not currently showing a dialog)
+    // Auto-redirect when email becomes verified (only if not currently showing a dialog, checking verification, or showing manual verification dialog)
     useEffect(() => {
-        if (user?.emailVerified && !dialogVisible) {
+        if (user?.emailVerified && !dialogVisible && !isCheckingVerification && !showingManualVerificationDialog) {
             // Small delay to ensure state is stable, then redirect
             const timer = setTimeout(() => {
                 router.replace('/(protected)/(tabs)/home');
-            }, 1000);
+            }, 2000); // Increased delay to avoid conflicts
             return () => clearTimeout(timer);
         }
-    }, [user?.emailVerified, router, dialogVisible]);
+    }, [user?.emailVerified, router, dialogVisible, isCheckingVerification, showingManualVerificationDialog]);
 
     useEffect(() => {
         if (countdown > 0) {
@@ -63,10 +64,8 @@ export default function VerifyEmailForm() {
         try {
             await sendEmailVerificationLink();
             setCountdown(60);
-            setDialogVisible(false);
             showDialog('success', 'Email Sent', 'Verification email has been resent. Please check your inbox.');
         } catch (error) {
-            setDialogVisible(false);
             showDialog('error', 'Failed to Send', 'We could not resend the verification email. Please try again later.');
         } finally {
             setIsResending(false);
@@ -83,22 +82,26 @@ export default function VerifyEmailForm() {
             if (auth.currentUser) {
                 await auth.currentUser.reload();
                 
-                // Refresh the auth state in context to trigger navigation
-                await refreshAuthState();
-                
                 if (auth.currentUser.emailVerified) {
-                    setDialogVisible(false);
+                    // Set flag to prevent auto-redirect and show success dialog
+                    setShowingManualVerificationDialog(true);
                     showDialog('success', 'Email Verified!', 'Your email has been successfully verified. Click OK to continue to home screen.');
+                    
+                    // Refresh auth state in background after a small delay
+                    setTimeout(async () => {
+                        try {
+                            await refreshAuthState();
+                        } catch (error) {
+                            console.log('Auth state refresh failed:', error);
+                        }
+                    }, 100);
                 } else {
-                    setDialogVisible(false);
                     showDialog('warning', 'Not Verified Yet', 'Your email is not verified yet. Please check your inbox and click the verification link.');
                 }
             } else {
-                setDialogVisible(false);
                 showDialog('error', 'User Not Found', 'Please log in again and try verification.');
             }
         } catch (error) {
-            setDialogVisible(false);
             showDialog('error', 'Check Failed', 'We could not check your verification status. Please try again later.');
         } finally {
             setIsCheckingVerification(false);
@@ -109,12 +112,25 @@ export default function VerifyEmailForm() {
         router.push('/(auth)/login');
     };
 
-    const handleDialogConfirm = () => {
+    const handleDialogConfirm = async () => {
         setDialogVisible(false);
         
         // If the dialog was a success dialog for email verification, navigate to home
         if (dialogType === 'success' && dialogTitle === 'Email Verified!') {
-            router.replace('/(protected)/(tabs)/home');
+            // Clear the manual verification flag
+            setShowingManualVerificationDialog(false);
+            
+            // Ensure auth state is refreshed before navigation
+            try {
+                await refreshAuthState();
+            } catch (error) {
+                console.log('Auth state refresh failed during navigation:', error);
+            }
+            
+            // Small delay to ensure state updates are processed
+            setTimeout(() => {
+                router.replace('/(protected)/(tabs)/home');
+            }, 100);
         }
     };
 
