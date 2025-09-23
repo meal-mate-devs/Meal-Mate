@@ -16,12 +16,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 // Enhanced menu items with descriptions
 const menuItems = [
-  { icon: "home", label: "Home", route: "/home", description: "Dashboard & Overview" },
-  { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
   { icon: "bell", label: "Notifications", route: "settings/notifications", description: "Updates & Alerts" },
+  { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
   { icon: "package", label: "Pantry", route: "/recipe/pantry", description: "Pantry Management" },
-  { icon: "settings", label: "Settings", route: "/settings", description: "App Preferences" },
   { icon: "shopping-cart", label: "Grocery List", route: "settings/grocery-list", description: "Shopping & Groceries" },
+  { icon: "credit-card", label: "Subscription", route: "settings/subscription", description: "Manage Your Plan" },
+  { icon: "settings", label: "Settings", route: "/settings", description: "App Preferences" },
 ]
 
 interface ProfileSidebarProps {
@@ -560,9 +560,9 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
             <Text style={styles.userName}>{localProfileData.name}</Text>
             <Text style={styles.userEmail}>{localProfileData.email}</Text>
 
-            <View style={{ flexDirection: 'row' }}>
+            <View style={{ alignItems: 'center' }}>
               <TouchableOpacity
-                style={[styles.editProfileButton, { marginRight: 8 }]}
+                style={styles.editProfileButton}
                 onPress={() => {
                   onClose();
                   router.push('/profile');
@@ -574,16 +574,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
                 >
                   <Ionicons name="person-outline" size={16} color="#FACC15" />
                   <Text style={styles.editProfileText}>View Profile</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.editProfileButton} onPress={handleEditProfile}>
-                <LinearGradient
-                  colors={["rgba(250, 204, 21, 0.2)", "rgba(249, 115, 22, 0.2)"]}
-                  style={styles.buttonGradient}
-                >
-                  <Ionicons name="create-outline" size={16} color="#FACC15" />
-                  <Text style={styles.editProfileText}>Edit Profile</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
