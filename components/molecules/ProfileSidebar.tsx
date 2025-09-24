@@ -11,6 +11,7 @@ import React, { useEffect, useRef, useState } from "react"
 import { Alert, Animated, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useProfileStore } from "../../hooks/useProfileStore"
+import Dialog from "../atoms/Dialog"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
@@ -44,6 +45,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
   const router = useRouter()
 
   const [isImageLoading, setIsImageLoading] = useState(false)
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false)
 
   // Animation values
   const menuItemAnimations = useRef(menuItems.map(() => new Animated.Value(0))).current
@@ -385,23 +387,19 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
   }
 
   const handleLogout = () => {
-    Alert.alert("Sign Out", "Are you sure you want to sign out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Sign Out",
-        style: "destructive",
-        onPress: () => {
-          onClose();
-          logout()
-            .then(() => {
-              router.replace('/login');
-            })
-            .catch((error: unknown) => {
-              console.error('Logout failed:', error);
-            });
-        },
-      },
-    ])
+    setShowLogoutDialog(true)
+  }
+
+  const confirmLogout = () => {
+    setShowLogoutDialog(false)
+    onClose()
+    logout()
+      .then(() => {
+        router.replace('/login')
+      })
+      .catch((error: unknown) => {
+        console.error('Logout failed:', error)
+      })
   }
 
   const renderProfileImage = () => {
@@ -633,6 +631,19 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           </BlurView>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        visible={showLogoutDialog}
+        type="warning"
+        title="Sign Out"
+        message="Are you sure you want to sign out?"
+        onClose={() => setShowLogoutDialog(false)}
+        onConfirm={confirmLogout}
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        showCancelButton={true}
+      />
     </View>
   )
 }
