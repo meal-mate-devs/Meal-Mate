@@ -27,8 +27,6 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
         email: profile.email || user?.email || '',
         profileImage: profile.profileImage?.url || ''
       };
-
-      console.log("HomeHeader: Using real profile data:", realUserData);
       setLocalProfileData(realUserData);
     } else if (user) {
       // Fallback to Firebase user
@@ -53,8 +51,6 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
 
   // Subscribe to profile store updates as backup
   useEffect(() => {
-    console.log("HomeHeader: Profile store data:", profileData);
-
     // Only use profile store data if we don't have direct data
     if (!profile && !user) {
       setLocalProfileData(profileData);

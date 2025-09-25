@@ -9,9 +9,9 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useState } from "react"
 import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native"
+import IngredientSearchModal from "../../molecules/IngredientSearchModal"
 import FilterSection from "./FilterSection"
 import GeneratedRecipeCard from "./GeneratedRecipeCard"
-import IngredientScanner from "./IngredientsScanner"
 import IngredientSelector from "./IngredientsSelector"
 import RecipeDetailModal from "./RecipieDetailModel"
 import VoiceControl from "./VoiceControl"
@@ -46,10 +46,25 @@ export default function RecipeGenerationScreen(): JSX.Element {
     }
 
     const handleIngredientsDetected = (ingredients: string[]): void => {
-        handleFilterChange("ingredients", ingredients)
-        Alert.alert("Ingredients Added!", `Found ${ingredients.length} ingredients. They've been added to your pantry.`, [
-            { text: "Generate Recipes", onPress: handleGenerateRecipes },
-        ])
+        if (ingredients.length === 0) {
+            return;
+        }
+        
+        console.log("Selected ingredients:", ingredients);
+        
+        // Update filters with unique ingredients (combine with existing ones)
+        const uniqueIngredients = [...new Set([...filters.ingredients, ...ingredients])];
+        handleFilterChange("ingredients", uniqueIngredients);
+        
+        // Show a notification about added ingredients
+        Alert.alert(
+            "Ingredients Added!", 
+            `Added ${ingredients.length} ingredient${ingredients.length > 1 ? 's' : ''} to your recipe.`,
+            [
+                { text: "Generate Recipes", onPress: handleGenerateRecipes },
+                { text: "OK", style: "cancel" }
+            ]
+        );
     }
 
 
@@ -370,10 +385,10 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 onIngredientsChange={(ingredients) => handleFilterChange("ingredients", ingredients)}
             />
 
-            <IngredientScanner
+            <IngredientSearchModal
                 visible={showIngredientScanner}
                 onClose={() => setShowIngredientScanner(false)}
-                onIngredientsDetected={handleIngredientsDetected}
+                onIngredientsSelected={handleIngredientsDetected}
             />
 
             <VoiceControl
