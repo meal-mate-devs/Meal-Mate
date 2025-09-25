@@ -2,6 +2,7 @@
 
 import { CreatePostData } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
+import * as ImagePicker from "expo-image-picker"
 import React, { JSX, useState } from "react"
 import {
     Alert,
@@ -48,7 +49,8 @@ export default function CreatePostDrawer({
 }: CreatePostDrawerProps): JSX.Element {
     const [postType, setPostType] = useState<"simple" | "recipe">("simple")
     const [content, setContent] = useState<string>("")
-    const [images, setImages] = useState<string[]>([])
+    const [images, setImages] = useState<any[]>([])
+    const [showImagePicker, setShowImagePicker] = useState<boolean>(false)
     const [recipeTitle, setRecipeTitle] = useState<string>("")
     const [cookTime, setCookTime] = useState<string>("")
     const [servings, setServings] = useState<number>(4)
@@ -63,6 +65,7 @@ export default function CreatePostDrawer({
         setPostType("simple")
         setContent("")
         setImages([])
+        setShowImagePicker(false)
         setRecipeTitle("")
         setCookTime("")
         setServings(4)
@@ -80,13 +83,75 @@ export default function CreatePostDrawer({
     }
 
     const handleAddImage = (): void => {
-        const mockImages = [
-            "https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?q=80&w=1000&auto=format&fit=crop",
-            "https://images.unsplash.com/photo-1499636136210-6f4ee915583e?q=80&w=1000&auto=format&fit=crop",
-        ]
-        const randomImage = mockImages[Math.floor(Math.random() * mockImages.length)]
-        setImages([...images, randomImage])
+        setShowImagePicker(true)
+    }
+
+    const pickImageFromGallery = async (): Promise<void> => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
+            if (status !== 'granted') {
+                Alert.alert('Permission needed', 'Please grant camera roll permissions to add images.')
+                return
+            }
+
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsMultipleSelection: true,
+                quality: 0.8,
+                aspect: [1, 1],
+                allowsEditing: false,
+            })
+
+            if (!result.canceled && result.assets) {
+                const newImages = result.assets.map(asset => ({
+                    uri: asset.uri,
+                    type: asset.type || 'image/jpeg',
+                    name: asset.fileName || `image_${Date.now()}.jpg`,
+                    width: asset.width,
+                    height: asset.height
+                }))
+                setImages([...images, ...newImages])
+            }
+        } catch (error) {
+            console.error('Error picking image from gallery:', error)
+            Alert.alert('Error', 'Failed to pick image from gallery')
+        } finally {
+            setShowImagePicker(false)
+        }
+    }
+
+    const pickImageFromCamera = async (): Promise<void> => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync()
+            if (status !== 'granted') {
+                Alert.alert('Permission needed', 'Please grant camera permissions to take photos.')
+                return
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.8,
+                aspect: [1, 1],
+                allowsEditing: true,
+            })
+
+            if (!result.canceled && result.assets) {
+                const asset = result.assets[0]
+                const newImage = {
+                    uri: asset.uri,
+                    type: asset.type || 'image/jpeg',
+                    name: `camera_${Date.now()}.jpg`,
+                    width: asset.width,
+                    height: asset.height
+                }
+                setImages([...images, newImage])
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error)
+            Alert.alert('Error', 'Failed to take photo')
+        } finally {
+            setShowImagePicker(false)
+        }
     }
 
     const handleRemoveImage = (index: number): void => {
@@ -413,7 +478,10 @@ export default function CreatePostDrawer({
                                         <View className="flex-row">
                                             {images.map((image, index) => (
                                                 <View key={index} className="relative mr-3">
-                                                    <Image source={{ uri: image }} className="w-20 h-20 rounded-xl" />
+                                                    <Image
+                                                        source={{ uri: typeof image === 'string' ? image : image.uri }}
+                                                        className="w-20 h-20 rounded-xl"
+                                                    />
                                                     <TouchableOpacity
                                                         className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full items-center justify-center"
                                                         onPress={() => handleRemoveImage(index)}
@@ -429,6 +497,43 @@ export default function CreatePostDrawer({
 
                         </ScrollView>
                     </View>
+
+                    {/* Image Picker Modal */}
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={showImagePicker}
+                        onRequestClose={() => setShowImagePicker(false)}
+                    >
+                        <View className="flex-1 justify-end bg-black/50">
+                            <View className="bg-white rounded-t-xl p-6">
+                                <Text className="text-lg font-semibold text-center mb-6 text-gray-800">
+                                    Add Image
+                                </Text>
+
+                                <TouchableOpacity
+                                    onPress={pickImageFromCamera}
+                                    className="bg-green-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                >
+                                    <Text className="text-white font-medium text-lg">Take Photo</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={pickImageFromGallery}
+                                    className="bg-blue-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                >
+                                    <Text className="text-white font-medium text-lg">Choose from Gallery</Text>
+                                </TouchableOpacity>
+
+                                <TouchableOpacity
+                                    onPress={() => setShowImagePicker(false)}
+                                    className="bg-gray-200 rounded-xl p-4 flex-row items-center justify-center"
+                                >
+                                    <Text className="text-gray-700 font-medium text-lg">Cancel</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </Modal>
                 </View>
             </KeyboardAvoidingView>
         </Modal>

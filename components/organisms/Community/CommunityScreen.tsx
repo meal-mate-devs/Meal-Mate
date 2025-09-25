@@ -3,8 +3,9 @@
 import type { Comment, Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import React, { JSX, useRef, useState } from "react"
+import React, { JSX, useEffect, useRef, useState } from "react"
 import {
+    Alert,
     Animated,
     FlatList,
     Image,
@@ -17,23 +18,21 @@ import {
     type ListRenderItem
 } from "react-native"
 
-import { INITIAL_POSTS } from "@/lib/utils"
+import { useAuthContext } from "@/context/authContext"
+import CommunityAPI from "@/lib/services/community.service"
+import EmptyState from "../../atoms/EmptyState"
+import PostSkeleton from "../../atoms/PostSkeleton"
 import CreatePostDrawer from "./CreactPostDrawer"
 import LeaderboardScreen from "./LeaderBoardSection"
 import OtherUsersProfileModel from "./OtherUsersProfileModel"
 import PostItem from "./Post"
 import PostDetailModel from "./PostDetailModel"
 
-const CURRENT_USER: User = {
-    id: "current-user",
-    name: "You",
-    username: "you",
-    avatar: require("../../../assets/images/avatar.png"),
-}
-
 
 export default function CommunityScreen(): JSX.Element {
-    const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS)
+    const { user, profile } = useAuthContext()
+    const [posts, setPosts] = useState<Post[]>([])
+    const [loading, setLoading] = useState<boolean>(true)
     const [refreshing, setRefreshing] = useState<boolean>(false)
     const [showCreateDrawer, setShowCreateDrawer] = useState<boolean>(false)
     const [selectedUser, setSelectedUser] = useState<User | null>(null)
@@ -44,9 +43,51 @@ export default function CommunityScreen(): JSX.Element {
 
     const scrollY = useRef(new Animated.Value(0)).current
 
-    const handleLike = (postId: string): void => {
-        setPosts(
-            posts.map((post) => {
+    const currentUser: User = {
+        id: user?.uid || "current-user",
+        name: profile?.firstName && profile?.lastName
+            ? `${profile.firstName} ${profile.lastName}`
+            : profile?.userName || "You",
+        username: profile?.userName || "you",
+        avatar: profile?.profileImage?.url
+            ? { uri: profile.profileImage.url }
+            : require("../../../assets/images/avatar.png"),
+    }
+
+    useEffect(() => {
+        loadPosts()
+    }, [])
+
+    const loadPosts = async (): Promise<void> => {
+        try {
+            setLoading(true)
+            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
+            console.log('Posts response:', response) // Debug log
+
+            // Handle different response structures
+            let postsData = []
+            if (response.posts) {
+                postsData = response.posts
+            } else if (response.data) {
+                postsData = response.data
+            } else if (Array.isArray(response)) {
+                postsData = response
+            }
+
+            setPosts(postsData)
+        } catch (error) {
+            console.error('Error loading posts:', error)
+            // Don't fallback to mock data, show empty state instead
+            setPosts([])
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleLike = async (postId: string): Promise<void> => {
+        try {
+            // Optimistic update
+            setPosts(posts.map((post) => {
                 if (post.id === postId) {
                     return {
                         ...post,
@@ -55,30 +96,71 @@ export default function CommunityScreen(): JSX.Element {
                     }
                 }
                 return post
-            }),
-        )
-    }
+            }))
 
-    const handleSavePost = (postId: string): void => {
-        setPosts(
-            posts.map((post) =>
-                post.id === postId
-                    ? { ...post, isSaved: !post.isSaved, saves: post.isSaved ? post.saves - 1 : post.saves + 1 }
-                    : post,
-            ),
-        )
-    }
-
-    const handleAddComment = (postId: string, commentText: string): void => {
-        const newComment: Comment = {
-            id: Date.now().toString(),
-            author: CURRENT_USER,
-            text: commentText,
-            timeAgo: "Just now",
+            // API call
+            await CommunityAPI.toggleLikePost(postId)
+        } catch (error) {
+            console.error('Error toggling like:', error)
+            // Revert optimistic update
+            setPosts(posts.map((post) => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        likes: post.isLiked ? post.likes + 1 : post.likes - 1,
+                        isLiked: !post.isLiked,
+                    }
+                }
+                return post
+            }))
+            Alert.alert('Error', 'Failed to update like status')
         }
+    }
 
-        setPosts(
-            posts.map((post) => {
+    const handleSavePost = async (postId: string): Promise<void> => {
+        try {
+            // Optimistic update
+            setPosts(posts.map((post) =>
+                post.id === postId
+                    ? {
+                        ...post,
+                        isSaved: !post.isSaved,
+                        saves: post.isSaved ? post.saves - 1 : post.saves + 1
+                    }
+                    : post,
+            ))
+
+            // API call
+            await CommunityAPI.toggleSavePost(postId)
+        } catch (error) {
+            console.error('Error saving post:', error)
+            // Revert optimistic update
+            setPosts(posts.map((post) =>
+                post.id === postId
+                    ? {
+                        ...post,
+                        isSaved: !post.isSaved,
+                        saves: post.isSaved ? post.saves + 1 : post.saves - 1
+                    }
+                    : post,
+            ))
+            Alert.alert('Error', 'Failed to save post')
+        }
+    }
+
+    const handleAddComment = async (postId: string, commentText: string): Promise<void> => {
+        try {
+            const response = await CommunityAPI.addComment(postId, commentText)
+
+            // Add comment to local state
+            const newComment: Comment = {
+                id: response.comment?.id || Date.now().toString(),
+                author: currentUser,
+                text: commentText,
+                timeAgo: "Just now",
+            }
+
+            setPosts(posts.map((post) => {
                 if (post.id === postId) {
                     return {
                         ...post,
@@ -87,15 +169,43 @@ export default function CommunityScreen(): JSX.Element {
                     }
                 }
                 return post
-            }),
-        )
+            }))
+        } catch (error) {
+            console.error('Error adding comment:', error)
+            Alert.alert('Error', 'Failed to add comment')
+        }
     }
 
-    const onRefresh = (): void => {
+    const handleDeletePost = async (postId: string): Promise<void> => {
+        try {
+            await CommunityAPI.deletePost(postId)
+            setPosts(posts.filter(post => post.id !== postId))
+        } catch (error) {
+            console.error('Error deleting post:', error)
+            throw error // Let PostOptionsPopover handle the alert
+        }
+    }
+
+    const handleUpdatePost = async (postId: string, updateData: any): Promise<void> => {
+        try {
+            await CommunityAPI.updatePost(postId, updateData)
+
+            // Update local state
+            setPosts(posts.map(post =>
+                post.id === postId
+                    ? { ...post, content: updateData.content, images: updateData.images }
+                    : post
+            ))
+        } catch (error) {
+            console.error('Error updating post:', error)
+            throw error // Let EditPostModal handle the alert
+        }
+    }
+
+    const onRefresh = async (): Promise<void> => {
         setRefreshing(true)
-        setTimeout(() => {
-            setRefreshing(false)
-        }, 1500)
+        await loadPosts()
+        setRefreshing(false)
     }
 
     const handleUserPress = (user: User): void => {
@@ -103,23 +213,30 @@ export default function CommunityScreen(): JSX.Element {
         setShowUserProfile(true)
     }
 
-    const handleCreatePost = (data: any): void => {
-        const newPost: Post = {
-            id: Date.now().toString(),
-            author: CURRENT_USER,
-            timeAgo: "Just now",
-            content: data.content,
-            images: data.images,
-            likes: 0,
-            comments: 0,
-            saves: 0,
-            isLiked: false,
-            isSaved: false,
-            commentsList: [],
-            recipeDetails: data.recipeDetails,
-        }
+    const handleCreatePost = async (data: any): Promise<void> => {
+        try {
+            const response = await CommunityAPI.createPost(data)
 
-        setPosts([newPost, ...posts])
+            const newPost: Post = {
+                id: response.post?.id || Date.now().toString(),
+                author: currentUser,
+                timeAgo: "Just now",
+                content: data.content,
+                images: data.images,
+                likes: 0,
+                comments: 0,
+                saves: 0,
+                isLiked: false,
+                isSaved: false,
+                commentsList: [],
+                recipeDetails: data.recipeDetails,
+            }
+
+            setPosts([newPost, ...posts])
+        } catch (error) {
+            console.error('Error creating post:', error)
+            Alert.alert('Error', 'Failed to create post')
+        }
     }
 
     const handleViewRecipe = (post: Post): void => {
@@ -130,14 +247,57 @@ export default function CommunityScreen(): JSX.Element {
     const renderPost: ListRenderItem<Post> = ({ item }) => (
         <PostItem
             post={item}
-            currentUser={CURRENT_USER}
+            currentUser={currentUser}
             onLike={handleLike}
             onSave={handleSavePost}
             onUserPress={handleUserPress}
             onViewRecipe={handleViewRecipe}
             onAddComment={handleAddComment}
+            onDeletePost={handleDeletePost}
+            onUpdatePost={handleUpdatePost}
         />
     )
+
+    const renderSkeletonLoader = (): JSX.Element => (
+        <View className="px-4">
+            {[1, 2, 3].map((item) => (
+                <PostSkeleton key={item} />
+            ))}
+        </View>
+    )
+
+    const renderEmptyState = (): JSX.Element => (
+        <EmptyState onCreatePost={() => setShowCreateDrawer(true)} />
+    )
+
+    const renderContent = (): JSX.Element => {
+        if (loading) {
+            return renderSkeletonLoader()
+        }
+
+        if (posts.length === 0) {
+            return renderEmptyState()
+        }
+
+        return (
+            <FlatList
+                data={posts}
+                renderItem={renderPost}
+                keyExtractor={(item: Post) => item.id}
+                contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
+                showsVerticalScrollIndicator={false}
+                onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#FBBF24"
+                        colors={["#FBBF24", "#F97416"]}
+                    />
+                }
+            />
+        )
+    }
 
     if (showLeaderboard) {
         return <LeaderboardScreen onUserPress={handleUserPress} onClose={() => setShowLeaderboard(false)} />
@@ -172,42 +332,27 @@ export default function CommunityScreen(): JSX.Element {
                         onPress={() => setShowCreateDrawer(true)}
                     >
                         <View className="flex-row items-center">
-                            <Image source={CURRENT_USER.avatar} className="w-10 h-10 rounded-full border border-yellow-400" />
+                            <Image source={currentUser.avatar} className="w-10 h-10 rounded-full border border-yellow-400" />
                             <Text className="text-zinc-400 ml-3 flex-1">Share your recipe or cooking tip...</Text>
                             <Ionicons name="camera-outline" size={20} color="#FBBF24" />
                         </View>
                     </TouchableOpacity>
 
-                    <FlatList
-                        data={posts}
-                        renderItem={renderPost}
-                        keyExtractor={(item: Post) => item.id}
-                        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}
-                        showsVerticalScrollIndicator={false}
-                        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], { useNativeDriver: false })}
-                        refreshControl={
-                            <RefreshControl
-                                refreshing={refreshing}
-                                onRefresh={onRefresh}
-                                tintColor="#FBBF24"
-                                colors={["#FBBF24", "#F97416"]}
-                            />
-                        }
-                    />
+                    {renderContent()}
                 </KeyboardAvoidingView>
 
                 <CreatePostDrawer
                     visible={showCreateDrawer}
                     onClose={() => setShowCreateDrawer(false)}
                     onCreatePost={handleCreatePost}
-                    userAvatar={CURRENT_USER.avatar}
+                    userAvatar={currentUser.avatar}
                 />
 
                 <OtherUsersProfileModel
                     visible={showUserProfile}
                     user={selectedUser}
                     onClose={() => setShowUserProfile(false)}
-                    currentUserId={CURRENT_USER.id}
+                    currentUserId={currentUser.id}
                 />
 
                 <PostDetailModel visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
