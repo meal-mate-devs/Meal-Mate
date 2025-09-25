@@ -602,10 +602,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           if (updateUserProfile) {
             console.log('Updating user profile with new image from gallery');
             // The image object expected by updateUserProfile
+            // Using consistent image type/extension like in openCamera to ensure compatibility
             const imageObject = {
               uri: imageUri,
-              type: result.assets[0].type || 'image/jpeg',
-              name: `profile_${Date.now()}.${result.assets[0].type?.split('/')[1] || 'jpg'}`,
+              type: 'image/jpeg',
+              name: `profile_${Date.now()}.jpg`,
             };
 
             await updateUserProfile({}, imageObject);
