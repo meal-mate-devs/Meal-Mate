@@ -36,6 +36,7 @@ type PantryItem = BackendPantryItem;
 
 // Modern category definitions will be loaded from backend
 const CATEGORIES = [
+  { id: "all", name: "All", icon: "apps-outline", color: "#FACC15" },
   { id: "vegetables", name: "vegetables", icon: "leaf-outline", color: "#22C55E" },
   { id: "fruits", name: "fruits", icon: "nutrition-outline", color: "#F97316" },
   { id: "meat", name: "meat", icon: "fish-outline", color: "#EF4444" },
@@ -51,6 +52,7 @@ const UNITS = ["pieces", "kilograms", "grams", "liters", "milliliters", "cups", 
 
 // Status indicators for item expiry
 const STATUS = {
+  ALL: "all",
   ACTIVE: "active",
   EXPIRING: "expiring",
   EXPIRED: "expired"
@@ -499,6 +501,9 @@ const PantryManagementScreen: React.FC = () => {
     let items = []
 
     switch (activeTab) {
+      case STATUS.ALL:
+        items = [...active, ...expiringSoon, ...expired]
+        break
       case STATUS.ACTIVE:
         items = active
         break
@@ -509,7 +514,7 @@ const PantryManagementScreen: React.FC = () => {
         items = expired
         break
       default:
-        items = active
+        items = [...active, ...expiringSoon, ...expired]
     }
 
     // Apply search filter if query exists
@@ -1050,31 +1055,31 @@ const PantryManagementScreen: React.FC = () => {
     // Status tabs
     tabBar: {
       flexDirection: "row",
-      marginHorizontal: 20,
-      marginBottom: 10,
+      marginHorizontal: 16,
+      marginBottom: 16,
       backgroundColor: "rgba(255, 255, 255, 0.04)",
       borderRadius: 12,
-      padding: 4,
+      padding: 2,
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.08)",
     },
     tab: {
       flex: 1,
-      flexDirection: "row",
       alignItems: "center",
       justifyContent: "center",
-      paddingVertical: 12,
+      paddingVertical: 6,
       paddingHorizontal: 8,
       borderRadius: 8,
       position: "relative",
+      minWidth: 0, // Allow flex shrinking
     },
     tabText: {
       color: "#94A3B8",
       fontSize: 14,
-      fontWeight: "600",
-      marginRight: 6,
+      fontWeight: "800",
       textAlign: "center",
       flexShrink: 1,
+      marginBottom: 4,
     },
     activeTabText: {
       color: "#FACC15",
@@ -1089,10 +1094,10 @@ const PantryManagementScreen: React.FC = () => {
       opacity: 0.15,
     },
     countBadge: {
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 10,
-      minWidth: 18,
+      paddingHorizontal: 2,
+      paddingVertical: 3,
+      borderRadius: 12,
+      minWidth: 26,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -1659,11 +1664,53 @@ const PantryManagementScreen: React.FC = () => {
     },
     detailName: {
       color: "white",
-      fontSize: 26,
-      fontWeight: "700",
+      fontSize: 28,
+      fontWeight: "800",
       textAlign: "center",
-      marginBottom: 28,
       letterSpacing: -0.7,
+      textShadowColor: "rgba(0, 0, 0, 0.5)",
+      textShadowOffset: { width: 0, height: 2 },
+      textShadowRadius: 4,
+      marginVertical: 8,
+    },
+    detailHeader: {
+      alignItems: "center",
+      marginTop: 16,
+      marginBottom: 24,
+      paddingHorizontal: 20,
+    },
+    detailThumbnail: {
+      marginBottom: 12,
+    },
+    detailThumbnailImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 16,
+      alignItems: "center",
+      justifyContent: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 8,
+    },
+    detailTitleContainer: {
+      alignItems: "center",
+      marginBottom: 16,
+    },
+    detailStatusBadge: {
+      marginTop: 8,
+    },
+    detailStatusBadgeGradient: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      borderRadius: 16,
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 4,
+      elevation: 4,
     },
     detailRow: {
       flexDirection: "row",
@@ -1799,6 +1846,7 @@ const PantryManagementScreen: React.FC = () => {
     const { active, expiringSoon, expired } = getItemsByStatus()
 
     const tabs = [
+      { id: STATUS.ALL, name: "All", count: active.length + expiringSoon.length + expired.length, color: "#6B7280", icon: "apps-outline" },
       { id: STATUS.ACTIVE, name: "Active", count: active.length, color: "#22C55E", icon: "checkmark-circle-outline" },
       { id: STATUS.EXPIRING, name: "Expiring", count: expiringSoon.length, color: "#F59E0B", icon: "time-outline" },
       { id: STATUS.EXPIRED, name: "Expired", count: expired.length, color: "#EF4444", icon: "alert-circle-outline" },
@@ -1863,7 +1911,7 @@ const PantryManagementScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
-        {CATEGORIES.map((category) => (
+        {CATEGORIES.filter(cat => cat.id !== "all").map((category) => (
           <TouchableOpacity
             key={category.id}
             style={[styles.categoryChip, selectedCategory === category.id && styles.activeCategoryChip]}
@@ -2043,7 +2091,7 @@ const PantryManagementScreen: React.FC = () => {
             <View style={styles.formField}>
               <Text style={styles.fieldLabel}>Category</Text>
               <View style={styles.categorySelection}>
-                {CATEGORIES.map((category) => (
+                {CATEGORIES.filter(cat => cat.id !== "all").map((category) => (
                   <TouchableOpacity
                     key={category.id}
                     style={[
@@ -2278,7 +2326,7 @@ const PantryManagementScreen: React.FC = () => {
           <View style={styles.formField}>
             <Text style={styles.fieldLabel}>Category</Text>
             <View style={styles.categorySelection}>
-              {CATEGORIES.map((category) => (
+              {CATEGORIES.filter(cat => cat.id !== "all").map((category) => (
                 <TouchableOpacity
                   key={category.id}
                   style={[
@@ -2391,35 +2439,24 @@ const PantryManagementScreen: React.FC = () => {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.detailsScrollContent}
           >
-            <View style={styles.detailImageContainer}>
-              <LinearGradient
-                colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
-                style={styles.detailImagePlaceholder}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name={category?.icon as any} size={50} color="white" />
-              </LinearGradient>
+            <View style={styles.detailHeader}>
+              <View style={styles.detailThumbnail}>
+                <LinearGradient
+                  colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
+                  style={styles.detailThumbnailImage}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name={category?.icon as any} size={32} color="white" />
+                </LinearGradient>
+              </View>
 
-              <LinearGradient
-                colors={[expiryColor, `${expiryColor}CC`]}
-                style={styles.detailExpiryBadge}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Text style={styles.detailExpiryText}>
-                  {daysUntilExpiry < 0
-                    ? "Expired"
-                    : daysUntilExpiry === 0
-                      ? "Expires Today"
-                      : `${daysUntilExpiry} days left`}
-                </Text>
-              </LinearGradient>
+              <View style={styles.detailTitleContainer}>
+                <Text style={styles.detailName}>{showItemDetails.name}</Text>
+              </View>
             </View>
 
             <View style={styles.detailInfo}>
-              <Text style={styles.detailName}>{showItemDetails.name}</Text>
-
               <View style={styles.detailRow}>
                 <View style={styles.detailItem}>
                   <Ionicons name="cube-outline" size={22} color="#FACC15" />
@@ -2652,7 +2689,7 @@ const PantryManagementScreen: React.FC = () => {
                       {
                         rotate: rotateAnim.interpolate({
                           inputRange: [0, 1],
-                          outputRange: ["0deg", "360deg"],
+                          outputRange: ["0deg", "0deg"],
                         }),
                       },
                     ],
@@ -2679,14 +2716,84 @@ const PantryManagementScreen: React.FC = () => {
                 </LinearGradient>
               </Animated.View>
               <Text style={styles.emptyStateTitle}>
-                {activeTab === STATUS.ACTIVE && "No items in your pantry"}
-                {activeTab === STATUS.EXPIRING && "No items expiring soon"}
-                {activeTab === STATUS.EXPIRED && "No expired items"}
+                {(() => {
+                  const { active, expiringSoon, expired } = getItemsByStatus()
+                  const totalItems = active.length + expiringSoon.length + expired.length
+                  
+                  if (totalItems === 0) {
+                    return "No items in your pantry"
+                  }
+                  
+                  if (activeTab === STATUS.ALL && totalItems === 0) {
+                    return "No items in your pantry"
+                  }
+                  
+                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                    if (expiringSoon.length > 0) {
+                      return "Check your expiring items"
+                    } else if (expired.length > 0) {
+                      return "Check your expired items"
+                    }
+                  }
+                  
+                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                    if (active.length > 0) {
+                      return "All items are fresh!"
+                    } else if (expired.length > 0) {
+                      return "Check your expired items"
+                    }
+                  }
+                  
+                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                    if (active.length > 0) {
+                      return "All items are still good!"
+                    } else if (expiringSoon.length > 0) {
+                      return "Check your expiring items"
+                    }
+                  }
+                  
+                  return "No items found"
+                })()}
               </Text>
               <Text style={styles.emptyStateSubtitle}>
-                {activeTab === STATUS.ACTIVE && "Tap the + button to add some ingredients to your pantry"}
-                {activeTab === STATUS.EXPIRING && "All your items have plenty of time left - you're all good!"}
-                {activeTab === STATUS.EXPIRED && "Great job keeping track of your items!"}
+                {(() => {
+                  const { active, expiringSoon, expired } = getItemsByStatus()
+                  const totalItems = active.length + expiringSoon.length + expired.length
+                  
+                  if (totalItems === 0) {
+                    return "Tap the + button to add some ingredients to your pantry"
+                  }
+                  
+                  if (activeTab === STATUS.ALL && totalItems === 0) {
+                    return "Tap the + button to add some ingredients to your pantry"
+                  }
+                  
+                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                    if (expiringSoon.length > 0) {
+                      return "Some items are about to expire soon"
+                    } else if (expired.length > 0) {
+                      return "Some items have already expired"
+                    }
+                  }
+                  
+                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                    if (active.length > 0) {
+                      return "Your pantry is well-stocked with fresh items"
+                    } else if (expired.length > 0) {
+                      return "Focus on your expired items first"
+                    }
+                  }
+                  
+                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                    if (active.length > 0) {
+                      return "Great job keeping your pantry fresh!"
+                    } else if (expiringSoon.length > 0) {
+                      return "Some items are expiring soon - check them out"
+                    }
+                  }
+                  
+                  return "Try adjusting your search or filters"
+                })()}
               </Text>
             </View>
           }
