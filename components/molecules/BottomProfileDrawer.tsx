@@ -523,11 +523,6 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
     }
   }, [isOpen])
 
-  // Debug useEffect to monitor updates
-  useEffect(() => {
-    console.log('BottomProfileDrawer - localProfileData updated:', localProfileData);
-  }, [localProfileData]);
-
   if (!isRendered && !isOpen) return null
 
   return (

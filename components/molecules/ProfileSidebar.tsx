@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, Animated, Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Alert, Animated, Dimensions, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useProfileStore } from "../../hooks/useProfileStore"
 import Dialog from "../atoms/Dialog"
@@ -24,6 +24,278 @@ const menuItems = [
   { icon: "credit-card", label: "Subscription", route: "settings/subscription", description: "Manage Your Plan" },
   { icon: "settings", label: "Settings", route: "/settings", description: "App Preferences" },
 ]
+
+// Custom Image Picker Dialog Component
+interface ImagePickerDialogProps {
+  visible: boolean
+  onClose: () => void
+  onCamera: () => void
+  onLibrary: () => void
+}
+
+const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.9)).current
+  
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        })
+      ]).start()
+    } else {
+      fadeAnim.setValue(0)
+      scaleAnim.setValue(0.9)
+    }
+  }, [visible])
+
+  const handleCamera = () => {
+    onClose()
+    setTimeout(onCamera, 300)
+  }
+
+  const handleLibrary = () => {
+    onClose()
+    setTimeout(onLibrary, 300)
+  }
+
+  return (
+    <Modal
+      transparent={true}
+      animationType="none"
+      visible={visible}
+      onRequestClose={onClose}
+      statusBarTranslucent={true}
+    >
+      <View style={imagePickerStyles.backdrop}>
+        <Animated.View 
+          style={[
+            imagePickerStyles.animatedContainer,
+            { 
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <LinearGradient
+            colors={['#1F2937', '#111827']}
+            style={imagePickerStyles.dialogContainer}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            {/* Camera Icon */}
+            <View style={imagePickerStyles.iconContainer}>
+              <LinearGradient
+                colors={['#FACC15', '#F97316']}
+                style={imagePickerStyles.iconBackground}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name="camera" size={32} color="white" />
+              </LinearGradient>
+            </View>
+
+            <Text style={imagePickerStyles.title}>
+              Select Profile Picture
+            </Text>
+
+            <Text style={imagePickerStyles.message}>
+              Choose how you want to select your profile picture
+            </Text>
+
+            <View style={imagePickerStyles.buttonContainer}>
+              <TouchableOpacity
+                style={imagePickerStyles.optionButton}
+                onPress={handleCamera}
+                activeOpacity={0.8}
+              >
+                <View style={imagePickerStyles.buttonContent}>
+                  <View style={imagePickerStyles.iconCircle}>
+                    <LinearGradient
+                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      style={imagePickerStyles.iconGradient}
+                    />
+                    <Ionicons name="camera" size={24} color="#FACC15" />
+                  </View>
+                  <View style={imagePickerStyles.textContainer}>
+                    <Text style={imagePickerStyles.optionTitle}>Camera</Text>
+                    <Text style={imagePickerStyles.optionSubtitle}>Take a new photo</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={imagePickerStyles.optionButton}
+                onPress={handleLibrary}
+                activeOpacity={0.8}
+              >
+                <View style={imagePickerStyles.buttonContent}>
+                  <View style={imagePickerStyles.iconCircle}>
+                    <LinearGradient
+                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      style={imagePickerStyles.iconGradient}
+                    />
+                    <Ionicons name="images" size={24} color="#FACC15" />
+                  </View>
+                  <View style={imagePickerStyles.textContainer}>
+                    <Text style={imagePickerStyles.optionTitle}>Gallery</Text>
+                    <Text style={imagePickerStyles.optionSubtitle}>Choose from library</Text>
+                  </View>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={imagePickerStyles.cancelButton}
+              onPress={onClose}
+            >
+              <Text style={imagePickerStyles.cancelText}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </LinearGradient>
+        </Animated.View>
+      </View>
+    </Modal>
+  )
+}
+
+const imagePickerStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  animatedContainer: {
+    width: Dimensions.get('window').width * 0.85,
+    maxWidth: 340,
+  },
+  dialogContainer: {
+    borderRadius: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  iconContainer: {
+    width: 90,
+    height: 90,
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 45,
+    overflow: 'hidden',
+  },
+  iconBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  buttonContainer: {
+    width: '100%',
+    marginBottom: 16,
+    gap: 8,
+  },
+  optionButton: {
+    height: 70,
+    width: '100%',
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  iconCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  iconGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 25,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 2,
+  },
+  optionSubtitle: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+  },
+  cancelButton: {
+    height: 50,
+    width: '100%',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  cancelText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+})
 
 interface ProfileSidebarProps {
   isOpen: boolean
@@ -46,6 +318,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
 
   const [isImageLoading, setIsImageLoading] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
+  const [showImagePickerDialog, setShowImagePickerDialog] = useState(false)
 
   // Animation values
   const menuItemAnimations = useRef(menuItems.map(() => new Animated.Value(0))).current
@@ -239,25 +512,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         }),
       ]).start()
 
-      Alert.alert(
-        "Select Profile Picture",
-        "Choose how you want to select your profile picture",
-        [
-          {
-            text: "Camera",
-            onPress: () => openCamera(),
-          },
-          {
-            text: "Photo Library",
-            onPress: () => openImageLibrary(),
-          },
-          {
-            text: "Cancel",
-            style: "cancel",
-          },
-        ],
-        { cancelable: true },
-      )
+      // Show custom image picker dialog
+      setShowImagePickerDialog(true)
     } catch (error) {
       console.error("Error picking image:", error)
       Alert.alert("Error", "Failed to open image picker")
@@ -643,6 +899,14 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         confirmText="Sign Out"
         cancelText="Cancel"
         showCancelButton={true}
+      />
+
+      {/* Custom Image Picker Dialog */}
+      <ImagePickerDialog
+        visible={showImagePickerDialog}
+        onClose={() => setShowImagePickerDialog(false)}
+        onCamera={openCamera}
+        onLibrary={openImageLibrary}
       />
     </View>
   )
