@@ -90,7 +90,7 @@ const ProfileScreen: React.FC = () => {
                     }
                 }
             } catch (error) {
-                console.error('Failed to load profile:', error);
+                console.log('Failed to load profile:', error);
                 showErrorDialog('Failed to load profile. Please try again later.');
             } finally {
                 setIsLoading(false);
@@ -151,20 +151,20 @@ const ProfileScreen: React.FC = () => {
             };
 
             const response = await updateUserProfile(userData, profileImage || undefined);
-            
+
             setDialogVisible(false);
             showSuccessDialog('Profile Updated', 'Your profile has been successfully updated.');
-            
+
             // Update the current profile image URL if available in the response
             if (response?.user?.profileImage?.url) {
                 console.log('Setting new profile image URL:', response.user.profileImage.url);
                 setCurrentProfileImageUrl(response.user.profileImage.url);
-                
+
                 // Clear the local profileImage state since we now have the server URL
                 setProfileImage(null);
             }
         } catch (error) {
-            console.error('Error updating profile:', error);
+            console.log('Error updating profile:', error);
             setDialogVisible(false);
 
             // Check for specific errors
@@ -197,7 +197,7 @@ const ProfileScreen: React.FC = () => {
             return '';
         }
     };
-    
+
     const handleDateChange = (event: any, selectedDate?: Date) => {
         setShowDatePicker(false);
         if (selectedDate) {
@@ -560,7 +560,7 @@ const ProfileScreen: React.FC = () => {
                     {/* Date of Birth */}
                     <View className="mb-4">
                         <Text className="text-gray-400 mb-2 text-sm pl-2">Date of Birth</Text>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700"
                             onPress={() => setShowDatePicker(true)}
                         >

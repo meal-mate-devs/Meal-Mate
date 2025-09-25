@@ -13,7 +13,7 @@ class ApiClient {
             }
             return await user.getIdToken();
         } catch (error) {
-            console.error('Failed to get auth token:', error);
+            console.log('Failed to get auth token:', error);
             return null;
         }
     }
@@ -70,7 +70,7 @@ class ApiClient {
 
             return await response.json();
         } catch (error) {
-            console.error('API Request failed:', error);
+            console.log('API Request failed:', error);
             throw error;
         }
     }

@@ -36,7 +36,7 @@ interface ImagePickerDialogProps {
 const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
-  
+
   useEffect(() => {
     if (visible) {
       Animated.parallel([
@@ -77,10 +77,10 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
       statusBarTranslucent={true}
     >
       <View style={imagePickerStyles.backdrop}>
-        <Animated.View 
+        <Animated.View
           style={[
             imagePickerStyles.animatedContainer,
-            { 
+            {
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }]
             }
@@ -133,7 +133,7 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={imagePickerStyles.optionButton}
                 onPress={handleLibrary}
@@ -515,7 +515,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
       // Show custom image picker dialog
       setShowImagePickerDialog(true)
     } catch (error) {
-      console.error("Error picking image:", error)
+      console.log("Error picking image:", error)
       Alert.alert("Error", "Failed to open image picker")
     }
   }
@@ -551,7 +551,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
             console.log('Real user profile updated with new image');
           }
         } catch (updateError) {
-          console.error('Error updating real user profile:', updateError);
+          console.log('Error updating real user profile:', updateError);
           // Continue with local update even if server update fails
         }
 
@@ -574,7 +574,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         Alert.alert("Success!", "Profile picture updated successfully!")
       }
     } catch (error) {
-      console.error("Error opening camera:", error)
+      console.log("Error opening camera:", error)
       Alert.alert("Error", "Failed to open camera")
     } finally {
       setIsImageLoading(false)
@@ -612,7 +612,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
             console.log('Real user profile updated with new image from gallery');
           }
         } catch (updateError) {
-          console.error('Error updating real user profile:', updateError);
+          console.log('Error updating real user profile:', updateError);
           // Continue with local update even if server update fails
         }
 
@@ -635,7 +635,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         Alert.alert("Success!", "Profile picture updated successfully!")
       }
     } catch (error) {
-      console.error("Error opening image library:", error)
+      console.log("Error opening image library:", error)
       Alert.alert("Error", "Failed to open photo library")
     } finally {
       setIsImageLoading(false)
@@ -654,7 +654,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         router.replace('/login')
       })
       .catch((error: unknown) => {
-        console.error('Logout failed:', error)
+        console.log('Logout failed:', error)
       })
   }
 

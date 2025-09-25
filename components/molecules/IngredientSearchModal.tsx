@@ -27,20 +27,20 @@ export default function IngredientSearchModal({
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
-  
+
   // Reset state when modal closes
   useEffect(() => {
     if (!visible) {
       setSelectedIngredients([]);
     }
   }, [visible]);
-  
+
   const addIngredient = (ingredient: string | IngredientWithConfidence) => {
     // Parse the ingredient into our common format
-    const ingredientItem: IngredientItem = typeof ingredient === 'string' 
-      ? { name: ingredient, confidence: undefined } 
+    const ingredientItem: IngredientItem = typeof ingredient === 'string'
+      ? { name: ingredient, confidence: undefined }
       : { name: ingredient.name, confidence: ingredient.confidence };
-    
+
     // Don't add duplicates
     if (!selectedIngredients.some(item => item.name === ingredientItem.name)) {
       setSelectedIngredients(prev => [...prev, ingredientItem]);
@@ -48,7 +48,7 @@ export default function IngredientSearchModal({
       Alert.alert("Already Added", `${ingredientItem.name} is already in your list`);
     }
   };
-  
+
   const handleAddManually = () => {
     Alert.prompt(
       "Add Ingredient",
@@ -57,97 +57,97 @@ export default function IngredientSearchModal({
         if (text && text.trim()) {
           // For manual entry, we'll mark it as "manual"
           setSelectedIngredients(prev => [
-            ...prev, 
-            { 
+            ...prev,
+            {
               name: text.trim(),
-              confidence: undefined 
+              confidence: undefined
             }
           ]);
         }
       }
     );
   };
-  
+
   const removeIngredient = (ingredient: IngredientItem) => {
     setSelectedIngredients(prev => prev.filter(i => i.name !== ingredient.name));
   };
-  
+
   const handleConfirm = () => {
     // Extract just the names for the callback
     const ingredientNames = selectedIngredients.map(item => item.name);
     onIngredientsSelected(ingredientNames);
     onClose();
   };
-  
+
   const handleCamera = async () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
-      
+
       if (status !== "granted") {
         Alert.alert("Permission Required", "Camera permission is needed to take photos of ingredients.");
         return;
       }
-      
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets[0]) {
         await processImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error("Error taking picture:", error);
+      console.log("Error taking picture:", error);
       Alert.alert("Error", "Failed to take picture. Please try again.");
     }
   };
-  
+
   const handleGallery = async () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
+
       if (status !== "granted") {
         Alert.alert("Permission Required", "Gallery permission is needed to select photos.");
         return;
       }
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
       });
-      
+
       if (!result.canceled && result.assets && result.assets[0]) {
         await processImage(result.assets[0].uri);
       }
     } catch (error) {
-      console.error("Error selecting from gallery:", error);
+      console.log("Error selecting from gallery:", error);
       Alert.alert("Error", "Failed to select from gallery. Please try again.");
     }
   };
-  
+
   const processImage = async (imageUri: string) => {
     try {
       setIsScanning(true);
       setScanProgress(0);
-      
+
       // Simulate progress for better UX
       const progressInterval = setInterval(() => {
         setScanProgress(prev => Math.min(prev + 5, 90));
       }, 100);
-      
+
       const result = await ingredientDetectionService.detectIngredientsFromImage(imageUri, {
         includeConfidence: true,
       });
-      
+
       // Log the API response for debugging
-      console.log("API Response:", JSON.stringify(result));      
+      console.log("API Response:", JSON.stringify(result));
       clearInterval(progressInterval);
       setScanProgress(100);
-      
+
       if (result.detectedIngredients && result.detectedIngredients.length > 0) {
         // Process ingredients and their confidence values
         const processedIngredients: IngredientItem[] = result.detectedIngredients.map(item => {
@@ -160,16 +160,16 @@ export default function IngredientSearchModal({
           }
           return { name: String(item) }; // No default confidence
         });
-        
+
         // Filter out duplicates
-        const newIngredients = processedIngredients.filter(newItem => 
+        const newIngredients = processedIngredients.filter(newItem =>
           !selectedIngredients.some(existingItem => existingItem.name === newItem.name)
         );
-          
+
         if (newIngredients.length > 0) {
           setSelectedIngredients(prev => [...prev, ...newIngredients]);
           Alert.alert(
-            "Ingredients Detected", 
+            "Ingredients Detected",
             `Found ${newIngredients.length} new ingredient${newIngredients.length !== 1 ? 's' : ''} with confidence values.`
           );
         } else {
@@ -179,13 +179,13 @@ export default function IngredientSearchModal({
         Alert.alert("No Ingredients Detected", "Try taking a clearer picture of your ingredients.");
       }
     } catch (error) {
-      console.error("Error processing image:", error);
+      console.log("Error processing image:", error);
       Alert.alert("Error", "Failed to process image. Please try again.");
     } finally {
       setIsScanning(false);
     }
   };
-  
+
   return (
     <Modal
       visible={visible}
@@ -205,7 +205,7 @@ export default function IngredientSearchModal({
               {isScanning ? "Scanning image..." : "Choose how to add ingredients"}
             </Text>
           </View>
-          
+
           {/* Content */}
           {isScanning ? (
             <View style={styles.scanningContainer}>
@@ -218,8 +218,8 @@ export default function IngredientSearchModal({
               </View>
               <Text style={styles.scanningText}>Analyzing image...</Text>
               <View style={styles.progressBarContainer}>
-                <View 
-                  style={[styles.progressBar, { width: `${scanProgress}%` }]} 
+                <View
+                  style={[styles.progressBar, { width: `${scanProgress}%` }]}
                 />
               </View>
               <Text style={styles.progressText}>{Math.round(scanProgress)}%</Text>
@@ -232,7 +232,7 @@ export default function IngredientSearchModal({
                   <Text style={styles.sectionTitle}>
                     Ingredients ({selectedIngredients.length})
                   </Text>
-                  <ScrollView 
+                  <ScrollView
                     style={styles.selectedList}
                     contentContainerStyle={styles.selectedListContent}
                     showsVerticalScrollIndicator={false}
@@ -244,7 +244,7 @@ export default function IngredientSearchModal({
                             {ingredient.name}
                           </Text>
                         </View>
-                        
+
                         <View style={[
                           styles.confidenceContainer,
                           ingredient.confidence === undefined ? styles.manualConfidenceContainer : null
@@ -253,13 +253,13 @@ export default function IngredientSearchModal({
                             styles.confidenceText,
                             ingredient.confidence === undefined ? styles.manualConfidenceText : null
                           ]}>
-                            {ingredient.confidence !== undefined 
+                            {ingredient.confidence !== undefined
                               // Don't round, use toFixed to display the correct percentage with one decimal place
-                              ? `${(ingredient.confidence * 100).toFixed(1)}%` 
+                              ? `${(ingredient.confidence * 100).toFixed(1)}%`
                               : 'Manual'}
                           </Text>
                         </View>
-                        
+
                         <TouchableOpacity
                           onPress={() => removeIngredient(ingredient)}
                           style={styles.deleteButton}
@@ -272,14 +272,14 @@ export default function IngredientSearchModal({
                   </ScrollView>
                 </View>
               )}
-              
+
               {/* Options */}
               <View style={styles.optionsContainer}>
                 <Text style={styles.sectionTitle}>
                   Add Ingredients
                 </Text>
                 <View style={styles.optionButtonsContainer}>
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={styles.optionButton}
                     onPress={handleCamera}
                   >
@@ -288,8 +288,8 @@ export default function IngredientSearchModal({
                     </View>
                     <Text style={styles.optionText}>Camera</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.optionButton}
                     onPress={handleGallery}
                   >
@@ -298,8 +298,8 @@ export default function IngredientSearchModal({
                     </View>
                     <Text style={styles.optionText}>Gallery</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity 
+
+                  <TouchableOpacity
                     style={styles.optionButton}
                     onPress={handleAddManually}
                   >
@@ -312,12 +312,12 @@ export default function IngredientSearchModal({
               </View>
             </>
           )}
-          
+
           {/* Footer */}
           <View style={styles.footer}>
             {!isScanning && (
               <>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.confirmButton}
                   onPress={handleConfirm}
                   disabled={selectedIngredients.length === 0}
@@ -326,15 +326,15 @@ export default function IngredientSearchModal({
                     colors={["#10B981", "#059669"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
-                    style={[styles.confirmButtonGradient, 
-                      selectedIngredients.length === 0 && styles.disabledButton
+                    style={[styles.confirmButtonGradient,
+                    selectedIngredients.length === 0 && styles.disabledButton
                     ]}
                   >
                     <Text style={styles.confirmText}>Confirm</Text>
                   </LinearGradient>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={onClose}
                 >

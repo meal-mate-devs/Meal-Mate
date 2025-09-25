@@ -6,19 +6,19 @@ import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef, useState } from "react"
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    Image,
-    KeyboardAvoidingView,
-    PanResponder,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Alert,
+  Animated,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  PanResponder,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useProfileStore } from "../../hooks/useProfileStore"
@@ -114,7 +114,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
         return scrollOffset.current <= 0 && gestureState.dy > 5
       },
       onPanResponderGrant: () => {
-        ;(translateY as any).setOffset((translateY as any).__getValue())
+        ; (translateY as any).setOffset((translateY as any).__getValue())
         translateY.setValue(0)
       },
       onPanResponderMove: (_, gestureState) => {
@@ -245,7 +245,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
         { cancelable: true },
       )
     } catch (error) {
-      console.error("Error picking image:", error)
+      console.log("Error picking image:", error)
       Alert.alert("Error", "Failed to open image picker")
     }
   }
@@ -283,7 +283,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
         showSuccessAnimation()
       }
     } catch (error) {
-      console.error("Error opening camera:", error)
+      console.log("Error opening camera:", error)
       Alert.alert("Error", "Failed to open camera")
     } finally {
       setIsImageLoading(false)
@@ -323,7 +323,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
         showSuccessAnimation()
       }
     } catch (error) {
-      console.error("Error opening image library:", error)
+      console.log("Error opening image library:", error)
       Alert.alert("Error", "Failed to open photo library")
     } finally {
       setIsImageLoading(false)
@@ -439,8 +439,8 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
 
           {/* Profile image content - Use the state localProfileData */}
           {localProfileData.profileImage ? (
-            <Image 
-              source={{ uri: localProfileData.profileImage }} 
+            <Image
+              source={{ uri: localProfileData.profileImage }}
               style={styles.avatarImage}
               key={`${localProfileData.profileImage}-${Date.now()}`} // Force re-render with timestamp
             />

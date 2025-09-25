@@ -77,7 +77,7 @@ interface ImagePickerDialogProps {
 const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
-  
+
   useEffect(() => {
     if (visible) {
       Animated.parallel([
@@ -118,10 +118,10 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
       statusBarTranslucent={true}
     >
       <View style={imagePickerStyles.backdrop}>
-        <Animated.View 
+        <Animated.View
           style={[
             imagePickerStyles.animatedContainer,
-            { 
+            {
               opacity: fadeAnim,
               transform: [{ scale: scaleAnim }]
             }
@@ -174,7 +174,7 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={imagePickerStyles.optionButton}
                 onPress={handleLibrary}
@@ -425,7 +425,7 @@ const PantryManagementScreen: React.FC = () => {
     expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     image: "",
   })
-  
+
   // State for unit dropdown visibility
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false)
 
@@ -482,7 +482,7 @@ const PantryManagementScreen: React.FC = () => {
 
     // Apply search filter if query exists
     if (searchQuery) {
-      items = items.filter((item) => 
+      items = items.filter((item) =>
         item.name.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
@@ -524,7 +524,7 @@ const PantryManagementScreen: React.FC = () => {
   const handleTabChange = useCallback((tab: string) => {
     // Set the tab state immediately for faster UI response
     setActiveTab(tab)
-    
+
     // Apply subtle animation after state change
     Animated.timing(fadeAnim, {
       toValue: 0.9,
@@ -549,7 +549,7 @@ const PantryManagementScreen: React.FC = () => {
     if (!newItem.name || !newItem.quantity) {
       // Show validation error
       Alert.alert(
-        "Missing Information", 
+        "Missing Information",
         "Please fill in at least the name and quantity fields."
       )
       return
@@ -569,7 +569,7 @@ const PantryManagementScreen: React.FC = () => {
 
     // Add to state
     setPantryItems((prev) => [...prev, item])
-    
+
     // Reset and close modal
     setShowAddModal(false)
     setNewItem({
@@ -602,12 +602,12 @@ const PantryManagementScreen: React.FC = () => {
   const handleRemoveItem = useCallback((itemId: string) => {
     // Show confirmation dialog
     Alert.alert(
-      "Remove Item", 
-      "Are you sure you want to remove this item?", 
+      "Remove Item",
+      "Are you sure you want to remove this item?",
       [
-        { 
-          text: "Cancel", 
-          style: "cancel" 
+        {
+          text: "Cancel",
+          style: "cancel"
         },
         {
           text: "Remove",
@@ -633,7 +633,7 @@ const PantryManagementScreen: React.FC = () => {
       // Show custom dialog
       setShowImagePickerDialog(true)
     } catch (error) {
-      console.error("Error handling image selection:", error)
+      console.log("Error handling image selection:", error)
     } finally {
       setIsImagePickerOpen(false)
     }
@@ -645,7 +645,7 @@ const PantryManagementScreen: React.FC = () => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync()
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required", 
+          "Permission Required",
           "Please grant camera access to capture food photos."
         )
         return
@@ -662,7 +662,7 @@ const PantryManagementScreen: React.FC = () => {
         setNewItem((prev) => ({ ...prev, image: result.assets[0].uri }))
       }
     } catch (error) {
-      console.error("Error opening camera:", error)
+      console.log("Error opening camera:", error)
     }
   }, [])
 
@@ -672,7 +672,7 @@ const PantryManagementScreen: React.FC = () => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
         Alert.alert(
-          "Permission Required", 
+          "Permission Required",
           "Please grant photo library access to add item photos."
         )
         return
@@ -689,7 +689,7 @@ const PantryManagementScreen: React.FC = () => {
         setNewItem((prev) => ({ ...prev, image: result.assets[0].uri }))
       }
     } catch (error) {
-      console.error("Error opening gallery:", error)
+      console.log("Error opening gallery:", error)
     }
   }, [])
 
@@ -717,7 +717,7 @@ const PantryManagementScreen: React.FC = () => {
       top: 0,
       height: SCREEN_HEIGHT * 0.4,
     },
-    
+
     // Header styles
     header: {
       paddingHorizontal: 20,
@@ -784,7 +784,7 @@ const PantryManagementScreen: React.FC = () => {
       textAlign: 'center',
       opacity: 0.9,
     },
-    
+
     // Action buttons
     actionsRow: {
       flexDirection: "row",
@@ -816,7 +816,7 @@ const PantryManagementScreen: React.FC = () => {
       alignItems: "center",
       justifyContent: "center",
     },
-    
+
     // Search bar
     searchContainer: {
       borderRadius: 16,
@@ -847,7 +847,7 @@ const PantryManagementScreen: React.FC = () => {
       paddingTop: 0,
       paddingBottom: 0,
     },
-    
+
     // Status tabs
     tabBar: {
       flexDirection: "row",
@@ -902,7 +902,7 @@ const PantryManagementScreen: React.FC = () => {
       fontSize: 10,
       fontWeight: "700",
     },
-    
+
     // Category filter
     categoryFilter: {
       marginBottom: 12,
@@ -935,7 +935,7 @@ const PantryManagementScreen: React.FC = () => {
     activeCategoryChipText: {
       color: "#FACC15",
     },
-    
+
     // Items list
     itemsList: {
       flex: 1,
@@ -1068,7 +1068,7 @@ const PantryManagementScreen: React.FC = () => {
       padding: 10,
       borderRadius: 10,
     },
-    
+
     // Empty state
     emptyState: {
       alignItems: "center",
@@ -1095,7 +1095,7 @@ const PantryManagementScreen: React.FC = () => {
       fontWeight: "500",
       lineHeight: 22,
     },
-    
+
     // Modal styles
     modalContainer: {
       flex: 1,
@@ -1128,7 +1128,7 @@ const PantryManagementScreen: React.FC = () => {
       paddingHorizontal: 20,
       paddingTop: 16,
     },
-    
+
     // Form elements
     imagePickerContainer: {
       flex: 1,
@@ -1229,7 +1229,7 @@ const PantryManagementScreen: React.FC = () => {
       marginLeft: 12,
       fontWeight: "500",
     },
-    
+
     // Category selection
     categorySelection: {
       flexDirection: "row",
@@ -1263,7 +1263,7 @@ const PantryManagementScreen: React.FC = () => {
     selectedCategoryOptionText: {
       color: "#FACC15",
     },
-    
+
     // Unit selection
     unitSelectionRow: {
       height: 48,
@@ -1360,7 +1360,7 @@ const PantryManagementScreen: React.FC = () => {
     selectedUnitText: {
       color: "#FACC15",
     },
-    
+
     // Location selection
     locationSelection: {
       flexDirection: "row",
@@ -1392,7 +1392,7 @@ const PantryManagementScreen: React.FC = () => {
     selectedLocationOptionText: {
       color: "#FACC15",
     },
-    
+
     // Date input
     dateInput: {
       flexDirection: "row",
@@ -1413,7 +1413,7 @@ const PantryManagementScreen: React.FC = () => {
       marginLeft: 12,
       fontWeight: "500",
     },
-    
+
     // Item details modal
     detailsScrollContent: {
       paddingBottom: 40,
@@ -1561,17 +1561,17 @@ const PantryManagementScreen: React.FC = () => {
   /**
    * UI Rendering Components
    */
-  
+
   // Tab bar for filtering items by status
   const renderTabBar = () => {
     const { active, expiringSoon, expired } = getItemsByStatus()
-  
+
     const tabs = [
       { id: STATUS.ACTIVE, name: "Active", count: active.length, color: "#22C55E", icon: "checkmark-circle-outline" },
       { id: STATUS.EXPIRING, name: "Expiring", count: expiringSoon.length, color: "#F59E0B", icon: "time-outline" },
       { id: STATUS.EXPIRED, name: "Expired", count: expired.length, color: "#EF4444", icon: "alert-circle-outline" },
     ]
-  
+
     return (
       <View style={styles.tabBar}>
         {tabs.map((tab) => (
@@ -1590,12 +1590,12 @@ const PantryManagementScreen: React.FC = () => {
                 end={{ x: 0, y: 1 }}
               />
             )}
-            
+
             <Text style={[styles.tabText, activeTab === tab.id && styles.activeTabText]}>
               {tab.name}
             </Text>
-            <LinearGradient 
-              colors={[tab.color, `${tab.color}CC`]} 
+            <LinearGradient
+              colors={[tab.color, `${tab.color}CC`]}
               style={styles.countBadge}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
@@ -1611,9 +1611,9 @@ const PantryManagementScreen: React.FC = () => {
   // Category filter horizontal scrollview
   const renderCategoryFilter = () => (
     <View style={styles.categoryFilter}>
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.categoryFilterScroll}
       >
         <TouchableOpacity
@@ -1630,7 +1630,7 @@ const PantryManagementScreen: React.FC = () => {
             All Categories
           </Text>
         </TouchableOpacity>
-        
+
         {CATEGORIES.map((category) => (
           <TouchableOpacity
             key={category.id}
@@ -1660,8 +1660,8 @@ const PantryManagementScreen: React.FC = () => {
     const category = CATEGORIES.find((cat) => cat.id === item.category)
 
     return (
-      <TouchableOpacity 
-        style={styles.pantryItem} 
+      <TouchableOpacity
+        style={styles.pantryItem}
         onPress={() => {
           setShowItemDetails(item)
         }}
@@ -1671,23 +1671,23 @@ const PantryManagementScreen: React.FC = () => {
 
         <View style={styles.itemImageContainer}>
           {item.image ? (
-            <Image 
-              source={{ uri: item.image }} 
+            <Image
+              source={{ uri: item.image }}
               style={styles.itemImage}
               contentFit="cover"
               transition={300}
             />
           ) : (
-            <LinearGradient 
-              colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]} 
+            <LinearGradient
+              colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
               style={styles.itemImagePlaceholder}
             >
               <Ionicons name={category?.icon as any} size={24} color="white" />
             </LinearGradient>
           )}
 
-          <View 
-            style={[styles.expiryBadge, {backgroundColor: expiryColor}]}
+          <View
+            style={[styles.expiryBadge, { backgroundColor: expiryColor }]}
           >
             <Text style={styles.expiryText}>
               {daysUntilExpiry < 0 ? "EXP" : daysUntilExpiry === 0 ? "TODAY" : `${daysUntilExpiry}d`}
@@ -1697,7 +1697,7 @@ const PantryManagementScreen: React.FC = () => {
 
         <View style={styles.itemDetails}>
           <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-          
+
           <View style={styles.itemMeta}>
             <View style={styles.quantityContainer}>
               <Ionicons name="cube-outline" size={14} color="#FACC15" />
@@ -1710,7 +1710,7 @@ const PantryManagementScreen: React.FC = () => {
               <Text style={styles.locationText}>{category?.name}</Text>
             </View>
           </View>
-          
+
           <View style={styles.expiryDateContainer}>
             <Ionicons name="time-outline" size={12} color={expiryColor} />
             <Text style={[styles.expiryDateText, { color: expiryColor }]}>
@@ -1735,12 +1735,12 @@ const PantryManagementScreen: React.FC = () => {
   // Add item modal with form
   const renderAddItemModal = () => (
     <Modal
-      visible={showAddModal} 
-      animationType="slide" 
+      visible={showAddModal}
+      animationType="slide"
       presentationStyle="pageSheet"
       onRequestClose={() => setShowAddModal(false)}
     >
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.modalContainer}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
@@ -1749,14 +1749,14 @@ const PantryManagementScreen: React.FC = () => {
         <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
 
         <View style={styles.modalHeader}>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setShowAddModal(false)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="close-outline" size={28} color="white" />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>Add New Item</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={handleAddItem}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -1764,162 +1764,162 @@ const PantryManagementScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity 
-          activeOpacity={1} 
-          onPress={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)} 
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
           style={{ flex: 1 }}
         >
-          <ScrollView 
-            style={styles.modalContent} 
-            showsVerticalScrollIndicator={false} 
+          <ScrollView
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 20 }}
             onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
           >
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Autodetect Ingredient</Text>
-            <TouchableOpacity
-              style={[styles.inputContainer, { paddingRight: 50 }]}
-              onPress={handleImagePicker}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="camera-outline" size={20} color="#FACC15" />
-              <Text style={[styles.placeholderText, { marginLeft: 12, marginVertical: 0 }]}>
-                {newItem.image ? "Image selected" : "Tap to take or select a photo"}
-              </Text>
-              {newItem.image && (
-                <View style={styles.previewContainer}>
-                  <Image 
-                    source={{ uri: newItem.image }} 
-                    style={styles.previewImage}
-                    contentFit="cover"
-                    transition={300}
-                  />
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Item Name *</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
-              <TextInput
-                style={styles.textInput}
-                value={newItem.name}
-                onChangeText={(text) => setNewItem((prev) => ({ ...prev, name: text }))}
-                placeholder="Enter item name"
-                placeholderTextColor="#64748B"
-                returnKeyType="next"
-              />
-            </View>
-          </View>
-
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Category</Text>
-            <View style={styles.categorySelection}>
-              {CATEGORIES.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryOption, 
-                    newItem.category === category.id && styles.selectedCategoryOption
-                  ]}
-                  onPress={() => {
-                    setNewItem((prev) => ({ ...prev, category: category.id }))
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons
-                    name={category.icon as any}
-                    size={18}
-                    color={newItem.category === category.id ? "#FACC15" : category.color}
-                  />
-                  <Text
-                    style={[
-                      styles.categoryOptionText,
-                      newItem.category === category.id && styles.selectedCategoryOptionText,
-                    ]}
-                  >
-                    {category.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.formRow}>
-            <View style={[styles.formField, { flex: 1, marginHorizontal: 6 }]}>
-              <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
-              <View style={[styles.inputContainer, { paddingRight: 95 }]}>
-                <Ionicons name="cube-outline" size={18} color="#FACC15" />
-                <TextInput
-                  style={styles.textInput}
-                  value={newItem.quantity}
-                  onChangeText={(text) => setNewItem((prev) => ({ ...prev, quantity: text }))}
-                  placeholder="0"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numeric"
-                  returnKeyType="done"
-                />
-                <TouchableOpacity 
-                  style={styles.unitButton}
-                  onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
-                >
-                  <Text style={styles.unitButtonText}>
-                    {newItem.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
-                  </Text>
-                </TouchableOpacity>
-                
-                {isUnitDropdownOpen && (
-                  <View style={styles.unitDropdown}>
-                    <ScrollView 
-                      showsVerticalScrollIndicator={false}
-                      style={styles.unitDropdownScroll}
-                      contentContainerStyle={styles.unitDropdownScrollContent}
-                      nestedScrollEnabled={true}
-                    >
-                      {UNITS.map((unit) => (
-                        <TouchableOpacity
-                          key={unit}
-                          style={[
-                            styles.unitDropdownItem,
-                            newItem.unit === unit && styles.unitDropdownItemSelected
-                          ]}
-                          onPress={() => {
-                            setNewItem(prev => ({ ...prev, unit }));
-                            setIsUnitDropdownOpen(false);
-                          }}
-                        >
-                          <Text style={[
-                            styles.unitDropdownItemText,
-                            newItem.unit === unit && styles.unitDropdownItemTextSelected
-                          ]}>
-                            {unit}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+            <View style={styles.formField}>
+              <Text style={styles.fieldLabel}>Autodetect Ingredient</Text>
+              <TouchableOpacity
+                style={[styles.inputContainer, { paddingRight: 50 }]}
+                onPress={handleImagePicker}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="camera-outline" size={20} color="#FACC15" />
+                <Text style={[styles.placeholderText, { marginLeft: 12, marginVertical: 0 }]}>
+                  {newItem.image ? "Image selected" : "Tap to take or select a photo"}
+                </Text>
+                {newItem.image && (
+                  <View style={styles.previewContainer}>
+                    <Image
+                      source={{ uri: newItem.image }}
+                      style={styles.previewImage}
+                      contentFit="cover"
+                      transition={300}
+                    />
                   </View>
                 )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.formField}>
+              <Text style={styles.fieldLabel}>Item Name *</Text>
+              <View style={styles.inputContainer}>
+                <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
+                <TextInput
+                  style={styles.textInput}
+                  value={newItem.name}
+                  onChangeText={(text) => setNewItem((prev) => ({ ...prev, name: text }))}
+                  placeholder="Enter item name"
+                  placeholderTextColor="#64748B"
+                  returnKeyType="next"
+                />
               </View>
             </View>
-          </View>
+
+            <View style={styles.formField}>
+              <Text style={styles.fieldLabel}>Category</Text>
+              <View style={styles.categorySelection}>
+                {CATEGORIES.map((category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryOption,
+                      newItem.category === category.id && styles.selectedCategoryOption
+                    ]}
+                    onPress={() => {
+                      setNewItem((prev) => ({ ...prev, category: category.id }))
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons
+                      name={category.icon as any}
+                      size={18}
+                      color={newItem.category === category.id ? "#FACC15" : category.color}
+                    />
+                    <Text
+                      style={[
+                        styles.categoryOptionText,
+                        newItem.category === category.id && styles.selectedCategoryOptionText,
+                      ]}
+                    >
+                      {category.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <View style={styles.formRow}>
+              <View style={[styles.formField, { flex: 1, marginHorizontal: 6 }]}>
+                <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
+                <View style={[styles.inputContainer, { paddingRight: 95 }]}>
+                  <Ionicons name="cube-outline" size={18} color="#FACC15" />
+                  <TextInput
+                    style={styles.textInput}
+                    value={newItem.quantity}
+                    onChangeText={(text) => setNewItem((prev) => ({ ...prev, quantity: text }))}
+                    placeholder="0"
+                    placeholderTextColor="#64748B"
+                    keyboardType="numeric"
+                    returnKeyType="done"
+                  />
+                  <TouchableOpacity
+                    style={styles.unitButton}
+                    onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
+                  >
+                    <Text style={styles.unitButtonText}>
+                      {newItem.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
+                    </Text>
+                  </TouchableOpacity>
+
+                  {isUnitDropdownOpen && (
+                    <View style={styles.unitDropdown}>
+                      <ScrollView
+                        showsVerticalScrollIndicator={false}
+                        style={styles.unitDropdownScroll}
+                        contentContainerStyle={styles.unitDropdownScrollContent}
+                        nestedScrollEnabled={true}
+                      >
+                        {UNITS.map((unit) => (
+                          <TouchableOpacity
+                            key={unit}
+                            style={[
+                              styles.unitDropdownItem,
+                              newItem.unit === unit && styles.unitDropdownItemSelected
+                            ]}
+                            onPress={() => {
+                              setNewItem(prev => ({ ...prev, unit }));
+                              setIsUnitDropdownOpen(false);
+                            }}
+                          >
+                            <Text style={[
+                              styles.unitDropdownItemText,
+                              newItem.unit === unit && styles.unitDropdownItemTextSelected
+                            ]}>
+                              {unit}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </View>
 
 
 
-          <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Expiry Date</Text>
-            <TouchableOpacity 
-              style={styles.dateInput} 
-              onPress={() => setShowDatePicker(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="calendar-outline" size={18} color="#FACC15" />
-              <Text style={styles.dateText}>{newItem.expiryDate.toLocaleDateString()}</Text>
-              <Ionicons name="chevron-down" size={18} color="#64748B" />
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
+            <View style={styles.formField}>
+              <Text style={styles.fieldLabel}>Expiry Date</Text>
+              <TouchableOpacity
+                style={styles.dateInput}
+                onPress={() => setShowDatePicker(true)}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="calendar-outline" size={18} color="#FACC15" />
+                <Text style={styles.dateText}>{newItem.expiryDate.toLocaleDateString()}</Text>
+                <Ionicons name="chevron-down" size={18} color="#64748B" />
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
         </TouchableOpacity>
 
         {/* Date Picker */}
@@ -1946,36 +1946,36 @@ const PantryManagementScreen: React.FC = () => {
     const expiryText = getExpiryText(showItemDetails.expiryDate)
     const category = CATEGORIES.find((cat) => cat.id === showItemDetails.category)
     const daysAdded = Math.floor((new Date().getTime() - showItemDetails.addedDate.getTime()) / (1000 * 60 * 60 * 24))
-    
-    const addedText = daysAdded === 0 
-      ? "Added today" 
-      : daysAdded === 1 
-        ? "Added yesterday" 
+
+    const addedText = daysAdded === 0
+      ? "Added today"
+      : daysAdded === 1
+        ? "Added yesterday"
         : `Added ${daysAdded} days ago`
 
     return (
-      <Modal 
-        visible={!!showItemDetails} 
-        animationType="slide" 
+      <Modal
+        visible={!!showItemDetails}
+        animationType="slide"
         presentationStyle="pageSheet"
         onRequestClose={() => setShowItemDetails(null)}
       >
         <View style={styles.modalContainer}>
           <StatusBar barStyle="light-content" />
-          <LinearGradient 
-            colors={["#000000", "#121212"]} 
+          <LinearGradient
+            colors={["#000000", "#121212"]}
             style={StyleSheet.absoluteFill}
           />
 
           <View style={styles.modalHeader}>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => setShowItemDetails(null)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Ionicons name="chevron-back" size={28} color="white" />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>Item Details</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => handleRemoveItem(showItemDetails.id)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
@@ -1983,15 +1983,15 @@ const PantryManagementScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
 
-          <ScrollView 
-            style={styles.modalContent} 
+          <ScrollView
+            style={styles.modalContent}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.detailsScrollContent}
           >
             <View style={styles.detailImageContainer}>
               {showItemDetails.image ? (
-                <Image 
-                  source={{ uri: showItemDetails.image }} 
+                <Image
+                  source={{ uri: showItemDetails.image }}
                   style={styles.detailImage}
                   contentFit="cover"
                   transition={300}
@@ -2006,9 +2006,9 @@ const PantryManagementScreen: React.FC = () => {
                   <Ionicons name={category?.icon as any} size={50} color="white" />
                 </LinearGradient>
               )}
-              
-              <LinearGradient 
-                colors={[expiryColor, `${expiryColor}CC`]} 
+
+              <LinearGradient
+                colors={[expiryColor, `${expiryColor}CC`]}
                 style={styles.detailExpiryBadge}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
@@ -2061,9 +2061,9 @@ const PantryManagementScreen: React.FC = () => {
                   </Text>
                 </View>
               </View>
-              
+
               <View style={styles.actionRow}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.actionButton, styles.primaryAction]}
                   onPress={() => {
                     setShowItemDetails(null)
@@ -2075,8 +2075,8 @@ const PantryManagementScreen: React.FC = () => {
                     Update Item
                   </Text>
                 </TouchableOpacity>
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={[styles.actionButton, styles.destructiveAction]}
                   onPress={() => handleRemoveItem(showItemDetails.id)}
                 >
@@ -2099,9 +2099,9 @@ const PantryManagementScreen: React.FC = () => {
   return (
     <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
       {/* Simplified gradient with fewer color stops for better performance */}
-      <LinearGradient 
-        colors={["#0F0F0F", "#000000"]} 
-        style={StyleSheet.absoluteFill} 
+      <LinearGradient
+        colors={["#0F0F0F", "#000000"]}
+        style={StyleSheet.absoluteFill}
       />
       <LinearGradient
         colors={["#171717", "transparent"]}
@@ -2114,7 +2114,7 @@ const PantryManagementScreen: React.FC = () => {
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
         <View style={styles.headerContent}>
           {/* Back Button */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
             activeOpacity={0.7}
@@ -2134,8 +2134,8 @@ const PantryManagementScreen: React.FC = () => {
 
           {/* Add Button */}
           <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
-            <TouchableOpacity 
-              style={styles.headerAddButton} 
+            <TouchableOpacity
+              style={styles.headerAddButton}
               onPress={() => {
                 setShowAddModal(true)
               }}
@@ -2153,12 +2153,12 @@ const PantryManagementScreen: React.FC = () => {
           </Animated.View>
         </View>
       </Animated.View>
-      
+
       {/* Search bar */}
       <View style={styles.searchRow}>
         <View style={styles.searchContainer}>
           {/* Replace BlurView with a simple background color for better performance */}
-          <View style={[StyleSheet.absoluteFill, {backgroundColor: 'rgba(30, 30, 30, 0.6)'}]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
           <View style={styles.searchBlur}>
             <Ionicons name="search-outline" size={22} color="#FACC15" />
             <TextInput
@@ -2172,7 +2172,7 @@ const PantryManagementScreen: React.FC = () => {
               maxLength={50}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => {
                   setSearchQuery("")
                 }}
@@ -2187,17 +2187,17 @@ const PantryManagementScreen: React.FC = () => {
 
       {/* Tab bar for filtering */}
       {renderTabBar()}
-      
+
       {/* Category filters */}
       {renderCategoryFilter()}
 
       {/* Items list */}
-      <Animated.View 
+      <Animated.View
         style={[
-          styles.itemsList, 
-          { 
-            opacity: fadeAnim, 
-            transform: [{ scale: scaleAnim }] 
+          styles.itemsList,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }]
           }
         ]}
       >
@@ -2209,7 +2209,7 @@ const PantryManagementScreen: React.FC = () => {
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Animated.View 
+              <Animated.View
                 style={[
                   styles.emptyStateIcon,
                   {
@@ -2224,22 +2224,22 @@ const PantryManagementScreen: React.FC = () => {
                   },
                 ]}
               >
-                <LinearGradient 
-                  colors={["#FACC15", "#F97316"]} 
+                <LinearGradient
+                  colors={["#FACC15", "#F97316"]}
                   style={{ borderRadius: 35, padding: 16 }}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Ionicons 
+                  <Ionicons
                     name={
-                      activeTab === STATUS.ACTIVE 
-                        ? "nutrition-outline" 
+                      activeTab === STATUS.ACTIVE
+                        ? "nutrition-outline"
                         : activeTab === STATUS.EXPIRING
                           ? "time-outline"
                           : "alert-circle-outline"
-                    } 
-                    size={56} 
-                    color="white" 
+                    }
+                    size={56}
+                    color="white"
                   />
                 </LinearGradient>
               </Animated.View>

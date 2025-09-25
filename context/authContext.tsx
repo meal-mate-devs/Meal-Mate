@@ -70,17 +70,17 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       console.log('Fetching user profile...');
       const token = await firebaseUser.getIdToken();
-      
+
       // Use the correct endpoint from the backend API: /api/auth/profile
       const profileEndpoint = `${API_BASE_URL}/auth/profile`;
-      
+
       console.log('Making request to:', profileEndpoint);
-      
+
       // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
       );
-      
+
       // Race between fetch and timeout
       const response = await Promise.race([
         fetch(profileEndpoint, {
@@ -94,22 +94,22 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       ]) as Response;
 
       if (!response.ok) {
-        console.error('Profile fetch failed:', {
+        console.log('Profile fetch failed:', {
           status: response.status,
           statusText: response.statusText,
           url: profileEndpoint
         });
-        
+
         // If it's a 404, the user might have just been created - try one more time after a short delay
         if (response.status === 404) {
           console.log('User not found, retrying profile fetch after delay...');
           await new Promise(resolve => setTimeout(resolve, 1000));
-          
+
           // Create timeout for retry request
-          const retryTimeoutPromise = new Promise((_, reject) => 
+          const retryTimeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error('Retry request timeout')), 10000)
           );
-          
+
           const retryResponse = await Promise.race([
             fetch(profileEndpoint, {
               method: 'GET',
@@ -120,7 +120,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             }),
             retryTimeoutPromise
           ]) as Response;
-          
+
           if (retryResponse.ok) {
             const retryData = await retryResponse.json();
             if (retryData && retryData.user) {
@@ -130,7 +130,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             }
           }
         }
-        
+
         // Create a basic fallback profile if the API call fails
         // This allows the app to function with minimal data
         const basicProfile: Profile = {
@@ -151,23 +151,23 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           isChef: false,
           isPro: false
         };
-        
+
         console.log('Using basic fallback profile due to API error:', basicProfile);
         setProfile(basicProfile);
-        
+
         return basicProfile;
       }
 
       // Parse the response and extract the user object
       const data = await response.json();
-      
+
       if (!data || !data.user) {
-        console.error('Profile fetch response missing user data:', data);
+        console.log('Profile fetch response missing user data:', data);
         throw new Error('Invalid profile data received');
       }
-      
+
       console.log('Profile fetch successful:', data.user.userName);
-      
+
       // Only update the profile if there are actual changes
       if (JSON.stringify(data.user) !== JSON.stringify(profile)) {
         console.log('Updating profile state with new data');
@@ -179,7 +179,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       return data.user;
     } catch (error) {
       console.log('Error fetching profile:', error);
-      
+
       // Create a fallback profile as a last resort when even error handling fails
       const emergencyFallback: Profile = {
         firebaseUid: firebaseUser.uid,
@@ -199,7 +199,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         isChef: false,
         isPro: false
       };
-      
+
       console.log('Using emergency fallback profile after catch block:', emergencyFallback);
       setProfile(emergencyFallback);
       return emergencyFallback;
@@ -235,7 +235,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       await auth.currentUser.reload();
       const firebaseUser = auth.currentUser;
-      
+
       setUser({
         uid: firebaseUser.uid,
         email: firebaseUser.email,
@@ -243,10 +243,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         emailVerified: firebaseUser.emailVerified,
       });
       setIsAuthenticated(firebaseUser.emailVerified);
-      
+
       console.log('Auth state refreshed - emailVerified:', firebaseUser.emailVerified);
     } catch (error) {
-      console.error('Error refreshing auth state:', error);
+      console.log('Error refreshing auth state:', error);
     }
   };
 
@@ -291,7 +291,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           await sendEmailVerification(userCredential.user);
           console.log('Email verification sent successfully to:', userCredential.user.email);
         } catch (emailError) {
-          console.error('Failed to send verification email:', emailError);
+          console.log('Failed to send verification email:', emailError);
         }
       }
       const token = await userCredential.user.getIdToken();
@@ -351,7 +351,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       console.log('Backend registration response:', responseData);
 
       if (!backendResponse.ok) {
-        console.error('Backend registration failed:', {
+        console.log('Backend registration failed:', {
           status: backendResponse.status,
           statusText: backendResponse.statusText,
           responseData
@@ -382,7 +382,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       await signOut(auth);
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.log('Error signing out:', error);
       throw error;
     }
   };
@@ -395,7 +395,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
 
       const token = await auth.currentUser.getIdToken();
-      
+
       // Call backend to delete user data
       const response = await fetch(`${API_BASE_URL}/auth/account`, {
         method: 'DELETE',
@@ -411,14 +411,14 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Account deleted successfully from backend');
-      
+
       // Clear local state
       setUser(null);
       setProfile(null);
       setIsAuthenticated(false);
-      
+
     } catch (error) {
-      console.error('Error deleting account:', error);
+      console.log('Error deleting account:', error);
       throw error;
     }
   };
@@ -428,7 +428,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     try {
       await sendPasswordResetEmail(auth, email);
     } catch (error) {
-      console.error('Error sending password reset:', error);
+      console.log('Error sending password reset:', error);
       throw error;
     }
   };
@@ -438,7 +438,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       const methods = await fetchSignInMethodsForEmail(auth, email);
       return methods.length > 0;
     } catch (error) {
-      console.error('Error checking account existence:', error);
+      console.log('Error checking account existence:', error);
       return false;
     }
   };
@@ -454,7 +454,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        console.error('Username check failed:', response.status, response.statusText);
+        console.log('Username check failed:', response.status, response.statusText);
         // If server error, we assume username might be available (fail-safe)
         return false;
       }
@@ -463,7 +463,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       console.log('Username check response:', data);
       return data.exists === true;
     } catch (error) {
-      console.error('Error checking username existence:', error);
+      console.log('Error checking username existence:', error);
       // If network error, we assume username might be available (fail-safe)
       return false;
     }
@@ -478,7 +478,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         throw new Error('No user is currently signed in');
       }
     } catch (error) {
-      console.error('Error sending verification email:', error);
+      console.log('Error sending verification email:', error);
       throw error;
     }
   };
@@ -549,7 +549,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
       return responseData;
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.log('Error updating profile:', error);
       throw error;
     }
   };

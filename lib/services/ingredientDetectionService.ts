@@ -15,11 +15,11 @@ class IngredientDetectionService {
     imageUri: string,
     options?: IngredientDetectionOptions
   ): Promise<IngredientDetectionResponse> {
-    try {      
+    try {
       // Check if the file exists
       const fileInfo = await FileSystem.getInfoAsync(imageUri);
       if (!fileInfo.exists) {
-        console.error("File not found:", imageUri);
+        console.log("File not found:", imageUri);
         throw this.createError("File not found", "The specified image file does not exist", 404);
       }
 
@@ -37,7 +37,7 @@ class IngredientDetectionService {
       }
 
       console.log("Sending request to API:", this.apiUrl);
-      
+
       // Make the API request
       const response = await fetch(this.apiUrl, {
         method: "POST",
@@ -52,7 +52,7 @@ class IngredientDetectionService {
       // Handle non-200 responses
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("API error response:", errorText);
+        console.log("API error response:", errorText);
         throw this.createError(
           "API Error",
           `Failed to detect ingredients: ${errorText || response.statusText}`,
@@ -62,9 +62,9 @@ class IngredientDetectionService {
 
       // Parse and return the response
       const rawResult = await response.json();
-      
+
       let processedResult: IngredientDetectionResponse;
-      
+
       // Check if the response has the expected structure
       if (Array.isArray(rawResult.detectedIngredients)) {
         processedResult = rawResult;
@@ -74,8 +74,8 @@ class IngredientDetectionService {
             // Preserve confidence if available
             if (item && typeof item === 'object' && 'name' in item) {
               if ('confidence' in item) {
-                return { 
-                  name: item.name, 
+                return {
+                  name: item.name,
                   confidence: item.confidence
                 };
               }
@@ -85,45 +85,45 @@ class IngredientDetectionService {
           }),
         };
       } else if (rawResult.ingredients) {
-        const ingredients = Array.isArray(rawResult.ingredients) 
+        const ingredients = Array.isArray(rawResult.ingredients)
           ? rawResult.ingredients.map((item: any) => {
-              if (item && typeof item === 'object' && 'name' in item) {
-                if ('confidence' in item) {
-                  return { 
-                    name: item.name, 
-                    confidence: item.confidence 
-                  };
-                }
-                return item.name;
+            if (item && typeof item === 'object' && 'name' in item) {
+              if ('confidence' in item) {
+                return {
+                  name: item.name,
+                  confidence: item.confidence
+                };
               }
-              return String(item);
-            })
+              return item.name;
+            }
+            return String(item);
+          })
           : [String(rawResult.ingredients)];
-          
+
         processedResult = {
           detectedIngredients: ingredients,
           ...(rawResult.confidence && { confidence: rawResult.confidence }),
         };
       } else {
-        console.error("Unrecognized response format:", rawResult);
+        console.log("Unrecognized response format:", rawResult);
         throw this.createError(
-          "Invalid Response", 
-          "The API response format was not recognized", 
+          "Invalid Response",
+          "The API response format was not recognized",
           400
         );
       }
-      
+
       return processedResult;
     } catch (error) {
       if (this.isDetectionError(error)) {
-        console.error("Detection error:", error);
+        console.log("Detection error:", error);
         throw error;
       }
-      
-      console.error("Error detecting ingredients:", error);
+
+      console.log("Error detecting ingredients:", error);
       throw this.createError(
-        "Detection Failed", 
-        error instanceof Error ? error.message : "An unknown error occurred", 
+        "Detection Failed",
+        error instanceof Error ? error.message : "An unknown error occurred",
         500
       );
     }

@@ -50,7 +50,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ visible, onClos
             // Navigate to login screen after successful deletion
             router.replace('/(auth)/login');
         } catch (error) {
-            console.error('Failed to delete account:', error);
+            console.log('Failed to delete account:', error);
             alert('Failed to delete account. Please try again.');
             setIsDeleting(false);
         }
@@ -76,7 +76,7 @@ const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({ visible, onClos
                         <Text className="text-red-400 text-sm text-center mt-2">
                             This action cannot be undone
                         </Text>
-                        
+
                         {/* User Info */}
                         {profile && (
                             <View className="mt-4 mb-2 bg-zinc-800/50 rounded-xl py-3 px-6 border border-zinc-700/50">
