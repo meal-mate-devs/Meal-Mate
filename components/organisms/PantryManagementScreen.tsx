@@ -1,5 +1,8 @@
 "use client"
 
+import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
+import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
+import { pantryService, PantryItem as BackendPantryItem, Category } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Image } from "expo-image"
@@ -27,26 +30,10 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window")
 
-// Interface for pantry items
-interface PantryItem {
-  id: string
-  name: string
-  category: string
-  quantity: number
-  unit: string
-  expiryDate: Date
-  addedDate: Date
-  image?: string
-  barcode?: string
-  nutritionalInfo?: {
-    calories: number
-    protein: number
-    carbs: number
-    fat: number
-  }
-}
+// Use the backend PantryItem type
+type PantryItem = BackendPantryItem;
 
-// Modern category definitions with refined colors and icons
+// Modern category definitions will be loaded from backend
 const CATEGORIES = [
   { id: "vegetables", name: "Vegetables", icon: "leaf-outline", color: "#22C55E" },
   { id: "fruits", name: "Fruits", icon: "nutrition-outline", color: "#F97316" },
@@ -355,48 +342,7 @@ const PantryManagementScreen: React.FC = () => {
       unit: "pieces",
       expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
       addedDate: new Date(),
-      image: "https://images.unsplash.com/photo-1546470427-e26264be0b0d?w=400",
-    },
-    {
-      id: "2",
-      name: "Organic Milk",
-      category: "dairy",
-      quantity: 1,
-      unit: "liters",
-      expiryDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days (expiring soon)
-      addedDate: new Date(),
-      image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400",
-    },
-    {
-      id: "3",
-      name: "Expired Bread",
-      category: "grains",
-      quantity: 1,
-      unit: "pieces",
-      expiryDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (expired)
-      addedDate: new Date(),
-      image: "https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400",
-    },
-    {
-      id: "4",
-      name: "Chicken Breast",
-      category: "meat",
-      quantity: 2,
-      unit: "kilograms",
-      expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-      addedDate: new Date(),
-      image: "https://images.unsplash.com/photo-1606728035253-49e8a23146de?w=400",
-    },
-    {
-      id: "5",
-      name: "Brown Rice",
-      category: "grains",
-      quantity: 1,
-      unit: "kilograms",
-      expiryDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year from now
-      addedDate: new Date(),
-      image: "https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400",
-    },
+    }
   ])
 
   // State variables
@@ -428,6 +374,43 @@ const PantryManagementScreen: React.FC = () => {
 
   // State for unit dropdown visibility
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false)
+  const [showIngredientDetectionModal, setShowIngredientDetectionModal] = useState(false)
+  const [detectedIngredients, setDetectedIngredients] = useState<IngredientItem[]>([])
+  const [isDetecting, setIsDetecting] = useState(false)
+  
+  // Ingredient scanner hook
+  const {
+    detectedIngredientsWithConfidence: hookDetectedIngredients,
+    setDetectedIngredientsWithConfidence,
+    isScanning,
+    scanProgress,
+    processImage,
+    resetIngredients,
+  } = useIngredientScanner({
+    includeConfidence: true,
+    allowMultiple: false,
+    onIngredientsDetected: (ingredients, ingredientsWithConfidence) => {
+      console.log("Ingredients detected callback:", ingredients);
+      console.log("Ingredients with confidence:", ingredientsWithConfidence);
+      
+      // Hide loading indicator
+      setIsDetecting(false);
+      
+      // Use the ingredientsWithConfidence directly from the callback
+      if (ingredientsWithConfidence && ingredientsWithConfidence.length > 0) {
+        console.log("Updating detected ingredients with confidence:", JSON.stringify(ingredientsWithConfidence));
+        setDetectedIngredients(ingredientsWithConfidence);
+      } else if (ingredients && ingredients.length > 0) {
+        // Fallback: convert string ingredients to IngredientItem format
+        const fallbackIngredients = ingredients.map(name => ({ name }));
+        console.log("Using fallback ingredients:", fallbackIngredients);
+        setDetectedIngredients(fallbackIngredients);
+      } else {
+        console.log("No ingredients detected, setting empty array");
+        setDetectedIngredients([]);
+      }
+    },
+  })
 
   // Animation effects
   useEffect(() => {
@@ -659,12 +642,29 @@ const PantryManagementScreen: React.FC = () => {
       })
 
       if (!result.canceled && result.assets[0]) {
-        setNewItem((prev) => ({ ...prev, image: result.assets[0].uri }))
+        const imageUri = result.assets[0].uri
+        console.log("Camera image captured:", imageUri)
+        setNewItem((prev) => ({ ...prev, image: imageUri }))
+        
+        // Show loading state and open modal immediately
+        setIsDetecting(true)
+        setShowIngredientDetectionModal(true)
+        
+        // Process image with ingredient detection
+        try {
+          console.log("Starting ingredient detection...")
+          await processImage(imageUri)
+          // The onIngredientsDetected callback in the hook will handle updating ingredients
+        } catch (error) {
+          console.log("Error detecting ingredients:", error)
+          // Keep the modal open but no ingredients will be shown
+          setIsDetecting(false)
+        }
       }
     } catch (error) {
       console.log("Error opening camera:", error)
     }
-  }, [])
+  }, [processImage])
 
   // Handle gallery selection
   const handleGallery = useCallback(async () => {
@@ -686,12 +686,65 @@ const PantryManagementScreen: React.FC = () => {
       })
 
       if (!result.canceled && result.assets[0]) {
-        setNewItem((prev) => ({ ...prev, image: result.assets[0].uri }))
+        const imageUri = result.assets[0].uri
+        console.log("Gallery image selected:", imageUri)
+        setNewItem((prev) => ({ ...prev, image: imageUri }))
+        
+        // Show loading state and open modal immediately
+        setIsDetecting(true)
+        setShowIngredientDetectionModal(true)
+        
+        // Process image with ingredient detection
+        try {
+          console.log("Starting ingredient detection for gallery image...");
+          
+          // Important: Make sure we start with a clean state before processing new image
+          setDetectedIngredients([]);
+          setDetectedIngredientsWithConfidence([]);
+          
+          await processImage(imageUri);
+          // The onIngredientsDetected callback in the hook will handle updating ingredients
+        } catch (error) {
+          console.log("Error detecting ingredients from gallery image:", error);
+          // Turn off loading state and keep modal open with error message
+          setIsDetecting(false);
+        }
+
+        // Safety timeout to prevent infinite loading if callback never fires
+        const safetyTimeout = setTimeout(() => {
+          if (isDetecting) {
+            console.log("Safety timeout triggered - stopping loading state");
+            setIsDetecting(false);
+          }
+        }, 15000); // 15 second timeout
+        
+        return () => clearTimeout(safetyTimeout);
       }
     } catch (error) {
       console.log("Error opening gallery:", error)
     }
-  }, [])
+  }, [processImage])
+
+  // Handle ingredient selection from detected ingredients
+  const handleSelectIngredient = useCallback((ingredientName: string) => {
+    console.log("Ingredient selected:", ingredientName);
+    
+    // Update the new item name with the selected ingredient
+    setNewItem((prev) => {
+      console.log("Setting item name to:", ingredientName);
+      return { ...prev, name: ingredientName };
+    });
+    
+    // First close the modal
+    setShowIngredientDetectionModal(false);
+    
+    // Then clear the ingredients after a short delay to prevent UI flicker
+    setTimeout(() => {
+      setDetectedIngredients([]);
+      // Also update the hook's state to keep everything in sync
+      setDetectedIngredientsWithConfidence([]);
+    }, 300);
+  }, [setDetectedIngredientsWithConfidence])
 
   // Handle date change from picker
   const handleDateChange = useCallback((event: any, selectedDate?: Date) => {
@@ -2268,6 +2321,15 @@ const PantryManagementScreen: React.FC = () => {
         onClose={() => setShowImagePickerDialog(false)}
         onCamera={handleCamera}
         onLibrary={handleGallery}
+      />
+
+      {/* Ingredient Detection Modal */}
+      <IngredientSelectionModal 
+        visible={showIngredientDetectionModal}
+        onClose={() => setShowIngredientDetectionModal(false)}
+        ingredients={detectedIngredients}
+        onSelectIngredient={handleSelectIngredient}
+        isLoading={isDetecting}
       />
     </View>
   )
