@@ -4,7 +4,7 @@ export interface PantryItem {
   id: string;
   name: string;
   category: {
-    id: string;
+    _id: string; // MongoDB ObjectId field
     name: string;
     icon: string;
     color: string;
@@ -13,10 +13,6 @@ export interface PantryItem {
   unit: string;
   expiryDate: string;
   addedDate: string;
-  image?: {
-    url: string;
-    publicId: string;
-  };
   barcode?: string;
   confidenceScore?: number;
   detectionMethod: 'manual' | 'ai' | 'barcode';
@@ -59,7 +55,7 @@ export interface AddPantryItemData {
   quantity: number;
   unit: string;
   expiryDate: string;
-  imageUri?: string;
+  imageUri?: string; // For ingredient detection only, not saved to DB
   barcode?: string;
   confidenceScore?: number;
   detectionMethod?: 'manual' | 'ai' | 'barcode';
@@ -105,54 +101,11 @@ class PantryService {
    */
   async addPantryItem(itemData: AddPantryItemData): Promise<{ success: boolean; item: PantryItem }> {
     try {
-      // If there's an image, we need to use FormData
-      if (itemData.imageUri) {
-        const formData = new FormData();
-        
-        // Add the image file
-        formData.append('image', {
-          uri: itemData.imageUri,
-          type: 'image/jpeg',
-          name: 'pantry-item.jpg',
-        } as any);
-
-        // Add other fields
-        formData.append('name', itemData.name);
-        formData.append('categoryId', itemData.categoryId);
-        formData.append('quantity', itemData.quantity.toString());
-        formData.append('unit', itemData.unit);
-        formData.append('expiryDate', itemData.expiryDate);
-        
-        if (itemData.barcode) formData.append('barcode', itemData.barcode);
-        if (itemData.confidenceScore) formData.append('confidenceScore', itemData.confidenceScore.toString());
-        if (itemData.detectionMethod) formData.append('detectionMethod', itemData.detectionMethod);
-        if (itemData.nutritionalInfo) formData.append('nutritionalInfo', JSON.stringify(itemData.nutritionalInfo));
-
-        // Use fetch directly for FormData
-        const token = await this.getAuthToken();
-        if (!token) {
-          throw new Error('Authentication required');
-        }
-
-        const response = await fetch(`${this.getBaseUrl()}/pantry/items`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
-        }
-
-        return await response.json();
-      } else {
-        // No image, use regular JSON request
-        const { imageUri, ...dataWithoutImage } = itemData;
-        return await apiClient.post<{ success: boolean; item: PantryItem }>('/pantry/items', dataWithoutImage, true);
-      }
+      // Filter out imageUri before sending to backend (used only for ingredient detection)
+      const { imageUri, ...dataForBackend } = itemData;
+      
+      // Use regular JSON request (no image handling in backend)
+      return await apiClient.post<{ success: boolean; item: PantryItem }>('/pantry/items', dataForBackend, true);
     } catch (error) {
       console.error('Error adding pantry item:', error);
       throw new Error('Failed to add pantry item');
@@ -167,54 +120,9 @@ class PantryService {
   async updatePantryItem(itemData: UpdatePantryItemData): Promise<{ success: boolean; item: PantryItem }> {
     try {
       const { id, ...updateData } = itemData;
-
-      // If there's an image, use FormData
-      if (updateData.imageUri) {
-        const formData = new FormData();
-        
-        // Add the image file
-        formData.append('image', {
-          uri: updateData.imageUri,
-          type: 'image/jpeg',
-          name: 'pantry-item.jpg',
-        } as any);
-
-        // Add other fields that are not undefined
-        Object.entries(updateData).forEach(([key, value]) => {
-          if (value !== undefined && key !== 'imageUri') {
-            if (key === 'nutritionalInfo') {
-              formData.append(key, JSON.stringify(value));
-            } else {
-              formData.append(key, value.toString());
-            }
-          }
-        });
-
-        // Use fetch directly for FormData
-        const token = await this.getAuthToken();
-        if (!token) {
-          throw new Error('Authentication required');
-        }
-
-        const response = await fetch(`${this.getBaseUrl()}/pantry/items/${id}`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`API Error: ${response.status} - ${errorText}`);
-        }
-
-        return await response.json();
-      } else {
-        // No image, use regular JSON request
-        const { imageUri, ...dataWithoutImage } = updateData;
-        return await apiClient.put<{ success: boolean; item: PantryItem }>(`/pantry/items/${id}`, dataWithoutImage, true);
-      }
+      
+      // Use regular JSON request (no image handling)
+      return await apiClient.put<{ success: boolean; item: PantryItem }>(`/pantry/items/${id}`, updateData, true);
     } catch (error) {
       console.error('Error updating pantry item:', error);
       throw new Error('Failed to update pantry item');

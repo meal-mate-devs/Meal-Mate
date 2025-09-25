@@ -1,8 +1,9 @@
 "use client"
 
+import LoadingIndicator from "@/components/atoms/LoadingIndicator"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
-import { pantryService, PantryItem as BackendPantryItem, Category } from "@/lib/services/pantryService"
+import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Image } from "expo-image"
@@ -35,10 +36,12 @@ type PantryItem = BackendPantryItem;
 
 // Modern category definitions will be loaded from backend
 const CATEGORIES = [
-  { id: "vegetables", name: "Vegetables", icon: "leaf-outline", color: "#22C55E" },
-  { id: "fruits", name: "Fruits", icon: "nutrition-outline", color: "#F97316" },
-  { id: "meat", name: "Meat & Fish", icon: "fish-outline", color: "#EF4444" },
-  { id: "other", name: "Other", icon: "apps-outline", color: "#6366F1" },
+  { id: "vegetables", name: "vegetables", icon: "leaf-outline", color: "#22C55E" },
+  { id: "fruits", name: "fruits", icon: "nutrition-outline", color: "#F97316" },
+  { id: "meat", name: "meat", icon: "fish-outline", color: "#EF4444" },
+  { id: "dairy", name: "dairy", icon: "water-outline", color: "#3B82F6" },
+  { id: "grains", name: "grains", icon: "restaurant-outline", color: "#8B5CF6" },
+  { id: "other", name: "other", icon: "apps-outline", color: "#6366F1" },
 ]
 
 
@@ -337,11 +340,16 @@ const PantryManagementScreen: React.FC = () => {
     {
       id: "1",
       name: "Fresh Tomatoes",
-      category: "vegetables",
+      category: { _id: "vegetables", name: "vegetables", icon: "leaf-outline", color: "#22C55E" },
       quantity: 6,
       unit: "pieces",
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-      addedDate: new Date(),
+      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+      addedDate: new Date().toISOString(),
+      detectionMethod: 'manual',
+      daysUntilExpiry: 7,
+      expiryStatus: 'active',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     }
   ])
 
@@ -353,6 +361,10 @@ const PantryManagementScreen: React.FC = () => {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false)
   const [showImagePickerDialog, setShowImagePickerDialog] = useState(false)
+
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadingError, setLoadingError] = useState<string | null>(null)
 
   // Animation references
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -377,6 +389,18 @@ const PantryManagementScreen: React.FC = () => {
   const [showIngredientDetectionModal, setShowIngredientDetectionModal] = useState(false)
   const [detectedIngredients, setDetectedIngredients] = useState<IngredientItem[]>([])
   const [isDetecting, setIsDetecting] = useState(false)
+  
+  // Edit-related state
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editingItem, setEditingItem] = useState<PantryItem | null>(null)
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    category: "vegetables",
+    quantity: "",
+    unit: "pieces",
+    expiryDate: new Date()
+  })
+  const [showEditDatePicker, setShowEditDatePicker] = useState(false)
   
   // Ingredient scanner hook
   const {
@@ -412,6 +436,31 @@ const PantryManagementScreen: React.FC = () => {
     },
   })
 
+  // Load pantry items on component mount
+  useEffect(() => {
+    const loadPantryItems = async () => {
+      try {
+        setIsLoading(true);
+        setLoadingError(null);
+        
+        const response = await pantryService.getPantryItems();
+        
+        if (response.success) {
+          setPantryItems(response.items);
+        } else {
+          setLoadingError("Failed to load pantry items");
+        }
+      } catch (error) {
+        console.error('Error loading pantry items:', error);
+        setLoadingError("Failed to load pantry items");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadPantryItems();
+  }, []);
+
   // Animation effects
   useEffect(() => {
     // Static button without continuous animation for better performance
@@ -437,9 +486,9 @@ const PantryManagementScreen: React.FC = () => {
     const now = new Date()
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000)
 
-    const active = pantryItems.filter((item) => item.expiryDate > threeDaysFromNow)
-    const expiringSoon = pantryItems.filter((item) => item.expiryDate <= threeDaysFromNow && item.expiryDate > now)
-    const expired = pantryItems.filter((item) => item.expiryDate <= now)
+    const active = pantryItems.filter((item) => new Date(item.expiryDate) > threeDaysFromNow)
+    const expiringSoon = pantryItems.filter((item) => new Date(item.expiryDate) <= threeDaysFromNow && new Date(item.expiryDate) > now)
+    const expired = pantryItems.filter((item) => new Date(item.expiryDate) <= now)
 
     return { active, expiringSoon, expired }
   }, [pantryItems])
@@ -472,22 +521,23 @@ const PantryManagementScreen: React.FC = () => {
 
     // Apply category filter if selected
     if (selectedCategory !== "all") {
-      items = items.filter((item) => item.category === selectedCategory)
+      items = items.filter((item) => item.category.name === selectedCategory)
     }
 
     return items
   }, [activeTab, getItemsByStatus, searchQuery, selectedCategory])
 
   // Calculate days until expiry
-  const getDaysUntilExpiry = useCallback((expiryDate: Date) => {
+  const getDaysUntilExpiry = useCallback((expiryDate: string) => {
     const now = new Date()
-    const diffTime = expiryDate.getTime() - now.getTime()
+    const expiry = new Date(expiryDate)
+    const diffTime = expiry.getTime() - now.getTime()
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
   }, [])
 
   // Get color based on expiry status
-  const getExpiryColor = useCallback((expiryDate: Date) => {
+  const getExpiryColor = useCallback((expiryDate: string) => {
     const days = getDaysUntilExpiry(expiryDate)
     if (days < 0) return "#EF4444" // Expired (red)
     if (days <= 3) return "#F59E0B" // Expiring soon (amber)
@@ -495,7 +545,7 @@ const PantryManagementScreen: React.FC = () => {
   }, [getDaysUntilExpiry])
 
   // Get expiry status text
-  const getExpiryText = useCallback((expiryDate: Date) => {
+  const getExpiryText = useCallback((expiryDate: string) => {
     const days = getDaysUntilExpiry(expiryDate)
     if (days < 0) return `Expired ${Math.abs(days)}d ago`
     if (days === 0) return "Expires today"
@@ -530,7 +580,6 @@ const PantryManagementScreen: React.FC = () => {
   // Handle adding new item
   const handleAddItem = useCallback(async () => {
     if (!newItem.name || !newItem.quantity) {
-      // Show validation error
       Alert.alert(
         "Missing Information",
         "Please fill in at least the name and quantity fields."
@@ -538,51 +587,61 @@ const PantryManagementScreen: React.FC = () => {
       return
     }
 
-    // Create new pantry item
-    const item: PantryItem = {
-      id: Date.now().toString(),
-      name: newItem.name,
-      category: newItem.category,
-      quantity: Number.parseInt(newItem.quantity),
-      unit: newItem.unit,
-      expiryDate: newItem.expiryDate,
-      addedDate: new Date(),
-      image: newItem.image,
+    try {
+      // Prepare data for backend (no image upload)
+      const addItemData = {
+        name: newItem.name,
+        categoryId: newItem.category,
+        quantity: Number.parseInt(newItem.quantity),
+        unit: newItem.unit,
+        expiryDate: newItem.expiryDate.toISOString(),
+        detectionMethod: 'manual' as const
+      };
+
+      // Call backend service
+      const response = await pantryService.addPantryItem(addItemData);
+      
+      if (response.success) {
+        // Add new item to state
+        setPantryItems((prev) => [...prev, response.item]);
+        
+        // Reset and close modal
+        setShowAddModal(false);
+        setNewItem({
+          name: "",
+          category: "vegetables",
+          quantity: "",
+          unit: "pieces",
+          expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          image: "",
+        });
+
+        // Success animation
+        Animated.sequence([
+          Animated.spring(scaleAnim, {
+            toValue: 1.05,
+            friction: 6,
+            tension: 200,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 8,
+            tension: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      } else {
+        Alert.alert("Error", "Failed to add item to pantry.");
+      }
+    } catch (error) {
+      console.error('Error adding pantry item:', error);
+      Alert.alert("Error", "Failed to add item to pantry. Please try again.");
     }
-
-    // Add to state
-    setPantryItems((prev) => [...prev, item])
-
-    // Reset and close modal
-    setShowAddModal(false)
-    setNewItem({
-      name: "",
-      category: "vegetables",
-      quantity: "",
-      unit: "pieces",
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      image: "",
-    })
-
-    // Success animation
-    Animated.sequence([
-      Animated.spring(scaleAnim, {
-        toValue: 1.05,
-        friction: 6,
-        tension: 200,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 6,
-        tension: 200,
-        useNativeDriver: true,
-      }),
-    ]).start()
   }, [newItem, scaleAnim])
 
   // Handle item removal with confirmation
-  const handleRemoveItem = useCallback((itemId: string) => {
+  const handleRemoveItem = useCallback(async (itemId: string) => {
     // Show confirmation dialog
     Alert.alert(
       "Remove Item",
@@ -595,11 +654,22 @@ const PantryManagementScreen: React.FC = () => {
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => {
-            // Remove item and close detail modal if open
-            setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
-            if (showItemDetails?.id === itemId) {
-              setShowItemDetails(null)
+          onPress: async () => {
+            try {
+              const response = await pantryService.deletePantryItem(itemId);
+              
+              if (response.success) {
+                // Remove item from state and close detail modal if open
+                setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
+                if (showItemDetails?.id === itemId) {
+                  setShowItemDetails(null)
+                }
+              } else {
+                Alert.alert("Error", "Failed to remove item from pantry.");
+              }
+            } catch (error) {
+              console.error('Error removing pantry item:', error);
+              Alert.alert("Error", "Failed to remove item from pantry. Please try again.");
             }
           },
         },
@@ -753,6 +823,82 @@ const PantryManagementScreen: React.FC = () => {
       setNewItem((prev) => ({ ...prev, expiryDate: selectedDate }))
     }
   }, [])
+
+  // Handle edit date change
+  const handleEditDateChange = useCallback((event: any, selectedDate?: Date) => {
+    setShowEditDatePicker(false)
+    if (selectedDate) {
+      setEditFormData((prev) => ({ ...prev, expiryDate: selectedDate }))
+    }
+  }, [])
+
+  // Handle opening edit modal
+  const handleEditItem = useCallback((item: PantryItem) => {
+    setEditingItem(item)
+    setEditFormData({
+      name: item.name,
+      category: item.category.name,
+      quantity: item.quantity.toString(),
+      unit: item.unit,
+      expiryDate: new Date(item.expiryDate)
+    })
+    setShowItemDetails(null) // Close the item details modal
+    setShowEditModal(true) // Open edit modal
+  }, [])
+
+  // Handle updating the item
+  const handleUpdateItem = useCallback(async () => {
+    if (!editingItem) return
+
+    // Validate required fields
+    if (!editFormData.name.trim() || !editFormData.quantity.trim()) {
+      Alert.alert(
+        "Missing Information",
+        "Please fill in at least the name and quantity fields."
+      )
+      return
+    }
+
+    try {
+      // Prepare update data
+      const updateData = {
+        id: editingItem.id,
+        name: editFormData.name.trim(),
+        categoryId: editFormData.category,
+        quantity: Number.parseInt(editFormData.quantity),
+        unit: editFormData.unit,
+        expiryDate: editFormData.expiryDate.toISOString()
+      }
+
+      // Call backend service
+      const response = await pantryService.updatePantryItem(updateData)
+      
+      if (response.success) {
+        // Update the local state
+        setPantryItems(prevItems => 
+          prevItems.map(item => 
+            item.id === editingItem.id ? response.item : item
+          )
+        )
+        
+        // Close modal and reset form
+        setShowEditModal(false)
+        setEditingItem(null)
+        setEditFormData({
+          name: "",
+          category: "vegetables",
+          quantity: "",
+          unit: "pieces",
+          expiryDate: new Date()
+        })
+
+        Alert.alert("Success", "Item updated successfully!")
+      }
+    } catch (error) {
+      console.error("Failed to update item:", error)
+      Alert.alert("Error", "Failed to update item. Please try again.")
+    }
+  }, [editingItem, editFormData, pantryService])
 
   /**
    * Modern Sleek Style Definitions
@@ -1609,6 +1755,39 @@ const PantryManagementScreen: React.FC = () => {
     destructiveActionText: {
       color: "#EF4444",
     },
+    
+    // Loading and error states
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 24,
+    },
+    errorText: {
+      color: '#F87171',
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 20,
+      fontFamily: 'System',
+    },
+    retryButton: {
+      backgroundColor: '#FBBF24',
+      paddingHorizontal: 24,
+      paddingVertical: 12,
+      borderRadius: 8,
+    },
+    retryButtonText: {
+      color: '#000000',
+      fontWeight: '600',
+      fontSize: 16,
+      fontFamily: 'System',
+    },
   })
 
   /**
@@ -1710,7 +1889,10 @@ const PantryManagementScreen: React.FC = () => {
     const daysUntilExpiry = getDaysUntilExpiry(item.expiryDate)
     const expiryColor = getExpiryColor(item.expiryDate)
     const expiryText = getExpiryText(item.expiryDate)
-    const category = CATEGORIES.find((cat) => cat.id === item.category)
+    
+    // Use the category data from backend directly (populated by MongoDB)
+    // If category data is available from backend, use it; otherwise fall back to static CATEGORIES
+    const category = item.category || CATEGORIES.find((cat) => cat.name === item.category?.name)
 
     return (
       <TouchableOpacity
@@ -1723,21 +1905,12 @@ const PantryManagementScreen: React.FC = () => {
         <View style={styles.itemBackground} />
 
         <View style={styles.itemImageContainer}>
-          {item.image ? (
-            <Image
-              source={{ uri: item.image }}
-              style={styles.itemImage}
-              contentFit="cover"
-              transition={300}
-            />
-          ) : (
-            <LinearGradient
-              colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
-              style={styles.itemImagePlaceholder}
-            >
-              <Ionicons name={category?.icon as any} size={24} color="white" />
-            </LinearGradient>
-          )}
+          <LinearGradient
+            colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
+            style={styles.itemImagePlaceholder}
+          >
+            <Ionicons name={category?.icon as any} size={24} color="white" />
+          </LinearGradient>
 
           <View
             style={[styles.expiryBadge, { backgroundColor: expiryColor }]}
@@ -1990,6 +2163,180 @@ const PantryManagementScreen: React.FC = () => {
     </Modal>
   )
 
+  // Edit item modal
+  const renderEditModal = () => (
+    <Modal
+      visible={showEditModal}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={() => setShowEditModal(false)}
+    >
+      <KeyboardAvoidingView
+        style={styles.modalContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      >
+        <StatusBar barStyle="light-content" />
+        <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+
+        <View style={styles.modalHeader}>
+          <TouchableOpacity
+            onPress={() => setShowEditModal(false)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close-outline" size={28} color="white" />
+          </TouchableOpacity>
+          <Text style={styles.modalTitle}>Edit Item</Text>
+          <TouchableOpacity
+            onPress={handleUpdateItem}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Text style={styles.saveButton}>Save</Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView 
+          style={styles.modalContent}
+          showsVerticalScrollIndicator={false}
+        >            
+          <View style={styles.formField}>
+            <Text style={styles.fieldLabel}>Item Name</Text>
+            <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
+              <Ionicons name="nutrition-outline" size={20} color="#FACC15" />
+              <TextInput
+                style={styles.textInput}
+                value={editFormData.name}
+                onChangeText={(text) => setEditFormData(prev => ({ ...prev, name: text }))}
+                placeholder="Enter item name"
+                placeholderTextColor="#666666"
+                autoCapitalize="words"
+              />
+            </View>
+          </View>
+
+          <View style={styles.formRow}>
+            <View style={{ flex: 1, marginHorizontal: 6 }}>
+              <Text style={styles.fieldLabel}>Quantity</Text>
+              <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
+                <Ionicons name="calculator-outline" size={20} color="#FACC15" />
+                <TextInput
+                  style={styles.textInput}
+                  value={editFormData.quantity}
+                  onChangeText={(text) => setEditFormData(prev => ({ ...prev, quantity: text }))}
+                  placeholder="0"
+                  placeholderTextColor="#666666"
+                  keyboardType="numeric"
+                />
+              </View>
+            </View>
+
+            <View style={{ flex: 1, marginHorizontal: 6 }}>
+              <Text style={styles.fieldLabel}>Unit</Text>
+              <View style={[styles.inputContainer, { position: 'relative', justifyContent: 'center', paddingHorizontal: 12 }]}>
+                <TouchableOpacity 
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
+                  onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
+                >
+                  <Text style={[styles.unitButtonText, { fontSize: 15, textAlign: 'left', flex: 1 }]}>{editFormData.unit}</Text>
+                  <Ionicons 
+                    name={isUnitDropdownOpen ? "chevron-up" : "chevron-down"} 
+                    size={20} 
+                    color="#FACC15" 
+                  />
+                </TouchableOpacity>
+              </View>
+              
+              {isUnitDropdownOpen && (
+                <View style={styles.unitDropdown}>
+                  <ScrollView style={styles.unitDropdownScroll} contentContainerStyle={styles.unitDropdownScrollContent} nestedScrollEnabled>
+                    {UNITS.map((unit, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.unitDropdownItem,
+                          editFormData.unit === unit && styles.unitDropdownItemSelected
+                        ]}
+                        onPress={() => {
+                          setEditFormData(prev => ({ ...prev, unit }))
+                          setIsUnitDropdownOpen(false)
+                        }}
+                      >
+                        <Text style={[
+                          styles.unitDropdownItemText,
+                          editFormData.unit === unit && styles.unitDropdownItemTextSelected
+                        ]}>
+                          {unit}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={styles.formField}>
+            <Text style={styles.fieldLabel}>Category</Text>
+            <View style={styles.categorySelection}>
+              {CATEGORIES.map((category) => (
+                <TouchableOpacity
+                  key={category.id}
+                  style={[
+                    styles.categoryOption,
+                    editFormData.category === category.id && styles.selectedCategoryOption
+                  ]}
+                  onPress={() => {
+                    setEditFormData((prev) => ({ ...prev, category: category.id }))
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons
+                    name={category.icon as any}
+                    size={18}
+                    color={editFormData.category === category.id ? "#FACC15" : category.color}
+                  />
+                  <Text
+                    style={[
+                      styles.categoryOptionText,
+                      editFormData.category === category.id && styles.selectedCategoryOptionText,
+                    ]}
+                  >
+                    {category.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.formField}>
+            <Text style={styles.fieldLabel}>Expiry Date</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowEditDatePicker(true)}
+            >
+              <Ionicons name="calendar-outline" size={20} color="#FACC15" />
+              <Text style={styles.dateText}>
+                {editFormData.expiryDate.toLocaleDateString()}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#FACC15" />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {showEditDatePicker && (
+          <DateTimePicker
+            value={editFormData.expiryDate}
+            mode="date"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={handleEditDateChange}
+            minimumDate={new Date()}
+            themeVariant="dark"
+          />
+        )}
+      </KeyboardAvoidingView>
+    </Modal>
+  )
+
   // Item details modal
   const renderItemDetailsModal = () => {
     if (!showItemDetails) return null
@@ -1997,8 +2344,11 @@ const PantryManagementScreen: React.FC = () => {
     const daysUntilExpiry = getDaysUntilExpiry(showItemDetails.expiryDate)
     const expiryColor = getExpiryColor(showItemDetails.expiryDate)
     const expiryText = getExpiryText(showItemDetails.expiryDate)
-    const category = CATEGORIES.find((cat) => cat.id === showItemDetails.category)
-    const daysAdded = Math.floor((new Date().getTime() - showItemDetails.addedDate.getTime()) / (1000 * 60 * 60 * 24))
+    
+    // Use the category data from backend directly (populated by MongoDB)
+    const category = showItemDetails.category || CATEGORIES.find((cat) => cat.name === showItemDetails.category?.name)
+    
+    const daysAdded = Math.floor((new Date().getTime() - new Date(showItemDetails.addedDate).getTime()) / (1000 * 60 * 60 * 24))
 
     const addedText = daysAdded === 0
       ? "Added today"
@@ -2042,23 +2392,14 @@ const PantryManagementScreen: React.FC = () => {
             contentContainerStyle={styles.detailsScrollContent}
           >
             <View style={styles.detailImageContainer}>
-              {showItemDetails.image ? (
-                <Image
-                  source={{ uri: showItemDetails.image }}
-                  style={styles.detailImage}
-                  contentFit="cover"
-                  transition={300}
-                />
-              ) : (
-                <LinearGradient
-                  colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
-                  style={styles.detailImagePlaceholder}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name={category?.icon as any} size={50} color="white" />
-                </LinearGradient>
-              )}
+              <LinearGradient
+                colors={[category?.color || "#6B7280", `${category?.color || "#6B7280"}80`]}
+                style={styles.detailImagePlaceholder}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Ionicons name={category?.icon as any} size={50} color="white" />
+              </LinearGradient>
 
               <LinearGradient
                 colors={[expiryColor, `${expiryColor}CC`]}
@@ -2100,7 +2441,7 @@ const PantryManagementScreen: React.FC = () => {
                   <Ionicons name="calendar-outline" size={22} color="#64748B" />
                   <Text style={styles.detailLabel}>Added On</Text>
                   <Text style={styles.detailValue}>
-                    {showItemDetails.addedDate.toLocaleDateString()}
+                    {new Date(showItemDetails.addedDate).toLocaleDateString()}
                   </Text>
                 </View>
               </View>
@@ -2118,12 +2459,9 @@ const PantryManagementScreen: React.FC = () => {
               <View style={styles.actionRow}>
                 <TouchableOpacity
                   style={[styles.actionButton, styles.primaryAction]}
-                  onPress={() => {
-                    setShowItemDetails(null)
-                    // You could add edit functionality here in the future
-                  }}
+                  onPress={() => handleEditItem(showItemDetails)}
                 >
-                  <Ionicons name="refresh-outline" size={22} color="#FACC15" />
+                  <Ionicons name="create-outline" size={22} color="#FACC15" />
                   <Text style={[styles.actionButtonText, styles.primaryActionText]}>
                     Update Item
                   </Text>
@@ -2163,6 +2501,50 @@ const PantryManagementScreen: React.FC = () => {
         end={{ x: 0.5, y: 0.8 }}
       />
 
+      {/* Loading State */}
+      {isLoading && (
+        <View style={styles.loadingContainer}>
+          <LoadingIndicator message="Loading your pantry..." />
+        </View>
+      )}
+
+      {/* Error State */}
+      {loadingError && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{loadingError}</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={() => {
+              const loadPantryItems = async () => {
+                try {
+                  setIsLoading(true);
+                  setLoadingError(null);
+                  
+                  const response = await pantryService.getPantryItems();
+                  
+                  if (response.success) {
+                    setPantryItems(response.items);
+                  } else {
+                    setLoadingError("Failed to load pantry items");
+                  }
+                } catch (error) {
+                  console.error('Error loading pantry items:', error);
+                  setLoadingError("Failed to load pantry items");
+                } finally {
+                  setIsLoading(false);
+                }
+              };
+              loadPantryItems();
+            }}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Main Content - only show when not loading and no error */}
+      {!isLoading && !loadingError && (
+        <>
       {/* Header section */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
         <View style={styles.headerContent}>
@@ -2314,6 +2696,7 @@ const PantryManagementScreen: React.FC = () => {
       {/* Modals */}
       {renderAddItemModal()}
       {renderItemDetailsModal()}
+      {renderEditModal()}
 
       {/* Custom Image Picker Dialog */}
       <ImagePickerDialog
@@ -2331,6 +2714,7 @@ const PantryManagementScreen: React.FC = () => {
         onSelectIngredient={handleSelectIngredient}
         isLoading={isDetecting}
       />
+      </>)}
     </View>
   )
 }
