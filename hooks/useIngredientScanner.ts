@@ -13,7 +13,7 @@ interface UseIngredientScannerOptions {
   /**
    * Callback for when ingredients are detected
    */
-  onIngredientsDetected?: (ingredients: string[]) => void;
+  onIngredientsDetected?: (ingredients: string[], ingredientsWithConfidence?: IngredientItem[]) => void;
 
   /**
    * Whether to allow multiple ingredients detection
@@ -263,7 +263,10 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
         setDetectedIngredients(prev => {
           // If we don't allow multiple, replace the existing ingredients
           if (!options.allowMultiple) {
-            options.onIngredientsDetected?.(validIngredients);
+            if (options.onIngredientsDetected) {
+              console.log("Calling onIngredientsDetected with:", validIngredients, "and confidence:", ingredientsWithConfidence);
+              options.onIngredientsDetected(validIngredients, ingredientsWithConfidence);
+            }
             return validIngredients;
           }
 
@@ -292,14 +295,21 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
           return updatedIngredients;
         });
       } else {
-        Alert.alert("No Ingredients Detected", "Try taking a clearer picture or manually add ingredients.");
+        // For empty results, we need to set empty arrays and call the callback
+        console.log("No ingredients detected in the scanned image");
+        setDetectedIngredientsWithConfidence([]);
+        setDetectedIngredients([]);
+        if (options.onIngredientsDetected) {
+          options.onIngredientsDetected([]);
+        }
       }
     } catch (error) {
       console.log("Error scanning image:", error);
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : "Failed to scan image.";
-      Alert.alert("Error", errorMessage);
+      // Log the error but don't show an alert
+      console.error("Ingredient detection error:", errorMessage);
     } finally {
       setIsScanning(false);
       setScanProgress(100);
