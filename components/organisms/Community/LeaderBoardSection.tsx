@@ -17,96 +17,6 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState<boolean>(true)
 
-    // Mock data fallback
-    const MOCK_LEADERBOARD: LeaderboardEntry[] = [
-        {
-            user: {
-                id: "1",
-                name: "Chef Maria",
-                username: "chef_maria",
-                avatar: require("../../../assets/images/avatar.png"),
-                isVerified: true,
-                totalLikes: 1250,
-                recipeCount: 45,
-                badges: [
-                    { id: "1", name: "Master Chef", icon: "👨‍🍳", color: "yellow", description: "Posted 50+ recipes" },
-                    { id: "2", name: "Crowd Favorite", icon: "❤️", color: "red", description: "1000+ total likes" },
-                ],
-            },
-            position: 1,
-            totalLikes: 1250,
-            totalPosts: 45,
-            engagementScore: 95.8,
-            change: 0,
-        },
-        {
-            user: {
-                id: "2",
-                name: "Baker John",
-                username: "baker_john",
-                avatar: require("../../../assets/images/avatar.png"),
-                isVerified: true,
-                totalLikes: 980,
-                recipeCount: 38,
-                badges: [
-                    { id: "3", name: "Sweet Tooth", icon: "🍰", color: "pink", description: "Dessert specialist" },
-                    { id: "4", name: "Rising Star", icon: "⭐", color: "blue", description: "Fast growing creator" },
-                ],
-            },
-            position: 2,
-            totalLikes: 980,
-            totalPosts: 38,
-            engagementScore: 89.2,
-            change: 1,
-        },
-        {
-            user: {
-                id: "3",
-                name: "Spice Queen",
-                username: "spice_queen",
-                avatar: require("../../../assets/images/avatar.png"),
-                totalLikes: 756,
-                recipeCount: 32,
-                badges: [{ id: "5", name: "Spice Master", icon: "🌶️", color: "red", description: "Spicy food expert" }],
-            },
-            position: 3,
-            totalLikes: 756,
-            totalPosts: 32,
-            engagementScore: 82.1,
-            change: -1,
-        },
-        {
-            user: {
-                id: "4",
-                name: "Healthy Cook",
-                username: "healthy_cook",
-                avatar: require("../../../assets/images/avatar.png"),
-                totalLikes: 645,
-                recipeCount: 28,
-            },
-            position: 4,
-            totalLikes: 645,
-            totalPosts: 28,
-            engagementScore: 78.5,
-            change: 2,
-        },
-        {
-            user: {
-                id: "5",
-                name: "Pasta Master",
-                username: "pasta_master",
-                avatar: require("../../../assets/images/avatar.png"),
-                totalLikes: 523,
-                recipeCount: 25,
-            },
-            position: 5,
-            totalLikes: 523,
-            totalPosts: 25,
-            engagementScore: 71.3,
-            change: -1,
-        },
-    ]
-
     useEffect(() => {
         loadLeaderboard()
     }, [timeframe])
@@ -116,10 +26,10 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
             setLoading(true)
             const period = timeframe === "all" ? "all-time" : timeframe === "week" ? "weekly" : "monthly"
             const response = await CommunityAPI.getLeaderboard(period, 50)
-            setLeaderboard(response.leaderboard || response.data || response || MOCK_LEADERBOARD)
+            setLeaderboard(response.leaderboard || response.data || response || [])
         } catch (error) {
             console.error('Error loading leaderboard:', error)
-            setLeaderboard(MOCK_LEADERBOARD) // Fallback to mock data
+            setLeaderboard([]) // Fallback to mock data
             Alert.alert('Info', 'Using demo leaderboard data')
         } finally {
             setLoading(false)

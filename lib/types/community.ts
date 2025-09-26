@@ -1,5 +1,6 @@
 export interface User {
     id: string
+    mongoId: string
     name: string
     username: string
     avatar: any // For require() images

@@ -45,6 +45,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const currentUser: User = {
         id: user?.uid || "current-user",
+        mongoId: profile?._id || '',
         name: profile?.firstName && profile?.lastName
             ? `${profile.firstName} ${profile.lastName}`
             : profile?.userName || "You",
@@ -61,23 +62,31 @@ export default function CommunityScreen(): JSX.Element {
     const loadPosts = async (): Promise<void> => {
         try {
             setLoading(true)
-            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
+            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all', currentUser.mongoId)
             console.log('Posts response:', response) // Debug log
 
             // Handle different response structures
             let postsData = []
             if (response.posts) {
-                postsData = response.posts
+                postsData = response.posts.map((post: any) => ({
+                    ...post,
+                    id: post._id || post.id
+                }))
             } else if (response.data) {
-                postsData = response.data
+                postsData = response.data.map((post: any) => ({
+                    ...post,
+                    id: post._id || post.id
+                }))
             } else if (Array.isArray(response)) {
-                postsData = response
+                postsData = response.map((post: any) => ({
+                    ...post,
+                    id: post._id || post.id
+                }))
             }
 
             setPosts(postsData)
         } catch (error) {
             console.error('Error loading posts:', error)
-            // Don't fallback to mock data, show empty state instead
             setPosts([])
         } finally {
             setLoading(false)
@@ -99,7 +108,7 @@ export default function CommunityScreen(): JSX.Element {
             }))
 
             // API call
-            await CommunityAPI.toggleLikePost(postId)
+            await CommunityAPI.toggleLikePost(postId, currentUser.mongoId)
         } catch (error) {
             console.error('Error toggling like:', error)
             // Revert optimistic update
@@ -131,7 +140,7 @@ export default function CommunityScreen(): JSX.Element {
             ))
 
             // API call
-            await CommunityAPI.toggleSavePost(postId)
+            await CommunityAPI.toggleSavePost(postId, currentUser.mongoId)
         } catch (error) {
             console.error('Error saving post:', error)
             // Revert optimistic update
@@ -150,7 +159,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleAddComment = async (postId: string, commentText: string): Promise<void> => {
         try {
-            const response = await CommunityAPI.addComment(postId, commentText)
+            const response = await CommunityAPI.addComment(postId, commentText, currentUser.mongoId)
 
             // Add comment to local state
             const newComment: Comment = {
@@ -178,7 +187,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleDeletePost = async (postId: string): Promise<void> => {
         try {
-            await CommunityAPI.deletePost(postId)
+            await CommunityAPI.deletePost(postId, currentUser.mongoId)
             setPosts(posts.filter(post => post.id !== postId))
         } catch (error) {
             console.error('Error deleting post:', error)
@@ -188,7 +197,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleUpdatePost = async (postId: string, updateData: any): Promise<void> => {
         try {
-            await CommunityAPI.updatePost(postId, updateData)
+            await CommunityAPI.updatePost(postId, updateData, currentUser.mongoId)
 
             // Update local state
             setPosts(posts.map(post =>
@@ -215,7 +224,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleCreatePost = async (data: any): Promise<void> => {
         try {
-            const response = await CommunityAPI.createPost(data)
+            const response = await CommunityAPI.createPost(data, currentUser.mongoId)
 
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),
@@ -355,7 +364,7 @@ export default function CommunityScreen(): JSX.Element {
                     currentUserId={currentUser.id}
                 />
 
-                <PostDetailModel visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
+                <PostDetailModel currentUserId={currentUser.id} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
             </LinearGradient>
         </View>
     )

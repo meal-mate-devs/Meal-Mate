@@ -116,13 +116,13 @@ export default function EditPostModal({
                         onPress={handleUpdate}
                         disabled={loading || !content.trim()}
                         className={`px-4 py-2 rounded-lg ${loading || !content.trim()
-                                ? 'bg-zinc-700'
-                                : 'bg-yellow-400'
+                            ? 'bg-zinc-700'
+                            : 'bg-yellow-400'
                             }`}
                     >
                         <Text className={`font-bold ${loading || !content.trim()
-                                ? 'text-zinc-400'
-                                : 'text-black'
+                            ? 'text-zinc-400'
+                            : 'text-black'
                             }`}>
                             {loading ? 'Saving...' : 'Save'}
                         </Text>

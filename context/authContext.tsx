@@ -19,6 +19,7 @@ type User = {
 };
 
 type Profile = {
+  _id: string;
   firebaseUid: string;
   userName: string;
   firstName: string;
@@ -134,6 +135,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         // Create a basic fallback profile if the API call fails
         // This allows the app to function with minimal data
         const basicProfile: Profile = {
+          _id: '',
           firebaseUid: firebaseUser.uid,
           email: firebaseUser.email || '',
           userName: firebaseUser.email?.split('@')[0] || 'User',
@@ -182,6 +184,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
       // Create a fallback profile as a last resort when even error handling fails
       const emergencyFallback: Profile = {
+        _id: '',
         firebaseUid: firebaseUser.uid,
         email: firebaseUser.email || '',
         userName: firebaseUser.email?.split('@')[0] || 'User',

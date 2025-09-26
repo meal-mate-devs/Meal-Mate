@@ -11,9 +11,10 @@ interface PostDetailModelProps {
     visible: boolean
     post: Post | null
     onClose: () => void
+    currentUserId: string
 }
 
-export default function PostDetailModel({ visible, post, onClose }: PostDetailModelProps): JSX.Element {
+export default function PostDetailModel({ visible, post, onClose, currentUserId }: PostDetailModelProps): JSX.Element {
     const [isLiked, setIsLiked] = useState<boolean>(false)
     const [isSaved, setIsSaved] = useState<boolean>(false)
     const [likes, setLikes] = useState<number>(0)
@@ -37,7 +38,7 @@ export default function PostDetailModel({ visible, post, onClose }: PostDetailMo
             setLikes(isLiked ? likes - 1 : likes + 1)
 
             // API call
-            await CommunityAPI.toggleLikePost(post.id)
+            await CommunityAPI.toggleLikePost(post.id, currentUserId)
         } catch (error) {
             console.error('Error toggling like:', error)
             // Revert optimistic update

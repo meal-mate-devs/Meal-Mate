@@ -61,11 +61,15 @@ export const getPosts = async (page = 1, limit = 10, sort = 'latest', filter = '
     return await makeRequest(endpoint);
 };
 
-export const getPostById = async (postId: string) => {
-    return await makeAuthRequest(`/community/posts/${postId}`);
+export const getPostById = async (postId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+    return await makeAuthRequest(`/community/posts/${postId}${queryString}`);
 };
 
-export const createPost = async (postData: any) => {
+export const createPost = async (postData: any, userId?: string) => {
     const formData = new FormData();
 
     formData.append('content', postData.content);
@@ -76,6 +80,10 @@ export const createPost = async (postData: any) => {
 
     if (postData.recipeDetails) {
         formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
+    }
+
+    if (userId) {
+        formData.append('userId', userId);
     }
 
     if (postData.images && postData.images.length > 0) {
@@ -108,74 +116,120 @@ export const createPost = async (postData: any) => {
 
     return await response.json();
 };
-export const updatePost = async (postId: string, updateData: any) => {
-    return await makeAuthRequest(`/community/posts/${postId}`, {
+export const updatePost = async (postId: string, updateData: any, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+    return await makeAuthRequest(`/community/posts/${postId}${queryString}`, {
         method: 'PUT',
         body: JSON.stringify(updateData),
     });
 };
 
-export const deletePost = async (postId: string) => {
-    return await makeAuthRequest(`/community/posts/${postId}`, {
+export const deletePost = async (postId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+    return await makeAuthRequest(`/community/posts/${postId}${queryString}`, {
         method: 'DELETE',
     });
 };
 
-export const toggleLikePost = async (postId: string) => {
-    return await makeAuthRequest(`/community/posts/${postId}/like`, {
+export const toggleLikePost = async (postId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+    return await makeAuthRequest(`/community/posts/${postId}/like${queryString}`, {
         method: 'POST',
     });
 };
 
-export const toggleSavePost = async (postId: string) => {
-    return await makeAuthRequest(`/community/posts/${postId}/save`, {
+export const toggleSavePost = async (postId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+    return await makeAuthRequest(`/community/posts/${postId}/save${queryString}`, {
         method: 'POST',
     });
 };
 
-export const getComments = async (postId: string, page = 1, limit = 20) => {
+export const getComments = async (postId: string, page = 1, limit = 20, userId?: string) => {
     const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString()
+        limit: limit.toString(),
+        ...(userId && { userId })
     });
 
     return await makeRequest(`/community/posts/${postId}/comments?${params}`);
 };
 
-export const addComment = async (postId: string, content: string) => {
-    return await makeAuthRequest(`/community/posts/${postId}/comments`, {
+export const addComment = async (postId: string, content: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeAuthRequest(`/community/posts/${postId}/comments${queryString}`, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ content }),
     });
 };
 
-export const toggleLikeComment = async (commentId: string) => {
-    return await makeAuthRequest(`/community/comments/${commentId}/like`, {
+export const toggleLikeComment = async (commentId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeAuthRequest(`/community/comments/${commentId}/like${queryString}`, {
         method: 'POST',
     });
 };
 
-export const deleteComment = async (commentId: string) => {
-    return await makeAuthRequest(`/community/comments/${commentId}`, {
+export const deleteComment = async (commentId: string, userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeAuthRequest(`/community/comments/${commentId}${queryString}`, {
         method: 'DELETE',
     });
 };
 
-export const getUserProfile = async (userId: string) => {
-    return await makeRequest(`/community/users/${userId}`);
+export const getUserProfile = async (userId: string, currentUserId?: string) => {
+    const params = new URLSearchParams({
+        ...(currentUserId && { userId: currentUserId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeRequest(`/community/users/${userId}${queryString}`);
 };
 
-export const followUser = async (userId: string) => {
-    return await makeAuthRequest(`/community/users/${userId}/follow`, {
+export const followUser = async (userId: string, currentUserId?: string) => {
+    const params = new URLSearchParams({
+        ...(currentUserId && { userId: currentUserId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeAuthRequest(`/community/users/${userId}/follow${queryString}`, {
         method: 'POST',
     });
 };
 
-export const getUserPosts = async (userId: string, page = 1, limit = 10, type = 'all') => {
+export const getUserPosts = async (userId: string, page = 1, limit = 10, type = 'all', currentUserId?: string) => {
     const params = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        type
+        type,
+        ...(currentUserId && { userId: currentUserId })
     });
 
     return await makeRequest(`/community/users/${userId}/posts?${params}`);
@@ -195,34 +249,37 @@ export const getUserSavedPosts = async (page = 1, limit = 10) => {
     return await makeAuthRequest(`/community/users/${currentUser.uid}/saved-posts?${params}`);
 };
 
-export const getUserFollowers = async (userId: string, page = 1, limit = 20) => {
+export const getUserFollowers = async (userId: string, page = 1, limit = 20, currentUserId?: string) => {
     const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString()
+        limit: limit.toString(),
+        ...(currentUserId && { userId: currentUserId })
     });
 
     return await makeRequest(`/community/users/${userId}/followers?${params}`);
 };
 
-export const getUserFollowing = async (userId: string, page = 1, limit = 20) => {
+export const getUserFollowing = async (userId: string, page = 1, limit = 20, currentUserId?: string) => {
     const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString()
+        limit: limit.toString(),
+        ...(currentUserId && { userId: currentUserId })
     });
 
     return await makeRequest(`/community/users/${userId}/following?${params}`);
 };
 
-export const getLeaderboard = async (period = 'monthly', limit = 50) => {
+export const getLeaderboard = async (period = 'monthly', limit = 50, userId?: string) => {
     const params = new URLSearchParams({
         period,
-        limit: limit.toString()
+        limit: limit.toString(),
+        ...(userId && { userId })
     });
 
     return await makeRequest(`/community/leaderboard?${params}`);
 };
 
-export const searchContent = async (query: string, type = 'all', page = 1, limit = 20, filters?: any) => {
+export const searchContent = async (query: string, type = 'all', page = 1, limit = 20, filters?: any, userId?: string) => {
     const params = new URLSearchParams({
         q: query,
         type,
@@ -230,27 +287,39 @@ export const searchContent = async (query: string, type = 'all', page = 1, limit
         limit: limit.toString(),
         ...(filters?.category && { category: filters.category }),
         ...(filters?.difficulty && { difficulty: filters.difficulty }),
-        ...(filters?.tags && { tags: filters.tags.join(',') })
+        ...(filters?.tags && { tags: filters.tags.join(',') }),
+        ...(userId && { userId })
     });
 
     return await makeRequest(`/community/search?${params}`);
 };
 
-export const getTrendingContent = async () => {
-    return await makeRequest('/community/trending');
+export const getTrendingContent = async (userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeRequest(`/community/trending${queryString}`);
 };
 
-export const getPersonalizedFeed = async (page = 1, limit = 15) => {
+export const getPersonalizedFeed = async (page = 1, limit = 15, userId?: string) => {
     const params = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString()
+        limit: limit.toString(),
+        ...(userId && { userId })
     });
 
     return await makeAuthRequest(`/community/feed?${params}`);
 };
 
-export const getRecommendations = async () => {
-    return await makeAuthRequest('/community/recommendations');
+export const getRecommendations = async (userId?: string) => {
+    const params = new URLSearchParams({
+        ...(userId && { userId })
+    });
+    const queryString = params.toString() ? `?${params}` : '';
+
+    return await makeAuthRequest(`/community/recommendations${queryString}`);
 };
 
 const CommunityAPI = {
