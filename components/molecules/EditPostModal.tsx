@@ -85,7 +85,7 @@ export default function EditPostModal({
             onClose()
             Alert.alert('Success', 'Post updated successfully!')
         } catch (error) {
-            console.error('Error updating post:', error)
+            console.log('Error updating post:', error)
             Alert.alert('Error', 'Failed to update post. Please try again.')
         } finally {
             setLoading(false)

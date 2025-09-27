@@ -309,7 +309,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
         ? String(error.message)
         : "Failed to scan image.";
       // Log the error but don't show an alert
-      console.error("Ingredient detection error:", errorMessage);
+      console.log("Ingredient detection error:", errorMessage);
     } finally {
       setIsScanning(false);
       setScanProgress(100);

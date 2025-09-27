@@ -113,7 +113,7 @@ export default function CreatePostDrawer({
                 setImages([...images, ...newImages])
             }
         } catch (error) {
-            console.error('Error picking image from gallery:', error)
+            console.log('Error picking image from gallery:', error)
             Alert.alert('Error', 'Failed to pick image from gallery')
         } finally {
             setShowImagePicker(false)
@@ -147,7 +147,7 @@ export default function CreatePostDrawer({
                 setImages([...images, newImage])
             }
         } catch (error) {
-            console.error('Error taking photo:', error)
+            console.log('Error taking photo:', error)
             Alert.alert('Error', 'Failed to take photo')
         } finally {
             setShowImagePicker(false)

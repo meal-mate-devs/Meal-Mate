@@ -40,7 +40,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
             // API call
             await CommunityAPI.toggleLikePost(post.id, currentUserId)
         } catch (error) {
-            console.error('Error toggling like:', error)
+            console.log('Error toggling like:', error)
             // Revert optimistic update
             setIsLiked(!isLiked)
             setLikes(isLiked ? likes + 1 : likes - 1)
@@ -57,7 +57,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
             // API call
             await CommunityAPI.toggleSavePost(post.id)
         } catch (error) {
-            console.error('Error saving post:', error)
+            console.log('Error saving post:', error)
             // Revert optimistic update
             setIsSaved(!isSaved)
             setSaves(isSaved ? saves + 1 : saves - 1)
@@ -75,7 +75,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                 title: recipeTitle,
             })
         } catch (error) {
-            console.error('Error sharing recipe:', error)
+            console.log('Error sharing recipe:', error)
         }
     }
 

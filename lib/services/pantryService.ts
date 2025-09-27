@@ -89,7 +89,6 @@ class PantryService {
       const response = await apiClient.get<PantryResponse>('/pantry/items', true);
       return response;
     } catch (error) {
-      console.error('Error fetching pantry items:', error);
       throw new Error('Failed to fetch pantry items');
     }
   }
@@ -107,7 +106,6 @@ class PantryService {
       // Use regular JSON request (no image handling in backend)
       return await apiClient.post<{ success: boolean; item: PantryItem }>('/pantry/items', dataForBackend, true);
     } catch (error) {
-      console.error('Error adding pantry item:', error);
       throw new Error('Failed to add pantry item');
     }
   }
@@ -124,7 +122,6 @@ class PantryService {
       // Use regular JSON request (no image handling)
       return await apiClient.put<{ success: boolean; item: PantryItem }>(`/pantry/items/${id}`, updateData, true);
     } catch (error) {
-      console.error('Error updating pantry item:', error);
       throw new Error('Failed to update pantry item');
     }
   }
@@ -138,7 +135,6 @@ class PantryService {
     try {
       return await apiClient.delete<{ success: boolean; message: string }>(`/pantry/items/${id}`, true);
     } catch (error) {
-      console.error('Error deleting pantry item:', error);
       throw new Error('Failed to delete pantry item');
     }
   }
@@ -151,7 +147,6 @@ class PantryService {
     try {
       return await apiClient.get<{ success: boolean; categories: Category[] }>('/pantry/categories', false);
     } catch (error) {
-      console.error('Error fetching categories:', error);
       throw new Error('Failed to fetch categories');
     }
   }
@@ -166,7 +161,6 @@ class PantryService {
       }
       return await user.getIdToken();
     } catch (error) {
-      console.error('Failed to get auth token:', error);
       return null;
     }
   }

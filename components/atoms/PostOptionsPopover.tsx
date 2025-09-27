@@ -35,7 +35,7 @@ export default function PostOptionsPopover({
                             await onDelete()
                             Alert.alert('Success', 'Post deleted successfully')
                         } catch (error) {
-                            console.error('Error deleting post:', error)
+                            console.log('Error deleting post:', error)
                             Alert.alert('Error', 'Failed to delete post')
                         }
                     }

@@ -1,6 +1,7 @@
 "use client"
 
-import LoadingIndicator from "@/components/atoms/LoadingIndicator"
+import ErrorDisplay from "@/components/atoms/ErrorDisplay"
+import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
@@ -367,6 +368,12 @@ const PantryManagementScreen: React.FC = () => {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true)
   const [loadingError, setLoadingError] = useState<string | null>(null)
+  const [errorDetails, setErrorDetails] = useState<{
+    type: 'network' | 'server' | 'auth' | 'unknown'
+    title: string
+    message: string
+    canRetry: boolean
+  } | null>(null)
 
   // Animation references
   const fadeAnim = useRef(new Animated.Value(1)).current
@@ -440,27 +447,85 @@ const PantryManagementScreen: React.FC = () => {
 
   // Load pantry items on component mount
   useEffect(() => {
-    const loadPantryItems = async () => {
-      try {
-        setIsLoading(true);
-        setLoadingError(null);
-        
-        const response = await pantryService.getPantryItems();
-        
-        if (response.success) {
-          setPantryItems(response.items);
-        } else {
-          setLoadingError("Failed to load pantry items");
-        }
-      } catch (error) {
-        console.error('Error loading pantry items:', error);
-        setLoadingError("Failed to load pantry items");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     loadPantryItems();
+  }, []);
+
+  // Function to analyze and categorize errors
+  const analyzeError = (error: any) => {
+    console.log('Analyzing error:', error);
+
+    // Check for network-related errors (React Native compatible)
+    if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch') || error.message?.includes('Request timeout')) {
+      return {
+        type: 'network' as const,
+        title: 'Connection Problem',
+        message: 'Unable to connect to our servers. Please check your internet connection and try again.',
+        canRetry: true
+      };
+    }
+
+    // Check for authentication errors
+    if (error.message?.includes('401') || error.message?.includes('auth') || error.message?.includes('Authentication')) {
+      return {
+        type: 'auth' as const,
+        title: 'Authentication Error',
+        message: 'Your session has expired. Please log in again.',
+        canRetry: false
+      };
+    }
+
+    // Check for server errors
+    if (error.message?.includes('500') || error.message?.includes('502') || error.message?.includes('503') || error.message?.includes('504')) {
+      return {
+        type: 'server' as const,
+        title: 'Server Error',
+        message: 'Our servers are experiencing issues. Please try again later.',
+        canRetry: true
+      };
+    }
+
+    // Default unknown error
+    return {
+      type: 'unknown' as const,
+      title: 'Something Went Wrong',
+      message: 'An unexpected error occurred. Please try again.',
+      canRetry: true
+    };
+  };
+
+  // Load pantry items with timeout and better error handling
+  const loadPantryItems = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setLoadingError(null);
+      setErrorDetails(null);
+
+      // Create a timeout promise
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
+      });
+
+      // Race between the API call and timeout
+      const response = await Promise.race([
+        pantryService.getPantryItems(),
+        timeoutPromise
+      ]) as any;
+
+      if (response.success) {
+        setPantryItems(response.items);
+      } else {
+        const errorInfo = analyzeError(new Error('API returned success: false'));
+        setErrorDetails(errorInfo);
+        setLoadingError(errorInfo.title);
+      }
+    } catch (error: any) {
+      const errorInfo = analyzeError(error);
+      setErrorDetails(errorInfo);
+      setLoadingError(errorInfo.title);
+      console.error('Error loading pantry items:', error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   // Animation effects
@@ -640,7 +705,6 @@ const PantryManagementScreen: React.FC = () => {
         Alert.alert("Error", "Failed to add item to pantry.");
       }
     } catch (error) {
-      console.error('Error adding pantry item:', error);
       Alert.alert("Error", "Failed to add item to pantry. Please try again.");
     }
   }, [newItem, scaleAnim])
@@ -673,7 +737,6 @@ const PantryManagementScreen: React.FC = () => {
                 Alert.alert("Error", "Failed to remove item from pantry.");
               }
             } catch (error) {
-              console.error('Error removing pantry item:', error);
               Alert.alert("Error", "Failed to remove item from pantry. Please try again.");
             }
           },
@@ -900,7 +963,6 @@ const PantryManagementScreen: React.FC = () => {
         Alert.alert("Success", "Item updated successfully!")
       }
     } catch (error) {
-      console.error("Failed to update item:", error)
       Alert.alert("Error", "Failed to update item. Please try again.")
     }
   }, [editingItem, editFormData, pantryService])
@@ -1805,10 +1867,15 @@ const PantryManagementScreen: React.FC = () => {
     
     // Loading and error states
     loadingContainer: {
-      flex: 1,
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       justifyContent: 'center',
       alignItems: 'center',
-      paddingHorizontal: 24,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      zIndex: 9999,
     },
     errorContainer: {
       flex: 1,
@@ -2541,42 +2608,28 @@ const PantryManagementScreen: React.FC = () => {
       {/* Loading State */}
       {isLoading && (
         <View style={styles.loadingContainer}>
-          <LoadingIndicator message="Loading your pantry..." />
+          <PantryLoadingAnimation message="Loading your pantry..." />
         </View>
       )}
 
       {/* Error State */}
-      {loadingError && (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{loadingError}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={() => {
-              const loadPantryItems = async () => {
-                try {
-                  setIsLoading(true);
-                  setLoadingError(null);
-                  
-                  const response = await pantryService.getPantryItems();
-                  
-                  if (response.success) {
-                    setPantryItems(response.items);
-                  } else {
-                    setLoadingError("Failed to load pantry items");
-                  }
-                } catch (error) {
-                  console.error('Error loading pantry items:', error);
-                  setLoadingError("Failed to load pantry items");
-                } finally {
-                  setIsLoading(false);
-                }
-              };
-              loadPantryItems();
-            }}
-          >
-            <Text style={styles.retryButtonText}>Retry</Text>
-          </TouchableOpacity>
-        </View>
+      {errorDetails && (
+        <ErrorDisplay
+          errorDetails={errorDetails}
+          onRetry={() => {
+            // Clear any existing timeout and start fresh
+            loadPantryItems();
+          }}
+          onClose={() => {
+            setErrorDetails(null);
+            setLoadingError(null);
+            // Optionally navigate back or show empty state
+            if (pantryItems.length === 0) {
+              // If no items loaded yet, show empty state
+              setPantryItems([]);
+            }
+          }}
+        />
       )}
 
       {/* Main Content - only show when not loading and no error */}

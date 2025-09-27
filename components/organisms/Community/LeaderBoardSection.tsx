@@ -28,7 +28,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
             const response = await CommunityAPI.getLeaderboard(period, 50)
             setLeaderboard(response.leaderboard || response.data || response || [])
         } catch (error) {
-            console.error('Error loading leaderboard:', error)
+            console.log('Error loading leaderboard:', error)
             setLeaderboard([]) // Fallback to mock data
             Alert.alert('Info', 'Using demo leaderboard data')
         } finally {

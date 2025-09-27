@@ -31,9 +31,11 @@ interface ImagePickerDialogProps {
   onClose: () => void
   onCamera: () => void
   onLibrary: () => void
+  profileImage?: string
+  onViewImage?: () => void
 }
 
-const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
+const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary, profileImage, onViewImage }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
 
@@ -113,6 +115,32 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
             </Text>
 
             <View style={imagePickerStyles.buttonContainer}>
+              {/* View Image Button - only show if there's a profile image */}
+              {profileImage && profileImage.trim() !== "" && (
+                <TouchableOpacity
+                  style={[imagePickerStyles.optionButton, { height: 50 }]}
+                  onPress={() => {
+                    onClose()
+                    setTimeout(() => onViewImage?.(), 300)
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View style={imagePickerStyles.buttonContent}>
+                    <View style={[imagePickerStyles.iconCircle, { width: 40, height: 40, borderRadius: 20, marginRight: 12 }]}>
+                      <LinearGradient
+                        colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                        style={imagePickerStyles.iconGradient}
+                      />
+                      <Ionicons name="eye" size={20} color="#FACC15" />
+                    </View>
+                    <View style={imagePickerStyles.textContainer}>
+                      <Text style={imagePickerStyles.optionTitle}>View Image</Text>
+                      <Text style={imagePickerStyles.optionSubtitle}>See current profile picture</Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity
                 style={imagePickerStyles.optionButton}
                 onPress={handleCamera}
@@ -170,6 +198,124 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
     </Modal>
   )
 }
+
+// Full Screen Image Viewer Component
+interface FullScreenImageViewerProps {
+  visible: boolean
+  imageUri: string
+  onClose: () => void
+}
+
+const FullScreenImageViewer: React.FC<FullScreenImageViewerProps> = ({ visible, imageUri, onClose }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current
+  const scaleAnim = useRef(new Animated.Value(0.8)).current
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        })
+      ]).start()
+    } else {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.spring(scaleAnim, {
+          toValue: 0.8,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        })
+      ]).start()
+    }
+  }, [visible])
+
+  return (
+    <Modal
+      transparent={true}
+      animationType="none"
+      visible={visible}
+      onRequestClose={onClose}
+      statusBarTranslucent={true}
+    >
+      <View style={fullScreenImageStyles.backdrop}>
+        <Animated.View
+          style={[
+            fullScreenImageStyles.animatedContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <Image
+            source={{ uri: imageUri }}
+            style={fullScreenImageStyles.fullImage}
+            resizeMode="contain"
+          />
+        </Animated.View>
+
+        {/* Close Button */}
+        <TouchableOpacity
+          style={fullScreenImageStyles.closeButton}
+          onPress={onClose}
+          activeOpacity={0.8}
+        >
+          <BlurView intensity={60} style={fullScreenImageStyles.closeButtonBlur}>
+            <Ionicons name="close" size={24} color="white" />
+          </BlurView>
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  )
+}
+
+const fullScreenImageStyles = StyleSheet.create({
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  animatedContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullImage: {
+    width: Dimensions.get('window').width * 0.95,
+    height: Dimensions.get('window').height * 0.8,
+    borderRadius: 20,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 60,
+    right: 20,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+  },
+  closeButtonBlur: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+  },
+})
 
 const imagePickerStyles = StyleSheet.create({
   backdrop: {
@@ -295,6 +441,24 @@ const imagePickerStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  viewImageButton: {
+    height: 70,
+    width: '100%',
+    borderRadius: 16,
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(250, 204, 21, 0.3)',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  viewImageContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
 })
 
 interface ProfileSidebarProps {
@@ -319,6 +483,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
   const [isImageLoading, setIsImageLoading] = useState(false)
   const [showLogoutDialog, setShowLogoutDialog] = useState(false)
   const [showImagePickerDialog, setShowImagePickerDialog] = useState(false)
+  const [showFullScreenImage, setShowFullScreenImage] = useState(false)
 
   // Animation values
   const menuItemAnimations = useRef(menuItems.map(() => new Animated.Value(0))).current
@@ -484,6 +649,10 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
     if (typeof onEditProfile === "function") {
       onEditProfile()
     }
+  }
+
+  const handleViewImage = () => {
+    setShowFullScreenImage(true)
   }
 
   const pickImage = async () => {
@@ -908,6 +1077,15 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         onClose={() => setShowImagePickerDialog(false)}
         onCamera={openCamera}
         onLibrary={openImageLibrary}
+        profileImage={localProfileData.profileImage}
+        onViewImage={handleViewImage}
+      />
+
+      {/* Full Screen Image Viewer */}
+      <FullScreenImageViewer
+        visible={showFullScreenImage}
+        imageUri={localProfileData.profileImage || ''}
+        onClose={() => setShowFullScreenImage(false)}
       />
     </View>
   )

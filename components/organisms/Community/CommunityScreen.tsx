@@ -86,7 +86,7 @@ export default function CommunityScreen(): JSX.Element {
 
             setPosts(postsData)
         } catch (error) {
-            console.error('Error loading posts:', error)
+            console.log('Error loading posts:', error)
             setPosts([])
         } finally {
             setLoading(false)
@@ -110,7 +110,7 @@ export default function CommunityScreen(): JSX.Element {
             // API call
             await CommunityAPI.toggleLikePost(postId, currentUser.mongoId)
         } catch (error) {
-            console.error('Error toggling like:', error)
+            console.log('Error toggling like:', error)
             // Revert optimistic update
             setPosts(posts.map((post) => {
                 if (post.id === postId) {
@@ -142,7 +142,7 @@ export default function CommunityScreen(): JSX.Element {
             // API call
             await CommunityAPI.toggleSavePost(postId, currentUser.mongoId)
         } catch (error) {
-            console.error('Error saving post:', error)
+            console.log('Error saving post:', error)
             // Revert optimistic update
             setPosts(posts.map((post) =>
                 post.id === postId
@@ -180,7 +180,7 @@ export default function CommunityScreen(): JSX.Element {
                 return post
             }))
         } catch (error) {
-            console.error('Error adding comment:', error)
+            console.log('Error adding comment:', error)
             Alert.alert('Error', 'Failed to add comment')
         }
     }
@@ -190,7 +190,7 @@ export default function CommunityScreen(): JSX.Element {
             await CommunityAPI.deletePost(postId, currentUser.mongoId)
             setPosts(posts.filter(post => post.id !== postId))
         } catch (error) {
-            console.error('Error deleting post:', error)
+            console.log('Error deleting post:', error)
             throw error // Let PostOptionsPopover handle the alert
         }
     }
@@ -206,7 +206,7 @@ export default function CommunityScreen(): JSX.Element {
                     : post
             ))
         } catch (error) {
-            console.error('Error updating post:', error)
+            console.log('Error updating post:', error)
             throw error // Let EditPostModal handle the alert
         }
     }
@@ -243,7 +243,7 @@ export default function CommunityScreen(): JSX.Element {
 
             setPosts([newPost, ...posts])
         } catch (error) {
-            console.error('Error creating post:', error)
+            console.log('Error creating post:', error)
             Alert.alert('Error', 'Failed to create post')
         }
     }
