@@ -1,29 +1,82 @@
 "use client"
 
+import CommunityAPI from "@/lib/services/community.service"
 import { Post } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
-import React, { JSX, useState } from "react"
-import { Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native"
+import React, { JSX, useEffect, useState } from "react"
+import { Alert, Image, Modal, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
 import PostImageCarousel from "./PostImageCarousel"
 
 interface PostDetailModelProps {
     visible: boolean
     post: Post | null
     onClose: () => void
+    currentUserId: string
 }
 
-export default function PostDetailModel({ visible, post, onClose }: PostDetailModelProps): JSX.Element {
-    const [isLiked, setIsLiked] = useState<boolean>(post?.isLiked || false)
-    const [isSaved, setIsSaved] = useState<boolean>(post?.isSaved || false)
+export default function PostDetailModel({ visible, post, onClose, currentUserId }: PostDetailModelProps): JSX.Element {
+    const [isLiked, setIsLiked] = useState<boolean>(false)
+    const [isSaved, setIsSaved] = useState<boolean>(false)
+    const [likes, setLikes] = useState<number>(0)
+    const [saves, setSaves] = useState<number>(0)
+
+    useEffect(() => {
+        if (post) {
+            setIsLiked(post.isLiked || false)
+            setIsSaved(post.isSaved || false)
+            setLikes(post.likes || 0)
+            setSaves(post.saves || 0)
+        }
+    }, [post])
 
     if (!post || !post.recipeDetails) return <></>
 
-    const handleLike = (): void => {
-        setIsLiked(!isLiked)
+    const handleLike = async (): Promise<void> => {
+        try {
+            // Optimistic update
+            setIsLiked(!isLiked)
+            setLikes(isLiked ? likes - 1 : likes + 1)
+
+            // API call
+            await CommunityAPI.toggleLikePost(post.id, currentUserId)
+        } catch (error) {
+            console.error('Error toggling like:', error)
+            // Revert optimistic update
+            setIsLiked(!isLiked)
+            setLikes(isLiked ? likes + 1 : likes - 1)
+            Alert.alert('Error', 'Failed to update like status')
+        }
     }
 
-    const handleSave = (): void => {
-        setIsSaved(!isSaved)
+    const handleSave = async (): Promise<void> => {
+        try {
+            // Optimistic update
+            setIsSaved(!isSaved)
+            setSaves(isSaved ? saves - 1 : saves + 1)
+
+            // API call
+            await CommunityAPI.toggleSavePost(post.id)
+        } catch (error) {
+            console.error('Error saving post:', error)
+            // Revert optimistic update
+            setIsSaved(!isSaved)
+            setSaves(isSaved ? saves + 1 : saves - 1)
+            Alert.alert('Error', 'Failed to save post')
+        }
+    }
+
+    const handleShare = async (): Promise<void> => {
+        try {
+            const recipeTitle = post.recipeDetails?.title || 'Delicious Recipe'
+            const content = `Check out this amazing recipe: ${recipeTitle}\n\n${post.content}`
+
+            await Share.share({
+                message: content,
+                title: recipeTitle,
+            })
+        } catch (error) {
+            console.error('Error sharing recipe:', error)
+        }
     }
 
     return (
@@ -34,7 +87,7 @@ export default function PostDetailModel({ visible, post, onClose }: PostDetailMo
                         <Ionicons name="close" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                     <Text className="text-white text-lg font-bold">Recipe Details</Text>
-                    <TouchableOpacity>
+                    <TouchableOpacity onPress={handleShare}>
                         <Ionicons name="share-outline" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
@@ -131,7 +184,7 @@ export default function PostDetailModel({ visible, post, onClose }: PostDetailMo
                 <View className="flex-row justify-between items-center p-4 border-t border-zinc-800">
                     <TouchableOpacity className="flex-row items-center" onPress={handleLike}>
                         <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? "#FBBF24" : "#FFFFFF"} />
-                        <Text className="text-white ml-2">{post.likes + (isLiked && !post.isLiked ? 1 : 0)}</Text>
+                        <Text className="text-white ml-2">{likes}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity className="flex-row items-center">
@@ -145,10 +198,10 @@ export default function PostDetailModel({ visible, post, onClose }: PostDetailMo
                             size={24}
                             color={isSaved ? "#FBBF24" : "#FFFFFF"}
                         />
-                        <Text className="text-white ml-2">{post.saves + (isSaved && !post.isSaved ? 1 : 0)}</Text>
+                        <Text className="text-white ml-2">{saves}</Text>
                     </TouchableOpacity>
 
-                    <TouchableOpacity className="flex-row items-center">
+                    <TouchableOpacity className="flex-row items-center" onPress={handleShare}>
                         <Ionicons name="share-outline" size={24} color="#FFFFFF" />
                         <Text className="text-white ml-2">Share</Text>
                     </TouchableOpacity>
