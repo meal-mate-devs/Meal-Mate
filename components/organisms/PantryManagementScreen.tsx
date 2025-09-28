@@ -1471,7 +1471,7 @@ const PantryManagementScreen: React.FC = () => {
       borderRadius: 12,
       paddingHorizontal: 16,
       paddingVertical: 12,
-      minHeight: 56, // Min height instead of fixed height
+      minHeight: 56,
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.1)",
     },
@@ -1485,8 +1485,8 @@ const PantryManagementScreen: React.FC = () => {
       fontSize: 15,
       marginLeft: 12,
       fontWeight: "500",
-      padding: 0, // Remove default padding that can cause alignment issues
-      height: 24, // Explicitly set height for text input
+      padding: 0,
+      height: 24,
     },
     placeholderText: {
       flex: 1,
@@ -1514,7 +1514,7 @@ const PantryManagementScreen: React.FC = () => {
       borderColor: "rgba(255, 255, 255, 0.08)",
       width: '48%',
       marginBottom: 12,
-      height: 56, // Standardized height
+      height: 56,
     },
     selectedCategoryOption: {
       backgroundColor: "rgba(250, 204, 21, 0.12)",
