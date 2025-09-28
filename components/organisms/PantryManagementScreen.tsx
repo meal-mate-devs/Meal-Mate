@@ -343,7 +343,7 @@ const PantryManagementScreen: React.FC = () => {
     {
       id: "1",
       name: "Fresh Tomatoes",
-      category: { _id: "vegetables", name: "vegetables", icon: "leaf-outline", color: "#22C55E" },
+      category: "vegetables",
       quantity: 6,
       unit: "pieces",
       expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
@@ -522,7 +522,7 @@ const PantryManagementScreen: React.FC = () => {
       const errorInfo = analyzeError(error);
       setErrorDetails(errorInfo);
       setLoadingError(errorInfo.title);
-      console.error('Error loading pantry items:', error);
+      console.log('Error loading pantry items:', error);
     } finally {
       setIsLoading(false);
     }
@@ -591,7 +591,7 @@ const PantryManagementScreen: React.FC = () => {
 
     // Apply category filter if selected
     if (selectedCategory !== "all") {
-      items = items.filter((item) => item.category.name === selectedCategory)
+      items = items.filter((item) => item.category === selectedCategory)
     }
 
     return items
@@ -905,7 +905,7 @@ const PantryManagementScreen: React.FC = () => {
     setEditingItem(item)
     setEditFormData({
       name: item.name,
-      category: item.category.name,
+      category: item.category,
       quantity: item.quantity.toString(),
       unit: item.unit,
       expiryDate: new Date(item.expiryDate)
@@ -2005,9 +2005,8 @@ const PantryManagementScreen: React.FC = () => {
     const expiryColor = getExpiryColor(item.expiryDate)
     const expiryText = getExpiryText(item.expiryDate)
     
-    // Use the category data from backend directly (populated by MongoDB)
-    // If category data is available from backend, use it; otherwise fall back to static CATEGORIES
-    const category = item.category || CATEGORIES.find((cat) => cat.name === item.category?.name)
+    // Map category string to category object for display
+    const category = CATEGORIES.find((cat) => cat.id === item.category) || CATEGORIES.find((cat) => cat.id === 'other');
 
     return (
       <TouchableOpacity
@@ -2460,8 +2459,8 @@ const PantryManagementScreen: React.FC = () => {
     const expiryColor = getExpiryColor(showItemDetails.expiryDate)
     const expiryText = getExpiryText(showItemDetails.expiryDate)
     
-    // Use the category data from backend directly (populated by MongoDB)
-    const category = showItemDetails.category || CATEGORIES.find((cat) => cat.name === showItemDetails.category?.name)
+    // Map category string to category object for display
+    const category = CATEGORIES.find((cat) => cat.id === showItemDetails.category) || CATEGORIES.find((cat) => cat.id === 'other');
     
     const daysAdded = Math.floor((new Date().getTime() - new Date(showItemDetails.addedDate).getTime()) / (1000 * 60 * 60 * 24))
 

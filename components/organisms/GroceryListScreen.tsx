@@ -1,8 +1,10 @@
+import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation";
+import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/services/groceryService";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
     Alert,
     FlatList,
@@ -24,18 +26,8 @@ type IoniconName = keyof typeof Ionicons.glyphMap;
 
 type UrgencyLevel = "normal" | "urgent";
 
-interface GroceryItem {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  urgency: UrgencyLevel;
-  purchaseDate: string;
-  image?: string;
-  notes?: string;
-  isPurchased: boolean;
-  createdAt: string;
-}
+// Use the backend GroceryItem type
+type GroceryItem = BackendGroceryItem;
 
 interface AddGroceryItemForm {
   name: string;
@@ -107,39 +99,6 @@ const getPurchaseStatus = (daysUntil: number) => {
 const DEFAULT_PURCHASE_DATE = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 const DEFAULT_EXPIRY_DATE = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-const INITIAL_GROCERY_ITEMS: GroceryItem[] = [
-  {
-    id: "1",
-    name: "Tomatoes",
-    quantity: 2,
-    unit: "kilograms",
-    urgency: "urgent",
-    purchaseDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(),
-    isPurchased: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    name: "Chicken Breast",
-    quantity: 1,
-    unit: "kilograms",
-    urgency: "normal",
-    purchaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    isPurchased: false,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "3",
-    name: "Olive Oil",
-    quantity: 1,
-    unit: "liters",
-    urgency: "urgent",
-    purchaseDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    isPurchased: false,
-    createdAt: new Date().toISOString(),
-  },
-];
-
 const createInitialAddForm = (): AddGroceryItemForm => ({
   name: "",
   quantity: "",
@@ -159,7 +118,10 @@ const createInitialPurchaseForm = (): PurchaseFormData => ({
 const GroceryListScreen: React.FC = () => {
   const router = useRouter();
 
-  const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(INITIAL_GROCERY_ITEMS);
+  const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -168,7 +130,6 @@ const GroceryListScreen: React.FC = () => {
   const [newItemForm, setNewItemForm] = useState<AddGroceryItemForm>(createInitialAddForm);
   const [purchaseForm, setPurchaseForm] = useState<PurchaseFormData>(createInitialPurchaseForm);
   const [selectedPurchaseItem, setSelectedPurchaseItem] = useState<GroceryItem | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const [isPurchaseUnitDropdownOpen, setIsPurchaseUnitDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
@@ -216,7 +177,28 @@ const GroceryListScreen: React.FC = () => {
     setPurchaseForm(createInitialPurchaseForm());
   }, []);
 
-  const handleAddItem = useCallback(() => {
+  // Load grocery items from backend
+  const loadGroceryItems = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await groceryService.getGroceryItems();
+      setGroceryItems(response.items);
+    } catch (err) {
+      console.log('Failed to load grocery items:', err);
+      setError('Failed to load grocery items');
+      Alert.alert('Error', 'Failed to load grocery items. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Load items on component mount
+  useEffect(() => {
+    loadGroceryItems();
+  }, [loadGroceryItems]);
+
+  const handleAddItem = useCallback(async () => {
     if (!newItemForm.name.trim()) {
       Alert.alert("Missing name", "Please enter the item name before saving.");
       return;
@@ -228,24 +210,30 @@ const GroceryListScreen: React.FC = () => {
       return;
     }
 
-    const newItem: GroceryItem = {
-      id: Date.now().toString(),
-      name: newItemForm.name.trim(),
-      quantity: parsedQuantity,
-      unit: newItemForm.unit,
-      urgency: newItemForm.urgency,
-      purchaseDate: newItemForm.purchaseDate.toISOString(),
-      notes: newItemForm.notes?.trim() || undefined,
-      isPurchased: false,
-      createdAt: new Date().toISOString(),
-    };
+    try {
+      setIsSyncing(true);
+      const itemData = {
+        name: newItemForm.name.trim(),
+        quantity: parsedQuantity,
+        unit: newItemForm.unit,
+        urgency: newItemForm.urgency,
+        purchaseDate: newItemForm.purchaseDate.toISOString(),
+        notes: newItemForm.notes?.trim() || "",
+      };
 
-    setGroceryItems((prev) => [newItem, ...prev]);
-    setShowAddModal(false);
-    resetAddForm();
+      const response = await groceryService.addGroceryItem(itemData);
+      setGroceryItems((prev) => [response.item, ...prev]);
+      setShowAddModal(false);
+      resetAddForm();
+    } catch (err) {
+      console.log('Failed to add grocery item:', err);
+      Alert.alert('Error', 'Failed to add grocery item. Please try again.');
+    } finally {
+      setIsSyncing(false);
+    }
   }, [newItemForm, resetAddForm]);
 
-  const handleDeleteItem = useCallback((id: string) => {
+  const handleDeleteItem = useCallback(async (id: string) => {
     Alert.alert(
       "Remove item",
       "Are you sure you want to remove this grocery item?",
@@ -254,7 +242,18 @@ const GroceryListScreen: React.FC = () => {
         {
           text: "Remove",
           style: "destructive",
-          onPress: () => setGroceryItems((prev) => prev.filter((item) => item.id !== id)),
+          onPress: async () => {
+            try {
+              setIsSyncing(true);
+              await groceryService.deleteGroceryItem(id);
+              setGroceryItems((prev) => prev.filter((item) => item.id !== id));
+            } catch (err) {
+              console.log('Failed to delete grocery item:', err);
+              Alert.alert('Error', 'Failed to delete grocery item. Please try again.');
+            } finally {
+              setIsSyncing(false);
+            }
+          },
         },
       ]
     );
@@ -282,26 +281,28 @@ const GroceryListScreen: React.FC = () => {
 
     try {
       setIsSyncing(true);
-      console.log("Prepared grocery purchase data", {
-        name: selectedPurchaseItem.name,
+      const purchaseData = {
         quantity: parsedQuantity,
         unit: purchaseForm.unit,
         categoryId: purchaseForm.categoryId,
         expiryDate: purchaseForm.expiryDate.toISOString(),
-      });
-      // Integration hook: uncomment once backend endpoint is ready
-      // await groceryService.completePurchase(payload)
+      };
 
+      console.log("Completing purchase for item:", selectedPurchaseItem.name);
+      const response = await groceryService.markAsPurchased(selectedPurchaseItem.id, purchaseData);
+      
+      // Remove from grocery list
       setGroceryItems((prev) => prev.filter((item) => item.id !== selectedPurchaseItem.id));
+      
       Alert.alert(
         "Purchase completed",
-        "The grocery item has been marked as purchased."
+        `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`
       );
       setShowPurchaseModal(false);
       setSelectedPurchaseItem(null);
       resetPurchaseForm();
     } catch (error) {
-      console.log("Failed to complete purchase", error);
+      console.log("Failed to complete purchase:", error);
       Alert.alert(
         "Purchase failed",
         "Unable to complete the purchase. Please try again."
@@ -443,7 +444,7 @@ const GroceryListScreen: React.FC = () => {
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                 >
-                  <Ionicons name="basket-outline" size={24} color="white" />
+                  <Ionicons name="bag-outline" size={24} color="white" />
                 </LinearGradient>
                 {/* Urgent badge */}
                 {item.urgency === "urgent" && (
@@ -719,6 +720,13 @@ const GroceryListScreen: React.FC = () => {
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
 
+      {/* Show loading animation while fetching data */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <PantryLoadingAnimation message="Loading your grocery list..." />
+        </View>
+      )}
+
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -797,7 +805,7 @@ const GroceryListScreen: React.FC = () => {
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyStateIcon}>
-              <Ionicons name="basket-outline" size={80} color="#94A3B8" />
+              <Ionicons name="bag-outline" size={80} color="#94A3B8" />
             </View>
             <Text style={styles.emptyStateTitle}>No items in your list</Text>
             <Text style={styles.emptyStateSubtitle}>
@@ -846,7 +854,7 @@ const GroceryListScreen: React.FC = () => {
               >
                 <View style={styles.purchaseItemSummary}>
                   <View style={styles.purchaseItemIcon}>
-                    <Ionicons name="basket-outline" size={24} color="#FACC15" />
+                    <Ionicons name="bag-outline" size={24} color="#FACC15" />
                   </View>
                   <View style={styles.purchaseItemDetails}>
                     <Text style={styles.purchaseItemName}>{selectedPurchaseItem?.name}</Text>
@@ -1906,6 +1914,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 10,
     fontWeight: "700",
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
 });
 

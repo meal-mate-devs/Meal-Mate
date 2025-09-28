@@ -3,12 +3,7 @@ import { apiClient } from '../api/client';
 export interface PantryItem {
   id: string;
   name: string;
-  category: {
-    _id: string; // MongoDB ObjectId field
-    name: string;
-    icon: string;
-    color: string;
-  };
+  category: string; // Now stored as string name instead of object
   quantity: number;
   unit: string;
   expiryDate: string;
