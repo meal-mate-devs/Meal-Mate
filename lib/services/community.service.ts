@@ -30,12 +30,15 @@ class CommunityService {
     }
 
     async createPost(postData: any) {
-        const formData = new FormData();
-        formData.append('content', postData.content);
-        if (postData.postType) formData.append('postType', postData.postType);
-        if (postData.recipeDetails) formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
+        // If there are file uploads (images with uri), use multipart/form-data
+        const hasFileUploads = Array.isArray(postData.images) && postData.images.some((img: any) => img && img.uri && img.name)
 
-        if (postData.images && postData.images.length > 0) {
+        if (hasFileUploads) {
+            const formData = new FormData();
+            formData.append('content', postData.content);
+            if (postData.postType) formData.append('postType', postData.postType);
+            if (postData.recipeDetails) formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
+
             postData.images.forEach((image: any, index: number) => {
                 formData.append('images', {
                     uri: image.uri,
@@ -43,13 +46,21 @@ class CommunityService {
                     name: image.name || `image_${index}.jpg`,
                 } as any);
             });
+
+            const data = await apiClient.postForm<any>(`/community/posts`, formData, true);
+            if (data.post) data.post = this.normalizeId(data.post);
+            return data;
         }
 
-        if (postData.imageUrls && postData.imageUrls.length > 0) {
-            formData.append('images', JSON.stringify(postData.imageUrls));
+        // Otherwise send JSON so nested objects (recipeDetails) remain objects
+        const payload = {
+            content: postData.content,
+            images: Array.isArray(postData.images) ? postData.images : undefined,
+            recipeDetails: postData.recipeDetails ? postData.recipeDetails : undefined,
+            postType: postData.postType,
         }
 
-        const data = await apiClient.postForm<any>(`/community/posts`, formData, true);
+        const data = await apiClient.post<any>(`/community/posts`, payload, true);
         if (data.post) data.post = this.normalizeId(data.post);
         return data;
     }

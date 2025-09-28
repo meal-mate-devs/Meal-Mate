@@ -17,6 +17,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native"
+import Dialog from "../../atoms/Dialog"
 interface CreatePostDrawerProps {
     visible: boolean
     onClose: () => void
@@ -60,6 +61,18 @@ export default function CreatePostDrawer({
     const [instructions, setInstructions] = useState<string[]>([""])
     const [tags, setTags] = useState<string[]>([])
     const [newTag, setNewTag] = useState<string>("")
+
+    const [dialogVisible, setDialogVisible] = useState(false)
+    const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading')
+    const [dialogTitle, setDialogTitle] = useState('')
+    const [dialogMessage, setDialogMessage] = useState('')
+
+    const showDialog = (type: 'success' | 'error' | 'warning' | 'loading', title: string, message: string = '') => {
+        setDialogType(type)
+        setDialogTitle(title)
+        setDialogMessage(message)
+        setDialogVisible(true)
+    }
 
     const resetForm = (): void => {
         setPostType("simple")
@@ -201,7 +214,7 @@ export default function CreatePostDrawer({
         setTags(tags.filter((t) => t !== tag))
     }
 
-    const handleCreatePost = (): void => {
+    const handleCreatePost = async (): Promise<void> => {
         if (!content.trim()) {
             Alert.alert("Please add some content to your post")
             return
@@ -212,26 +225,41 @@ export default function CreatePostDrawer({
             return
         }
 
+        const normalizedRecipeDetails = postType === "recipe" ? {
+            title: recipeTitle.trim(),
+            cookTime: cookTime.toString().trim(),
+            servings: Number.isFinite(Number(servings)) ? Number(servings) : 1,
+            difficulty,
+            category,
+            ingredients: ingredients.filter(i => i.trim()).map(i => i.trim()),
+            instructions: instructions.filter(i => i.trim()).map(i => i.trim()),
+            tags: tags.filter(t => t.trim()),
+        } : undefined
+
         const postData: CreatePostData = {
             content,
             images: images.length > 0 ? images : undefined,
-            recipeDetails:
-                postType === "recipe"
-                    ? {
-                        title: recipeTitle,
-                        cookTime,
-                        servings,
-                        difficulty,
-                        ingredients: ingredients.filter((i) => i.trim()),
-                        instructions: instructions.filter((i) => i.trim()),
-                        category,
-                        tags,
-                    }
-                    : undefined,
+            recipeDetails: normalizedRecipeDetails,
+            postType: postType,
         }
 
-        onCreatePost(postData)
-        handleClose()
+        showDialog('loading', 'Posting', 'Please wait while we create your post...')
+
+        try {
+            const response = await onCreatePost(postData)
+            showDialog('success', 'Post Created', 'Your post was created successfully.')
+            setTimeout(() => {
+                setDialogVisible(false)
+                resetForm()
+                onClose()
+            }, 1000)
+
+            return response
+        } catch (err: any) {
+            console.error('Error creating post (drawer):', err)
+            showDialog('error', 'Failed to Create Post', err?.message || 'An error occurred while creating your post.')
+            return Promise.reject(err)
+        }
     }
 
     return (
@@ -534,6 +562,16 @@ export default function CreatePostDrawer({
                             </View>
                         </View>
                     </Modal>
+
+                    {/* Dialog for posting status */}
+                    <Dialog
+                        visible={dialogVisible}
+                        type={dialogType}
+                        title={dialogTitle}
+                        message={dialogMessage}
+                        onClose={() => setDialogVisible(false)}
+                        autoClose={dialogType !== 'loading'}
+                    />
                 </View>
             </KeyboardAvoidingView>
         </Modal>

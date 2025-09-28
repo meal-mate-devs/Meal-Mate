@@ -74,7 +74,26 @@ export default function PostItem({
         }
     }
 
-    console.log("Rendering PostItem for post:", post.author.avatar)
+    const toSafeString = (val: any): string => {
+        if (val === null || val === undefined) return ''
+        if (typeof val === 'string') return val
+        if (typeof val === 'number' || typeof val === 'boolean') return String(val)
+        if (typeof val === 'object') {
+            if ('title' in val && typeof val.title === 'string') return val.title
+            if ('name' in val && typeof val.name === 'string') return val.name
+            if ('label' in val && typeof val.label === 'string') return val.label
+            if ('_id' in val) return String(val._id)
+            try {
+                const s = JSON.stringify(val)
+                return s.length > 60 ? s.substring(0, 57) + '...' : s
+            } catch {
+                return String(val)
+            }
+        }
+        return String(val)
+    }
+
+
     return (
         <>
             <View className="bg-zinc-800 rounded-xl mb-4 overflow-hidden border border-zinc-700">
@@ -92,7 +111,10 @@ export default function PostItem({
                 </TouchableOpacity>
 
                 <View className="px-4 pb-3">
-                    <Text className="text-white text-base leading-5">{post.content}</Text>
+                    {post.recipeDetails?.title ? (
+                        <Text className="text-white text-lg font-bold mb-1">{toSafeString(post.recipeDetails.title)}</Text>
+                    ) : null}
+                    <Text className="text-white text-base leading-5">{toSafeString(post.content)}</Text>
                 </View>
 
                 {post.images && post.images.length > 0 && <PostImageCarousel images={post.images} />}

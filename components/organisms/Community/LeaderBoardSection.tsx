@@ -62,7 +62,6 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
         setTimeframe(newTimeframe)
     }
 
-    console.log(leaderboard[1].user.avatar,)
 
     return (
         <ImageBackground

@@ -34,7 +34,6 @@ export default function PantrySkeleton(): JSX.Element {
         }),
     }
 
-    // Single row skeleton representing a pantry item
     const Row = ({ keyIndex }: { keyIndex: number }) => (
         <View key={keyIndex} className="flex-row items-center mb-4" style={{ alignItems: 'center' }}>
             <Animated.View className="bg-zinc-600 rounded-xl" style={[{ width: 120, height: 80, borderRadius: 14 }, shimmerStyle]} />

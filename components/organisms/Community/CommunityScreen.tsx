@@ -221,7 +221,7 @@ export default function CommunityScreen(): JSX.Element {
         setShowUserProfile(true)
     }
 
-    const handleCreatePost = async (data: any): Promise<void> => {
+    const handleCreatePost = async (data: any): Promise<any> => {
         try {
             const response = await CommunityAPI.createPost(data)
 
@@ -241,9 +241,11 @@ export default function CommunityScreen(): JSX.Element {
             }
 
             setPosts([newPost, ...posts])
+
+            return response
         } catch (error) {
             console.error('Error creating post:', error)
-            Alert.alert('Error', 'Failed to create post')
+            throw error
         }
     }
 
@@ -360,10 +362,10 @@ export default function CommunityScreen(): JSX.Element {
                     visible={showUserProfile}
                     user={selectedUser}
                     onClose={() => setShowUserProfile(false)}
-                    currentUserId={currentUser.id}
+                    currentUserId={currentUser.mongoId}
                 />
 
-                <PostDetailModel currentUserId={currentUser.id} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
+                <PostDetailModel currentUserId={currentUser.mongoId} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
             </LinearGradient>
         </View>
     )
