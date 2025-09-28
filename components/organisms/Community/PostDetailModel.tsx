@@ -38,7 +38,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
             setLikes(isLiked ? likes - 1 : likes + 1)
 
             // API call
-            await CommunityAPI.toggleLikePost(post.id, currentUserId)
+            await CommunityAPI.toggleLikePost(post.id)
         } catch (error) {
             console.error('Error toggling like:', error)
             // Revert optimistic update

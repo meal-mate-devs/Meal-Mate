@@ -4,7 +4,7 @@ import { Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useState } from "react"
-import { Image, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native"
 import PostOptionsPopover from "../../atoms/PostOptionsPopover"
 import EditPostModal from "../../molecules/EditPostModal"
 import PostImageCarousel from "./PostImageCarousel"
@@ -37,13 +37,20 @@ export default function PostItem({
     const [commentText, setCommentText] = useState<string>("")
     const [showOptionsPopover, setShowOptionsPopover] = useState<boolean>(false)
     const [showEditModal, setShowEditModal] = useState<boolean>(false)
-
+    const [isCommenting, setIsCommenting] = useState<boolean>(false)
     const isOwnPost = post.author.id === currentUser.id
 
     const handleAddComment = async (): Promise<void> => {
-        if (commentText.trim()) {
+        if (!commentText.trim() || isCommenting) return
+
+        setIsCommenting(true)
+        try {
             await onAddComment(post.id, commentText)
             setCommentText("")
+        } catch (err) {
+            console.error("Failed to add comment", err)
+        } finally {
+            setIsCommenting(false)
         }
     }
 
@@ -67,11 +74,12 @@ export default function PostItem({
         }
     }
 
+    console.log("Rendering PostItem for post:", post.author.avatar)
     return (
         <>
             <View className="bg-zinc-800 rounded-xl mb-4 overflow-hidden border border-zinc-700">
                 <TouchableOpacity className="flex-row items-center p-4" onPress={() => onUserPress(post.author)}>
-                    <Image source={post.author.avatar} className="w-10 h-10 rounded-full border border-yellow-400" />
+                    <Image source={{ uri: post.author.avatar }} className="w-10 h-10 rounded-full border border-yellow-400" />
                     <View className="ml-3 flex-1">
                         <Text className="text-white font-bold">{post.author.name}</Text>
                         <Text className="text-zinc-400 text-xs">{post.timeAgo}</Text>
@@ -183,13 +191,21 @@ export default function PostItem({
                                 <TouchableOpacity
                                     className="mr-2 w-8 h-8 rounded-full justify-center items-center"
                                     onPress={handleAddComment}
-                                    disabled={!commentText.trim()}
+                                    disabled={!commentText.trim() || isCommenting}
                                 >
-                                    <LinearGradient
-                                        colors={commentText.trim() ? ["#FBBF24", "#F97416"] : ["#6B7280", "#6B7280"]}
-                                        className="w-full h-full rounded-full absolute"
-                                    />
-                                    <Ionicons name="send" size={16} color="#FFFFFF" />
+                                    {isCommenting ? (
+                                        <View className="flex-row items-center">
+                                            <ActivityIndicator size="small" color="#FBBF24" />
+                                        </View>
+                                    ) : (
+                                        <>
+                                            <LinearGradient
+                                                colors={commentText.trim() ? ["#FBBF24", "#F97416"] : ["#6B7280", "#6B7280"]}
+                                                className="w-full h-full rounded-full absolute"
+                                            />
+                                            <Ionicons name="send" size={16} color="#FFFFFF" />
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                             </View>
                         </View>

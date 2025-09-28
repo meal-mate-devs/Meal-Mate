@@ -25,9 +25,14 @@ class ApiClient {
     ): Promise<T> {
         try {
             const headers: Record<string, string> = {
-                'Content-Type': 'application/json',
+                // Default Content-Type is application/json, but if body is FormData we must NOT set it
                 ...options.headers as Record<string, string>,
             };
+
+            const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+            if (!isFormData && !headers['Content-Type']) {
+                headers['Content-Type'] = 'application/json';
+            }
 
             if (requireAuth) {
                 const token = await this.getAuthToken();
@@ -37,10 +42,18 @@ class ApiClient {
                 headers['Authorization'] = `Bearer ${token}`;
             }
 
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                ...options,
-                headers,
-            });
+            const fetchOptions: RequestInit = { ...options, headers };
+
+            // If the body is a plain object and Content-Type is application/json, stringify it
+            if (fetchOptions.body && !isFormData && typeof fetchOptions.body !== 'string') {
+                try {
+                    fetchOptions.body = JSON.stringify(fetchOptions.body);
+                } catch (e) {
+                    // Leave body as-is if it cannot be stringified
+                }
+            }
+
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
 
             // Handle 401 specifically for auth refresh
             if (response.status === 401 && requireAuth) {
@@ -82,7 +95,14 @@ class ApiClient {
     async post<T>(endpoint: string, data: any, requireAuth: boolean = true): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
-            body: JSON.stringify(data),
+            body: data,
+        }, requireAuth);
+    }
+
+    async postForm<T>(endpoint: string, formData: FormData, requireAuth: boolean = true): Promise<T> {
+        return this.request<T>(endpoint, {
+            method: 'POST',
+            body: formData,
         }, requireAuth);
     }
 

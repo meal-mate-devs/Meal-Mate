@@ -1,350 +1,177 @@
-import { auth } from '@/lib/config/clientApp';
+import { apiClient } from '../api/client';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-const getAuthToken = async () => {
-    if (!auth.currentUser) {
-        return null;
-    }
-    return await auth.currentUser.getIdToken();
-};
-
-const makeRequest = async (endpoint: string, options: RequestInit = {}) => {
-    const config: RequestInit = {
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers,
-        },
-        ...options,
-    };
-
-    const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('Request timeout')), 10000)
-    );
-
-    const response = await Promise.race([
-        fetch(`${API_BASE_URL}${endpoint}`, config),
-        timeoutPromise
-    ]) as Response;
-
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+class CommunityService {
+    private normalizeId(item: any) {
+        if (!item) return item;
+        if (item._id && !item.id) return { ...item, id: item._id };
+        return item;
     }
 
-    return await response.json();
-};
 
-const makeAuthRequest = async (endpoint: string, options: RequestInit = {}) => {
-    const token = await getAuthToken();
-    return makeRequest(endpoint, {
-        ...options,
-        headers: {
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-            ...options.headers,
-        },
-    });
-};
-
-export const getPosts = async (page = 1, limit = 10, sort = 'latest', filter = 'all', userId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        sort,
-        filter,
-        ...(userId && { userId })
-    });
-
-    const endpoint = `/community/posts?${params}`;
-    console.log('Fetching posts from:', `${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api'}${endpoint}`);
-
-    return await makeRequest(endpoint);
-};
-
-export const getPostById = async (postId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-    return await makeAuthRequest(`/community/posts/${postId}${queryString}`);
-};
-
-export const createPost = async (postData: any, userId?: string) => {
-    const formData = new FormData();
-
-    formData.append('content', postData.content);
-
-    if (postData.postType) {
-        formData.append('postType', postData.postType);
-    }
-
-    if (postData.recipeDetails) {
-        formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
-    }
-
-    if (userId) {
-        formData.append('userId', userId);
-    }
-
-    if (postData.images && postData.images.length > 0) {
-        postData.images.forEach((image: any, index: number) => {
-            formData.append('images', {
-                uri: image.uri,
-                type: image.type || 'image/jpeg',
-                name: image.name || `image_${index}.jpg`,
-            } as any);
+    async getPosts(page = 1, limit = 10, sort = 'latest', filter = 'all') {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            limit: limit.toString(),
+            sort,
+            filter,
         });
+
+        const res = await apiClient.get<any>(`/community/posts?${params}`, true);
+        if (res && res.posts) res.posts = res.posts.map((p: any) => this.normalizeId(p));
+        if (res && res.data) res.data = res.data.map((p: any) => this.normalizeId(p));
+        console.log("-----------------------------------------------")
+        console.log("Posts response:", res.posts[0]);
+        console.log("-----------------------------------------------")
+        return res;
     }
 
-    if (postData.imageUrls && postData.imageUrls.length > 0) {
-        formData.append('images', JSON.stringify(postData.imageUrls));
+    async getPostById(postId: string) {
+        return await apiClient.get<any>(`/community/posts/${postId}`, true);
     }
 
-    const token = await getAuthToken();
-    const response = await fetch(`${API_BASE_URL}/community/posts`, {
-        method: 'POST',
-        headers: {
-            ...(token && { 'Authorization': `Bearer ${token}` }),
-        },
-        body: formData,
-    });
+    async createPost(postData: any) {
+        const formData = new FormData();
+        formData.append('content', postData.content);
+        if (postData.postType) formData.append('postType', postData.postType);
+        if (postData.recipeDetails) formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
 
-    if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to create post');
+        if (postData.images && postData.images.length > 0) {
+            postData.images.forEach((image: any, index: number) => {
+                formData.append('images', {
+                    uri: image.uri,
+                    type: image.type || 'image/jpeg',
+                    name: image.name || `image_${index}.jpg`,
+                } as any);
+            });
+        }
+
+        if (postData.imageUrls && postData.imageUrls.length > 0) {
+            formData.append('images', JSON.stringify(postData.imageUrls));
+        }
+
+        const data = await apiClient.postForm<any>(`/community/posts`, formData, true);
+        if (data.post) data.post = this.normalizeId(data.post);
+        return data;
     }
 
-    return await response.json();
-};
-export const updatePost = async (postId: string, updateData: any, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-    return await makeAuthRequest(`/community/posts/${postId}${queryString}`, {
-        method: 'PUT',
-        body: JSON.stringify(updateData),
-    });
-};
-
-export const deletePost = async (postId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-    return await makeAuthRequest(`/community/posts/${postId}${queryString}`, {
-        method: 'DELETE',
-    });
-};
-
-export const toggleLikePost = async (postId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-    return await makeAuthRequest(`/community/posts/${postId}/like${queryString}`, {
-        method: 'POST',
-    });
-};
-
-export const toggleSavePost = async (postId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-    return await makeAuthRequest(`/community/posts/${postId}/save${queryString}`, {
-        method: 'POST',
-    });
-};
-
-export const getComments = async (postId: string, page = 1, limit = 20, userId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(userId && { userId })
-    });
-
-    return await makeRequest(`/community/posts/${postId}/comments?${params}`);
-};
-
-export const addComment = async (postId: string, content: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-
-    return await makeAuthRequest(`/community/posts/${postId}/comments${queryString}`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ content }),
-    });
-};
-
-export const toggleLikeComment = async (commentId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-
-    return await makeAuthRequest(`/community/comments/${commentId}/like${queryString}`, {
-        method: 'POST',
-    });
-};
-
-export const deleteComment = async (commentId: string, userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-
-    return await makeAuthRequest(`/community/comments/${commentId}${queryString}`, {
-        method: 'DELETE',
-    });
-};
-
-export const getUserProfile = async (userId: string, currentUserId?: string) => {
-    const params = new URLSearchParams({
-        ...(currentUserId && { userId: currentUserId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-
-    return await makeRequest(`/community/users/${userId}${queryString}`);
-};
-
-export const followUser = async (userId: string, currentUserId?: string) => {
-    const params = new URLSearchParams({
-        ...(currentUserId && { userId: currentUserId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
-
-    return await makeAuthRequest(`/community/users/${userId}/follow${queryString}`, {
-        method: 'POST',
-    });
-};
-
-export const getUserPosts = async (userId: string, page = 1, limit = 10, type = 'all', currentUserId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        type,
-        ...(currentUserId && { userId: currentUserId })
-    });
-
-    return await makeRequest(`/community/users/${userId}/posts?${params}`);
-};
-
-export const getUserSavedPosts = async (page = 1, limit = 10) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString()
-    });
-
-    const currentUser = auth.currentUser;
-    if (!currentUser) {
-        throw new Error('User not authenticated');
+    async updatePost(postId: string, updateData: any) {
+        return await apiClient.put<any>(`/community/posts/${postId}`, updateData, true);
     }
 
-    return await makeAuthRequest(`/community/users/${currentUser.uid}/saved-posts?${params}`);
-};
+    async deletePost(postId: string) {
+        return await apiClient.delete<any>(`/community/posts/${postId}`, true);
+    }
 
-export const getUserFollowers = async (userId: string, page = 1, limit = 20, currentUserId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(currentUserId && { userId: currentUserId })
-    });
+    async toggleLikePost(postId: string) {
+        return await apiClient.post<any>(`/community/posts/${postId}/like`, {}, true);
+    }
 
-    return await makeRequest(`/community/users/${userId}/followers?${params}`);
-};
+    async toggleSavePost(postId: string) {
+        return await apiClient.post<any>(`/community/posts/${postId}/save`, {}, true);
+    }
 
-export const getUserFollowing = async (userId: string, page = 1, limit = 20, currentUserId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(currentUserId && { userId: currentUserId })
-    });
+    async getComments(postId: string, page = 1, limit = 20) {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+        return await apiClient.get<any>(`/community/posts/${postId}/comments?${params}`, false);
+    }
 
-    return await makeRequest(`/community/users/${userId}/following?${params}`);
-};
+    async addComment(postId: string, content: string) {
+        return await apiClient.post<any>(`/community/posts/${postId}/comments`, { content }, true);
+    }
 
-export const getLeaderboard = async (period = 'monthly', limit = 50, userId?: string) => {
-    const params = new URLSearchParams({
-        period,
-        limit: limit.toString(),
-        ...(userId && { userId })
-    });
+    async toggleLikeComment(commentId: string) {
+        return await apiClient.post<any>(`/community/comments/${commentId}/like`, {}, true);
+    }
 
-    return await makeRequest(`/community/leaderboard?${params}`);
-};
+    async deleteComment(commentId: string) {
+        return await apiClient.delete<any>(`/community/comments/${commentId}`, true);
+    }
 
-export const searchContent = async (query: string, type = 'all', page = 1, limit = 20, filters?: any, userId?: string) => {
-    const params = new URLSearchParams({
-        q: query,
-        type,
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(filters?.category && { category: filters.category }),
-        ...(filters?.difficulty && { difficulty: filters.difficulty }),
-        ...(filters?.tags && { tags: filters.tags.join(',') }),
-        ...(userId && { userId })
-    });
+    async getUserProfile(userId: string) {
+        return await apiClient.get<any>(`/community/users/${userId}`, false);
+    }
 
-    return await makeRequest(`/community/search?${params}`);
-};
+    async followUser(userId: string) {
+        return await apiClient.post<any>(`/community/users/${userId}/follow`, {}, true);
+    }
 
-export const getTrendingContent = async (userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
+    async getUserPosts(userId: string, page = 1, limit = 10, type = 'all') {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString(), type });
+        return await apiClient.get<any>(`/community/users/${userId}/posts?${params}`, false);
+    }
 
-    return await makeRequest(`/community/trending${queryString}`);
-};
+    async getUserSavedPosts() {
+        return await apiClient.get<any>(`/community/users/saved-posts`, true);
+    }
 
-export const getPersonalizedFeed = async (page = 1, limit = 15, userId?: string) => {
-    const params = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        ...(userId && { userId })
-    });
+    async getUserFollowers(userId: string, page = 1, limit = 20) {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+        return await apiClient.get<any>(`/community/users/${userId}/followers?${params}`, false);
+    }
 
-    return await makeAuthRequest(`/community/feed?${params}`);
-};
+    async getUserFollowing(userId: string, page = 1, limit = 20) {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+        return await apiClient.get<any>(`/community/users/${userId}/following?${params}`, false);
+    }
 
-export const getRecommendations = async (userId?: string) => {
-    const params = new URLSearchParams({
-        ...(userId && { userId })
-    });
-    const queryString = params.toString() ? `?${params}` : '';
+    async getLeaderboard(period = 'monthly', limit = 50) {
+        const params = new URLSearchParams({ period, limit: limit.toString() });
+        return await apiClient.get<any>(`/community/leaderboard?${params}`, false);
+    }
 
-    return await makeAuthRequest(`/community/recommendations${queryString}`);
-};
+    async searchContent(query: string, type = 'all', page = 1, limit = 20, filters?: any) {
+        const params = new URLSearchParams({
+            q: query,
+            type,
+            page: page.toString(),
+            limit: limit.toString(),
+            ...(filters?.category && { category: filters.category }),
+            ...(filters?.difficulty && { difficulty: filters.difficulty }),
+            ...(filters?.tags && { tags: filters.tags.join(',') }),
+        });
+        return await apiClient.get<any>(`/community/search?${params}`, false);
+    }
 
+    async getTrendingContent() {
+        return await apiClient.get<any>('/community/trending', false);
+    }
+
+    async getPersonalizedFeed(page = 1, limit = 15) {
+        const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+        return await apiClient.get<any>(`/community/feed?${params}`, true);
+    }
+
+    async getRecommendations() {
+        return await apiClient.get<any>('/community/recommendations', true);
+    }
+}
+
+export const communityService = new CommunityService();
+
+// Backwards-compatible default export (original code expected CommunityAPI object)
 const CommunityAPI = {
-    getPosts,
-    getPostById,
-    createPost,
-    updatePost,
-    deletePost,
-    toggleLikePost,
-    toggleSavePost,
-    getComments,
-    addComment,
-    toggleLikeComment,
-    deleteComment,
-    getUserProfile,
-    followUser,
-    getUserPosts,
-    getUserSavedPosts,
-    getUserFollowers,
-    getUserFollowing,
-    getLeaderboard,
-    searchContent,
-    getTrendingContent,
-    getPersonalizedFeed,
-    getRecommendations,
+    getPosts: communityService.getPosts.bind(communityService),
+    getPostById: communityService.getPostById.bind(communityService),
+    createPost: communityService.createPost.bind(communityService),
+    updatePost: communityService.updatePost.bind(communityService),
+    deletePost: communityService.deletePost.bind(communityService),
+    toggleLikePost: communityService.toggleLikePost.bind(communityService),
+    toggleSavePost: communityService.toggleSavePost.bind(communityService),
+    getComments: communityService.getComments.bind(communityService),
+    addComment: communityService.addComment.bind(communityService),
+    toggleLikeComment: communityService.toggleLikeComment.bind(communityService),
+    deleteComment: communityService.deleteComment.bind(communityService),
+    getUserProfile: communityService.getUserProfile.bind(communityService),
+    followUser: communityService.followUser.bind(communityService),
+    getUserPosts: communityService.getUserPosts.bind(communityService),
+    getUserSavedPosts: communityService.getUserSavedPosts.bind(communityService),
+    getUserFollowers: communityService.getUserFollowers.bind(communityService),
+    getUserFollowing: communityService.getUserFollowing.bind(communityService),
+    getLeaderboard: communityService.getLeaderboard.bind(communityService),
+    searchContent: communityService.searchContent.bind(communityService),
+    getTrendingContent: communityService.getTrendingContent.bind(communityService),
+    getPersonalizedFeed: communityService.getPersonalizedFeed.bind(communityService),
+    getRecommendations: communityService.getRecommendations.bind(communityService),
 };
 
 export default CommunityAPI;

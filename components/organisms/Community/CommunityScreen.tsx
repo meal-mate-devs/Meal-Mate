@@ -62,8 +62,7 @@ export default function CommunityScreen(): JSX.Element {
     const loadPosts = async (): Promise<void> => {
         try {
             setLoading(true)
-            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all', currentUser.mongoId)
-            console.log('Posts response:', response) // Debug log
+            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
 
             // Handle different response structures
             let postsData = []
@@ -108,7 +107,7 @@ export default function CommunityScreen(): JSX.Element {
             }))
 
             // API call
-            await CommunityAPI.toggleLikePost(postId, currentUser.mongoId)
+            await CommunityAPI.toggleLikePost(postId)
         } catch (error) {
             console.error('Error toggling like:', error)
             // Revert optimistic update
@@ -140,7 +139,7 @@ export default function CommunityScreen(): JSX.Element {
             ))
 
             // API call
-            await CommunityAPI.toggleSavePost(postId, currentUser.mongoId)
+            await CommunityAPI.toggleSavePost(postId)
         } catch (error) {
             console.error('Error saving post:', error)
             // Revert optimistic update
@@ -159,7 +158,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleAddComment = async (postId: string, commentText: string): Promise<void> => {
         try {
-            const response = await CommunityAPI.addComment(postId, commentText, currentUser.mongoId)
+            const response = await CommunityAPI.addComment(postId, commentText)
 
             // Add comment to local state
             const newComment: Comment = {
@@ -187,7 +186,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleDeletePost = async (postId: string): Promise<void> => {
         try {
-            await CommunityAPI.deletePost(postId, currentUser.mongoId)
+            await CommunityAPI.deletePost(postId)
             setPosts(posts.filter(post => post.id !== postId))
         } catch (error) {
             console.error('Error deleting post:', error)
@@ -197,7 +196,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleUpdatePost = async (postId: string, updateData: any): Promise<void> => {
         try {
-            await CommunityAPI.updatePost(postId, updateData, currentUser.mongoId)
+            await CommunityAPI.updatePost(postId, updateData)
 
             // Update local state
             setPosts(posts.map(post =>
@@ -224,7 +223,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleCreatePost = async (data: any): Promise<void> => {
         try {
-            const response = await CommunityAPI.createPost(data, currentUser.mongoId)
+            const response = await CommunityAPI.createPost(data)
 
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),

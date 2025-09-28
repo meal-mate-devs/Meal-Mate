@@ -1,6 +1,6 @@
 "use client"
 
-import LoadingIndicator from "@/components/atoms/LoadingIndicator"
+import PantrySkeleton from "@/components/atoms/PantrySkeleton"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
@@ -391,7 +391,7 @@ const PantryManagementScreen: React.FC = () => {
   const [showIngredientDetectionModal, setShowIngredientDetectionModal] = useState(false)
   const [detectedIngredients, setDetectedIngredients] = useState<IngredientItem[]>([])
   const [isDetecting, setIsDetecting] = useState(false)
-  
+
   // Edit-related state
   const [showEditModal, setShowEditModal] = useState(false)
   const [editingItem, setEditingItem] = useState<PantryItem | null>(null)
@@ -403,7 +403,7 @@ const PantryManagementScreen: React.FC = () => {
     expiryDate: new Date()
   })
   const [showEditDatePicker, setShowEditDatePicker] = useState(false)
-  
+
   // Ingredient scanner hook
   const {
     detectedIngredientsWithConfidence: hookDetectedIngredients,
@@ -418,10 +418,10 @@ const PantryManagementScreen: React.FC = () => {
     onIngredientsDetected: (ingredients, ingredientsWithConfidence) => {
       console.log("Ingredients detected callback:", ingredients);
       console.log("Ingredients with confidence:", ingredientsWithConfidence);
-      
+
       // Hide loading indicator
       setIsDetecting(false);
-      
+
       // Use the ingredientsWithConfidence directly from the callback
       if (ingredientsWithConfidence && ingredientsWithConfidence.length > 0) {
         console.log("Updating detected ingredients with confidence:", JSON.stringify(ingredientsWithConfidence));
@@ -444,9 +444,9 @@ const PantryManagementScreen: React.FC = () => {
       try {
         setIsLoading(true);
         setLoadingError(null);
-        
+
         const response = await pantryService.getPantryItems();
-        
+
         if (response.success) {
           setPantryItems(response.items);
         } else {
@@ -605,11 +605,11 @@ const PantryManagementScreen: React.FC = () => {
 
       // Call backend service
       const response = await pantryService.addPantryItem(addItemData);
-      
+
       if (response.success) {
         // Add new item to state
         setPantryItems((prev) => [...prev, response.item]);
-        
+
         // Reset and close modal
         setShowAddModal(false);
         setNewItem({
@@ -662,7 +662,7 @@ const PantryManagementScreen: React.FC = () => {
           onPress: async () => {
             try {
               const response = await pantryService.deletePantryItem(itemId);
-              
+
               if (response.success) {
                 // Remove item from state and close detail modal if open
                 setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
@@ -720,11 +720,11 @@ const PantryManagementScreen: React.FC = () => {
         const imageUri = result.assets[0].uri
         console.log("Camera image captured:", imageUri)
         setNewItem((prev) => ({ ...prev, image: imageUri }))
-        
+
         // Show loading state and open modal immediately
         setIsDetecting(true)
         setShowIngredientDetectionModal(true)
-        
+
         // Process image with ingredient detection
         try {
           console.log("Starting ingredient detection...")
@@ -764,19 +764,19 @@ const PantryManagementScreen: React.FC = () => {
         const imageUri = result.assets[0].uri
         console.log("Gallery image selected:", imageUri)
         setNewItem((prev) => ({ ...prev, image: imageUri }))
-        
+
         // Show loading state and open modal immediately
         setIsDetecting(true)
         setShowIngredientDetectionModal(true)
-        
+
         // Process image with ingredient detection
         try {
           console.log("Starting ingredient detection for gallery image...");
-          
+
           // Important: Make sure we start with a clean state before processing new image
           setDetectedIngredients([]);
           setDetectedIngredientsWithConfidence([]);
-          
+
           await processImage(imageUri);
           // The onIngredientsDetected callback in the hook will handle updating ingredients
         } catch (error) {
@@ -792,7 +792,7 @@ const PantryManagementScreen: React.FC = () => {
             setIsDetecting(false);
           }
         }, 15000); // 15 second timeout
-        
+
         return () => clearTimeout(safetyTimeout);
       }
     } catch (error) {
@@ -803,16 +803,16 @@ const PantryManagementScreen: React.FC = () => {
   // Handle ingredient selection from detected ingredients
   const handleSelectIngredient = useCallback((ingredientName: string) => {
     console.log("Ingredient selected:", ingredientName);
-    
+
     // Update the new item name with the selected ingredient
     setNewItem((prev) => {
       console.log("Setting item name to:", ingredientName);
       return { ...prev, name: ingredientName };
     });
-    
+
     // First close the modal
     setShowIngredientDetectionModal(false);
-    
+
     // Then clear the ingredients after a short delay to prevent UI flicker
     setTimeout(() => {
       setDetectedIngredients([]);
@@ -877,15 +877,15 @@ const PantryManagementScreen: React.FC = () => {
 
       // Call backend service
       const response = await pantryService.updatePantryItem(updateData)
-      
+
       if (response.success) {
         // Update the local state
-        setPantryItems(prevItems => 
-          prevItems.map(item => 
+        setPantryItems(prevItems =>
+          prevItems.map(item =>
             item.id === editingItem.id ? response.item : item
           )
         )
-        
+
         // Close modal and reset form
         setShowEditModal(false)
         setEditingItem(null)
@@ -1802,7 +1802,7 @@ const PantryManagementScreen: React.FC = () => {
     destructiveActionText: {
       color: "#EF4444",
     },
-    
+
     // Loading and error states
     loadingContainer: {
       flex: 1,
@@ -1937,7 +1937,7 @@ const PantryManagementScreen: React.FC = () => {
     const daysUntilExpiry = getDaysUntilExpiry(item.expiryDate)
     const expiryColor = getExpiryColor(item.expiryDate)
     const expiryText = getExpiryText(item.expiryDate)
-    
+
     // Use the category data from backend directly (populated by MongoDB)
     // If category data is available from backend, use it; otherwise fall back to static CATEGORIES
     const category = item.category || CATEGORIES.find((cat) => cat.name === item.category?.name)
@@ -2243,10 +2243,10 @@ const PantryManagementScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        <ScrollView 
+        <ScrollView
           style={styles.modalContent}
           showsVerticalScrollIndicator={false}
-        >            
+        >
           <View style={styles.formField}>
             <Text style={styles.fieldLabel}>Item Name</Text>
             <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
@@ -2281,19 +2281,19 @@ const PantryManagementScreen: React.FC = () => {
             <View style={{ flex: 1, marginHorizontal: 6 }}>
               <Text style={styles.fieldLabel}>Unit</Text>
               <View style={[styles.inputContainer, { position: 'relative', justifyContent: 'center', paddingHorizontal: 12 }]}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
                   onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
                 >
                   <Text style={[styles.unitButtonText, { fontSize: 15, textAlign: 'left', flex: 1 }]}>{editFormData.unit}</Text>
-                  <Ionicons 
-                    name={isUnitDropdownOpen ? "chevron-up" : "chevron-down"} 
-                    size={20} 
-                    color="#FACC15" 
+                  <Ionicons
+                    name={isUnitDropdownOpen ? "chevron-up" : "chevron-down"}
+                    size={20}
+                    color="#FACC15"
                   />
                 </TouchableOpacity>
               </View>
-              
+
               {isUnitDropdownOpen && (
                 <View style={styles.unitDropdown}>
                   <ScrollView style={styles.unitDropdownScroll} contentContainerStyle={styles.unitDropdownScrollContent} nestedScrollEnabled>
@@ -2392,10 +2392,10 @@ const PantryManagementScreen: React.FC = () => {
     const daysUntilExpiry = getDaysUntilExpiry(showItemDetails.expiryDate)
     const expiryColor = getExpiryColor(showItemDetails.expiryDate)
     const expiryText = getExpiryText(showItemDetails.expiryDate)
-    
+
     // Use the category data from backend directly (populated by MongoDB)
     const category = showItemDetails.category || CATEGORIES.find((cat) => cat.name === showItemDetails.category?.name)
-    
+
     const daysAdded = Math.floor((new Date().getTime() - new Date(showItemDetails.addedDate).getTime()) / (1000 * 60 * 60 * 24))
 
     const addedText = daysAdded === 0
@@ -2538,10 +2538,10 @@ const PantryManagementScreen: React.FC = () => {
         end={{ x: 0.5, y: 0.8 }}
       />
 
-      {/* Loading State */}
+      {/* Loading State - show pantry-specific skeleton */}
       {isLoading && (
         <View style={styles.loadingContainer}>
-          <LoadingIndicator message="Loading your pantry..." />
+          <PantrySkeleton />
         </View>
       )}
 
@@ -2549,16 +2549,16 @@ const PantryManagementScreen: React.FC = () => {
       {loadingError && (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>{loadingError}</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => {
               const loadPantryItems = async () => {
                 try {
                   setIsLoading(true);
                   setLoadingError(null);
-                  
+
                   const response = await pantryService.getPantryItems();
-                  
+
                   if (response.success) {
                     setPantryItems(response.items);
                   } else {
@@ -2582,246 +2582,246 @@ const PantryManagementScreen: React.FC = () => {
       {/* Main Content - only show when not loading and no error */}
       {!isLoading && !loadingError && (
         <>
-      {/* Header section */}
-      <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
-        <View style={styles.headerContent}>
-          {/* Back Button */}
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <View style={styles.backButtonInner}>
-              <Ionicons name="chevron-back" size={24} color="#FACC15" />
-            </View>
-          </TouchableOpacity>
-
-          {/* Title Section */}
-          <View style={styles.titleSection}>
-            <Text style={styles.headerTitle}>Pantry Manager</Text>
-            <Text style={styles.headerSubtitle}>
-              Organize, track & reduce food waste
-            </Text>
-          </View>
-
-          {/* Add Button */}
-          <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
-            <TouchableOpacity
-              style={styles.headerAddButton}
-              onPress={() => {
-                setShowAddModal(true)
-              }}
-              activeOpacity={0.85}
-            >
-              <LinearGradient
-                colors={["#FACC15", "#F97316"]}
-                style={styles.headerAddButtonGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name="add" size={24} color="white" />
-              </LinearGradient>
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-      </Animated.View>
-
-      {/* Search bar */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchContainer}>
-          {/* Replace BlurView with a simple background color for better performance */}
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
-          <View style={styles.searchBlur}>
-            <Ionicons name="search-outline" size={22} color="#FACC15" />
-            <TextInput
-              style={styles.searchInput}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search pantry items..."
-              placeholderTextColor="#64748B"
-              autoCorrect={false}
-              returnKeyType="search"
-              maxLength={50}
-            />
-            {searchQuery.length > 0 && (
+          {/* Header section */}
+          <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
+            <View style={styles.headerContent}>
+              {/* Back Button */}
               <TouchableOpacity
-                onPress={() => {
-                  setSearchQuery("")
-                }}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={styles.backButton}
+                onPress={() => router.back()}
+                activeOpacity={0.7}
               >
-                <Ionicons name="close-circle" size={22} color="#64748B" />
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="chevron-back" size={24} color="#FACC15" />
+                </View>
               </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
 
-      {/* Tab bar for filtering */}
-      {renderTabBar()}
+              {/* Title Section */}
+              <View style={styles.titleSection}>
+                <Text style={styles.headerTitle}>Pantry Manager</Text>
+                <Text style={styles.headerSubtitle}>
+                  Organize, track & reduce food waste
+                </Text>
+              </View>
 
-      {/* Category filters */}
-      {renderCategoryFilter()}
-
-      {/* Items list */}
-      <Animated.View
-        style={[
-          styles.itemsList,
-          {
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }]
-          }
-        ]}
-      >
-        <FlatList
-          data={filteredItems()}
-          renderItem={renderPantryItem}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Animated.View
-                style={[
-                  styles.emptyStateIcon,
-                  {
-                    transform: [
-                      {
-                        rotate: rotateAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0deg", "0deg"],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={["#FACC15", "#F97316"]}
-                  style={{ borderRadius: 35, padding: 16 }}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+              {/* Add Button */}
+              <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
+                <TouchableOpacity
+                  style={styles.headerAddButton}
+                  onPress={() => {
+                    setShowAddModal(true)
+                  }}
+                  activeOpacity={0.85}
                 >
-                  <Ionicons
-                    name={
-                      activeTab === STATUS.ACTIVE
-                        ? "nutrition-outline"
-                        : activeTab === STATUS.EXPIRING
-                          ? "time-outline"
-                          : "alert-circle-outline"
-                    }
-                    size={56}
-                    color="white"
-                  />
-                </LinearGradient>
+                  <LinearGradient
+                    colors={["#FACC15", "#F97316"]}
+                    style={styles.headerAddButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="add" size={24} color="white" />
+                  </LinearGradient>
+                </TouchableOpacity>
               </Animated.View>
-              <Text style={styles.emptyStateTitle}>
-                {(() => {
-                  const { active, expiringSoon, expired } = getItemsByStatus()
-                  const totalItems = active.length + expiringSoon.length + expired.length
-                  
-                  if (totalItems === 0) {
-                    return "No items in your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ALL && totalItems === 0) {
-                    return "No items in your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                    if (expiringSoon.length > 0) {
-                      return "Check your expiring items"
-                    } else if (expired.length > 0) {
-                      return "Check your expired items"
-                    }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                    if (active.length > 0) {
-                      return "All items are fresh!"
-                    } else if (expired.length > 0) {
-                      return "Check your expired items"
-                    }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                    if (active.length > 0) {
-                      return "All items are still good!"
-                    } else if (expiringSoon.length > 0) {
-                      return "Check your expiring items"
-                    }
-                  }
-                  
-                  return "No items found"
-                })()}
-              </Text>
-              <Text style={styles.emptyStateSubtitle}>
-                {(() => {
-                  const { active, expiringSoon, expired } = getItemsByStatus()
-                  const totalItems = active.length + expiringSoon.length + expired.length
-                  
-                  if (totalItems === 0) {
-                    return "Tap the + button to add some ingredients to your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ALL && totalItems === 0) {
-                    return "Tap the + button to add some ingredients to your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                    if (expiringSoon.length > 0) {
-                      return "Some items are about to expire soon"
-                    } else if (expired.length > 0) {
-                      return "Some items have already expired"
-                    }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                    if (active.length > 0) {
-                      return "Your pantry is well-stocked with fresh items"
-                    } else if (expired.length > 0) {
-                      return "Focus on your expired items first"
-                    }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                    if (active.length > 0) {
-                      return "Great job keeping your pantry fresh!"
-                    } else if (expiringSoon.length > 0) {
-                      return "Some items are expiring soon - check them out"
-                    }
-                  }
-                  
-                  return "Try adjusting your search or filters"
-                })()}
-              </Text>
             </View>
-          }
-        />
-      </Animated.View>
+          </Animated.View>
 
-      {/* Modals */}
-      {renderAddItemModal()}
-      {renderItemDetailsModal()}
-      {renderEditModal()}
+          {/* Search bar */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchContainer}>
+              {/* Replace BlurView with a simple background color for better performance */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
+              <View style={styles.searchBlur}>
+                <Ionicons name="search-outline" size={22} color="#FACC15" />
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search pantry items..."
+                  placeholderTextColor="#64748B"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  maxLength={50}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery("")
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
 
-      {/* Custom Image Picker Dialog */}
-      <ImagePickerDialog
-        visible={showImagePickerDialog}
-        onClose={() => setShowImagePickerDialog(false)}
-        onCamera={handleCamera}
-        onLibrary={handleGallery}
-      />
+          {/* Tab bar for filtering */}
+          {renderTabBar()}
 
-      {/* Ingredient Detection Modal */}
-      <IngredientSelectionModal 
-        visible={showIngredientDetectionModal}
-        onClose={() => setShowIngredientDetectionModal(false)}
-        ingredients={detectedIngredients}
-        onSelectIngredient={handleSelectIngredient}
-        isLoading={isDetecting}
-      />
-      </>)}
+          {/* Category filters */}
+          {renderCategoryFilter()}
+
+          {/* Items list */}
+          <Animated.View
+            style={[
+              styles.itemsList,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <FlatList
+              data={filteredItems()}
+              renderItem={renderPantryItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Animated.View
+                    style={[
+                      styles.emptyStateIcon,
+                      {
+                        transform: [
+                          {
+                            rotate: rotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ["0deg", "0deg"],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={["#FACC15", "#F97316"]}
+                      style={{ borderRadius: 35, padding: 16 }}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Ionicons
+                        name={
+                          activeTab === STATUS.ACTIVE
+                            ? "nutrition-outline"
+                            : activeTab === STATUS.EXPIRING
+                              ? "time-outline"
+                              : "alert-circle-outline"
+                        }
+                        size={56}
+                        color="white"
+                      />
+                    </LinearGradient>
+                  </Animated.View>
+                  <Text style={styles.emptyStateTitle}>
+                    {(() => {
+                      const { active, expiringSoon, expired } = getItemsByStatus()
+                      const totalItems = active.length + expiringSoon.length + expired.length
+
+                      if (totalItems === 0) {
+                        return "No items in your pantry"
+                      }
+
+                      if (activeTab === STATUS.ALL && totalItems === 0) {
+                        return "No items in your pantry"
+                      }
+
+                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                        if (expiringSoon.length > 0) {
+                          return "Check your expiring items"
+                        } else if (expired.length > 0) {
+                          return "Check your expired items"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                        if (active.length > 0) {
+                          return "All items are fresh!"
+                        } else if (expired.length > 0) {
+                          return "Check your expired items"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                        if (active.length > 0) {
+                          return "All items are still good!"
+                        } else if (expiringSoon.length > 0) {
+                          return "Check your expiring items"
+                        }
+                      }
+
+                      return "No items found"
+                    })()}
+                  </Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    {(() => {
+                      const { active, expiringSoon, expired } = getItemsByStatus()
+                      const totalItems = active.length + expiringSoon.length + expired.length
+
+                      if (totalItems === 0) {
+                        return "Tap the + button to add some ingredients to your pantry"
+                      }
+
+                      if (activeTab === STATUS.ALL && totalItems === 0) {
+                        return "Tap the + button to add some ingredients to your pantry"
+                      }
+
+                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                        if (expiringSoon.length > 0) {
+                          return "Some items are about to expire soon"
+                        } else if (expired.length > 0) {
+                          return "Some items have already expired"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                        if (active.length > 0) {
+                          return "Your pantry is well-stocked with fresh items"
+                        } else if (expired.length > 0) {
+                          return "Focus on your expired items first"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                        if (active.length > 0) {
+                          return "Great job keeping your pantry fresh!"
+                        } else if (expiringSoon.length > 0) {
+                          return "Some items are expiring soon - check them out"
+                        }
+                      }
+
+                      return "Try adjusting your search or filters"
+                    })()}
+                  </Text>
+                </View>
+              }
+            />
+          </Animated.View>
+
+          {/* Modals */}
+          {renderAddItemModal()}
+          {renderItemDetailsModal()}
+          {renderEditModal()}
+
+          {/* Custom Image Picker Dialog */}
+          <ImagePickerDialog
+            visible={showImagePickerDialog}
+            onClose={() => setShowImagePickerDialog(false)}
+            onCamera={handleCamera}
+            onLibrary={handleGallery}
+          />
+
+          {/* Ingredient Detection Modal */}
+          <IngredientSelectionModal
+            visible={showIngredientDetectionModal}
+            onClose={() => setShowIngredientDetectionModal(false)}
+            ingredients={detectedIngredients}
+            onSelectIngredient={handleSelectIngredient}
+            isLoading={isDetecting}
+          />
+        </>)}
     </View>
   )
 }

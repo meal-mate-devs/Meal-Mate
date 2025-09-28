@@ -62,6 +62,8 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
         setTimeframe(newTimeframe)
     }
 
+    console.log(leaderboard[1].user.avatar,)
+
     return (
         <ImageBackground
             source={require("../../../assets/images/authbg.png")}
@@ -114,7 +116,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                                         {/* 2nd Place */}
                                         <TouchableOpacity className="items-center mx-2" onPress={() => onUserPress(leaderboard[1].user)}>
                                             <View className="w-16 h-16 rounded-full border-2 border-gray-400 overflow-hidden mb-2">
-                                                <Image source={leaderboard[1].user.avatar} className="w-full h-full" />
+                                                <Image source={{ uri: leaderboard[1].user.avatar }} className="w-full h-full" />
                                             </View>
                                             <View className="bg-gray-400 rounded-lg px-3 py-6 items-center min-h-[60px]">
                                                 <Text className="text-black font-bold text-lg">🥈</Text>
@@ -126,7 +128,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                                         {/* 1st Place */}
                                         <TouchableOpacity className="items-center mx-2" onPress={() => onUserPress(leaderboard[0].user)}>
                                             <View className="w-20 h-20 rounded-full border-2 border-yellow-400 overflow-hidden mb-2">
-                                                <Image source={leaderboard[0].user.avatar} className="w-full h-full" />
+                                                <Image source={{ uri: leaderboard[0].user.avatar }} className="w-full h-full" />
                                             </View>
                                             <View className="bg-yellow-400 rounded-lg px-3 py-8 items-center min-h-[80px]">
                                                 <Text className="text-black font-bold text-xl">🥇</Text>
@@ -138,7 +140,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                                         {/* 3rd Place */}
                                         <TouchableOpacity className="items-center mx-2" onPress={() => onUserPress(leaderboard[2].user)}>
                                             <View className="w-16 h-16 rounded-full border-2 border-amber-600 overflow-hidden mb-2">
-                                                <Image source={leaderboard[2].user.avatar} className="w-full h-full" />
+                                                <Image source={{ uri: leaderboard[2].user.avatar }} className="w-full h-full" />
                                             </View>
                                             <View className="bg-amber-600 rounded-lg px-3 py-4 items-center min-h-[40px]">
                                                 <Text className="text-black font-bold text-lg">🥉</Text>
@@ -171,7 +173,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                                                     <Text className="text-white font-bold">{getPositionIcon(entry.position)}</Text>
                                                 </View>
 
-                                                <Image source={entry.user.avatar} className="w-12 h-12 rounded-full mr-3" />
+                                                <Image source={{ uri: entry.user.avatar }} className="w-12 h-12 rounded-full mr-3" />
 
                                                 <View className="flex-1">
                                                     <View className="flex-row items-center">
