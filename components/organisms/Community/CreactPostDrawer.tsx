@@ -116,14 +116,21 @@ export default function CreatePostDrawer({
             })
 
             if (!result.canceled && result.assets) {
-                const newImages = result.assets.map(asset => ({
-                    uri: asset.uri,
-                    type: asset.type || 'image/jpeg',
-                    name: asset.fileName || `image_${Date.now()}.jpg`,
-                    width: asset.width,
-                    height: asset.height
-                }))
-                setImages([...images, ...newImages])
+                const newImages = result.assets.map(asset => {
+                    const uriParts = asset.uri.split('.');
+                    const fileExtension = uriParts[uriParts.length - 1];
+                    const fileName = asset.fileName || `image_${Date.now()}.${fileExtension}`;
+
+                    return {
+                        uri: asset.uri,
+                        type: asset.mimeType || `image/${fileExtension}`,
+                        name: fileName,
+                        width: asset.width,
+                        height: asset.height
+                    };
+                });
+
+                setImages([...images, ...newImages]);
             }
         } catch (error) {
             console.error('Error picking image from gallery:', error)
@@ -150,13 +157,19 @@ export default function CreatePostDrawer({
 
             if (!result.canceled && result.assets) {
                 const asset = result.assets[0]
+                // Extract file extension from URI
+                const uriParts = asset.uri.split('.');
+                const fileExtension = uriParts[uriParts.length - 1];
+
                 const newImage = {
                     uri: asset.uri,
-                    type: asset.type || 'image/jpeg',
-                    name: `camera_${Date.now()}.jpg`,
+                    type: asset.mimeType || `image/${fileExtension}`,
+                    name: `camera_${Date.now()}.${fileExtension}`,
                     width: asset.width,
                     height: asset.height
                 }
+
+                console.log('Added camera image:', newImage);
                 setImages([...images, newImage])
             }
         } catch (error) {
@@ -236,9 +249,26 @@ export default function CreatePostDrawer({
             tags: tags.filter(t => t.trim()),
         } : undefined
 
+        // Ensure images are properly formatted for upload
+        const preparedImages = images.length > 0
+            ? images.map((img, index) => {
+                // Make sure each image has the required properties for FormData
+                const fileName = img.name || `image_${Date.now()}_${index}.jpg`;
+                const mimeType = img.type || 'image/jpeg';
+
+                return {
+                    uri: img.uri,
+                    type: mimeType,
+                    name: fileName
+                };
+            })
+            : undefined;
+
+        console.log('Prepared images for upload:', preparedImages);
+
         const postData: CreatePostData = {
             content,
-            images: images.length > 0 ? images : undefined,
+            images: preparedImages,
             recipeDetails: normalizedRecipeDetails,
             postType: postType,
         }
@@ -246,7 +276,8 @@ export default function CreatePostDrawer({
         showDialog('loading', 'Posting', 'Please wait while we create your post...')
 
         try {
-            const response = await onCreatePost(postData)
+
+            await onCreatePost(postData)
             showDialog('success', 'Post Created', 'Your post was created successfully.')
             setTimeout(() => {
                 setDialogVisible(false)
@@ -254,7 +285,6 @@ export default function CreatePostDrawer({
                 onClose()
             }, 1000)
 
-            return response
         } catch (err: any) {
             console.error('Error creating post (drawer):', err)
             showDialog('error', 'Failed to Create Post', err?.message || 'An error occurred while creating your post.')

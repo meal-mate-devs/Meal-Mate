@@ -30,8 +30,23 @@ class ApiClient {
             };
 
             const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData;
+
+            // Log request details for debugging
+            console.log(`API Request to ${endpoint}:`, {
+                method: options.method,
+                isFormData,
+                hasBody: !!options.body
+            });
+
             if (!isFormData && !headers['Content-Type']) {
                 headers['Content-Type'] = 'application/json';
+            }
+
+            // IMPORTANT: When using FormData, do NOT set Content-Type header
+            // The browser/fetch will set it with the proper boundary
+            if (isFormData && headers['Content-Type']) {
+                console.log('Removing Content-Type for FormData request');
+                delete headers['Content-Type'];
             }
 
             if (requireAuth) {
@@ -40,26 +55,38 @@ class ApiClient {
                     throw new Error('Authentication required but user not authenticated');
                 }
                 headers['Authorization'] = `Bearer ${token}`;
+                console.log('Added Authorization header');
             }
 
             const fetchOptions: RequestInit = { ...options, headers };
 
-            // If the body is a plain object and Content-Type is application/json, stringify it
             if (fetchOptions.body && !isFormData && typeof fetchOptions.body !== 'string') {
                 try {
                     fetchOptions.body = JSON.stringify(fetchOptions.body);
                 } catch (e) {
-                    // Leave body as-is if it cannot be stringified
+                    console.warn('Could not stringify request body:', e);
                 }
             }
 
+            console.log(`Fetching ${API_BASE_URL}${endpoint}`);
             const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
+            console.log(`Response status: ${response.status}`);
 
             // Handle 401 specifically for auth refresh
             if (response.status === 401 && requireAuth) {
+                console.log('Got 401, refreshing token');
                 const user = auth.currentUser;
                 if (user) {
                     const freshToken = await user.getIdToken(true);
+                    console.log('Token refreshed, retrying request');
+
+                    // For FormData requests, we need special handling on retry
+                    if (isFormData) {
+                        console.log('FormData request needs special retry handling');
+                        // We can't reuse FormData, so we need the caller to handle this
+                        throw new Error('Token expired. Please try again.');
+                    }
+
                     const retryResponse = await fetch(`${API_BASE_URL}${endpoint}`, {
                         ...options,
                         headers: {
@@ -78,6 +105,7 @@ class ApiClient {
 
             if (!response.ok) {
                 const errorText = await response.text();
+                console.error(`API Error: ${response.status}`, errorText);
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
 
@@ -100,10 +128,20 @@ class ApiClient {
     }
 
     async postForm<T>(endpoint: string, formData: FormData, requireAuth: boolean = true): Promise<T> {
-        return this.request<T>(endpoint, {
-            method: 'POST',
-            body: formData,
-        }, requireAuth);
+        console.log(`postForm to ${endpoint}: Starting request`);
+        try {
+            // Note: We're explicitly NOT setting Content-Type header for FormData
+            // The browser/fetch API will set it with correct boundary automatically
+            const result = await this.request<T>(endpoint, {
+                method: 'POST',
+                body: formData,
+            }, requireAuth);
+            console.log(`postForm to ${endpoint}: Success`);
+            return result;
+        } catch (error) {
+            console.error(`postForm to ${endpoint}: Error`, error);
+            throw error;
+        }
     }
 
     async put<T>(endpoint: string, data: any, requireAuth: boolean = true): Promise<T> {

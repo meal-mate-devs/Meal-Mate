@@ -20,6 +20,7 @@ interface PostItemProps {
     onAddComment: (postId: string, comment: string) => Promise<void>
     onDeletePost: (postId: string) => Promise<void>
     onUpdatePost?: (postId: string, updateData: any) => Promise<void>
+    loadPosts?: () => Promise<void> // Added loadPosts as an optional prop
 }
 
 export default function PostItem({
@@ -32,13 +33,14 @@ export default function PostItem({
     onAddComment,
     onDeletePost,
     onUpdatePost,
+    loadPosts, // Added loadPosts to destructuring
 }: PostItemProps): JSX.Element {
     const [showComments, setShowComments] = useState<boolean>(false)
     const [commentText, setCommentText] = useState<string>("")
     const [showOptionsPopover, setShowOptionsPopover] = useState<boolean>(false)
     const [showEditModal, setShowEditModal] = useState<boolean>(false)
     const [isCommenting, setIsCommenting] = useState<boolean>(false)
-    const isOwnPost = post.author.id === currentUser.id
+    const isOwnPost = post.author.id === currentUser.mongoId
 
     const handleAddComment = async (): Promise<void> => {
         if (!commentText.trim() || isCommenting) return
@@ -104,8 +106,8 @@ export default function PostItem({
                         <Text className="text-zinc-400 text-xs">{post.timeAgo}</Text>
                     </View>
                     {isOwnPost && (
-                        <TouchableOpacity onPress={handleOptionsPress}>
-                            <Ionicons name="ellipsis-horizontal" size={20} color="#FFFFFF" />
+                        <TouchableOpacity onPress={handleOptionsPress} className="absolute top-4 right-4">
+                            <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
                     )}
                 </TouchableOpacity>
@@ -181,7 +183,7 @@ export default function PostItem({
                                 {post.commentsList.map((comment) => (
                                     <View key={comment.id} className="mb-3">
                                         <View className="flex-row items-start">
-                                            <Image source={comment.author.avatar} className="w-8 h-8 rounded-full mr-3" />
+                                            <Image source={{ uri: comment.author.avatar }} className="w-8 h-8 rounded-full mr-3" />
                                             <View className="flex-1">
                                                 <View className="bg-zinc-700 rounded-xl p-3">
                                                     <Text className="text-white font-bold text-sm mb-1">{comment.author.name}</Text>
@@ -200,7 +202,7 @@ export default function PostItem({
                         )}
 
                         <View className="flex-row items-center">
-                            <Image source={currentUser.avatar} className="w-8 h-8 rounded-full mr-3" />
+                            <Image source={{ uri: currentUser.avatar }} className="w-8 h-8 rounded-full mr-3" />
                             <View className="flex-1 flex-row items-center bg-zinc-700 rounded-full">
                                 <TextInput
                                     className="flex-1 px-4 py-3 text-white text-sm"
@@ -241,6 +243,7 @@ export default function PostItem({
                 onEdit={handleEditPost}
                 onDelete={() => onDeletePost(post.id)}
                 isOwnPost={isOwnPost}
+                position={{ top: 40, right: 10 }}
             />
 
             <EditPostModal
@@ -248,6 +251,7 @@ export default function PostItem({
                 post={post}
                 onClose={() => setShowEditModal(false)}
                 onUpdate={handleUpdatePost}
+                loadPosts={loadPosts}
             />
         </>
     )

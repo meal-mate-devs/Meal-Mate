@@ -17,42 +17,120 @@ class CommunityService {
         });
 
         const res = await apiClient.get<any>(`/community/posts?${params}`, true);
-        if (res && res.posts) res.posts = res.posts.map((p: any) => this.normalizeId(p));
-        if (res && res.data) res.data = res.data.map((p: any) => this.normalizeId(p));
+
+        if (res && res.posts) {
+            res.posts = res.posts.map((post: any) => {
+                post = this.normalizeId(post);
+
+                if (post.images && Array.isArray(post.images)) {
+                    console.log("Original images format:", post.images);
+
+                    post.images = post.images.map((img: any) => {
+                        if (typeof img === 'string') {
+                            return img;
+                        } else if (img && img.url) {
+                            return img.url; // Extract URL directly for simpler handling
+                        } else if (img && img.uri) {
+                            return img.uri;
+                        }
+                        return img;
+                    });
+
+                    console.log("Normalized images format:", post.images);
+                }
+
+                return post;
+            });
+        }
+
+        if (res && res.data) {
+            res.data = res.data.map((post: any) => {
+                post = this.normalizeId(post);
+
+                if (post.images && Array.isArray(post.images)) {
+                    post.images = post.images.map((img: any) => {
+                        if (typeof img === 'string') {
+                            return img;
+                        } else if (img && img.url) {
+                            return img.url;
+                        } else if (img && img.uri) {
+                            return img.uri;
+                        }
+                        return img;
+                    });
+                }
+
+                return post;
+            });
+        }
+
         console.log("-----------------------------------------------")
-        console.log("Posts response:", res.posts[0]);
+        console.log("Posts response (first post):", res.posts && res.posts.length > 0 ? {
+            id: res.posts[0].id,
+            imageCount: res.posts[0].images ? res.posts[0].images.length : 0,
+            firstImage: res.posts[0].images && res.posts[0].images.length > 0 ? res.posts[0].images[0] : null
+        } : 'No posts');
         console.log("-----------------------------------------------")
         return res;
     }
 
     async getPostById(postId: string) {
-        return await apiClient.get<any>(`/community/posts/${postId}`, true);
+        const res = await apiClient.get<any>(`/community/posts/${postId}`, true);
+
+        if (res && res.post) {
+            res.post = this.normalizeId(res.post);
+
+            if (res.post.images && Array.isArray(res.post.images)) {
+                res.post.images = res.post.images.map((img: any) => {
+                    if (typeof img === 'string') {
+                        return img;
+                    } else if (img && img.url) {
+                        return img.url;
+                    } else if (img && img.uri) {
+                        return img.uri;
+                    }
+                    return img;
+                });
+            }
+        }
+
+        return res;
     }
 
     async createPost(postData: any) {
-        // If there are file uploads (images with uri), use multipart/form-data
         const hasFileUploads = Array.isArray(postData.images) && postData.images.some((img: any) => img && img.uri && img.name)
 
         if (hasFileUploads) {
+            console.log('Creating post with file uploads');
             const formData = new FormData();
             formData.append('content', postData.content);
             if (postData.postType) formData.append('postType', postData.postType);
             if (postData.recipeDetails) formData.append('recipeDetails', JSON.stringify(postData.recipeDetails));
 
+
             postData.images.forEach((image: any, index: number) => {
-                formData.append('images', {
+                const file = {
                     uri: image.uri,
                     type: image.type || 'image/jpeg',
                     name: image.name || `image_${index}.jpg`,
-                } as any);
+                };
+
+
+                formData.append('images', file as any);
             });
 
-            const data = await apiClient.postForm<any>(`/community/posts`, formData, true);
-            if (data.post) data.post = this.normalizeId(data.post);
-            return data;
+
+            try {
+                const data = await apiClient.postForm<any>(`/community/posts`, formData, true);
+                console.log('Post creation successful:', data);
+                if (data.post) data.post = this.normalizeId(data.post);
+                return data;
+            } catch (error) {
+                console.error('Error creating post with images:', error);
+                throw error;
+            }
         }
 
-        // Otherwise send JSON so nested objects (recipeDetails) remain objects
         const payload = {
             content: postData.content,
             images: Array.isArray(postData.images) ? postData.images : undefined,

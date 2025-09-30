@@ -71,17 +71,16 @@ export default function OtherUsersProfileModel({
         )
     }
 
+
+    console.log("Rendering profile for user:", userPosts ? userPosts[0].images[0].url : "No posts available")
+
     return (
         <Modal visible={visible} animationType="slide" transparent={false}>
             <View className="flex-1 bg-zinc-900">
                 {/* Header */}
-                <View className="flex-row justify-between items-center p-4 pt-12 border-b border-zinc-800">
+                <View className="flex-row justify-between items-center p-4 py-6 border-b border-zinc-800">
                     <TouchableOpacity onPress={onClose}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <Text className="text-white text-lg font-bold">{user.name}</Text>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
 
@@ -211,12 +210,12 @@ export default function OtherUsersProfileModel({
                                         <Text className="text-zinc-400">{postsError}</Text>
                                     </View>
                                 ) : (userPosts && userPosts.length > 0 ? (
-                                    userPosts.map((post: any) => (
+                                    userPosts.map((post: Post) => (
                                         <View key={post.id} className="bg-zinc-800 rounded-xl mb-4 overflow-hidden">
                                             <View className="p-4">
                                                 <Text className="text-white mb-2">{post.content}</Text>
                                                 {post.images && post.images.length > 0 && (
-                                                    <Image source={{ uri: post.images[0] }} className="w-full h-48 rounded-lg" resizeMode="cover" />
+                                                    <Image source={{ uri: post.images[0].url }} className="w-full h-48 rounded-lg" resizeMode="cover" />
                                                 )}
                                                 <View className="flex-row justify-between mt-3">
                                                     <Text className="text-zinc-400 text-sm">{post.likes || 0} likes</Text>

@@ -10,6 +10,7 @@ interface PostOptionsPopoverProps {
     onEdit: () => void
     onDelete: () => Promise<void>
     isOwnPost: boolean
+    position?: { top: number; right: number } // Add position prop
 }
 
 export default function PostOptionsPopover({
@@ -17,7 +18,8 @@ export default function PostOptionsPopover({
     onClose,
     onEdit,
     onDelete,
-    isOwnPost
+    isOwnPost,
+    position // Use position prop
 }: PostOptionsPopoverProps): JSX.Element {
     if (!isOwnPost) return <></>
 
@@ -56,32 +58,30 @@ export default function PostOptionsPopover({
                 activeOpacity={1}
                 onPress={onClose}
             >
-                <View className="flex-1 justify-center items-center p-4">
+                <View
+                    className="absolute bg-zinc-800 rounded-xl w-64 overflow-hidden"
+                    style={{ top: position?.top || '50%', right: position?.right || '50%' }} // Apply position
+                >
                     <TouchableOpacity
-                        className="bg-zinc-800 rounded-xl w-64 overflow-hidden"
-                        activeOpacity={1}
+                        className="flex-row items-center p-4 border-b border-zinc-700"
+                        onPress={() => {
+                            onEdit()
+                            onClose()
+                        }}
                     >
-                        <TouchableOpacity
-                            className="flex-row items-center p-4 border-b border-zinc-700"
-                            onPress={() => {
-                                onEdit()
-                                onClose()
-                            }}
-                        >
-                            <Ionicons name="create-outline" size={20} color="#FBBF24" />
-                            <Text className="text-white ml-3 font-medium">Edit Post</Text>
-                        </TouchableOpacity>
+                        <Ionicons name="create-outline" size={20} color="#FBBF24" />
+                        <Text className="text-white ml-3 font-medium">Edit Post</Text>
+                    </TouchableOpacity>
 
-                        <TouchableOpacity
-                            className="flex-row items-center p-4"
-                            onPress={() => {
-                                handleDelete()
-                                onClose()
-                            }}
-                        >
-                            <Ionicons name="trash-outline" size={20} color="#EF4444" />
-                            <Text className="text-red-400 ml-3 font-medium">Delete Post</Text>
-                        </TouchableOpacity>
+                    <TouchableOpacity
+                        className="flex-row items-center p-4"
+                        onPress={() => {
+                            handleDelete()
+                            onClose()
+                        }}
+                    >
+                        <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                        <Text className="text-red-400 ml-3 font-medium">Delete Post</Text>
                     </TouchableOpacity>
                 </View>
             </TouchableOpacity>

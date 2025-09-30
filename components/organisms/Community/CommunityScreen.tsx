@@ -196,19 +196,14 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleUpdatePost = async (postId: string, updateData: any): Promise<void> => {
         try {
-            await CommunityAPI.updatePost(postId, updateData)
+            await CommunityAPI.updatePost(postId, updateData);
 
-            // Update local state
-            setPosts(posts.map(post =>
-                post.id === postId
-                    ? { ...post, content: updateData.content, images: updateData.images }
-                    : post
-            ))
+            await loadPosts();
         } catch (error) {
-            console.error('Error updating post:', error)
-            throw error // Let EditPostModal handle the alert
+            console.error('Error updating post:', error);
+            throw error; // Let EditPostModal handle the alert
         }
-    }
+    };
 
     const onRefresh = async (): Promise<void> => {
         setRefreshing(true)
@@ -225,12 +220,29 @@ export default function CommunityScreen(): JSX.Element {
         try {
             const response = await CommunityAPI.createPost(data)
 
+            let processedImages: string[] = [];
+
+            if (response.post?.images && Array.isArray(response.post.images)) {
+                processedImages = response.post.images.map((img: any) => {
+                    if (typeof img === 'string') return img;
+                    if (img?.url) return img.url;
+                    return null;
+                }).filter(Boolean);
+            } else if (data.images && Array.isArray(data.images)) {
+                processedImages = data.images.map((img: any) => {
+                    if (typeof img === 'string') return img;
+                    if (img?.uri) return img.uri;
+                    return null;
+                }).filter(Boolean);
+            }
+
+
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),
                 author: currentUser,
                 timeAgo: "Just now",
                 content: data.content,
-                images: data.images,
+                images: processedImages,
                 likes: 0,
                 comments: 0,
                 saves: 0,
@@ -265,6 +277,7 @@ export default function CommunityScreen(): JSX.Element {
             onAddComment={handleAddComment}
             onDeletePost={handleDeletePost}
             onUpdatePost={handleUpdatePost}
+            loadPosts={loadPosts} // Pass loadPosts to PostItem
         />
     )
 

@@ -114,7 +114,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
                     <View className="p-4">
                         <View className="flex-row items-center mb-4">
-                            <Image source={post.author.avatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
+                            <Image source={{ uri: post.author.avatar }} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
                             <View className="ml-3 flex-1">
                                 <Text className="text-white font-bold text-lg">{toSafeString(post.author.name)}</Text>
                                 <Text className="text-zinc-400">@{toSafeString(post.author.username)}</Text>

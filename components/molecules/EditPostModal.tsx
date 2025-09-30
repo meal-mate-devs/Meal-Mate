@@ -22,13 +22,15 @@ interface EditPostModalProps {
     post: Post | null
     onClose: () => void
     onUpdate: (postId: string, updateData: any) => Promise<void>
+    loadPosts?: () => Promise<void> // Added loadPosts as an optional prop
 }
 
 export default function EditPostModal({
     visible,
     post,
     onClose,
-    onUpdate
+    onUpdate,
+    loadPosts
 }: EditPostModalProps): JSX.Element {
     const [content, setContent] = useState<string>("")
     const [images, setImages] = useState<any[]>([])
@@ -68,6 +70,53 @@ export default function EditPostModal({
         setImages(images.filter((_, i) => i !== index))
     }
 
+    const normalizeImages = async (): Promise<any[]> => {
+        const normalizedImages = [];
+
+        for (const image of images) {
+            if (image.uri && !image.url) {
+                const formData = new FormData();
+                const file = {
+                    uri: image.uri,
+                    type: image.type,
+                    name: image.name
+                };
+
+                formData.append('file', {
+                    uri: file.uri,
+                    type: file.type,
+                    name: file.name
+                } as any);
+
+                try {
+                    const response = await fetch('YOUR_IMAGE_UPLOAD_ENDPOINT', {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        normalizedImages.push({
+                            url: data.url,
+                            publicId: data.publicId
+                        });
+                    } else {
+                        console.error('Image upload failed:', data.message);
+                    }
+                } catch (error) {
+                    console.error('Error uploading image:', error);
+                }
+            } else if (image.url && image.publicId) {
+                normalizedImages.push(image);
+            }
+        }
+
+        return normalizedImages;
+    };
+
     const handleUpdate = async (): Promise<void> => {
         if (!post || !content.trim()) {
             Alert.alert('Error', 'Please add some content to your post.')
@@ -76,14 +125,20 @@ export default function EditPostModal({
 
         try {
             setLoading(true)
+            const normalizedImages = await normalizeImages()
+
             const updateData = {
                 content: content.trim(),
-                images: images.length > 0 ? images : undefined
+                images: normalizedImages.length > 0 ? normalizedImages : undefined
             }
 
             await onUpdate(post.id, updateData)
-            onClose()
             Alert.alert('Success', 'Post updated successfully!')
+            onClose()
+            if (typeof loadPosts === 'function') {
+                await loadPosts();
+            }
+
         } catch (error) {
             console.error('Error updating post:', error)
             Alert.alert('Error', 'Failed to update post. Please try again.')
