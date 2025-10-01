@@ -31,17 +31,37 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
     if (!post || !post.recipeDetails) return <></>
 
+    console.log("recipe details------------------------------------------")
+    console.log(post.recipeDetails)
+
+    const toSafeString = (val: any): string => {
+        if (val === null || val === undefined) return ''
+        if (typeof val === 'string') return val
+        if (typeof val === 'number' || typeof val === 'boolean') return String(val)
+        if (typeof val === 'object') {
+            if ('name' in val && typeof val.name === 'string') return val.name
+            if ('title' in val && typeof val.title === 'string') return val.title
+            if ('label' in val && typeof val.label === 'string') return val.label
+            if ('instruction' in val && typeof val.instruction === 'string') return val.instruction
+            if ('_id' in val) return String(val._id)
+            try {
+                const s = JSON.stringify(val)
+                return s.length > 60 ? s.substring(0, 57) + '...' : s
+            } catch {
+                return String(val)
+            }
+        }
+        return String(val)
+    }
+
     const handleLike = async (): Promise<void> => {
         try {
-            // Optimistic update
             setIsLiked(!isLiked)
             setLikes(isLiked ? likes - 1 : likes + 1)
 
-            // API call
-            await CommunityAPI.toggleLikePost(post.id, currentUserId)
+            await CommunityAPI.toggleLikePost(post.id)
         } catch (error) {
-            console.log('Error toggling like:', error)
-            // Revert optimistic update
+            console.error('Error toggling like:', error)
             setIsLiked(!isLiked)
             setLikes(isLiked ? likes + 1 : likes - 1)
             Alert.alert('Error', 'Failed to update like status')
@@ -50,15 +70,12 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
     const handleSave = async (): Promise<void> => {
         try {
-            // Optimistic update
             setIsSaved(!isSaved)
             setSaves(isSaved ? saves - 1 : saves + 1)
 
-            // API call
             await CommunityAPI.toggleSavePost(post.id)
         } catch (error) {
-            console.log('Error saving post:', error)
-            // Revert optimistic update
+            console.error('Error saving post:', error)
             setIsSaved(!isSaved)
             setSaves(isSaved ? saves + 1 : saves - 1)
             Alert.alert('Error', 'Failed to save post')
@@ -97,17 +114,17 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
                     <View className="p-4">
                         <View className="flex-row items-center mb-4">
-                            <Image source={post.author.avatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
+                            <Image source={{ uri: post.author.avatar }} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
                             <View className="ml-3 flex-1">
-                                <Text className="text-white font-bold text-lg">{post.author.name}</Text>
-                                <Text className="text-zinc-400">@{post.author.username}</Text>
+                                <Text className="text-white font-bold text-lg">{toSafeString(post.author.name)}</Text>
+                                <Text className="text-zinc-400">@{toSafeString(post.author.username)}</Text>
                             </View>
                             <Text className="text-zinc-400 text-sm">{post.timeAgo}</Text>
                         </View>
 
-                        <Text className="text-white text-2xl font-bold mb-2">{post.recipeDetails.title || "Delicious Recipe"}</Text>
+                        <Text className="text-white text-2xl font-bold mb-2">{toSafeString(post.recipeDetails.title) || "Delicious Recipe"}</Text>
 
-                        <Text className="text-zinc-300 text-base mb-4">{post.content}</Text>
+                        <Text className="text-zinc-300 text-base mb-4">{toSafeString(post.content)}</Text>
 
                         <View className="flex-row justify-between bg-zinc-800 rounded-xl p-4 mb-6">
                             {post.recipeDetails.cookTime && (
@@ -146,7 +163,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                                 {post.recipeDetails.ingredients.map((ingredient, index) => (
                                     <View key={index} className="flex-row items-center mb-3 bg-zinc-800 rounded-lg p-3">
                                         <View className="w-3 h-3 rounded-full bg-yellow-400 mr-3" />
-                                        <Text className="text-white flex-1">{ingredient}</Text>
+                                        <Text className="text-white flex-1">{toSafeString(ingredient)}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -160,7 +177,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                                         <View className="w-8 h-8 rounded-full bg-yellow-400 items-center justify-center mr-3">
                                             <Text className="text-black font-bold">{index + 1}</Text>
                                         </View>
-                                        <Text className="text-white flex-1">{instruction}</Text>
+                                        <Text className="text-white flex-1">{toSafeString(instruction)}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -172,7 +189,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                                 <View className="flex-row flex-wrap">
                                     {post.recipeDetails.tags.map((tag, index) => (
                                         <View key={index} className="bg-yellow-400 rounded-full px-3 py-1 mr-2 mb-2">
-                                            <Text className="text-black font-bold text-sm">#{tag}</Text>
+                                            <Text className="text-black font-bold text-sm">#{toSafeString(tag)}</Text>
                                         </View>
                                     ))}
                                 </View>
@@ -180,32 +197,6 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                         )}
                     </View>
                 </ScrollView>
-
-                <View className="flex-row justify-between items-center p-4 border-t border-zinc-800">
-                    <TouchableOpacity className="flex-row items-center" onPress={handleLike}>
-                        <Ionicons name={isLiked ? "heart" : "heart-outline"} size={24} color={isLiked ? "#FBBF24" : "#FFFFFF"} />
-                        <Text className="text-white ml-2">{likes}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity className="flex-row items-center">
-                        <Ionicons name="chatbubble-outline" size={24} color="#FFFFFF" />
-                        <Text className="text-white ml-2">{post.comments}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity className="flex-row items-center" onPress={handleSave}>
-                        <Ionicons
-                            name={isSaved ? "bookmark" : "bookmark-outline"}
-                            size={24}
-                            color={isSaved ? "#FBBF24" : "#FFFFFF"}
-                        />
-                        <Text className="text-white ml-2">{saves}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity className="flex-row items-center" onPress={handleShare}>
-                        <Ionicons name="share-outline" size={24} color="#FFFFFF" />
-                        <Text className="text-white ml-2">Share</Text>
-                    </TouchableOpacity>
-                </View>
             </View>
         </Modal>
     )

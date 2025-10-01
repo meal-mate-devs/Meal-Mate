@@ -32,10 +32,20 @@ export default function PostImageCarousel({ images }: PostImageCarouselProps): J
     }
 
     if (images.length === 1) {
+        const image = images[0];
+        const imageUri = typeof image === "string" ?
+            image :
+            image.url ?
+                image.url :
+                image.uri ?
+                    image.uri :
+                    null;
+
+
         return (
             <View className="w-full aspect-square">
                 <Image
-                    source={typeof images[0] === "string" ? { uri: images[0] } : images[0]}
+                    source={imageUri ? { uri: imageUri } : image}
                     className="w-full h-full"
                     resizeMode="cover"
                 />
@@ -59,7 +69,15 @@ export default function PostImageCarousel({ images }: PostImageCarouselProps): J
                 {images.map((image, index) => (
                     <View key={index} style={{ width: imageWidth }}>
                         <Image
-                            source={typeof image === "string" ? { uri: image } : image}
+                            source={
+                                typeof image === "string" ?
+                                    { uri: image } :
+                                    image.url ?
+                                        { uri: image.url } :
+                                        image.uri ?
+                                            { uri: image.uri } :
+                                            image
+                            }
                             className="w-full h-full"
                             resizeMode="cover"
                         />

@@ -1,11 +1,12 @@
 "use client"
 
+import { communityService } from "@/lib/services/community.service"
 import { Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import type { JSX } from "react"
-import React, { useState } from "react"
-import { Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useState } from "react"
+import { ActivityIndicator, Image, Modal, ScrollView, Text, TouchableOpacity, View } from "react-native"
 
 interface OtherUsersProfileModelProps {
     visible: boolean
@@ -22,53 +23,64 @@ export default function OtherUsersProfileModel({
 }: OtherUsersProfileModelProps): JSX.Element {
     const [isFollowing, setIsFollowing] = useState<boolean>(false)
     const [activeTab, setActiveTab] = useState<"posts" | "recipes" | "badges">("posts")
+    const [userPosts, setUserPosts] = useState<Post[] | null>(null)
+    const [postsLoading, setPostsLoading] = useState<boolean>(false)
+    const [postsError, setPostsError] = useState<string | null>(null)
 
-    if (!user) return <></>
-
-    const isOwnProfile = user.id === currentUserId
+    const isOwnProfile = user?.id === currentUserId
 
     const handleFollow = (): void => {
         setIsFollowing(!isFollowing)
     }
 
-    const mockUserPosts: Post[] = [
-        {
-            id: "1",
-            author: user,
-            timeAgo: "2h ago",
-            content: "Just made this amazing pasta dish!",
-            images: ["https://images.unsplash.com/photo-1556761223-4c4282c73f77?q=80&w=1000&auto=format&fit=crop"],
-            likes: 24,
-            comments: 8,
-            saves: 5,
-            isLiked: false,
-            isSaved: false,
-        },
-        {
-            id: "2",
-            author: user,
-            timeAgo: "1d ago",
-            content: "Sharing my grandmother's secret recipe!",
-            images: ["https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?q=80&w=1000&auto=format&fit=crop"],
-            likes: 56,
-            comments: 12,
-            saves: 18,
-            isLiked: true,
-            isSaved: false,
-        },
-    ]
+    useEffect(() => {
+        if (!visible || !user) return
+
+        const loadUserPosts = async () => {
+            setPostsLoading(true)
+            setPostsError(null)
+            try {
+                const resp = await communityService.getUserPosts(user.id, 1, 20)
+                if (resp && resp.posts) {
+                    setUserPosts(resp.posts.map((p: any) => ({
+                        ...p,
+                        author: p.author || user,
+                        id: p.id || p._id,
+                    })))
+                } else {
+                    setUserPosts([])
+                }
+            } catch (err) {
+                console.error('Error loading user posts', err)
+                setPostsError('Failed to load posts')
+            } finally {
+                setPostsLoading(false)
+            }
+        }
+
+        loadUserPosts()
+    }, [visible, user])
+
+    if (!user) {
+        return (
+            <Modal visible={visible} animationType="slide" transparent={false}>
+                <View className="flex-1 bg-zinc-900 justify-center items-center">
+                    <ActivityIndicator size="large" color="#FBBF24" />
+                </View>
+            </Modal>
+        )
+    }
+
+
+    console.log("Rendering profile for user:", userPosts ? userPosts[0].images[0].url : "No posts available")
 
     return (
         <Modal visible={visible} animationType="slide" transparent={false}>
             <View className="flex-1 bg-zinc-900">
                 {/* Header */}
-                <View className="flex-row justify-between items-center p-4 pt-12 border-b border-zinc-800">
+                <View className="flex-row justify-between items-center p-4 py-6 border-b border-zinc-800">
                     <TouchableOpacity onPress={onClose}>
                         <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-                    </TouchableOpacity>
-                    <Text className="text-white text-lg font-bold">{user.name}</Text>
-                    <TouchableOpacity>
-                        <Ionicons name="ellipsis-horizontal" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
 
@@ -78,7 +90,7 @@ export default function OtherUsersProfileModel({
                         <View className="flex-row items-center justify-between mb-4">
                             <View className="flex-row items-center">
                                 <View className="relative">
-                                    <Image source={user.avatar} className="w-20 h-20 rounded-full border-2 border-yellow-400" />
+                                    <Image source={{ uri: user.avatar }} className="w-20 h-20 rounded-full border-2 border-yellow-400" />
                                     {user.isVerified && (
                                         <View className="absolute -bottom-1 -right-1 w-6 h-6 bg-yellow-400 rounded-full items-center justify-center">
                                             <Ionicons name="checkmark" size={16} color="#000000" />
@@ -188,18 +200,33 @@ export default function OtherUsersProfileModel({
                     <View className="px-4">
                         {activeTab === "posts" && (
                             <View>
-                                {mockUserPosts.map((post) => (
-                                    <View key={post.id} className="bg-zinc-800 rounded-xl mb-4 overflow-hidden">
-                                        <View className="p-4">
-                                            <Text className="text-white mb-2">{post.content}</Text>
-                                            {post.images && post.images.length > 0 && (
-                                                <Image source={{ uri: post.images[0] }} className="w-full h-48 rounded-lg" resizeMode="cover" />
-                                            )}
-                                            <View className="flex-row justify-between mt-3">
-                                                <Text className="text-zinc-400 text-sm">{post.likes} likes</Text>
-                                                <Text className="text-zinc-400 text-sm">{post.timeAgo}</Text>
+                                {postsLoading ? (
+                                    <View className="py-8 items-center">
+                                        <ActivityIndicator size="large" color="#FBBF24" />
+                                        <Text className="text-zinc-400 mt-3">Loading posts...</Text>
+                                    </View>
+                                ) : postsError ? (
+                                    <View className="py-8 items-center">
+                                        <Text className="text-zinc-400">{postsError}</Text>
+                                    </View>
+                                ) : (userPosts && userPosts.length > 0 ? (
+                                    userPosts.map((post: Post) => (
+                                        <View key={post.id} className="bg-zinc-800 rounded-xl mb-4 overflow-hidden">
+                                            <View className="p-4">
+                                                <Text className="text-white mb-2">{post.content}</Text>
+                                                {post.images && post.images.length > 0 && (
+                                                    <Image source={{ uri: post.images[0].url }} className="w-full h-48 rounded-lg" resizeMode="cover" />
+                                                )}
+                                                <View className="flex-row justify-between mt-3">
+                                                    <Text className="text-zinc-400 text-sm">{post.likes || 0} likes</Text>
+                                                    <Text className="text-zinc-400 text-sm">{post.timeAgo || ''}</Text>
+                                                </View>
                                             </View>
                                         </View>
+                                    ))
+                                ) : (
+                                    <View className="py-8 items-center">
+                                        <Text className="text-zinc-400">No posts yet.</Text>
                                     </View>
                                 ))}
                             </View>

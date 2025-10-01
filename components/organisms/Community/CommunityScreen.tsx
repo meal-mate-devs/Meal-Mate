@@ -62,8 +62,7 @@ export default function CommunityScreen(): JSX.Element {
     const loadPosts = async (): Promise<void> => {
         try {
             setLoading(true)
-            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all', currentUser.mongoId)
-            console.log('Posts response:', response) // Debug log
+            const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
 
             // Handle different response structures
             let postsData = []
@@ -108,7 +107,7 @@ export default function CommunityScreen(): JSX.Element {
             }))
 
             // API call
-            await CommunityAPI.toggleLikePost(postId, currentUser.mongoId)
+            await CommunityAPI.toggleLikePost(postId)
         } catch (error) {
             console.log('Error toggling like:', error)
             // Revert optimistic update
@@ -140,7 +139,7 @@ export default function CommunityScreen(): JSX.Element {
             ))
 
             // API call
-            await CommunityAPI.toggleSavePost(postId, currentUser.mongoId)
+            await CommunityAPI.toggleSavePost(postId)
         } catch (error) {
             console.log('Error saving post:', error)
             // Revert optimistic update
@@ -159,7 +158,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleAddComment = async (postId: string, commentText: string): Promise<void> => {
         try {
-            const response = await CommunityAPI.addComment(postId, commentText, currentUser.mongoId)
+            const response = await CommunityAPI.addComment(postId, commentText)
 
             // Add comment to local state
             const newComment: Comment = {
@@ -187,7 +186,7 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleDeletePost = async (postId: string): Promise<void> => {
         try {
-            await CommunityAPI.deletePost(postId, currentUser.mongoId)
+            await CommunityAPI.deletePost(postId)
             setPosts(posts.filter(post => post.id !== postId))
         } catch (error) {
             console.log('Error deleting post:', error)
@@ -197,19 +196,14 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleUpdatePost = async (postId: string, updateData: any): Promise<void> => {
         try {
-            await CommunityAPI.updatePost(postId, updateData, currentUser.mongoId)
+            await CommunityAPI.updatePost(postId, updateData);
 
-            // Update local state
-            setPosts(posts.map(post =>
-                post.id === postId
-                    ? { ...post, content: updateData.content, images: updateData.images }
-                    : post
-            ))
+            await loadPosts();
         } catch (error) {
-            console.log('Error updating post:', error)
-            throw error // Let EditPostModal handle the alert
+            console.error('Error updating post:', error);
+            throw error; // Let EditPostModal handle the alert
         }
-    }
+    };
 
     const onRefresh = async (): Promise<void> => {
         setRefreshing(true)
@@ -222,16 +216,33 @@ export default function CommunityScreen(): JSX.Element {
         setShowUserProfile(true)
     }
 
-    const handleCreatePost = async (data: any): Promise<void> => {
+    const handleCreatePost = async (data: any): Promise<any> => {
         try {
-            const response = await CommunityAPI.createPost(data, currentUser.mongoId)
+            const response = await CommunityAPI.createPost(data)
+
+            let processedImages: string[] = [];
+
+            if (response.post?.images && Array.isArray(response.post.images)) {
+                processedImages = response.post.images.map((img: any) => {
+                    if (typeof img === 'string') return img;
+                    if (img?.url) return img.url;
+                    return null;
+                }).filter(Boolean);
+            } else if (data.images && Array.isArray(data.images)) {
+                processedImages = data.images.map((img: any) => {
+                    if (typeof img === 'string') return img;
+                    if (img?.uri) return img.uri;
+                    return null;
+                }).filter(Boolean);
+            }
+
 
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),
                 author: currentUser,
                 timeAgo: "Just now",
                 content: data.content,
-                images: data.images,
+                images: processedImages,
                 likes: 0,
                 comments: 0,
                 saves: 0,
@@ -242,9 +253,11 @@ export default function CommunityScreen(): JSX.Element {
             }
 
             setPosts([newPost, ...posts])
+
+            return response
         } catch (error) {
-            console.log('Error creating post:', error)
-            Alert.alert('Error', 'Failed to create post')
+            console.error('Error creating post:', error)
+            throw error
         }
     }
 
@@ -264,6 +277,7 @@ export default function CommunityScreen(): JSX.Element {
             onAddComment={handleAddComment}
             onDeletePost={handleDeletePost}
             onUpdatePost={handleUpdatePost}
+            loadPosts={loadPosts} // Pass loadPosts to PostItem
         />
     )
 
@@ -361,10 +375,10 @@ export default function CommunityScreen(): JSX.Element {
                     visible={showUserProfile}
                     user={selectedUser}
                     onClose={() => setShowUserProfile(false)}
-                    currentUserId={currentUser.id}
+                    currentUserId={currentUser.mongoId}
                 />
 
-                <PostDetailModel currentUserId={currentUser.id} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
+                <PostDetailModel currentUserId={currentUser.mongoId} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
             </LinearGradient>
         </View>
     )
