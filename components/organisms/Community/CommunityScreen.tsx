@@ -153,9 +153,16 @@ export default function CommunityScreen(): JSX.Element {
         try {
             const response = await CommunityAPI.addComment(postId, commentText)
 
+            const avatarForComment = profile?.profileImage?.url
+                ? profile.profileImage.url
+                : "";
+
             const newComment: Comment = {
                 id: response.comment?.id || Date.now().toString(),
-                author: currentUser,
+                author: {
+                    ...currentUser,
+                    avatar: avatarForComment
+                },
                 text: commentText,
                 timeAgo: "Just now",
             }
@@ -229,9 +236,14 @@ export default function CommunityScreen(): JSX.Element {
             }
 
 
+            const avatarUrl = profile?.profileImage?.url || '';
+
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),
-                author: currentUser,
+                author: {
+                    ...currentUser,
+                    avatar: avatarUrl,
+                },
                 timeAgo: "Just now",
                 content: data.content,
                 images: processedImages,
