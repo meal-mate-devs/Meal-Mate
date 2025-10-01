@@ -8,7 +8,7 @@ import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { useEffect, useRef, useState } from "react"
-import { Alert, Animated, Dimensions, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { Alert, Animated, Dimensions, Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useProfileStore } from "../../hooks/useProfileStore"
 import Dialog from "../atoms/Dialog"
@@ -936,7 +936,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           styles.sidebar,
           {
             paddingTop: insets.top + 20,
-            paddingBottom: insets.bottom + 20,
             transform: [{ translateX }, { scale: scaleAnimation }],
           },
         ]}
@@ -1004,8 +1003,13 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           </View>
         </Animated.View>
 
-        {/* Enhanced Menu Items */}
-        <View style={styles.menuContainer}>
+        {/* Enhanced Menu Items with ScrollView - includes Sign Out button */}
+        <ScrollView 
+          style={styles.menuContainer}
+          showsVerticalScrollIndicator={false}
+          bounces={true}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: insets.bottom + 12 }}
+        >
           {menuItems.map((item, index) => (
             <Animated.View
               key={index}
@@ -1037,18 +1041,18 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
               </TouchableOpacity>
             </Animated.View>
           ))}
-        </View>
 
-        {/* Enhanced Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <View style={styles.logoutIconContainer}>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-          </View>
-          <View style={styles.logoutTextContainer}>
-            <Text style={styles.logoutText}>Sign Out</Text>
-            <Text style={styles.logoutDescription}>End your session</Text>
-          </View>
-        </TouchableOpacity>
+          {/* Sign Out Button inside ScrollView */}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <View style={styles.logoutIconContainer}>
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+            </View>
+            <View style={styles.logoutTextContainer}>
+              <Text style={styles.logoutText}>Sign Out</Text>
+              <Text style={styles.logoutDescription}>End your session</Text>
+            </View>
+          </TouchableOpacity>
+        </ScrollView>
 
         {/* Close Button */}
         <TouchableOpacity style={styles.closeButton} onPress={onClose}>
@@ -1094,7 +1098,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)", // Increased from 0.4 to 0.7
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
   },
   sidebar: {
     position: "absolute",
@@ -1124,8 +1128,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   profileSection: {
-    paddingHorizontal: 24,
-    paddingBottom: 16, // Reduced from 24
+    paddingHorizontal: 20,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.1)",
   },
@@ -1134,7 +1138,7 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     position: "relative",
-    marginBottom: 12, // Reduced from 16
+    marginBottom: 10,
   },
   profileImage: {
     width: 100,
@@ -1175,14 +1179,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.6)", // Increased from 0.4
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   loadingContainer: {
     width: "100%",
     height: "100%",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.9)", // Increased from 0.8
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
   },
   loadingSpinner: {
     width: 40,
@@ -1203,13 +1207,13 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 2, // Reduced from 4
+    marginBottom: 2,
     textAlign: "center",
   },
   userEmail: {
     color: "#9CA3AF",
     fontSize: 14,
-    marginBottom: 12, // Reduced from 20
+    marginBottom: 10,
     textAlign: "center",
   },
   editProfileButton: {
@@ -1219,8 +1223,8 @@ const styles = StyleSheet.create({
   buttonGradient: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 5, // Reduced from 10
-    paddingHorizontal: 16, // Reduced from 20
+    paddingVertical: 6,
+    paddingHorizontal: 16,
     borderWidth: 1,
   },
   editProfileText: {
@@ -1231,25 +1235,23 @@ const styles = StyleSheet.create({
   },
   menuContainer: {
     flex: 1,
-    paddingTop: 12, // Reduced from 20
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12, // Reduced from 16
-    paddingHorizontal: 24,
-    marginLeft: 2,
-    marginHorizontal: 18,
-    marginVertical: 1, // Reduced from 2
-    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginVertical: 2,
+    borderRadius: 12,
   },
   menuIconContainer: {
-    width: 36, // Reduced from 40
-    height: 36, // Reduced from 40
-    borderRadius: 18, // Reduced from 20
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14, // Reduced from 16
+    marginRight: 12,
   },
   menuTextContainer: {
     flex: 1,
@@ -1267,19 +1269,24 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 0,
-    paddingHorizontal: 26,
-    marginLeft: 2,
-    marginHorizontal: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.1)",
+    paddingTop: 18,
+    borderRadius: 12,
   },
   logoutIconContainer: {
-    width: 36, // Reduced from 40
-    height: 36, // Reduced from 40
-    borderRadius: 18, // Reduced from 20
-    backgroundColor: "rgba(239, 68, 68, 0.15)", // Increased from 0.1
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
+    marginRight: 12,
   },
   logoutTextContainer: {
     flex: 1,
@@ -1288,11 +1295,11 @@ const styles = StyleSheet.create({
     color: "#EF4444",
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 1, // Reduced from 2
+    marginBottom: 2,
   },
   logoutDescription: {
     color: "#9CA3AF",
-    fontSize: 11, // Reduced from 12
+    fontSize: 12,
   },
   closeButton: {
     position: "absolute",
@@ -1307,7 +1314,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.15)", // Increased from 0.1
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
   },
   iconStack: {
     alignItems: 'center',

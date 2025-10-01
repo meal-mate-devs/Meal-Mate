@@ -79,11 +79,12 @@ const CardDetailsScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
 
       {/* Header with proper spacing */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -96,7 +97,11 @@ const CardDetailsScreen: React.FC = () => {
         <Text className="text-gray-400 text-center">Manage your payment method</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1 px-4" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ backgroundColor: '#000000' }}
+      >
         {/* Card Visual */}
         <View className="mb-6">
           <View className="overflow-hidden rounded-2xl">
@@ -282,6 +287,7 @@ const CardDetailsScreen: React.FC = () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </View>
   )
 }
 

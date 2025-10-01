@@ -118,7 +118,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         <Animated.View
           style={{
             width: 44,
-            height: 44,
+            height: 40,
             borderRadius: 25,
             justifyContent: "center",
             alignItems: "center",
@@ -177,20 +177,20 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   }
 
   const popStackIfNeeded = (route?: typeof state.routes[number]) => {
-    if (!route) return
-    const routeState = (route as any)?.state
+    if (!route) return;
+    const routeState = (route as any)?.state;
     if (routeState?.type === "stack" && routeState.index > 0) {
       navigation.dispatch({
         ...StackActions.popToTop(),
-        target: route.key,
-      })
+        target: routeState.key,
+      });
     }
-  }
+  };
 
   return (
     <View
       style={{
-        paddingBottom: insets.bottom + 8,
+        paddingBottom: insets.bottom,
         backgroundColor: "#000000",
         borderTopLeftRadius: 25,
         borderTopRightRadius: 25,
@@ -203,7 +203,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       }}
     >      
       {/* Tab buttons */}
-      <View style={{ flexDirection: "row", height: 80, paddingTop: 0 }}>
+      <View style={{ flexDirection: "row", height: 65, paddingTop: 0 }}>
         {visibleRoutes.map((route, index) => {
           const isFocused = focusedIndex === index
 
@@ -215,13 +215,13 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             })
 
             if (!isFocused && !event.defaultPrevented) {
-              const currentRoute = state.routes[state.index]
-              popStackIfNeeded(currentRoute)
+              const currentRoute = state.routes[state.index];
+              popStackIfNeeded(currentRoute);
 
-              const targetRoute = state.routes.find((r) => r.key === route.key)
-              popStackIfNeeded(targetRoute)
+              const targetRoute = state.routes.find((r) => r.key === route.key);
+              popStackIfNeeded(targetRoute);
 
-              navigation.navigate({ name: route.name, params: route.params, merge: false })
+              navigation.navigate({ name: route.name, params: route.params, merge: false });
             }
           }
 
@@ -243,7 +243,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 flex: 1,
                 alignItems: "center",
                 justifyContent: "center",
-                paddingVertical: 8,
+                paddingVertical: 4,
               }}
             >
               {/* Gradient circle around active icon (excluding create button) */}

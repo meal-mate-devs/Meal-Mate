@@ -392,8 +392,9 @@ const PrivacySecurityScreen: React.FC = () => {
   )
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
 
       {/* Header */}
       <View style={styles.header}>
@@ -542,6 +543,7 @@ const PrivacySecurityScreen: React.FC = () => {
         autoCloseTime={3000}
       />
     </SafeAreaView>
+    </View>
   )
 }
 

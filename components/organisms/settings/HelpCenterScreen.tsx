@@ -5,15 +5,15 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import React, { useState } from "react"
 import {
-  Alert,
-  Linking,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Linking,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native"
 
 interface FAQ {
@@ -164,11 +164,12 @@ const HelpCenterScreen: React.FC = () => {
   ]
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.push("/settings")}>
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -179,7 +180,11 @@ const HelpCenterScreen: React.FC = () => {
         <Text className="text-gray-400 text-center">We're here to help you cook better</Text>
       </View>
 
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1 px-4" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ backgroundColor: '#000000' }}
+      >
         {/* FAQ Categories */}
         <View className="mb-4">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-4">
@@ -350,6 +355,7 @@ const HelpCenterScreen: React.FC = () => {
         </View>
       </ScrollView>
     </SafeAreaView>
+    </View>
   )
 }
 

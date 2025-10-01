@@ -373,11 +373,12 @@ const NotificationsScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4 mt-2">
+      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.push('/home')}>
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -428,7 +429,11 @@ const NotificationsScreen: React.FC = () => {
       </View>
 
       {/* Notifications List */}
-      <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        className="flex-1 px-4" 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ backgroundColor: '#000000' }}
+      >
         {filteredNotifications.length === 0 ? (
           <View className="flex-1 items-center justify-center py-20">
             <Ionicons name="notifications-off-outline" size={64} color="#4B5563" />
@@ -442,6 +447,7 @@ const NotificationsScreen: React.FC = () => {
         )}
       </ScrollView>
     </SafeAreaView>
+    </View>
   )
 }
 

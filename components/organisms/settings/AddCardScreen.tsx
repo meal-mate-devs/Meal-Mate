@@ -153,11 +153,12 @@ const AddCardScreen: React.FC = () => {
   )
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.push("/settings/payment")}>
             <Ionicons name="arrow-back" size={24} color="white" />
@@ -169,7 +170,11 @@ const AddCardScreen: React.FC = () => {
       </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
-        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+        <ScrollView 
+          className="flex-1 px-4" 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ backgroundColor: '#000000' }}
+        >
           {/* Card Preview */}
           <View className="mb-6">
             <Text className="text-white text-lg font-bold mb-4">Card Preview</Text>
@@ -290,6 +295,7 @@ const AddCardScreen: React.FC = () => {
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
+    </View>
   )
 }
 
