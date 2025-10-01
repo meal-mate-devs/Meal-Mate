@@ -68,6 +68,8 @@ export interface CreatePostData {
         category: string
         tags: string[]
     }
+    postType?: "simple" | "recipe";
+
 }
 
 export interface LeaderboardEntry {
