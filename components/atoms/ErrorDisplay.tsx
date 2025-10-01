@@ -12,11 +12,12 @@ interface ErrorDisplayProps {
     message: string
     canRetry: boolean
   }
-  onRetry: () => void
-  onClose: () => void
+  onRetry?: () => void
+  secondaryActionLabel?: string
+  onSecondaryAction?: () => void
 }
 
-const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorDetails, onRetry, onClose }) => {
+const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorDetails, onRetry, secondaryActionLabel, onSecondaryAction }) => {
   // Get icon and colors based on error type
   const getErrorConfig = () => {
     switch (errorDetails.type) {
@@ -48,6 +49,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorDetails, onRetry, onCl
   }
 
   const config = getErrorConfig()
+  const handleSecondaryAction = onSecondaryAction ?? (() => {})
 
   return (
     <View style={styles.container}>
@@ -76,7 +78,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorDetails, onRetry, onCl
 
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
-            {errorDetails.canRetry && (
+            {errorDetails.canRetry && onRetry && (
               <TouchableOpacity
                 style={styles.retryButton}
                 onPress={onRetry}
@@ -95,12 +97,12 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ errorDetails, onRetry, onCl
             )}
 
             <TouchableOpacity
-              style={[styles.closeButton, !errorDetails.canRetry && styles.closeButtonFull]}
-              onPress={onClose}
+              style={[styles.closeButton, (!errorDetails.canRetry || !onRetry) && styles.closeButtonFull]}
+              onPress={handleSecondaryAction}
               activeOpacity={0.8}
             >
               <Text style={styles.closeButtonText}>
-                {errorDetails.canRetry ? 'Close' : 'OK'}
+                {secondaryActionLabel || (errorDetails.canRetry && onRetry ? 'Close' : 'OK')}
               </Text>
             </TouchableOpacity>
           </View>

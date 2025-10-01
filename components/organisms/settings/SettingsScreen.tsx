@@ -9,7 +9,6 @@ import DeleteAccountModal from "../../molecules/DeleteAccountModal";
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter()
-  const [expandedDevice, setExpandedDevice] = useState<string | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const accountItems = [
@@ -29,36 +28,6 @@ const SettingsScreen: React.FC = () => {
       showBadge: true,
       badgeColor: "#10B981",
       icon: "diamond-outline",
-    },
-  ]
-
-  // Add device details data
-  const devicesItems = [
-    {
-      id: "iphone",
-      title: "Usman's Galaxy a52s",
-      subtitle: "This device",
-      icon: "phone-portrait-outline",
-      deviceDetails: {
-        lastActive: "Currently active",
-        loginTime: "Dec 15, 2024 at 9:30 AM",
-        location: "Islamabad, Pakistan",
-        canRemove: false
-      }
-    },
-    {
-      id: "amazon",
-      title: "Umar's Amazon Fire TV",
-      subtitle: "Connected",
-      icon: "tv-outline",
-      showBadge: true,
-      badgeColor: "#3B82F6",
-      deviceDetails: {
-        lastActive: "2 hours ago",
-        loginTime: "Dec 10, 2024 at 3:15 PM",
-        location: "Bahawalnagar, Pakistan",
-        canRemove: true
-      }
     },
   ]
 
@@ -128,87 +97,6 @@ const SettingsScreen: React.FC = () => {
     </View>
   )
 
-  const renderDeviceItem = (item: any, isLast = false) => {
-    const isExpanded = expandedDevice === item.id
-    
-    return (
-      <View key={item.id}>
-        <TouchableOpacity
-          className="flex-row items-center justify-between py-4 px-4"
-          onPress={() => setExpandedDevice(isExpanded ? null : item.id)}
-        >
-          <View className="flex-row items-center flex-1">
-            {item.icon && (
-              <View className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center mr-4">
-                <Ionicons name={item.icon as any} size={20} color="#FACC15" />
-              </View>
-            )}
-            <View className="flex-1">
-              <Text className="text-white font-semibold text-base">{item.title}</Text>
-              {item.subtitle && <Text className="text-gray-400 text-sm mt-1">{item.subtitle}</Text>}
-            </View>
-          </View>
-          <View className="flex-row items-center">
-            {item.showBadge && (
-              <View className="h-3 w-3 rounded-full mr-3" style={{ backgroundColor: item.badgeColor || "#10B981" }} />
-            )}
-            <Ionicons 
-              name={isExpanded ? "chevron-up" : "chevron-down"} 
-              size={20} 
-              color="#9CA3AF" 
-            />
-          </View>
-        </TouchableOpacity>
-        
-        {/* Expanded Device Details */}
-        {isExpanded && item.deviceDetails && (
-          <View className="px-4 pb-4">
-            <View className="bg-zinc-900 rounded-xl p-4 ml-14">
-              <View className="space-y-3">
-                <View>
-                  <Text className="text-gray-400 text-xs uppercase tracking-wide mb-1">Last Active</Text>
-                  <Text className="text-white text-sm">{item.deviceDetails.lastActive}</Text>
-                </View>
-                
-                <View>
-                  <Text className="text-gray-400 text-xs uppercase tracking-wide mb-1">Login Time</Text>
-                  <Text className="text-white text-sm">{item.deviceDetails.loginTime}</Text>
-                </View>
-                
-                <View>
-                  <Text className="text-gray-400 text-xs uppercase tracking-wide mb-1">Location</Text>
-                  <Text className="text-white text-sm">{item.deviceDetails.location}</Text>
-                </View>
-                
-                {item.deviceDetails.canRemove && (
-                  <TouchableOpacity 
-                    className="mt-4 overflow-hidden rounded-lg"
-                    onPress={() => {
-                      // Handle device removal
-                      console.log(`Remove device: ${item.id}`)
-                    }}
-                  >
-                    <LinearGradient
-                      colors={["#EF4444", "#DC2626"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      className="py-3 px-4 flex-row items-center justify-center"
-                    >
-                      <Ionicons name="log-out-outline" size={16} color="white" />
-                      <Text className="text-white font-semibold ml-2">Remove Device</Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          </View>
-        )}
-        
-        {!isLast && <View className="h-px bg-zinc-700 ml-14" />}
-      </View>
-    )
-  }
-
   const renderSettingsSection = (title: string | null, items: any[]) => (
     <View className="mb-6">
       {title && <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">{title}</Text>}
@@ -217,16 +105,7 @@ const SettingsScreen: React.FC = () => {
       </View>
     </View>
   )
-
-  const renderDevicesSection = (title: string, items: any[]) => (
-    <View className="mb-6">
-      <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">{title}</Text>
-      <View className="bg-zinc-800 rounded-2xl overflow-hidden">
-        {items.map((item, index) => renderDeviceItem(item, index === items.length - 1))}
-      </View>
-    </View>
-  )
-
+  
   return (
     <SafeAreaView className="flex-1 bg-black">
       <StatusBar barStyle="light-content" />
@@ -267,7 +146,6 @@ const SettingsScreen: React.FC = () => {
         </View>
 
         {renderSettingsSection("Account", accountItems)}
-        {renderDevicesSection("Connected Devices", devicesItems)}
         {renderSettingsSection("App Settings", appSettingsItems)}
 
         {/* Danger Zone */}

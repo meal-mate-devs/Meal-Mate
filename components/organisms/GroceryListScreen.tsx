@@ -1,3 +1,4 @@
+import ErrorDisplay from "@/components/atoms/ErrorDisplay";
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation";
 import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/services/groceryService";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -6,19 +7,19 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Share,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -65,6 +66,39 @@ const CATEGORIES: { id: string; name: string; icon: IoniconName; color: string }
   { id: "dairy", name: "Dairy", icon: "water-outline", color: "#3B82F6" },
   { id: "grains", name: "Grains", icon: "restaurant-outline", color: "#8B5CF6" },
   { id: "other", name: "Other", icon: "apps-outline", color: "#6366F1" },
+];
+
+const LOCAL_FALLBACK_ITEMS: GroceryItem[] = [
+  {
+    id: "local-grocery-1",
+    name: "Fresh Spinach",
+    quantity: 2,
+    unit: "pieces",
+    urgency: "urgent",
+    purchaseDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    notes: "Remember to rinse before storing.",
+    isPurchased: false,
+    purchasedDate: undefined,
+    daysUntilPurchase: 1,
+    purchaseStatus: "pending",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: "local-grocery-2",
+    name: "Almond Milk",
+    quantity: 1,
+    unit: "liters",
+    urgency: "normal",
+    purchaseDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+    notes: "Unsweetened preferred.",
+    isPurchased: false,
+    purchasedDate: undefined,
+    daysUntilPurchase: 3,
+    purchaseStatus: "pending",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
 ];
 
 const formatDisplayDate = (value: Date | string) => {
@@ -119,9 +153,9 @@ const GroceryListScreen: React.FC = () => {
   const router = useRouter();
 
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
+  const [cachedGroceryItems, setCachedGroceryItems] = useState<GroceryItem[]>(LOCAL_FALLBACK_ITEMS);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
@@ -133,6 +167,12 @@ const GroceryListScreen: React.FC = () => {
   const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false);
   const [isPurchaseUnitDropdownOpen, setIsPurchaseUnitDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [errorDetails, setErrorDetails] = useState<{
+    type: 'network' | 'server' | 'auth' | 'unknown';
+    title: string;
+    message: string;
+    canRetry: boolean;
+  } | null>(null);
 
   const filteredItems = useMemo(() => {
     let base = groceryItems.filter((item) => !item.isPurchased);
@@ -177,17 +217,83 @@ const GroceryListScreen: React.FC = () => {
     setPurchaseForm(createInitialPurchaseForm());
   }, []);
 
+  const analyzeError = (error: any) => {
+    if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout')) {
+      return {
+        type: 'network' as const,
+        title: 'Connection Problem',
+        message: 'We couldn’t refresh your grocery list. Check your connection and try again.',
+        canRetry: true,
+      };
+    }
+
+    if (error?.message?.includes('401') || error?.message?.includes('auth') || error?.message?.includes('Authentication')) {
+      return {
+        type: 'auth' as const,
+        title: 'Authentication Error',
+        message: 'Your session might have expired. Please log in again.',
+        canRetry: false,
+      };
+    }
+
+    if (error?.message?.includes('500') || error?.message?.includes('502') || error?.message?.includes('503') || error?.message?.includes('504')) {
+      return {
+        type: 'server' as const,
+        title: 'Server Error',
+        message: 'Our servers are having trouble right now. Please try again shortly.',
+        canRetry: true,
+      };
+    }
+
+    return {
+      type: 'unknown' as const,
+      title: 'Failed to update groceries',
+      message: 'Something went wrong while syncing your grocery list. Try again or use local data instead.',
+      canRetry: true,
+    };
+  };
+
   // Load grocery items from backend
   const loadGroceryItems = useCallback(async () => {
     try {
       setIsLoading(true);
-      setError(null);
-      const response = await groceryService.getGroceryItems();
-      setGroceryItems(response.items);
-    } catch (err) {
+      setErrorDetails(null);
+
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 15000);
+      });
+
+      const response = await Promise.race([
+        groceryService.getGroceryItems(),
+        timeoutPromise,
+      ]) as Awaited<ReturnType<typeof groceryService.getGroceryItems>>;
+
+      if (response.success) {
+        const items = Array.isArray(response.items) ? response.items : [];
+        setGroceryItems(items);
+        if (items.length > 0) {
+          setCachedGroceryItems(items);
+        }
+      } else {
+        const enhancedError = {
+          ...analyzeError(new Error('API returned success: false')),
+          title: 'Failed to update groceries',
+          message: 'We couldn’t refresh your grocery list. Try again or show local items instead.',
+        };
+        setErrorDetails(enhancedError);
+      }
+    } catch (err: any) {
       console.log('Failed to load grocery items:', err);
-      setError('Failed to load grocery items');
-      Alert.alert('Error', 'Failed to load grocery items. Please try again.');
+      const errorInfo = analyzeError(err);
+      const enhancedError =
+        errorInfo.type === 'auth'
+          ? errorInfo
+          : {
+              ...errorInfo,
+              title: 'Failed to update groceries',
+              message: 'We couldn’t refresh your grocery list. Try again or show local items instead.',
+            };
+      setErrorDetails(enhancedError);
     } finally {
       setIsLoading(false);
     }
@@ -222,7 +328,12 @@ const GroceryListScreen: React.FC = () => {
       };
 
       const response = await groceryService.addGroceryItem(itemData);
-      setGroceryItems((prev) => [response.item, ...prev]);
+      setGroceryItems((prev) => {
+        const updated = [response.item, ...prev];
+        setCachedGroceryItems(updated);
+        return updated;
+      });
+      setErrorDetails(null);
       setShowAddModal(false);
       resetAddForm();
     } catch (err) {
@@ -246,7 +357,11 @@ const GroceryListScreen: React.FC = () => {
             try {
               setIsSyncing(true);
               await groceryService.deleteGroceryItem(id);
-              setGroceryItems((prev) => prev.filter((item) => item.id !== id));
+              setGroceryItems((prev) => {
+                const updated = prev.filter((item) => item.id !== id);
+                setCachedGroceryItems(updated);
+                return updated;
+              });
             } catch (err) {
               console.log('Failed to delete grocery item:', err);
               Alert.alert('Error', 'Failed to delete grocery item. Please try again.');
@@ -289,10 +404,14 @@ const GroceryListScreen: React.FC = () => {
       };
 
       console.log("Completing purchase for item:", selectedPurchaseItem.name);
-      const response = await groceryService.markAsPurchased(selectedPurchaseItem.id, purchaseData);
-      
-      // Remove from grocery list
-      setGroceryItems((prev) => prev.filter((item) => item.id !== selectedPurchaseItem.id));
+  await groceryService.markAsPurchased(selectedPurchaseItem.id, purchaseData);
+
+  // Remove from grocery list
+      setGroceryItems((prev) => {
+        const updated = prev.filter((item) => item.id !== selectedPurchaseItem.id);
+        setCachedGroceryItems(updated);
+        return updated;
+      });
       
       Alert.alert(
         "Purchase completed",
@@ -720,11 +839,23 @@ const GroceryListScreen: React.FC = () => {
       <StatusBar barStyle="light-content" />
       <View style={styles.container}>
 
-      {/* Show loading animation while fetching data */}
-      {isLoading && (
-        <View style={styles.loadingOverlay}>
-          <PantryLoadingAnimation message="Loading your grocery list..." />
-        </View>
+      {/* Error State */}
+      {errorDetails && (
+        <ErrorDisplay
+          errorDetails={errorDetails}
+          onRetry={errorDetails.canRetry ? () => loadGroceryItems() : undefined}
+          secondaryActionLabel={cachedGroceryItems.length > 0 ? "Show local items" : "Dismiss"}
+          onSecondaryAction={() => {
+            setErrorDetails(null);
+
+            if (cachedGroceryItems.length > 0) {
+              setGroceryItems(cachedGroceryItems);
+            } else {
+              setGroceryItems(LOCAL_FALLBACK_ITEMS);
+              setCachedGroceryItems(LOCAL_FALLBACK_ITEMS);
+            }
+          }}
+        />
       )}
 
       {/* Header */}
@@ -803,15 +934,21 @@ const GroceryListScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <View style={styles.emptyStateIcon}>
-              <Ionicons name="bag-outline" size={80} color="#94A3B8" />
+          isLoading ? (
+            <View style={styles.inlineLoaderContainer}>
+              <PantryLoadingAnimation message="Loading your grocery list..." />
             </View>
-            <Text style={styles.emptyStateTitle}>No items in your list</Text>
-            <Text style={styles.emptyStateSubtitle}>
-              Add items to your grocery list to keep track of what you need to buy
-            </Text>
-          </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <View style={styles.emptyStateIcon}>
+                <Ionicons name="bag-outline" size={80} color="#94A3B8" />
+              </View>
+              <Text style={styles.emptyStateTitle}>No items in your list</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Add items to your grocery list to keep track of what you need to buy
+              </Text>
+            </View>
+          )
         }
       />
 
@@ -1150,6 +1287,11 @@ const styles = StyleSheet.create({
       paddingTop: 0,
       paddingBottom: 30,
     },
+  inlineLoaderContainer: {
+    paddingVertical: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   // Empty state
   emptyState: {
     alignItems: "center",
@@ -1914,13 +2056,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 10,
     fontWeight: "700",
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
   },
 });
 

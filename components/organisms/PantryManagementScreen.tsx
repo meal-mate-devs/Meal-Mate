@@ -46,6 +46,23 @@ const CATEGORIES = [
   { id: "other", name: "other", icon: "apps-outline", color: "#6366F1" },
 ]
 
+const LOCAL_FALLBACK_ITEMS: PantryItem[] = [
+  {
+    id: "local-1",
+    name: "Fresh Tomatoes",
+    category: "vegetables",
+    quantity: 6,
+    unit: "pieces",
+    expiryDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+    addedDate: new Date().toISOString(),
+    detectionMethod: "manual",
+    daysUntilExpiry: 5,
+    expiryStatus: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+]
+
 
 
 // Common units for food measurement
@@ -339,22 +356,8 @@ const PantryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
-  const [pantryItems, setPantryItems] = useState<PantryItem[]>([
-    {
-      id: "1",
-      name: "Fresh Tomatoes",
-      category: "vegetables",
-      quantity: 6,
-      unit: "pieces",
-      expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
-      addedDate: new Date().toISOString(),
-      detectionMethod: 'manual',
-      daysUntilExpiry: 7,
-      expiryStatus: 'active',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ])
+  const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
+  const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
 
   // State variables
   const [searchQuery, setSearchQuery] = useState("")
@@ -367,7 +370,6 @@ const PantryManagementScreen: React.FC = () => {
 
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true)
-  const [loadingError, setLoadingError] = useState<string | null>(null)
   const [errorDetails, setErrorDetails] = useState<{
     type: 'network' | 'server' | 'auth' | 'unknown'
     title: string
@@ -497,7 +499,6 @@ const PantryManagementScreen: React.FC = () => {
   const loadPantryItems = useCallback(async () => {
     try {
       setIsLoading(true);
-      setLoadingError(null);
       setErrorDetails(null);
 
       // Create a timeout promise
@@ -512,16 +513,34 @@ const PantryManagementScreen: React.FC = () => {
       ]) as any;
 
       if (response.success) {
-        setPantryItems(response.items);
+        const items = Array.isArray(response.items) ? response.items : [];
+        setPantryItems(items);
+        if (items.length > 0) {
+          setCachedPantryItems(items);
+        }
       } else {
         const errorInfo = analyzeError(new Error('API returned success: false'));
-        setErrorDetails(errorInfo);
-        setLoadingError(errorInfo.title);
+        const enhancedError = errorInfo.type === 'auth'
+          ? errorInfo
+          : {
+              ...errorInfo,
+              title: 'Failed to update pantry',
+              message: 'We couldn’t sync your pantry right now. Try again or show local items instead.',
+              canRetry: true,
+            };
+  setErrorDetails(enhancedError);
       }
     } catch (error: any) {
       const errorInfo = analyzeError(error);
-      setErrorDetails(errorInfo);
-      setLoadingError(errorInfo.title);
+      const enhancedError = errorInfo.type === 'auth'
+        ? errorInfo
+        : {
+            ...errorInfo,
+            title: 'Failed to update pantry',
+            message: 'We couldn’t sync your pantry right now. Try again or show local items instead.',
+            canRetry: true,
+          };
+  setErrorDetails(enhancedError);
       console.log('Error loading pantry items:', error);
     } finally {
       setIsLoading(false);
@@ -1336,6 +1355,11 @@ const PantryManagementScreen: React.FC = () => {
     },
 
     // Empty state
+    inlineLoaderContainer: {
+      paddingVertical: 60,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     emptyState: {
       alignItems: "center",
       justifyContent: "center",
@@ -2604,36 +2628,29 @@ const PantryManagementScreen: React.FC = () => {
         end={{ x: 0.5, y: 0.8 }}
       />
 
-      {/* Loading State */}
-      {isLoading && (
-        <View style={styles.loadingContainer}>
-          <PantryLoadingAnimation message="Loading your pantry..." />
-        </View>
-      )}
-
       {/* Error State */}
       {errorDetails && (
         <ErrorDisplay
           errorDetails={errorDetails}
-          onRetry={() => {
-            // Clear any existing timeout and start fresh
-            loadPantryItems();
-          }}
-          onClose={() => {
-            setErrorDetails(null);
-            setLoadingError(null);
-            // Optionally navigate back or show empty state
-            if (pantryItems.length === 0) {
-              // If no items loaded yet, show empty state
-              setPantryItems([]);
+          onRetry={errorDetails.canRetry ? () => {
+            loadPantryItems()
+          } : undefined}
+          secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
+          onSecondaryAction={() => {
+            setErrorDetails(null)
+
+            if (cachedPantryItems.length > 0) {
+              setPantryItems(cachedPantryItems)
+            } else {
+              setPantryItems(LOCAL_FALLBACK_ITEMS)
+              setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
             }
           }}
         />
       )}
 
-      {/* Main Content - only show when not loading and no error */}
-      {!isLoading && !loadingError && (
-        <>
+      {/* Main Content */}
+      <>
       {/* Header section */}
       <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
         <View style={styles.headerContent}>
@@ -2732,122 +2749,128 @@ const PantryManagementScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Animated.View
-                style={[
-                  styles.emptyStateIcon,
-                  {
-                    transform: [
-                      {
-                        rotate: rotateAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ["0deg", "0deg"],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <LinearGradient
-                  colors={["#FACC15", "#F97316"]}
-                  style={{ borderRadius: 35, padding: 16 }}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
+            isLoading ? (
+              <View style={styles.inlineLoaderContainer}>
+                <PantryLoadingAnimation message="Loading your pantry..." />
+              </View>
+            ) : (
+              <View style={styles.emptyState}>
+                <Animated.View
+                  style={[
+                    styles.emptyStateIcon,
+                    {
+                      transform: [
+                        {
+                          rotate: rotateAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: ["0deg", "0deg"],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
                 >
-                  <Ionicons
-                    name={
-                      activeTab === STATUS.ACTIVE
-                        ? "nutrition-outline"
-                        : activeTab === STATUS.EXPIRING
-                          ? "time-outline"
-                          : "alert-circle-outline"
+                  <LinearGradient
+                    colors={["#FACC15", "#F97316"]}
+                    style={{ borderRadius: 35, padding: 16 }}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons
+                      name={
+                        activeTab === STATUS.ACTIVE
+                          ? "nutrition-outline"
+                          : activeTab === STATUS.EXPIRING
+                            ? "time-outline"
+                            : "alert-circle-outline"
+                      }
+                      size={56}
+                      color="white"
+                    />
+                  </LinearGradient>
+                </Animated.View>
+                <Text style={styles.emptyStateTitle}>
+                  {(() => {
+                    const { active, expiringSoon, expired } = getItemsByStatus()
+                    const totalItems = active.length + expiringSoon.length + expired.length
+
+                    if (totalItems === 0) {
+                      return "No items in your pantry"
                     }
-                    size={56}
-                    color="white"
-                  />
-                </LinearGradient>
-              </Animated.View>
-              <Text style={styles.emptyStateTitle}>
-                {(() => {
-                  const { active, expiringSoon, expired } = getItemsByStatus()
-                  const totalItems = active.length + expiringSoon.length + expired.length
-                  
-                  if (totalItems === 0) {
-                    return "No items in your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ALL && totalItems === 0) {
-                    return "No items in your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                    if (expiringSoon.length > 0) {
-                      return "Check your expiring items"
-                    } else if (expired.length > 0) {
-                      return "Check your expired items"
+
+                    if (activeTab === STATUS.ALL && totalItems === 0) {
+                      return "No items in your pantry"
                     }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                    if (active.length > 0) {
-                      return "All items are fresh!"
-                    } else if (expired.length > 0) {
-                      return "Check your expired items"
+
+                    if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                      if (expiringSoon.length > 0) {
+                        return "Check your expiring items"
+                      } else if (expired.length > 0) {
+                        return "Check your expired items"
+                      }
                     }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                    if (active.length > 0) {
-                      return "All items are still good!"
-                    } else if (expiringSoon.length > 0) {
-                      return "Check your expiring items"
+
+                    if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                      if (active.length > 0) {
+                        return "All items are fresh!"
+                      } else if (expired.length > 0) {
+                        return "Check your expired items"
+                      }
                     }
-                  }
-                  
-                  return "No items found"
-                })()}
-              </Text>
-              <Text style={styles.emptyStateSubtitle}>
-                {(() => {
-                  const { active, expiringSoon, expired } = getItemsByStatus()
-                  const totalItems = active.length + expiringSoon.length + expired.length
-                  
-                  if (totalItems === 0) {
-                    return "Tap the + button to add some ingredients to your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ALL && totalItems === 0) {
-                    return "Tap the + button to add some ingredients to your pantry"
-                  }
-                  
-                  if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                    if (expiringSoon.length > 0) {
-                      return "Some items are about to expire soon"
-                    } else if (expired.length > 0) {
-                      return "Some items have already expired"
+
+                    if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                      if (active.length > 0) {
+                        return "All items are still good!"
+                      } else if (expiringSoon.length > 0) {
+                        return "Check your expiring items"
+                      }
                     }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                    if (active.length > 0) {
-                      return "Your pantry is well-stocked with fresh items"
-                    } else if (expired.length > 0) {
-                      return "Focus on your expired items first"
+
+                    return "No items found"
+                  })()}
+                </Text>
+                <Text style={styles.emptyStateSubtitle}>
+                  {(() => {
+                    const { active, expiringSoon, expired } = getItemsByStatus()
+                    const totalItems = active.length + expiringSoon.length + expired.length
+
+                    if (totalItems === 0) {
+                      return "Tap the + button to add some ingredients to your pantry"
                     }
-                  }
-                  
-                  if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                    if (active.length > 0) {
-                      return "Great job keeping your pantry fresh!"
-                    } else if (expiringSoon.length > 0) {
-                      return "Some items are expiring soon - check them out"
+
+                    if (activeTab === STATUS.ALL && totalItems === 0) {
+                      return "Tap the + button to add some ingredients to your pantry"
                     }
-                  }
-                  
-                  return "Try adjusting your search or filters"
-                })()}
-              </Text>
-            </View>
+
+                    if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                      if (expiringSoon.length > 0) {
+                        return "Some items are about to expire soon"
+                      } else if (expired.length > 0) {
+                        return "Some items have already expired"
+                      }
+                    }
+
+                    if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                      if (active.length > 0) {
+                        return "Your pantry is well-stocked with fresh items"
+                      } else if (expired.length > 0) {
+                        return "Focus on your expired items first"
+                      }
+                    }
+
+                    if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                      if (active.length > 0) {
+                        return "Great job keeping your pantry fresh!"
+                      } else if (expiringSoon.length > 0) {
+                        return "Some items are expiring soon - check them out"
+                      }
+                    }
+
+                    return "Try adjusting your search or filters"
+                  })()}
+                </Text>
+              </View>
+            )
           }
         />
       </Animated.View>
@@ -2866,14 +2889,14 @@ const PantryManagementScreen: React.FC = () => {
       />
 
       {/* Ingredient Detection Modal */}
-      <IngredientSelectionModal 
+      <IngredientSelectionModal
         visible={showIngredientDetectionModal}
         onClose={() => setShowIngredientDetectionModal(false)}
         ingredients={detectedIngredients}
         onSelectIngredient={handleSelectIngredient}
         isLoading={isDetecting}
       />
-      </>)}
+      </>
     </View>
   )
 }

@@ -1,9 +1,19 @@
 import { Stack } from 'expo-router';
 import React from 'react';
+import { useColorScheme } from 'react-native';
 
 export default function SettingsLayout() {
+    const colorScheme = useColorScheme();
+    const backgroundColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
+
     return (
-        <Stack screenOptions={{ headerShown: false }}>
+        <Stack
+            screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor },
+                presentation: 'card',
+            }}
+        >
             <Stack.Screen name="index" />
             <Stack.Screen name="subscription" />
             <Stack.Screen name="payment" />
