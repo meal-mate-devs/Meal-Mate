@@ -69,36 +69,6 @@ const CATEGORIES: { id: string; name: string; icon: IoniconName; color: string }
 ];
 
 const LOCAL_FALLBACK_ITEMS: GroceryItem[] = [
-  {
-    id: "local-grocery-1",
-    name: "Fresh Spinach",
-    quantity: 2,
-    unit: "pieces",
-    urgency: "urgent",
-    purchaseDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    notes: "Remember to rinse before storing.",
-    isPurchased: false,
-    purchasedDate: undefined,
-    daysUntilPurchase: 1,
-    purchaseStatus: "pending",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: "local-grocery-2",
-    name: "Almond Milk",
-    quantity: 1,
-    unit: "liters",
-    urgency: "normal",
-    purchaseDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-    notes: "Unsweetened preferred.",
-    isPurchased: false,
-    purchasedDate: undefined,
-    daysUntilPurchase: 3,
-    purchaseStatus: "pending",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
 ];
 
 const formatDisplayDate = (value: Date | string) => {
