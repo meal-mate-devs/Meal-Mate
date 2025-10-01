@@ -29,6 +29,14 @@ const SettingsScreen: React.FC = () => {
       badgeColor: "#10B981",
       icon: "diamond-outline",
     },
+    {
+      id: "privacy",
+      icon: "shield-checkmark-outline",
+      title: "Privacy & Security",
+      subtitle: "Password, data protection, permissions",
+      link: "/settings/privacy",
+      showBadge: false,
+    },
   ]
 
   const appSettingsItems = [
@@ -38,13 +46,6 @@ const SettingsScreen: React.FC = () => {
       title: "General",
       subtitle: "Language, region, accessibility",
       link: "/settings/general",
-    },
-    {
-      id: "privacy",
-      icon: "shield-checkmark-outline",
-      title: "Privacy & Security",
-      subtitle: "Data protection, permissions",
-      link: "/settings/privacy",
     },
     {
       id: "notifications",

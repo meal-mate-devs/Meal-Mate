@@ -2,6 +2,7 @@
 
 import { Feather, Ionicons } from "@expo/vector-icons"
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs"
+import { StackActions } from "@react-navigation/native"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef } from "react"
 import { Animated, Dimensions, Pressable, View } from "react-native"
@@ -175,6 +176,17 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
     }
   }
 
+  const popStackIfNeeded = (route?: typeof state.routes[number]) => {
+    if (!route) return
+    const routeState = (route as any)?.state
+    if (routeState?.type === "stack" && routeState.index > 0) {
+      navigation.dispatch({
+        ...StackActions.popToTop(),
+        target: route.key,
+      })
+    }
+  }
+
   return (
     <View
       style={{
@@ -203,7 +215,13 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             })
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name)
+              const currentRoute = state.routes[state.index]
+              popStackIfNeeded(currentRoute)
+
+              const targetRoute = state.routes.find((r) => r.key === route.key)
+              popStackIfNeeded(targetRoute)
+
+              navigation.navigate({ name: route.name, params: route.params, merge: false })
             }
           }
 
