@@ -2629,30 +2629,28 @@ const PantryManagementScreen: React.FC = () => {
       />
 
       {/* Error State */}
-      {
-        errorDetails && (
-          <ErrorDisplay
-            errorDetails={errorDetails}
-            onRetry={errorDetails.canRetry ? () => {
-              loadPantryItems()
-            } : undefined}
-            secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
-            onSecondaryAction={() => {
-              setErrorDetails(null)
+      {errorDetails && (
+        <ErrorDisplay
+          errorDetails={errorDetails}
+          onRetry={errorDetails.canRetry ? () => {
+            loadPantryItems()
+          } : undefined}
+          secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
+          onSecondaryAction={() => {
+            setErrorDetails(null)
 
-              if (cachedPantryItems.length > 0) {
-                setPantryItems(cachedPantryItems)
-              } else {
-                setPantryItems(LOCAL_FALLBACK_ITEMS)
-                setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
-              }
-            }}
-          />
-        )
-      }
+            if (cachedPantryItems.length > 0) {
+              setPantryItems(cachedPantryItems)
+            } else {
+              setPantryItems(LOCAL_FALLBACK_ITEMS)
+              setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
+            }
+          }}
+        />
+      )}
 
       {/* Main Content */}
-  <>
+      <>
         {/* Header section */}
         <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
           <View style={styles.headerContent}>
@@ -2716,214 +2714,191 @@ const PantryManagementScreen: React.FC = () => {
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
-                  style={styles.backButton}
-                  onPress={() => router.back()}
-                  activeOpacity={0.7}
+                  onPress={() => {
+                    setSearchQuery("")
+                  }}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <View style={styles.backButtonInner}>
-                    <Ionicons name="chevron-back" size={24} color="#FACC15" />
-                  </View>
+                  <Ionicons name="close-circle" size={22} color="#64748B" />
                 </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
 
-              {/* Title Section */}
-              <View style={styles.titleSection}>
-                <Text style={styles.headerTitle}>Pantry Manager</Text>
-                <Text style={styles.headerSubtitle}>
-                  Organize, track & reduce food waste
-                </Text>
-              </View>
+        {/* Tab bar for filtering */}
+        {renderTabBar()}
 
-              {/* Category filters */}
-              {renderCategoryFilter()}
+        {/* Category filters */}
+        {renderCategoryFilter()}
 
-              {/* Items list */}
-              <Animated.View
-                style={[
-                  styles.itemsList,
-                  {
-                    opacity: fadeAnim,
-                    transform: [{ scale: scaleAnim }]
-                  }
-                ]}
-              >
-                <FlatList
-                  data={filteredItems()}
-                  renderItem={renderPantryItem}
-                  keyExtractor={(item) => item.id}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.listContent}
-                  ListEmptyComponent={
-                    isLoading ? (
-                      <View style={styles.inlineLoaderContainer}>
-                        <PantryLoadingAnimation message="Loading your pantry..." />
-                      </View>
-                    ) : (
-                      <View style={styles.emptyState}>
-                        <Animated.View
-                          style={[
-                            styles.emptyStateIcon,
-                            {
-                              transform: [
-                                {
-                                  rotate: rotateAnim.interpolate({
-                                    inputRange: [0, 1],
-                                    outputRange: ["0deg", "0deg"],
-                                  }),
-                                },
-                              ],
-                            },
-                          ]}
-                        >
-                          <LinearGradient
-                            colors={["#FACC15", "#F97316"]}
-                            style={{ borderRadius: 35, padding: 16 }}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                          >
-                            <Ionicons
-                              name={
-                                activeTab === STATUS.ACTIVE
-                                  ? "nutrition-outline"
-                                  : activeTab === STATUS.EXPIRING
-                                    ? "time-outline"
-                                    : "alert-circle-outline"
-                              }
-                              size={56}
-                              color="white"
-                            />
-                          </LinearGradient>
-                        </Animated.View>
-                        <Text style={styles.emptyStateTitle}>
-                          {(() => {
-                            const { active, expiringSoon, expired } = getItemsByStatus()
-                            const totalItems = active.length + expiringSoon.length + expired.length
-
-                            if (totalItems === 0) {
-                              return "No items in your pantry"
-                            }
-
-                            if (activeTab === STATUS.ALL && totalItems === 0) {
-                              return "No items in your pantry"
-                            }
-
-                            if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                              if (expiringSoon.length > 0) {
-                                return "Check your expiring items"
-                              } else if (expired.length > 0) {
-                                return "Check your expired items"
-                              }
-                            }
-
-                            if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                              if (active.length > 0) {
-                                return "All items are fresh!"
-                              } else if (expired.length > 0) {
-                                return "Check your expired items"
-                              }
-                            }
-
-                            if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                              if (active.length > 0) {
-                                return "All items are still good!"
-                              } else if (expiringSoon.length > 0) {
-                                return "Check your expiring items"
-                              }
-                            }
-
-                            return "No items found"
-                          })()}
-                        </Text>
-                        <Text style={styles.emptyStateSubtitle}>
-                          {(() => {
-                            const { active, expiringSoon, expired } = getItemsByStatus()
-                            const totalItems = active.length + expiringSoon.length + expired.length
-
-                            if (totalItems === 0) {
-                              return "Tap the + button to add some ingredients to your pantry"
-                            }
-
-                            if (activeTab === STATUS.ALL && totalItems === 0) {
-                              return "Tap the + button to add some ingredients to your pantry"
-                            }
-
-                            if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                              if (expiringSoon.length > 0) {
-                                return "Some items are about to expire soon"
-                              } else if (expired.length > 0) {
-                                return "Some items have already expired"
-                              }
-                            }
-
-                            if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                              if (active.length > 0) {
-                                return "Your pantry is well-stocked with fresh items"
-                              } else if (expired.length > 0) {
-                                return "Focus on your expired items first"
-                              }
-                            }
-
-                            if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                              if (active.length > 0) {
-                                return "Great job keeping your pantry fresh!"
-                              } else if (expiringSoon.length > 0) {
-                                return "Some items are expiring soon - check them out"
-                              }
-                            }
-
-                            return "Try adjusting your search or filters"
-                          })()}
-                        </Text>
-                      </View>
-                    )
-                  }
-                />
-              </Animated.View>
-
-              {/* Search bar */}
-              <View style={styles.searchRow}>
-                <View style={styles.searchContainer}>
-                  {/* Replace BlurView with a simple background color for better performance */}
-                  <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
-                  <View style={styles.searchBlur}>
-                    <Ionicons name="search-outline" size={22} color="#FACC15" />
-                    <TextInput
-                      style={styles.searchInput}
-                      value={searchQuery}
-                      onChangeText={setSearchQuery}
-                      placeholder="Search pantry items..."
-                      placeholderTextColor="#64748B"
-                      autoCorrect={false}
-                      returnKeyType="search"
-                      maxLength={50}
-                    />
-                    {searchQuery.length > 0 && (
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSearchQuery("")
-                        }}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <Ionicons name="close-circle" size={22} color="#64748B" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
+        {/* Items list */}
+        <Animated.View
+          style={[
+            styles.itemsList,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }]
+            }
+          ]}
+        >
+          <FlatList
+            data={filteredItems()}
+            renderItem={renderPantryItem}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={
+              isLoading ? (
+                <View style={styles.inlineLoaderContainer}>
+                  <PantryLoadingAnimation message="Loading your pantry..." />
                 </View>
-              </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <Animated.View
+                    style={[
+                      styles.emptyStateIcon,
+                      {
+                        transform: [
+                          {
+                            rotate: rotateAnim.interpolate({
+                              inputRange: [0, 1],
+                              outputRange: ["0deg", "0deg"],
+                            }),
+                          },
+                        ],
+                      },
+                    ]}
+                  >
+                    <LinearGradient
+                      colors={["#FACC15", "#F97316"]}
+                      style={{ borderRadius: 35, padding: 16 }}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 1 }}
+                    >
+                      <Ionicons
+                        name={
+                          activeTab === STATUS.ACTIVE
+                            ? "nutrition-outline"
+                            : activeTab === STATUS.EXPIRING
+                              ? "time-outline"
+                              : "alert-circle-outline"
+                        }
+                        size={56}
+                        color="white"
+                      />
+                    </LinearGradient>
+                  </Animated.View>
+                  <Text style={styles.emptyStateTitle}>
+                    {(() => {
+                      const { active, expiringSoon, expired } = getItemsByStatus()
+                      const totalItems = active.length + expiringSoon.length + expired.length
 
-              {/* Tab bar for filtering */}
-              {renderTabBar()}
+                      if (totalItems === 0) {
+                        return "No items in your pantry"
+                      }
 
-              {/* Ingredient Detection Modal */}
-              <IngredientSelectionModal
-                visible={showIngredientDetectionModal}
-                onClose={() => setShowIngredientDetectionModal(false)}
-                ingredients={detectedIngredients}
-                onSelectIngredient={handleSelectIngredient}
-                isLoading={isDetecting}
-              />
-            </>
-          </View >
-          )
+                      if (activeTab === STATUS.ALL && totalItems === 0) {
+                        return "No items in your pantry"
+                      }
+
+                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                        if (expiringSoon.length > 0) {
+                          return "Check your expiring items"
+                        } else if (expired.length > 0) {
+                          return "Check your expired items"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                        if (active.length > 0) {
+                          return "All items are fresh!"
+                        } else if (expired.length > 0) {
+                          return "Check your expired items"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                        if (active.length > 0) {
+                          return "All items are still good!"
+                        } else if (expiringSoon.length > 0) {
+                          return "Check your expiring items"
+                        }
+                      }
+
+                      return "No items found"
+                    })()}
+                  </Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    {(() => {
+                      const { active, expiringSoon, expired } = getItemsByStatus()
+                      const totalItems = active.length + expiringSoon.length + expired.length
+
+                      if (totalItems === 0) {
+                        return "Tap the + button to add some ingredients to your pantry"
+                      }
+
+                      if (activeTab === STATUS.ALL && totalItems === 0) {
+                        return "Tap the + button to add some ingredients to your pantry"
+                      }
+
+                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                        if (expiringSoon.length > 0) {
+                          return "Some items are about to expire soon"
+                        } else if (expired.length > 0) {
+                          return "Some items have already expired"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                        if (active.length > 0) {
+                          return "Your pantry is well-stocked with fresh items"
+                        } else if (expired.length > 0) {
+                          return "Focus on your expired items first"
+                        }
+                      }
+
+                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                        if (active.length > 0) {
+                          return "Great job keeping your pantry fresh!"
+                        } else if (expiringSoon.length > 0) {
+                          return "Some items are expiring soon - check them out"
+                        }
+                      }
+
+                      return "Try adjusting your search or filters"
+                    })()}
+                  </Text>
+                </View>
+              )
+            }
+          />
+        </Animated.View>
+
+        {/* Modals */}
+        {renderAddItemModal()}
+        {renderItemDetailsModal()}
+        {renderEditModal()}
+
+        {/* Custom Image Picker Dialog */}
+        <ImagePickerDialog
+          visible={showImagePickerDialog}
+          onClose={() => setShowImagePickerDialog(false)}
+          onCamera={handleCamera}
+          onLibrary={handleGallery}
+        />
+
+        {/* Ingredient Detection Modal */}
+        <IngredientSelectionModal
+          visible={showIngredientDetectionModal}
+          onClose={() => setShowIngredientDetectionModal(false)}
+          ingredients={detectedIngredients}
+          onSelectIngredient={handleSelectIngredient}
+          isLoading={isDetecting}
+        />
+      </>
+    </View>
+  )
 }
 
-          export default PantryManagementScreen
+export default PantryManagementScreen
