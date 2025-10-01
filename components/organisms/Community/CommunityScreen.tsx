@@ -64,7 +64,6 @@ export default function CommunityScreen(): JSX.Element {
             setLoading(true)
             const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
 
-            // Handle different response structures
             let postsData = []
             if (response.posts) {
                 postsData = response.posts.map((post: any) => ({
@@ -94,7 +93,6 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleLike = async (postId: string): Promise<void> => {
         try {
-            // Optimistic update
             setPosts(posts.map((post) => {
                 if (post.id === postId) {
                     return {
@@ -106,11 +104,9 @@ export default function CommunityScreen(): JSX.Element {
                 return post
             }))
 
-            // API call
             await CommunityAPI.toggleLikePost(postId)
         } catch (error) {
             console.log('Error toggling like:', error)
-            // Revert optimistic update
             setPosts(posts.map((post) => {
                 if (post.id === postId) {
                     return {
@@ -127,7 +123,6 @@ export default function CommunityScreen(): JSX.Element {
 
     const handleSavePost = async (postId: string): Promise<void> => {
         try {
-            // Optimistic update
             setPosts(posts.map((post) =>
                 post.id === postId
                     ? {
@@ -138,11 +133,9 @@ export default function CommunityScreen(): JSX.Element {
                     : post,
             ))
 
-            // API call
             await CommunityAPI.toggleSavePost(postId)
         } catch (error) {
             console.log('Error saving post:', error)
-            // Revert optimistic update
             setPosts(posts.map((post) =>
                 post.id === postId
                     ? {
@@ -160,7 +153,6 @@ export default function CommunityScreen(): JSX.Element {
         try {
             const response = await CommunityAPI.addComment(postId, commentText)
 
-            // Add comment to local state
             const newComment: Comment = {
                 id: response.comment?.id || Date.now().toString(),
                 author: currentUser,
@@ -190,7 +182,7 @@ export default function CommunityScreen(): JSX.Element {
             setPosts(posts.filter(post => post.id !== postId))
         } catch (error) {
             console.log('Error deleting post:', error)
-            throw error // Let PostOptionsPopover handle the alert
+            throw error
         }
     }
 
@@ -201,7 +193,7 @@ export default function CommunityScreen(): JSX.Element {
             await loadPosts();
         } catch (error) {
             console.error('Error updating post:', error);
-            throw error; // Let EditPostModal handle the alert
+            throw error;
         }
     };
 
@@ -277,7 +269,7 @@ export default function CommunityScreen(): JSX.Element {
             onAddComment={handleAddComment}
             onDeletePost={handleDeletePost}
             onUpdatePost={handleUpdatePost}
-            loadPosts={loadPosts} // Pass loadPosts to PostItem
+            loadPosts={loadPosts}
         />
     )
 

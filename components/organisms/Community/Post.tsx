@@ -20,7 +20,7 @@ interface PostItemProps {
     onAddComment: (postId: string, comment: string) => Promise<void>
     onDeletePost: (postId: string) => Promise<void>
     onUpdatePost?: (postId: string, updateData: any) => Promise<void>
-    loadPosts?: () => Promise<void> // Added loadPosts as an optional prop
+    loadPosts?: () => Promise<void>
 }
 
 export default function PostItem({
@@ -33,7 +33,7 @@ export default function PostItem({
     onAddComment,
     onDeletePost,
     onUpdatePost,
-    loadPosts, // Added loadPosts to destructuring
+    loadPosts,
 }: PostItemProps): JSX.Element {
     const [showComments, setShowComments] = useState<boolean>(false)
     const [commentText, setCommentText] = useState<string>("")
@@ -202,7 +202,7 @@ export default function PostItem({
                         )}
 
                         <View className="flex-row items-center">
-                            <Image source={{ uri: currentUser.avatar }} className="w-8 h-8 rounded-full mr-3" />
+                            <Image source={{ uri: currentUser.avatar.uri }} className="w-8 h-8 rounded-full mr-3" />
                             <View className="flex-1 flex-row items-center bg-zinc-700 rounded-full">
                                 <TextInput
                                     className="flex-1 px-4 py-3 text-white text-sm"
