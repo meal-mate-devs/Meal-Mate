@@ -146,6 +146,91 @@ class PantryService {
     }
   }
 
+  /**
+   * Get ingredient names from pantry for recipe generation
+   * @param options Options for filtering ingredients
+   * @returns Promise<string[]> - Array of ingredient names
+   */
+  async getIngredientsForRecipeGeneration(options?: {
+    excludeExpired?: boolean;
+    categories?: string[];
+    minQuantity?: number;
+  }): Promise<string[]> {
+    try {
+      const params: any = {
+        status: options?.excludeExpired !== false ? 'active' : undefined
+      };
+
+      if (options?.categories && options.categories.length > 0) {
+        params.category = options.categories.join(',');
+      }
+
+      const response = await this.getPantryItems(params);
+      
+      let ingredients = response.items;
+
+      // Filter by minimum quantity if specified
+      if (options?.minQuantity) {
+        ingredients = ingredients.filter(item => item.quantity >= options.minQuantity!);
+      }
+
+      // Extract just the ingredient names
+      return ingredients.map(item => item.name);
+    } catch (error) {
+      console.log('Failed to get ingredients for recipe generation:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get pantry summary for recipe generation context
+   * @returns Promise with pantry statistics and ingredient categories
+   */
+  async getPantrySummaryForRecipes(): Promise<{
+    totalIngredients: number;
+    categoryCounts: Record<string, number>;
+    expiringIngredients: string[];
+    availableIngredients: string[];
+  }> {
+    try {
+      const response = await this.getPantryItems();
+      
+      const categoryCounts: Record<string, number> = {};
+      const expiringIngredients: string[] = [];
+      const availableIngredients: string[] = [];
+
+      response.items.forEach(item => {
+        // Count by category
+        categoryCounts[item.category] = (categoryCounts[item.category] || 0) + 1;
+        
+        // Collect expiring ingredients
+        if (item.expiryStatus === 'expiring') {
+          expiringIngredients.push(item.name);
+        }
+        
+        // Collect all available ingredients
+        if (item.expiryStatus === 'active' || item.expiryStatus === 'expiring') {
+          availableIngredients.push(item.name);
+        }
+      });
+
+      return {
+        totalIngredients: response.items.length,
+        categoryCounts,
+        expiringIngredients,
+        availableIngredients
+      };
+    } catch (error) {
+      console.log('Failed to get pantry summary:', error);
+      return {
+        totalIngredients: 0,
+        categoryCounts: {},
+        expiringIngredients: [],
+        availableIngredients: []
+      };
+    }
+  }
+
   // Helper methods (these would normally be in the apiClient)
   private async getAuthToken(): Promise<string | null> {
     try {
