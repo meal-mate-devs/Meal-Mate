@@ -8,24 +8,24 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import {
-    EmailAuthProvider,
-    reauthenticateWithCredential,
-    updatePassword
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword
 } from "firebase/auth"
 import React, { useState } from "react"
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native"
 
 const PrivacySecurityScreen: React.FC = () => {
@@ -33,15 +33,8 @@ const PrivacySecurityScreen: React.FC = () => {
   const { user } = useAuth()
 
   // Security settings state
-  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false)
-  const [biometricEnabled, setBiometricEnabled] = useState(false)
   const [loginNotifications, setLoginNotifications] = useState(true)
   const [passwordChangeNotifications, setPasswordChangeNotifications] = useState(true)
-
-  // Privacy settings state
-  const [profileVisibility, setProfileVisibility] = useState("public")
-  const [showEmail, setShowEmail] = useState(false)
-  const [showPhone, setShowPhone] = useState(false)
   const [activityTracking, setActivityTracking] = useState(true)
 
   // Change password modal state
@@ -411,7 +404,15 @@ const PrivacySecurityScreen: React.FC = () => {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Security Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SECURITY</Text>
+          <LinearGradient
+            colors={['rgba(250, 204, 21, 0.1)', 'rgba(249, 115, 22, 0.05)']}
+            style={styles.sectionHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Ionicons name="shield-checkmark" size={20} color="#FACC15" />
+            <Text style={styles.sectionTitle}>SECURITY</Text>
+          </LinearGradient>
           <View style={styles.sectionCard}>
             {renderActionItem(
               "key-outline",
@@ -420,33 +421,23 @@ const PrivacySecurityScreen: React.FC = () => {
               () => setShowPasswordModal(true),
               "#FACC15"
             )}
-            <View style={styles.divider} />
-            {renderSettingItem(
-              "shield-checkmark-outline",
-              "Two-Factor Authentication",
-              "Add an extra layer of security",
-              twoFactorEnabled,
-              setTwoFactorEnabled,
-              "#10B981"
-            )}
-            <View style={styles.divider} />
-            {renderSettingItem(
-              "finger-print",
-              "Biometric Login",
-              "Use fingerprint or face ID",
-              biometricEnabled,
-              setBiometricEnabled,
-              "#3B82F6"
-            )}
           </View>
         </View>
 
-        {/* Notifications Section */}
+        {/* Security Notifications Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>SECURITY NOTIFICATIONS</Text>
+          <LinearGradient
+            colors={['rgba(249, 115, 22, 0.1)', 'rgba(239, 68, 68, 0.05)']}
+            style={styles.sectionHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Ionicons name="notifications" size={20} color="#F97316" />
+            <Text style={styles.sectionTitle}>NOTIFICATIONS</Text>
+          </LinearGradient>
           <View style={styles.sectionCard}>
             {renderSettingItem(
-              "notifications-outline",
+              "log-in-outline",
               "Login Alerts",
               "Notify me of new login activity",
               loginNotifications,
@@ -467,26 +458,16 @@ const PrivacySecurityScreen: React.FC = () => {
 
         {/* Privacy Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>PRIVACY</Text>
+          <LinearGradient
+            colors={['rgba(139, 92, 246, 0.1)', 'rgba(59, 130, 246, 0.05)']}
+            style={styles.sectionHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Ionicons name="eye-off" size={20} color="#8B5CF6" />
+            <Text style={styles.sectionTitle}>PRIVACY</Text>
+          </LinearGradient>
           <View style={styles.sectionCard}>
-            {renderSettingItem(
-              "eye-off-outline",
-              "Show Email",
-              "Display email on public profile",
-              showEmail,
-              setShowEmail,
-              "#8B5CF6"
-            )}
-            <View style={styles.divider} />
-            {renderSettingItem(
-              "call-outline",
-              "Show Phone Number",
-              "Display phone on public profile",
-              showPhone,
-              setShowPhone,
-              "#06B6D4"
-            )}
-            <View style={styles.divider} />
             {renderSettingItem(
               "stats-chart-outline",
               "Activity Tracking",
@@ -498,35 +479,49 @@ const PrivacySecurityScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Data Management Section */}
+        {/* Data Protection Section - Placeholder */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>DATA MANAGEMENT</Text>
+          <LinearGradient
+            colors={['rgba(16, 185, 129, 0.1)', 'rgba(5, 150, 105, 0.05)']}
+            style={styles.sectionHeader}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+          >
+            <Ionicons name="lock-closed" size={20} color="#10B981" />
+            <Text style={styles.sectionTitle}>DATA PROTECTION</Text>
+          </LinearGradient>
           <View style={styles.sectionCard}>
             {renderActionItem(
-              "download-outline",
-              "Download My Data",
-              "Get a copy of your data",
-              () => showDialog("success", "Data Export", "Your data export has been initiated"),
-              "#10B981"
-            )}
-            <View style={styles.divider} />
-            {renderActionItem(
-              "trash-outline",
-              "Delete All Data",
-              "Permanently delete all your data",
-              handleDeleteAllData,
-              "#EF4444"
+              "shield-checkmark-outline",
+              "Data Encryption",
+              "Your data is encrypted and secure",
+              () => showDialog("success", "Data Protected", "All your data is encrypted with industry-standard AES-256 encryption. Your privacy is our priority."),
+              "#10B981",
+              false
             )}
           </View>
         </View>
 
-        {/* Info Footer */}
-        <View style={styles.infoFooter}>
-          <Ionicons name="information-circle-outline" size={20} color="#6B7280" />
-          <Text style={styles.infoText}>
-            Your data is encrypted and stored securely. We take your privacy seriously.
-          </Text>
-        </View>
+        {/* Beautiful Info Footer */}
+        <LinearGradient
+          colors={['rgba(31, 41, 55, 0.8)', 'rgba(17, 24, 39, 0.9)']}
+          style={styles.beautifulFooter}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+        >
+          <View style={styles.footerIconContainer}>
+            <Ionicons name="information-circle" size={24} color="#FACC15" />
+          </View>
+          <View style={styles.footerTextContainer}>
+            <Text style={styles.footerTitle}>Your Privacy Matters</Text>
+            <Text style={styles.footerText}>
+              We use industry-standard encryption and security practices to protect your personal information and data.
+            </Text>
+          </View>
+          <View style={styles.footerDecoration}>
+            <Ionicons name="shield-checkmark" size={16} color="#10B981" />
+          </View>
+        </LinearGradient>
       </ScrollView>
 
       {/* Password Change Modal */}
@@ -589,13 +584,20 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 12,
     fontWeight: "600",
-    color: "#6B7280",
+    color: "#FACC15",
     letterSpacing: 0.5,
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    marginLeft: 8,
   },
   sectionCard: {
     backgroundColor: "#1F2937",
@@ -664,6 +666,44 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#9CA3AF",
     lineHeight: 20,
+  },
+  beautifulFooter: {
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(250, 204, 21, 0.2)',
+  },
+  footerIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  footerTextContainer: {
+    flex: 1,
+  },
+  footerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FACC15',
+    marginBottom: 8,
+  },
+  footerText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    lineHeight: 20,
+  },
+  footerDecoration: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,

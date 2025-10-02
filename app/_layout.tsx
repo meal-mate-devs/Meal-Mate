@@ -34,6 +34,15 @@ export default function RootLayout() {
     }
   }, []);
 
+  // Handle splash screen - prevent auto-hide and show immediately
+  React.useEffect(() => {
+    // Prevent the splash screen from auto-hiding
+    SplashScreen.preventAutoHideAsync();
+    
+    // Show our custom splash screen immediately with dark background
+    // The splash screen will be hidden when fonts are loaded
+  }, []);
+
   // Handle splash screen based on font loading only
   React.useEffect(() => {
     if (fontsLoaded) {
@@ -41,14 +50,33 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return <CustomSplashScreen />;
-  }
+  // Handle splash screen - prevent auto-hide and show immediately
+  React.useEffect(() => {
+    // Prevent the splash screen from auto-hiding
+    SplashScreen.preventAutoHideAsync();
+    
+    // Show our custom splash screen immediately with dark background
+    // The splash screen will be hidden when fonts are loaded
+  }, []);
 
+  // Handle splash screen based on font loading only
+  React.useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  // Always show custom splash screen first, regardless of font loading
   return (
-    <AuthContextProvider>
-      <RootLayoutContent />
-    </AuthContextProvider>
+    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+      {!fontsLoaded ? (
+        <CustomSplashScreen />
+      ) : (
+        <AuthContextProvider>
+          <RootLayoutContent />
+        </AuthContextProvider>
+      )}
+    </View>
   );
 }
 
@@ -106,7 +134,7 @@ function RootLayoutContent() {
   return (
     <>
       <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000000' }}>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
           <View style={styles.container}>
             {/* Status bar background for edge-to-edge support */}
             <View style={styles.statusBarBackground} />
@@ -119,7 +147,7 @@ function RootLayoutContent() {
             <Stack 
               screenOptions={{
                 headerShown: false,  // Hide header by default
-                contentStyle: { backgroundColor: '#000000' },
+                contentStyle: { backgroundColor: '#0F172A' },
                 animation: 'fade',  // Use fade instead of default slide
                 animationDuration: 200,
                 presentation: 'transparentModal',  // Prevent white flash
@@ -135,7 +163,7 @@ function RootLayoutContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
   },
   statusBarBackground: {
     position: 'absolute',
@@ -143,7 +171,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 24,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
     zIndex: 1,
   },
 });
