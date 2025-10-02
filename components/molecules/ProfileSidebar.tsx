@@ -898,7 +898,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           {/* Profile image content - USE localProfileData */}
           {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
             <Image
-              source={{ uri: localProfileData.profileImage }}
+              source={{ uri: localProfileData.profileImage ? `${localProfileData.profileImage}?timestamp=${Date.now()}` : undefined }}
               style={styles.avatar}
               key={localProfileData.profileImage} // Force re-render
               onError={(error) => {

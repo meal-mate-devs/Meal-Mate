@@ -4,11 +4,13 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
     Animated,
+    BackHandler,
     Dimensions,
     Image,
     KeyboardAvoidingView,
@@ -38,6 +40,7 @@ interface EnhancedImageAsset {
 
 const ProfileScreen: React.FC = () => {
     const { profile, updateUserProfile, refreshProfile } = useAuthContext();
+    const router = useRouter();
     const insets = useSafeAreaInsets();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -46,6 +49,20 @@ const ProfileScreen: React.FC = () => {
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const slideAnim = React.useRef(new Animated.Value(50)).current;
     const profileImageScale = React.useRef(new Animated.Value(1)).current;
+
+    // Original values for comparison
+    const [originalValues, setOriginalValues] = useState({
+        userName: '',
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: '',
+        dateOfBirth: '',
+        phoneNumber: ''
+    });
+    
+    // Unsaved changes state
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     // Form state
     const [userName, setUserName] = useState('');
@@ -78,6 +95,9 @@ const ProfileScreen: React.FC = () => {
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
     const [showGenderPicker, setShowGenderPicker] = useState(false);
+    
+    // Unsaved changes dialog state
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
     useEffect(() => {
         const loadProfileData = async () => {
@@ -88,13 +108,26 @@ const ProfileScreen: React.FC = () => {
                     await refreshProfile();
                 } else {
                     // Initialize form with profile data if it already exists
-                    setUserName(profile.userName || '');
-                    setFirstName(profile.firstName || '');
-                    setLastName(profile.lastName || '');
-                    setAge(profile.age ? profile.age.toString() : '');
-                    setGender(profile.gender as 'male' | 'female' | 'other' | '' || '');
-                    setDateOfBirth(profile.dateOfBirth || '');
-                    setPhoneNumber(profile.phoneNumber || '');
+                    const initialData = {
+                        userName: profile.userName || '',
+                        firstName: profile.firstName || '',
+                        lastName: profile.lastName || '',
+                        age: profile.age ? profile.age.toString() : '',
+                        gender: profile.gender as 'male' | 'female' | 'other' | '' || '',
+                        dateOfBirth: profile.dateOfBirth || '',
+                        phoneNumber: profile.phoneNumber || ''
+                    };
+                    
+                    setUserName(initialData.userName);
+                    setFirstName(initialData.firstName);
+                    setLastName(initialData.lastName);
+                    setAge(initialData.age);
+                    setGender(initialData.gender as 'male' | 'female' | 'other' | '');
+                    setDateOfBirth(initialData.dateOfBirth);
+                    setPhoneNumber(initialData.phoneNumber);
+                    
+                    // Store original values for comparison
+                    setOriginalValues(initialData);
 
                     // Set profile image URL if it exists
                     if (profile.profileImage?.url) {
@@ -115,20 +148,112 @@ const ProfileScreen: React.FC = () => {
     // Update form fields when profile changes
     useEffect(() => {
         if (profile) {
-            setUserName(profile.userName || '');
-            setFirstName(profile.firstName || '');
-            setLastName(profile.lastName || '');
-            setAge(profile.age ? profile.age.toString() : '');
-            setGender(profile.gender as 'male' | 'female' | 'other' | '' || '');
-            setDateOfBirth(profile.dateOfBirth || '');
-            setPhoneNumber(profile.phoneNumber || '');
+            const profileData = {
+                userName: profile.userName || '',
+                firstName: profile.firstName || '',
+                lastName: profile.lastName || '',
+                age: profile.age ? profile.age.toString() : '',
+                gender: profile.gender as 'male' | 'female' | 'other' | '' || '',
+                dateOfBirth: profile.dateOfBirth || '',
+                phoneNumber: profile.phoneNumber || ''
+            };
+            
+            setUserName(profileData.userName);
+            setFirstName(profileData.firstName);
+            setLastName(profileData.lastName);
+            setAge(profileData.age);
+            setGender(profileData.gender as 'male' | 'female' | 'other' | '');
+            setDateOfBirth(profileData.dateOfBirth);
+            setPhoneNumber(profileData.phoneNumber);
+            
+            // Update original values to match loaded profile data
+            setOriginalValues(profileData);
 
             // Set profile image URL if it exists
             if (profile.profileImage?.url) {
                 setCurrentProfileImageUrl(profile.profileImage.url);
             }
         }
-    }, [profile]);    // Handle form submission
+    }, [profile]);    
+    
+    // Check for unsaved changes
+    useEffect(() => {
+        const currentValues = {
+            userName,
+            firstName,
+            lastName,
+            age,
+            gender,
+            dateOfBirth,
+            phoneNumber
+        };
+        
+        const hasChanges = Object.keys(originalValues).some(key => 
+            originalValues[key as keyof typeof originalValues] !== currentValues[key as keyof typeof currentValues]
+        );
+        
+        console.log('Checking for unsaved changes:', {
+            originalValues,
+            currentValues,
+            hasChanges
+        });
+        
+        setHasUnsavedChanges(hasChanges);
+    }, [userName, firstName, lastName, age, gender, dateOfBirth, phoneNumber, originalValues]);
+    
+    // Handle navigation with unsaved changes
+    const handleBackPress = () => {
+        console.log('Back press triggered, hasUnsavedChanges:', hasUnsavedChanges);
+        if (hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            router.back();
+        }
+    };
+    
+    // Add navigation event listener to intercept back navigation
+    useEffect(() => {
+        const onBackPress = () => {
+            if (hasUnsavedChanges) {
+                setShowUnsavedDialog(true);
+                return true; // Prevent default back action
+            }
+            return false; // Allow default back action
+        };
+
+        // Add event listener for hardware back button (Android)
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+        return () => backHandler.remove();
+    }, [hasUnsavedChanges]);
+    
+    // Handle discard changes
+    const handleDiscardChanges = () => {
+        // Reset form to original values
+        setUserName(originalValues.userName);
+        setFirstName(originalValues.firstName);
+        setLastName(originalValues.lastName);
+        setAge(originalValues.age);
+        setGender(originalValues.gender as 'male' | 'female' | 'other' | '');
+        setDateOfBirth(originalValues.dateOfBirth);
+        setPhoneNumber(originalValues.phoneNumber);
+        
+        setShowUnsavedDialog(false);
+        router.back();
+    };
+    
+    // Handle save and leave
+    const handleSaveAndLeave = async () => {
+        setShowUnsavedDialog(false);
+        try {
+            await handleSaveProfile();
+            router.back();
+        } catch (error) {
+            console.log('Failed to save before leaving:', error);
+        }
+    };
+    
+    // Handle form submission
     const handleSaveProfile = async () => {
         // Basic validation
         const errors = {
@@ -175,6 +300,21 @@ const ProfileScreen: React.FC = () => {
                 // Clear the local profileImage state since we now have the server URL
                 setProfileImage(null);
             }
+            
+            // Update original values to reflect saved data
+            const updatedValues = {
+                userName,
+                firstName,
+                lastName,
+                age,
+                gender,
+                dateOfBirth,
+                phoneNumber
+            };
+            setOriginalValues(updatedValues);
+
+            // Refresh profile data to ensure all components get updated
+            await refreshProfile();
         } catch (error) {
             console.log('Error updating profile:', error);
             setDialogVisible(false);
@@ -262,6 +402,31 @@ const ProfileScreen: React.FC = () => {
         setDialogVisible(true);
     };
 
+    const uploadImageOnly = async (imageAsset: EnhancedImageAsset) => {
+        try {
+            showLoadingDialog('Uploading Image', 'Please wait while we upload your profile picture...');
+            
+            const response = await updateUserProfile({}, imageAsset);
+            
+            setDialogVisible(false);
+            showSuccessDialog('Image Uploaded', 'Your profile picture has been successfully updated.');
+            
+            // Update the current profile image URL if available in the response
+            if (response?.user?.profileImage?.url) {
+                console.log('Setting new profile image URL:', response.user.profileImage.url);
+                setCurrentProfileImageUrl(response.user.profileImage.url);
+                setProfileImage(null); // Clear local state
+            }
+            
+            // Refresh profile data to ensure all components get updated
+            await refreshProfile();
+        } catch (error) {
+            console.log('Error uploading image:', error);
+            setDialogVisible(false);
+            showErrorDialog('Failed to upload image. Please try again later.');
+        }
+    };
+
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -298,6 +463,9 @@ const ProfileScreen: React.FC = () => {
 
             console.log('Selected image:', enhancedImage);
             setProfileImage(enhancedImage);
+            
+            // Automatically upload the image
+            await uploadImageOnly(enhancedImage);
         }
     };
 
@@ -337,6 +505,9 @@ const ProfileScreen: React.FC = () => {
 
             console.log('Captured image:', enhancedImage);
             setProfileImage(enhancedImage);
+            
+            // Automatically upload the image
+            await uploadImageOnly(enhancedImage);
         }
     };
 
@@ -400,6 +571,19 @@ const ProfileScreen: React.FC = () => {
                 end={{ x: 0, y: 1 }}
             />
             <StatusBar barStyle="light-content" backgroundColor="#121212" />
+
+            {/* Custom Header with Back Button */}
+            <View style={styles.header}>
+                <TouchableOpacity 
+                    onPress={handleBackPress}
+                    style={styles.backButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Profile</Text>
+                <View style={styles.headerRight} />
+            </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -715,6 +899,19 @@ const ProfileScreen: React.FC = () => {
                 onConfirm={() => setDialogVisible(false)}
                 confirmText="OK"
             />
+            
+            {/* Unsaved Changes Dialog */}
+            <Dialog
+                visible={showUnsavedDialog}
+                type="warning"
+                title="Unsaved Changes"
+                message="You have unsaved changes. What would you like to do?"
+                onClose={handleDiscardChanges}
+                onConfirm={handleSaveAndLeave}
+                confirmText="Save & Leave"
+                cancelText="Discard Changes"
+                showCancelButton={true}
+            />
         </View>
     );
 };
@@ -723,6 +920,33 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#121212',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 10,
+        backgroundColor: 'transparent',
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    headerRight: {
+        width: 40,
+        height: 40,
     },
     loadingContainer: {
         flex: 1,
@@ -754,7 +978,7 @@ const styles = StyleSheet.create({
     scrollContent: {
         paddingHorizontal: 24,
         paddingBottom: 40,
-        paddingTop: 60,
+        paddingTop: 20,
     },
     profileImageSection: {
         alignItems: 'center',

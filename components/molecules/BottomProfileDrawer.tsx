@@ -449,7 +449,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
           {/* Profile image content */}
           {localProfileData.profileImage ? (
             <Image
-              source={{ uri: localProfileData.profileImage }}
+              source={{ uri: localProfileData.profileImage ? `${localProfileData.profileImage}?timestamp=${Date.now()}` : undefined }}
               style={styles.avatarImage}
               key={`${localProfileData.profileImage}-${Date.now()}`}
             />
