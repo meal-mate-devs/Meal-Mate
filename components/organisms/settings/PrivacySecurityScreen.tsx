@@ -132,8 +132,6 @@ const PrivacySecurityScreen: React.FC = () => {
       setNewPassword("")
       setConfirmPassword("")
     } catch (error: any) {
-      console.error("Password change error:", error)
-
       // Handle specific Firebase errors
       if (error.code === "auth/wrong-password") {
         showDialog(
@@ -248,7 +246,11 @@ const PrivacySecurityScreen: React.FC = () => {
         activeOpacity={1}
         onPress={() => setShowPasswordModal(false)}
       >
-        <TouchableOpacity activeOpacity={1} onPress={(e) => e.stopPropagation()}>
+        <TouchableOpacity 
+          activeOpacity={1} 
+          onPress={(e) => e.stopPropagation()}
+          style={{ width: '100%', alignItems: 'center' }}
+        >
           <View style={styles.modalContainer}>
             <LinearGradient
               colors={["#1F2937", "#111827"]}
@@ -259,12 +261,6 @@ const PrivacySecurityScreen: React.FC = () => {
               {/* Header */}
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Change Password</Text>
-                <TouchableOpacity
-                  onPress={() => setShowPasswordModal(false)}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={24} color="white" />
-                </TouchableOpacity>
               </View>
 
               <ScrollView
@@ -714,64 +710,55 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
     justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    padding: 0,
   },
   modalContainer: {
-    width: "100%",
-    maxWidth: 400,
+    width: "85%",
+    maxWidth: 600,
     borderRadius: 20,
     overflow: "hidden",
+    marginHorizontal: 20,
   },
   modalGradient: {
-    padding: 24,
+    padding: 20,
   },
   modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "700",
-    color: "white",
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
+    color: "#FACC15",
   },
   modalContent: {
     maxHeight: 400,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
-    color: "white",
+    color: "#D1D5DB",
     marginBottom: 8,
   },
   passwordInputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    backgroundColor: "rgba(31, 41, 55, 0.8)",
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(250, 204, 21, 0.15)",
   },
   passwordInput: {
     flex: 1,
     color: "white",
-    fontSize: 16,
-    marginLeft: 12,
-    marginRight: 12,
+    fontSize: 15,
+    marginLeft: 10,
+    marginRight: 10,
     padding: 0,
   },
   inputHint: {
@@ -782,40 +769,45 @@ const styles = StyleSheet.create({
   },
   modalActions: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 8,
+    gap: 10,
+    marginTop: 4,
   },
   modalButton: {
     flex: 1,
-    height: 48,
-    borderRadius: 12,
+    height: 46,
+    borderRadius: 10,
     overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
   },
   cancelButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    backgroundColor: "rgba(31, 41, 55, 0.8)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(156, 163, 175, 0.3)",
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "600",
-    color: "white",
+    color: "#D1D5DB",
+    textAlign: "center",
   },
   confirmButton: {
     overflow: "hidden",
   },
   confirmButtonGradient: {
-    flex: 1,
+    width: "100%",
+    height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    height: "100%",
+    paddingHorizontal: 16,
   },
   confirmButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "700",
-    color: "white",
+    color: "#000000",
+    textAlign: "center",
   },
 })
 
