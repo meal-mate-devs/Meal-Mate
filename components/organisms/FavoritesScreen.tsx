@@ -1,19 +1,19 @@
 "use client"
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import { router } from "expo-router"
+import { router, useLocalSearchParams } from "expo-router"
 import React, { useState } from "react"
 import {
-  Alert,
-  Image,
-  Modal,
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Alert,
+    Image,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native"
 
 // Mock favorite recipes data
@@ -147,6 +147,7 @@ const favoriteRecipes = [
 ]
 
 const FavoritesScreen: React.FC = () => {
+  const params = useLocalSearchParams()
   const [searchQuery, setSearchQuery] = useState("")
   const [favorites, setFavorites] = useState(favoriteRecipes)
   const [selectedRecipe, setSelectedRecipe] = useState<any>(null)
@@ -196,7 +197,14 @@ const FavoritesScreen: React.FC = () => {
       {/* Header */}
       <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between">
-          <TouchableOpacity onPress={() => router.push("/home")}>
+          <TouchableOpacity onPress={() => {
+            // If accessed from sidebar, go back to home screen
+            if (params.from === 'sidebar') {
+              router.push('/(protected)/(tabs)/home')
+            } else {
+              router.back()
+            }
+          }}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text className="text-white text-xl font-bold">My Favorites</Text>

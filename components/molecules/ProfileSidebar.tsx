@@ -17,12 +17,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 // Enhanced menu items with descriptions
 const menuItems = [
-  { icon: "bell", label: "Notifications", route: "settings/notifications", description: "Updates & Alerts" },
+  { icon: "bell", label: "Notifications", route: "(tabs)/(hidden)/settings/notifications", description: "Updates & Alerts" },
   { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
-  { icon: "package", label: "Pantry", route: "/recipe/pantry", description: "Pantry Management" },
-  { icon: "shopping-cart", label: "Grocery List", route: "settings/grocery-list", description: "Shopping & Groceries" },
-  { icon: "credit-card", label: "Subscription", route: "settings/subscription", description: "Manage Your Plan" },
-  { icon: "settings", label: "Settings", route: "/settings", description: "App Preferences" },
+  { icon: "package", label: "Pantry", route: "recipe/pantry", description: "Pantry Management" },
+  { icon: "shopping-cart", label: "Grocery List", route: "(tabs)/(hidden)/settings/grocery-list", description: "Shopping & Groceries" },
+  { icon: "credit-card", label: "Subscription", route: "(tabs)/(hidden)/settings/subscription", description: "Manage Your Plan" },
+  { icon: "settings", label: "Settings", route: "(tabs)/(hidden)/settings", description: "App Preferences" },
 ]
 
 // Custom Image Picker Dialog Component
@@ -636,10 +636,17 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
   const handleNavigation = (route: string) => {
     onClose()
     setTimeout(() => {
-      if (route === "/settings/payment") {
-        router.push({ pathname: route, params: { from: "sidebar" } })
-      } else {
-        router.push({ pathname: route as any })
+      // For recipe-related pages (pantry, favorites), pass sidebar context
+      if (route.includes("recipe/")) {
+        router.push({ pathname: route as any, params: { from: "sidebar" } })
+      } 
+      // For settings pages and grocery list, pass sidebar context 
+      else if (route.includes("settings")) {
+        router.push({ pathname: route as any, params: { from: "sidebar" } })
+      }
+      // Default navigation
+      else {
+        router.push({ pathname: route as any, params: { from: "sidebar" } })
       }
     }, 300)
   }

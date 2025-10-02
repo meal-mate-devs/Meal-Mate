@@ -4,22 +4,22 @@ import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/service
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  Alert,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    Share,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -121,6 +121,7 @@ const createInitialPurchaseForm = (): PurchaseFormData => ({
 
 const GroceryListScreen: React.FC = () => {
   const router = useRouter();
+  const params = useLocalSearchParams();
 
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [cachedGroceryItems, setCachedGroceryItems] = useState<GroceryItem[]>(LOCAL_FALLBACK_ITEMS);
@@ -832,7 +833,14 @@ const GroceryListScreen: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => {
+              // If accessed from sidebar, go back to home screen
+              if (params.from === 'sidebar') {
+                router.push('/(protected)/(tabs)/home')
+              } else {
+                router.back()
+              }
+            }}
             style={styles.backButton}
             activeOpacity={0.7}
           >

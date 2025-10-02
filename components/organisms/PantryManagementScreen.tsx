@@ -10,23 +10,23 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
-import { useRouter } from "expo-router"
+import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
-  Alert,
-  Animated,
-  Dimensions,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -355,6 +355,7 @@ const imagePickerStyles = StyleSheet.create({
 const PantryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const router = useRouter()
+  const params = useLocalSearchParams()
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
@@ -2657,7 +2658,14 @@ const PantryManagementScreen: React.FC = () => {
             {/* Back Button */}
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => {
+                // If accessed from sidebar, go back to home screen
+                if (params.from === 'sidebar') {
+                  router.push('/(protected)/(tabs)/home')
+                } else {
+                  router.back()
+                }
+              }}
               activeOpacity={0.7}
             >
               <View style={styles.backButtonInner}>
