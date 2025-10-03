@@ -63,12 +63,19 @@ class ApiClient {
             if (fetchOptions.body && !isFormData && typeof fetchOptions.body !== 'string') {
                 try {
                     fetchOptions.body = JSON.stringify(fetchOptions.body);
+                    console.log('📤 Stringified request body:', fetchOptions.body);
                 } catch (e) {
                     console.warn('Could not stringify request body:', e);
                 }
             }
 
             console.log(`Fetching ${API_BASE_URL}${endpoint}`);
+            console.log('📋 Final fetch options:', {
+                method: fetchOptions.method,
+                headers: fetchOptions.headers,
+                bodyPreview: fetchOptions.body ? (typeof fetchOptions.body === 'string' ? fetchOptions.body.substring(0, 200) + '...' : 'Non-string body') : 'No body'
+            });
+            
             const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
             console.log(`Response status: ${response.status}`);
 

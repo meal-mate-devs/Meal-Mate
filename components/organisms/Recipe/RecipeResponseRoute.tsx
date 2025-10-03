@@ -103,10 +103,19 @@ export default function RecipeResponseRoute(): JSX.Element {
         categories: params.categories ? JSON.parse(params.categories as string) : [],
         dietaryPreferences: params.dietaryPreferences ? JSON.parse(params.dietaryPreferences as string) : [],
         mealTime: (params.mealTime as string) || "",
-        servings: parseInt(params.servings as string) || 4,
-        cookingTime: parseInt(params.cookingTime as string) || 30,
+        servings: params.servings ? parseInt(params.servings as string) : 0,
+        cookingTime: params.cookingTime ? parseInt(params.cookingTime as string) : 0,
         ingredients: params.ingredients ? JSON.parse(params.ingredients as string) : [],
         difficulty: (params.difficulty as "Easy" | "Medium" | "Hard" | "Any") || "Any",
+      }
+
+      // Validate required parameters
+      if (!filters.servings || filters.servings <= 0) {
+        throw new Error('Serving size is required and must be greater than 0')
+      }
+      
+      if (!filters.cookingTime || filters.cookingTime <= 0) {
+        throw new Error('Cooking time is required and must be greater than 0')
       }
 
       const availableIngredients = filters.ingredients
@@ -121,11 +130,15 @@ export default function RecipeResponseRoute(): JSX.Element {
       }
 
       console.log('Generating recipe with request:', request)
+      console.log('Requested servings:', request.portionSize)
       
       // Call the backend API
       const response = await recipeGenerationService.generateRecipe(request)
       
       console.log('Recipe generation successful:', response.recipe.title)
+      console.log('Server returned servings:', response.recipe.servings)
+      console.log('Server settings portionSize:', response.settings?.portionSize)
+      console.log('Full server response:', response)
       
       // Clear timeout if successful
       if (timeoutRef.current) {
