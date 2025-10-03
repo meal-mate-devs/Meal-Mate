@@ -1,6 +1,6 @@
 "use client"
 
-import { pantryService } from "@/lib/services/pantryService"
+import { PantryItem, pantryService } from "@/lib/services/pantryService"
 import type {
     GeneratedRecipe,
     RecipeFilters
@@ -38,7 +38,9 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const [selectedRecipe, setSelectedRecipe] = useState<GeneratedRecipe | null>(null)
     const [showRecipeDetail, setShowRecipeDetail] = useState<boolean>(false)
     const [showIngredientScanner, setShowIngredientScanner] = useState<boolean>(false)
+    const [scannedIngredients, setScannedIngredients] = useState<string[]>([])
     const [pantryIngredients, setPantryIngredients] = useState<string[]>([])
+    const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
     const [isLoadingPantry, setIsLoadingPantry] = useState<boolean>(false)
 
     // Load pantry ingredients on component mount
@@ -49,12 +51,20 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const loadPantryIngredients = async () => {
         setIsLoadingPantry(true)
         try {
-            const ingredients = await pantryService.getIngredientsForRecipeGeneration({
-                excludeExpired: true,
-                minQuantity: 1
-            })
-            setPantryIngredients(ingredients)
-            console.log(`Loaded ${ingredients.length} pantry ingredients for recipe generation`)
+            // Load full pantry items for the ingredient selector (including expiring items)
+            const pantryResponse = await pantryService.getPantryItems()
+            const usableItems = pantryResponse.items.filter(item => 
+                item.expiryStatus === 'active' || item.expiryStatus === 'expiring'
+            )
+
+            // Set full pantry items for the selector
+            setPantryItems(usableItems)
+
+            // Also get just ingredient names for recipe generation
+            const ingredientNames = usableItems.map(item => item.name)
+            setPantryIngredients(ingredientNames)
+            
+            console.log(`Loaded ${usableItems.length} pantry items for recipe generation (${pantryResponse.items.filter(item => item.expiryStatus === 'expiring').length} expiring)`)
         } catch (error) {
             console.log('Failed to load pantry ingredients:', error)
             // Don't show error alert, just continue with empty pantry
@@ -72,20 +82,33 @@ export default function RecipeGenerationScreen(): JSX.Element {
     }
 
     const handleIngredientsDetected = (ingredients: string[]): void => {
-        if (ingredients.length === 0) {
+        if (!Array.isArray(ingredients) || ingredients.length === 0) {
+            return;
+        }
+
+        // Sanitize ingredients to ensure they are valid strings
+        const sanitizedIngredients = ingredients
+            .filter(ingredient => typeof ingredient === 'string' && ingredient.trim() !== '')
+            .map(ingredient => ingredient.trim());
+
+        if (sanitizedIngredients.length === 0) {
             return;
         }
         
-        console.log("Selected ingredients:", ingredients);
+        console.log("Selected ingredients:", sanitizedIngredients);
         
         // Update filters with unique ingredients (combine with existing ones)
-        const uniqueIngredients = [...new Set([...filters.ingredients, ...ingredients])];
+        const uniqueIngredients = [...new Set([...filters.ingredients, ...sanitizedIngredients])];
         handleFilterChange("ingredients", uniqueIngredients);
+        
+        // Track scanned ingredients separately
+        const uniqueScannedIngredients = [...new Set([...scannedIngredients, ...sanitizedIngredients])];
+        setScannedIngredients(uniqueScannedIngredients);
         
         // Show a notification about added ingredients
         Alert.alert(
             "Ingredients Added!", 
-            `Added ${ingredients.length} ingredient${ingredients.length > 1 ? 's' : ''} to your recipe.`,
+            `Added ${sanitizedIngredients.length} ingredient${sanitizedIngredients.length > 1 ? 's' : ''} to your recipe.`,
             [
                 { text: "Generate Recipes", onPress: handleGenerateRecipes },
                 { text: "OK", style: "cancel" }
@@ -117,6 +140,22 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
         // Navigate immediately to response screen with the recipe data
         console.log('Starting recipe generation flow - navigating to response screen')
+        
+        // Log the full request being sent
+        console.log('Full Recipe Generation Request:', {
+            filters: filters,
+            availableIngredients: availableIngredients,
+            params: {
+                cuisines: filters.cuisines,
+                categories: filters.categories,
+                dietaryPreferences: filters.dietaryPreferences,
+                mealTime: filters.mealTime,
+                servings: filters.servings,
+                cookingTime: filters.cookingTime,
+                ingredients: availableIngredients,
+                difficulty: filters.difficulty,
+            }
+        })
         
         // Pass filters and ingredients as route params
         const params = {
@@ -194,6 +233,56 @@ export default function RecipeGenerationScreen(): JSX.Element {
                         </TouchableOpacity>
                     </ScrollView>
                 </View>
+
+                {/* Selected Pantry Ingredients */}
+                {filters.ingredients.length > 0 && (
+                    <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
+                        <View className="flex-row items-center mb-3">
+                            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                            <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
+                            <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
+                                <Text className="text-white text-xs font-bold">{filters.ingredients.length}</Text>
+                            </View>
+                        </View>
+                        <View className="flex-row flex-wrap">
+                            {filters.ingredients.map((ingredient, index) => {
+                                const isScanned = scannedIngredients.includes(ingredient)
+                                const ingredientLabel = typeof ingredient === 'string'
+                                    ? ingredient.trim()
+                                    : ''
+
+                                if (!ingredientLabel) {
+                                    return null
+                                }
+
+                                return (
+                                    <TouchableOpacity
+                                        key={`${ingredientLabel}-${index}`}
+                                        onPress={() => {
+                                            const newIngredients = filters.ingredients.filter(item => item !== ingredient)
+                                            handleFilterChange("ingredients", newIngredients)
+                                            // Also remove from scanned if it was scanned
+                                            if (isScanned) {
+                                                setScannedIngredients(prev => prev.filter(item => item !== ingredient))
+                                            }
+                                        }}
+                                        className={`mr-2 mb-2 rounded-full px-3 py-2 items-center ${
+                                            isScanned ? 'bg-purple-500 border border-purple-400' : 'bg-green-500 border border-green-400'
+                                        }`}
+                                    >
+                                        <View className="flex-row items-center">
+                                            {isScanned && (
+                                                <Ionicons name="camera" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                            )}
+                                            <Text className="text-white text-sm font-medium">{ingredientLabel}</Text>
+                                            <Ionicons name="close" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                                        </View>
+                                    </TouchableOpacity>
+                                )
+                            })}
+                        </View>
+                    </View>
+                )}
 
                 <FilterSection
                     title="Cuisine Type"
@@ -324,6 +413,11 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 onClose={() => setShowIngredientSelector(false)}
                 selectedIngredients={filters.ingredients}
                 onIngredientsChange={(ingredients) => handleFilterChange("ingredients", ingredients)}
+                pantryItems={pantryItems}
+                isLoadingPantry={isLoadingPantry}
+                showIngredientScanner={showIngredientScanner}
+                setShowIngredientScanner={setShowIngredientScanner}
+                scannedIngredients={scannedIngredients}
             />
 
             <IngredientSearchModal

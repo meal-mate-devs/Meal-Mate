@@ -45,11 +45,24 @@ export default function IngredientSearchModal({
       ? { name: ingredient, confidence: undefined }
       : { name: ingredient.name, confidence: ingredient.confidence };
 
+    // Sanitize the name to ensure it's a safe string
+    if (!ingredientItem.name || typeof ingredientItem.name !== 'string') {
+      console.warn('Attempted to add ingredient with invalid name:', ingredient);
+      return;
+    }
+
+    // Trim whitespace and ensure it's not empty
+    ingredientItem.name = ingredientItem.name.trim();
+    if (ingredientItem.name === '') {
+      console.warn('Attempted to add ingredient with empty name after trimming');
+      return;
+    }
+
     // Don't add duplicates
     if (!selectedIngredients.some(item => item.name === ingredientItem.name)) {
       setSelectedIngredients(prev => [...prev, ingredientItem]);
     } else {
-      Alert.alert("Already Added", `${ingredientItem.name} is already in your list`);
+      Alert.alert("Already Added", `${ingredientItem.name || 'This ingredient'} is already in your list`);
     }
   };
 
@@ -225,7 +238,7 @@ export default function IngredientSearchModal({
                   style={[styles.progressBar, { width: `${scanProgress}%` }]}
                 />
               </View>
-              <Text style={styles.progressText}>{Math.round(scanProgress)}%</Text>
+              <Text style={styles.progressText}>{Math.round(scanProgress || 0)}%</Text>
             </View>
           ) : (
             <>
@@ -233,7 +246,7 @@ export default function IngredientSearchModal({
               {selectedIngredients.length > 0 && (
                 <View style={styles.selectedContainer}>
                   <Text style={styles.sectionTitle}>
-                    Ingredients ({selectedIngredients.length})
+                    Ingredients ({selectedIngredients.length || 0})
                   </Text>
                   <ScrollView
                     style={styles.selectedList}
@@ -244,7 +257,7 @@ export default function IngredientSearchModal({
                       <View key={index} style={styles.ingredientItem}>
                         <View style={styles.ingredientTextContainer}>
                           <Text style={styles.ingredientName} numberOfLines={1} ellipsizeMode="tail">
-                            {ingredient.name}
+                            {typeof ingredient.name === 'string' ? ingredient.name : 'Unknown Ingredient'}
                           </Text>
                         </View>
 
@@ -256,8 +269,7 @@ export default function IngredientSearchModal({
                             styles.confidenceText,
                             ingredient.confidence === undefined ? styles.manualConfidenceText : null
                           ]}>
-                            {ingredient.confidence !== undefined
-                              // Don't round, use toFixed to display the correct percentage with one decimal place
+                            {ingredient.confidence !== undefined && ingredient.confidence !== null
                               ? `${(ingredient.confidence * 100).toFixed(1)}%`
                               : 'Manual'}
                           </Text>

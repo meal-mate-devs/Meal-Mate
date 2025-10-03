@@ -330,7 +330,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     setDetectedIngredientsWithConfidence(prev => {
       if (prev.some(item => item.name === trimmedIngredient)) {
         if (options.alertOnDuplicates) {
-          Alert.alert("Duplicate Ingredient", `${trimmedIngredient} is already in your list.`);
+          Alert.alert("Duplicate Ingredient", `${String(trimmedIngredient)} is already in your list.`);
         }
         return prev;
       }
@@ -343,7 +343,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     setDetectedIngredients(prev => {
       if (prev.includes(trimmedIngredient)) {
         if (options.alertOnDuplicates) {
-          Alert.alert("Duplicate Ingredient", `${trimmedIngredient} is already in your list.`);
+          Alert.alert("Duplicate Ingredient", `${String(trimmedIngredient)} is already in your list.`);
         }
         return prev;
       }
