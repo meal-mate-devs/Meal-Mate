@@ -126,7 +126,7 @@ class CommunityService {
                 if (data.post) data.post = this.normalizeId(data.post);
                 return data;
             } catch (error) {
-                console.error('Error creating post with images:', error);
+                console.log('Error creating post with images:', error);
                 throw error;
             }
         }

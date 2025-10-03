@@ -104,10 +104,10 @@ export default function EditPostModal({
                             publicId: data.publicId
                         });
                     } else {
-                        console.error('Image upload failed:', data.message);
+                        console.log('Image upload failed:', data.message);
                     }
                 } catch (error) {
-                    console.error('Error uploading image:', error);
+                    console.log('Error uploading image:', error);
                 }
             } else if (image.url && image.publicId) {
                 normalizedImages.push(image);

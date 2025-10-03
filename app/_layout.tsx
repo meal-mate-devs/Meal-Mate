@@ -4,7 +4,7 @@ import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-font
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import React, { useEffect } from "react";
-import { BackHandler, Platform, StatusBar, StyleSheet, View } from "react-native";
+import { Platform, StatusBar, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import "../globals.css";
@@ -19,19 +19,15 @@ export default function RootLayout() {
   // Set background colors on app startup
   useEffect(() => {
     // Force dark mode
-    if (Platform.OS === 'android') {
-      // Set navigation bar color (Android only)
-      if (Platform.Version >= 21) {
-        try {
-          const { NavigationBar } = require('react-native').NativeModules;
-          if (NavigationBar && NavigationBar.setBackgroundColor) {
-            NavigationBar.setBackgroundColor('#000000');
-          }
-        } catch (error) {
-          console.log('Failed to set navigation bar color:', error);
-        }
-      }
-    }
+  }, []);
+
+  // Handle splash screen - prevent auto-hide and show immediately
+  React.useEffect(() => {
+    // Prevent the splash screen from auto-hiding
+    SplashScreen.preventAutoHideAsync();
+    
+    // Show our custom splash screen immediately with dark background
+    // The splash screen will be hidden when fonts are loaded
   }, []);
 
   // Handle splash screen based on font loading only
@@ -41,14 +37,33 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return <CustomSplashScreen />;
-  }
+  // Handle splash screen - prevent auto-hide and show immediately
+  React.useEffect(() => {
+    // Prevent the splash screen from auto-hiding
+    SplashScreen.preventAutoHideAsync();
+    
+    // Show our custom splash screen immediately with dark background
+    // The splash screen will be hidden when fonts are loaded
+  }, []);
 
+  // Handle splash screen based on font loading only
+  React.useEffect(() => {
+    if (fontsLoaded) {
+      SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  // Always show custom splash screen first, regardless of font loading
   return (
-    <AuthContextProvider>
-      <RootLayoutContent />
-    </AuthContextProvider>
+    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+      {!fontsLoaded ? (
+        <CustomSplashScreen />
+      ) : (
+        <AuthContextProvider>
+          <RootLayoutContent />
+        </AuthContextProvider>
+      )}
+    </View>
   );
 }
 
@@ -63,40 +78,6 @@ function RootLayoutContent() {
   useEffect(() => {
     setNavigationHistory(prev => [...prev, pathname]);
   }, [pathname]);
-  
-  // Handle Android back button
-  useEffect(() => {
-    if (Platform.OS !== 'android') return;
-    
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-      // Don't allow navigation from protected routes to auth routes when logged in
-      if (user) {
-        if (pathname.includes('/(protected)') && 
-            (pathname === '/(protected)/(tabs)/home' || pathname === '/(protected)/(tabs)')) {
-          // Don't go back from home screen when logged in, exit app instead
-          BackHandler.exitApp();
-          return true;
-        }
-        
-        // Prevent going back to auth screens when logged in
-        if (pathname.includes('/(protected)') && 
-            (router.canGoBack() && navigationHistory.some(path => path.includes('/(auth)')))) {
-          return true; // Block navigation
-        }
-      }
-      
-      // Don't allow navigation from auth routes to onboarding when completed
-      if (pathname.includes('/(auth)') && 
-          (router.canGoBack() && navigationHistory.some(path => path.includes('/(onboarding)')))) {
-        return true; // Block navigation to onboarding
-      }
-      
-      // Allow default back behavior for other cases
-      return false;
-    });
-    
-    return () => backHandler.remove();
-  }, [pathname, user, navigationHistory]);
 
   // Now handle loading state from context
   if (isLoading) {
@@ -106,7 +87,7 @@ function RootLayoutContent() {
   return (
     <>
       <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000000' }}>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
           <View style={styles.container}>
             {/* Status bar background for edge-to-edge support */}
             <View style={styles.statusBarBackground} />
@@ -119,7 +100,7 @@ function RootLayoutContent() {
             <Stack 
               screenOptions={{
                 headerShown: false,  // Hide header by default
-                contentStyle: { backgroundColor: '#000000' },
+                contentStyle: { backgroundColor: '#0F172A' },
                 animation: 'fade',  // Use fade instead of default slide
                 animationDuration: 200,
                 presentation: 'transparentModal',  // Prevent white flash
@@ -135,7 +116,7 @@ function RootLayoutContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
   },
   statusBarBackground: {
     position: 'absolute',
@@ -143,7 +124,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 24,
-    backgroundColor: '#000000',
+    backgroundColor: '#0F172A',
     zIndex: 1,
   },
 });

@@ -92,16 +92,18 @@ export default function IngredientScannerDialog({
           <View className="flex-1">
             <View className="flex-row flex-wrap justify-center mb-4">
               {detectedIngredientsWithConfidence.map((ingredient, index) => (
-                <View key={index} className={`${ingredient.confidence ? 'bg-yellow-400' : 'bg-gray-500'} rounded-full px-3 py-2 m-1 flex-row items-center`}>
-                  <Text className="text-black font-bold text-sm">{ingredient.name}</Text>
-                  {ingredient.confidence !== undefined && (
-                    <Text className="text-black text-xs ml-1">
-                      {` (${(ingredient.confidence * 100).toFixed(1)}%)`}
-                    </Text>
-                  )}
-                  <TouchableOpacity onPress={() => removeIngredient(ingredient.name)} className="ml-2">
-                    <Ionicons name="close" size={16} color="#000000" />
-                  </TouchableOpacity>
+                <View key={index} className={`${ingredient.confidence ? 'bg-yellow-400' : 'bg-gray-500'} rounded-full px-3 py-2 m-1`}>
+                  <View className="flex-row items-center">
+                    <Text className="text-black font-bold text-sm">{ingredient.name || 'Unknown'}</Text>
+                    {ingredient.confidence !== undefined && (
+                      <Text className="text-black text-xs ml-1">
+                        {`(${(ingredient.confidence * 100).toFixed(1)}%)`}
+                      </Text>
+                    )}
+                    <TouchableOpacity onPress={() => removeIngredient(ingredient.name)} className="ml-2">
+                      <Ionicons name="close" size={16} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
             </View>

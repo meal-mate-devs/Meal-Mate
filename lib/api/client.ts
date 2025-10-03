@@ -105,7 +105,7 @@ class ApiClient {
 
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`API Error: ${response.status}`, errorText);
+                console.log(`API Error: ${response.status}`, errorText);
                 throw new Error(`API Error: ${response.status} - ${errorText}`);
             }
 
@@ -139,7 +139,7 @@ class ApiClient {
             console.log(`postForm to ${endpoint}: Success`);
             return result;
         } catch (error) {
-            console.error(`postForm to ${endpoint}: Error`, error);
+            console.log(`postForm to ${endpoint}: Error`, error);
             throw error;
         }
     }

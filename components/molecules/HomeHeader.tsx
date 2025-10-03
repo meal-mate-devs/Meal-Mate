@@ -179,30 +179,34 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
                 transform: [{ scale: profilePulse }],
               }}
             >
-              {/* Glow Effect */}
-              <View className="absolute -inset-2 rounded-full bg-gradient-to-r from-yellow-400/30 to-orange-500/30 blur-lg" />
-
               {/* Profile Container */}
-              <View className="relative w-16 h-16 rounded-full overflow-hidden">
-                {/* Border Ring */}
-                <View className="absolute inset-0 rounded-full p-0">
-                  <LinearGradient
-                    colors={["#FACC15", "#F97316", "#FACC15"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="flex-1 rounded-full p-0.5"
-                  >
-                    <View className="flex-1 rounded-full bg-black" />
-                  </LinearGradient>
-                </View>
-
+              <View className="relative w-16 h-16 items-center justify-center">
+                {/* Subtle fade border */}
+                <View 
+                  className="absolute" 
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(250, 204, 21, 0.3)',
+                    borderRadius: 32,
+                  }}
+                />
+                
                 {/* Profile Image/Avatar */}
-                <View className="absolute inset-1 rounded-full overflow-hidden">
+                <View 
+                  className="rounded-full overflow-hidden"
+                  style={{
+                    width: 60,
+                    height: 60,
+                  }}
+                >
                   {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
                     <Image
                       key={localProfileData.profileImage}
-                      source={{ uri: localProfileData.profileImage }}
+                      source={{ uri: localProfileData.profileImage ? `${localProfileData.profileImage}?timestamp=${Date.now()}` : undefined }}
                       className="w-full h-full"
+                      style={{ borderRadius: 9999 }}
                       resizeMode="cover"
                       onLoad={() => console.log("Image loaded:", localProfileData.profileImage)} // Debug
                       onError={(error) => {
@@ -228,11 +232,11 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
               <View
                 className="absolute inset-0 rounded-full"
                 style={{
-                  shadowColor: "#FACC15",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.3,
-                  shadowRadius: 8,
-                  elevation: 8,
+                  shadowColor: "#000000",
+                  shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: 0.2,
+                  shadowRadius: 4,
+                  elevation: 4,
                 }}
               />
             </Animated.View>

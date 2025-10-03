@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { ingredientDetectionService } from "../../lib/services/ingredientDetectionService";
 import { IngredientWithConfidence } from "../../lib/types/ingredientDetection";
 
@@ -27,11 +27,15 @@ export default function IngredientSearchModal({
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
+  const [manualInput, setManualInput] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
 
   // Reset state when modal closes
   useEffect(() => {
     if (!visible) {
       setSelectedIngredients([]);
+      setManualInput('');
+      setShowManualInput(false);
     }
   }, [visible]);
 
@@ -41,31 +45,46 @@ export default function IngredientSearchModal({
       ? { name: ingredient, confidence: undefined }
       : { name: ingredient.name, confidence: ingredient.confidence };
 
+    // Sanitize the name to ensure it's a safe string
+    if (!ingredientItem.name || typeof ingredientItem.name !== 'string') {
+      console.warn('Attempted to add ingredient with invalid name:', ingredient);
+      return;
+    }
+
+    // Trim whitespace and ensure it's not empty
+    ingredientItem.name = ingredientItem.name.trim();
+    if (ingredientItem.name === '') {
+      console.warn('Attempted to add ingredient with empty name after trimming');
+      return;
+    }
+
     // Don't add duplicates
     if (!selectedIngredients.some(item => item.name === ingredientItem.name)) {
       setSelectedIngredients(prev => [...prev, ingredientItem]);
     } else {
-      Alert.alert("Already Added", `${ingredientItem.name} is already in your list`);
+      Alert.alert("Already Added", `${ingredientItem.name || 'This ingredient'} is already in your list`);
     }
   };
 
   const handleAddManually = () => {
-    Alert.prompt(
-      "Add Ingredient",
-      "Enter ingredient name:",
-      (text) => {
-        if (text && text.trim()) {
-          // For manual entry, we'll mark it as "manual"
-          setSelectedIngredients(prev => [
-            ...prev,
-            {
-              name: text.trim(),
-              confidence: undefined
-            }
-          ]);
-        }
-      }
-    );
+    setShowManualInput(prev => !prev);
+    if (showManualInput) {
+      // If we're closing manual input, clear the text
+      setManualInput('');
+    }
+  };
+
+  const handleManualInputSubmit = () => {
+    if (manualInput.trim()) {
+      addIngredient(manualInput.trim());
+      setManualInput('');
+      setShowManualInput(false);
+    }
+  };
+
+  const handleManualInputCancel = () => {
+    setManualInput('');
+    setShowManualInput(false);
   };
 
   const removeIngredient = (ingredient: IngredientItem) => {
@@ -197,9 +216,6 @@ export default function IngredientSearchModal({
         <View style={styles.dialogContainer}>
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.iconWrapper}>
-              <Ionicons name="nutrition" size={24} color="#FACC15" />
-            </View>
             <Text style={styles.title}>Add Ingredients</Text>
             <Text style={styles.subtitle}>
               {isScanning ? "Scanning image..." : "Choose how to add ingredients"}
@@ -222,7 +238,7 @@ export default function IngredientSearchModal({
                   style={[styles.progressBar, { width: `${scanProgress}%` }]}
                 />
               </View>
-              <Text style={styles.progressText}>{Math.round(scanProgress)}%</Text>
+              <Text style={styles.progressText}>{Math.round(scanProgress || 0)}%</Text>
             </View>
           ) : (
             <>
@@ -230,7 +246,7 @@ export default function IngredientSearchModal({
               {selectedIngredients.length > 0 && (
                 <View style={styles.selectedContainer}>
                   <Text style={styles.sectionTitle}>
-                    Ingredients ({selectedIngredients.length})
+                    Ingredients ({selectedIngredients.length || 0})
                   </Text>
                   <ScrollView
                     style={styles.selectedList}
@@ -241,7 +257,7 @@ export default function IngredientSearchModal({
                       <View key={index} style={styles.ingredientItem}>
                         <View style={styles.ingredientTextContainer}>
                           <Text style={styles.ingredientName} numberOfLines={1} ellipsizeMode="tail">
-                            {ingredient.name}
+                            {typeof ingredient.name === 'string' ? ingredient.name : 'Unknown Ingredient'}
                           </Text>
                         </View>
 
@@ -253,8 +269,7 @@ export default function IngredientSearchModal({
                             styles.confidenceText,
                             ingredient.confidence === undefined ? styles.manualConfidenceText : null
                           ]}>
-                            {ingredient.confidence !== undefined
-                              // Don't round, use toFixed to display the correct percentage with one decimal place
+                            {ingredient.confidence !== undefined && ingredient.confidence !== null
                               ? `${(ingredient.confidence * 100).toFixed(1)}%`
                               : 'Manual'}
                           </Text>
@@ -273,6 +288,26 @@ export default function IngredientSearchModal({
                 </View>
               )}
 
+              {/* Manual Input Section */}
+              {showManualInput && (
+                <View style={styles.manualInputContainer}>
+                  <Text style={styles.manualInputTitle}>Add Ingredient Manually</Text>
+                  <View style={styles.manualInputField}>
+                    <TextInput
+                      style={styles.manualInputText}
+                      placeholder="Enter ingredient name..."
+                      placeholderTextColor="#666"
+                      value={manualInput}
+                      onChangeText={setManualInput}
+                      autoCapitalize="words"
+                      autoFocus={true}
+                      onSubmitEditing={handleManualInputSubmit}
+                      returnKeyType="done"
+                    />
+                  </View>
+                </View>
+              )}
+
               {/* Options */}
               <View style={styles.optionsContainer}>
                 <Text style={styles.sectionTitle}>
@@ -280,33 +315,35 @@ export default function IngredientSearchModal({
                 </Text>
                 <View style={styles.optionButtonsContainer}>
                   <TouchableOpacity
-                    style={styles.optionButton}
+                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
                     onPress={handleCamera}
+                    disabled={showManualInput}
                   >
                     <View style={[styles.optionIconCircle, { backgroundColor: "rgba(250, 204, 21, 0.2)" }]}>
                       <Ionicons name="camera" size={22} color="#FACC15" />
                     </View>
-                    <Text style={styles.optionText}>Camera</Text>
+                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Camera</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={styles.optionButton}
+                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
                     onPress={handleGallery}
+                    disabled={showManualInput}
                   >
                     <View style={[styles.optionIconCircle, { backgroundColor: "rgba(59, 130, 246, 0.2)" }]}>
                       <Ionicons name="images" size={22} color="#3B82F6" />
                     </View>
-                    <Text style={styles.optionText}>Gallery</Text>
+                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Gallery</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     style={styles.optionButton}
                     onPress={handleAddManually}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(16, 185, 129, 0.2)" }]}>
+                    <View style={[styles.optionIconCircle, { backgroundColor: showManualInput ? "rgba(16, 185, 129, 0.4)" : "rgba(16, 185, 129, 0.2)" }]}>
                       <Ionicons name="create" size={22} color="#10B981" />
                     </View>
-                    <Text style={styles.optionText}>Type</Text>
+                    <Text style={[styles.optionText, showManualInput && styles.activeTypeText]}>Type</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -319,26 +356,30 @@ export default function IngredientSearchModal({
               <>
                 <TouchableOpacity
                   style={styles.confirmButton}
-                  onPress={handleConfirm}
-                  disabled={selectedIngredients.length === 0}
+                  onPress={showManualInput ? handleManualInputSubmit : handleConfirm}
+                  disabled={showManualInput ? !manualInput.trim() : selectedIngredients.length === 0}
                 >
                   <LinearGradient
                     colors={["#10B981", "#059669"]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 0 }}
                     style={[styles.confirmButtonGradient,
-                    selectedIngredients.length === 0 && styles.disabledButton
+                    (showManualInput ? !manualInput.trim() : selectedIngredients.length === 0) && styles.disabledButton
                     ]}
                   >
-                    <Text style={styles.confirmText}>Confirm</Text>
+                    <Text style={styles.confirmText}>
+                      {showManualInput ? 'Add Ingredient' : 'Confirm'}
+                    </Text>
                   </LinearGradient>
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.cancelButton}
-                  onPress={onClose}
+                  onPress={showManualInput ? handleManualInputCancel : onClose}
                 >
-                  <Text style={styles.cancelText}>Cancel</Text>
+                  <Text style={styles.cancelText}>
+                    {showManualInput ? 'Cancel' : 'Cancel'}
+                  </Text>
                 </TouchableOpacity>
               </>
             )}
@@ -577,5 +618,38 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: '500',
     fontSize: 16,
+  },
+  manualInputContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    marginBottom: -22,
+  },
+  manualInputTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 14,
+  },
+  manualInputField: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 16,
+  },
+  manualInputText: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  disabledText: {
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  activeTypeText: {
+    fontWeight: 'bold',
+    color: '#10B981',
   },
 });

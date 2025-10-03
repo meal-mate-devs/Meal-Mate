@@ -14,6 +14,7 @@ import {
   PanResponder,
   Platform,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -415,7 +416,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
     }
 
     return (
-      <TouchableOpacity style={styles.profileImageContainer} onPress={handleImagePicker} activeOpacity={0.8}>
+      <TouchableOpacity style={styles.profileImageContainer} onPress={handleImagePicker} activeOpacity={0.9}>
         <Animated.View
           style={[
             styles.profileImage,
@@ -424,25 +425,33 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
             },
           ]}
         >
-          {/* Glow effect */}
+          {/* Enhanced glow effect */}
           <Animated.View
             style={[
               styles.profileGlow,
               {
                 opacity: glowAnimation.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.3, 0.8],
+                  outputRange: [0.4, 0.8],
                 }),
+                transform: [
+                  {
+                    scale: glowAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [1, 1.05],
+                    }),
+                  },
+                ],
               },
             ]}
           />
 
-          {/* Profile image content - Use the state localProfileData */}
+          {/* Profile image content */}
           {localProfileData.profileImage ? (
             <Image
-              source={{ uri: localProfileData.profileImage }}
+              source={{ uri: localProfileData.profileImage ? `${localProfileData.profileImage}?timestamp=${Date.now()}` : undefined }}
               style={styles.avatarImage}
-              key={`${localProfileData.profileImage}-${Date.now()}`} // Force re-render with timestamp
+              key={`${localProfileData.profileImage}-${Date.now()}`}
             />
           ) : (
             <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.avatarGradient}>
@@ -454,13 +463,18 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
             </LinearGradient>
           )}
 
-          {/* Edit overlay */}
-          <View style={styles.editOverlay}>
-            <BlurView intensity={60} style={styles.editOverlayBlur}>
-              <Ionicons name="camera" size={20} color="white" />
-            </BlurView>
+          {/* Subtle edit indicator */}
+          <View style={styles.editIndicator}>
+            <Ionicons name="camera" size={16} color="rgba(255, 255, 255, 0.9)" />
           </View>
         </Animated.View>
+
+        {/* Profile badge */}
+        <View style={styles.profileBadge}>
+          <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.badgeGradient}>
+            <Ionicons name="star" size={12} color="#000" />
+          </LinearGradient>
+        </View>
       </TouchableOpacity>
     )
   }
@@ -491,20 +505,24 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
     >
       <Text style={styles.fieldLabel}>{label}</Text>
       <View style={styles.inputContainer}>
-        <BlurView intensity={20} style={StyleSheet.absoluteFill}>
-          <View style={styles.inputBlur} />
-        </BlurView>
+        <LinearGradient
+          colors={["rgba(250, 204, 21, 0.1)", "rgba(249, 115, 22, 0.05)"]}
+          style={StyleSheet.absoluteFill}
+        />
         <View style={styles.inputIconContainer}>
-          <Ionicons name={icon as any} size={18} color="#FACC15" />
+          <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.iconGradient}>
+            <Ionicons name={icon as any} size={18} color="#000" />
+          </LinearGradient>
         </View>
         <TextInput
           style={styles.textInput}
           value={String(formData[field as keyof typeof formData] || "")}
           onChangeText={(value) => updateFormField(field, value)}
           placeholder={placeholder}
-          placeholderTextColor="#6B7280"
+          placeholderTextColor="rgba(255, 255, 255, 0.5)"
           keyboardType={keyboardType}
           autoCapitalize={field === "email" ? "none" : "words"}
+          selectionColor="#FACC15"
         />
       </View>
     </Animated.View>
@@ -530,6 +548,8 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={[StyleSheet.absoluteFill, { zIndex: 50, pointerEvents: isOpen ? "auto" : "none" }]}
     >
+      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      
       {/* Enhanced backdrop with blur */}
       <Animated.View style={[StyleSheet.absoluteFill, { opacity }]}>
         <BlurView intensity={20} style={StyleSheet.absoluteFill}>
@@ -549,14 +569,12 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
           },
         ]}
       >
-        <BlurView intensity={80} style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={["rgba(0, 0, 0, 0.9)", "rgba(0, 0, 0, 0.95)", "rgba(0, 0, 0, 0.98)"]}
-            style={StyleSheet.absoluteFill}
-          />
-        </BlurView>
+        <LinearGradient
+          colors={["rgba(15, 23, 42, 0.98)", "rgba(0, 0, 0, 0.98)"]}
+          style={StyleSheet.absoluteFill}
+        />
 
-        {/* Drag handle */}
+        {/* Modern drag handle */}
         <View {...panResponder.panHandlers} style={styles.handleContainer}>
           <View style={styles.handle} />
         </View>
@@ -569,20 +587,8 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
           contentContainerStyle={styles.scrollContent}
           bounces={false}
         >
-          {/* Enhanced header */}
-          <View style={styles.coverImageContainer}>
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1543339308-43e59d6b73a6?q=80&w=2070&auto=format&fit=crop",
-              }}
-              style={styles.coverImage}
-            />
-            <LinearGradient
-              colors={["rgba(0,0,0,0.2)", "rgba(0,0,0,0.8)", "rgba(0,0,0,0.95)"]}
-              style={styles.coverGradient}
-              locations={[0, 0.7, 1]}
-            />
-
+          {/* Enhanced header with profile section */}
+          <View style={styles.headerSection}>
             {/* Close button */}
             <TouchableOpacity style={styles.closeButton} onPress={onClose}>
               <BlurView intensity={60} style={styles.closeButtonBlur}>
@@ -590,12 +596,35 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
               </BlurView>
             </TouchableOpacity>
 
-            {/* Enhanced profile image */}
-            {renderProfileImage()}
+            {/* Profile section */}
+            <View style={styles.profileSection}>
+              {renderProfileImage()}
+              
+              {/* User info */}
+              <View style={styles.userInfo}>
+                <Text style={styles.userName}>
+                  {localProfileData?.name || "Welcome Back"}
+                </Text>
+                <Text style={styles.userEmail}>
+                  {localProfileData?.email || "user@example.com"}
+                </Text>
+                <View style={styles.membershipBadge}>
+                  <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.membershipGradient}>
+                    <Ionicons name="diamond" size={12} color="#000" />
+                    <Text style={styles.membershipText}>Premium Member</Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </View>
           </View>
 
           {/* Enhanced form */}
           <View style={styles.formContainer}>
+            <View style={styles.formHeader}>
+              <Text style={styles.formTitle}>Profile Information</Text>
+              <Text style={styles.formSubtitle}>Update your personal details</Text>
+            </View>
+
             {renderFormField("Full Name", "name", "Enter your full name", "person-outline", 0)}
             {renderFormField("Email Address", "email", "Enter your email", "mail-outline", 1, "email-address")}
             {renderFormField("Gender", "gender", "Select your gender", "people-outline", 2)}
@@ -618,7 +647,7 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
                   end={{ x: 1, y: 0 }}
                   style={styles.saveButton}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="white" />
+                  <Ionicons name="checkmark-circle" size={20} color="#000" />
                   <Text style={styles.saveButtonText}>Save Changes</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -633,34 +662,22 @@ const EnhancedBottomProfileDrawer: React.FC<EnhancedBottomProfileDrawerProps> = 
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
   },
   drawer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     overflow: "hidden",
-    elevation: 25,
+    elevation: 30,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -8 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    marginTop: 80, // Add margin to keep it below status bar
-  },
-  borderGlow: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-    backgroundColor: "#FACC15",
-    shadowColor: "#FACC15",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 15,
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.6,
+    shadowRadius: 25,
+    marginTop: 80,
   },
   handleContainer: {
     height: 32,
@@ -669,36 +686,29 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    width: 50,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   scrollContent: {
     flexGrow: 1,
   },
-  coverImageContainer: {
-    height: 140, // Reduced from 200
-    width: "100%",
+  
+  // Modern header section
+  headerSection: {
+    paddingTop: 20,
+    paddingHorizontal: 24,
+    paddingBottom: 32,
     position: "relative",
-  },
-  coverImage: {
-    width: "100%",
-    height: "100%",
-    position: "absolute",
-  },
-  coverGradient: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
   },
   closeButton: {
     position: "absolute",
     top: 20,
     right: 20,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     overflow: "hidden",
     zIndex: 10,
   },
@@ -706,36 +716,39 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
+  },
+  
+  // Profile section
+  profileSection: {
+    alignItems: "center",
+    marginTop: 20,
   },
   profileImageContainer: {
-    position: "absolute",
-    bottom: -40, // Moved up from -60
-    left: 0,
-    right: 0,
     alignItems: "center",
+    marginBottom: 20,
   },
   profileImage: {
-    width: 100, // Reduced from 120
-    height: 100,
-    borderRadius: 50,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     overflow: "hidden",
     borderWidth: 4,
-    borderColor: "rgba(0, 0, 0, 0.8)",
+    borderColor: "rgba(250, 204, 21, 0.3)",
     position: "relative",
   },
   profileGlow: {
     position: "absolute",
-    top: -12, // Adjusted for smaller image
-    left: -12,
-    right: -12,
-    bottom: -12,
-    borderRadius: 62,
-    backgroundColor: "rgba(250, 204, 21, 0.3)",
+    top: -15,
+    left: -15,
+    right: -15,
+    bottom: -15,
+    borderRadius: 75,
+    backgroundColor: "rgba(250, 204, 21, 0.2)",
     shadowColor: "#FACC15",
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 1,
-    shadowRadius: 25,
+    shadowRadius: 30,
   },
   avatarImage: {
     width: "100%",
@@ -748,25 +761,190 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   avatarInitial: {
-    fontSize: 40, // Reduced from 48
-    fontWeight: "bold",
-    color: "white",
+    fontSize: 48,
+    fontWeight: "800",
+    color: "#000",
+    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
-  editOverlay: {
+  editIndicator: {
     position: "absolute",
-    bottom: 6, // Adjusted for smaller image
-    right: 6,
-    width: 28, // Reduced from 32
-    height: 28,
-    borderRadius: 14,
-    overflow: "hidden",
-  },
-  editOverlayBlur: {
-    flex: 1,
+    bottom: 8,
+    right: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.2)",
   },
+  profileBadge: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  badgeGradient: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  
+  // User info section
+  userInfo: {
+    alignItems: "center",
+    gap: 8,
+  },
+  userName: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: "700",
+    textAlign: "center",
+    letterSpacing: -0.5,
+  },
+  userEmail: {
+    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 16,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  membershipBadge: {
+    borderRadius: 16,
+    overflow: "hidden",
+    marginTop: 8,
+  },
+  membershipGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    gap: 6,
+  },
+  membershipText: {
+    color: "#000",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  
+  // Form section
+  formContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+  },
+  formHeader: {
+    marginBottom: 24,
+    alignItems: "center",
+  },
+  formTitle: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  formSubtitle: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  formField: {
+    marginBottom: 20,
+  },
+  fieldLabel: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 8,
+    marginLeft: 4,
+  },
+  inputContainer: {
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: "rgba(250, 204, 21, 0.2)",
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+    minHeight: 56,
+  },
+  inputIconContainer: {
+    width: 50,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  iconGradient: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  textInput: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingRight: 16,
+    color: "#FFFFFF",
+    fontSize: 16,
+    zIndex: 1,
+    fontWeight: "500",
+  },
+  
+  // Save button
+  saveButtonContainer: {
+    borderRadius: 18,
+    overflow: "hidden",
+    marginTop: 24,
+    elevation: 8,
+    shadowColor: "#FACC15",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+  },
+  saveButton: {
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 10,
+  },
+  saveButtonText: {
+    color: "#000",
+    fontWeight: "700",
+    fontSize: 17,
+    letterSpacing: 0.3,
+  },
+  
+  // Loading states
+  loadingContainer: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.8)",
+  },
+  loadingSpinner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginBottom: 8,
+  },
+  spinnerGradient: {
+    flex: 1,
+  },
+  loadingText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  
+  // Success indicator
   successIndicator: {
     position: "absolute",
     top: -10,
@@ -789,93 +967,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 8,
     elevation: 8,
-  },
-  loadingContainer: {
-    width: "100%",
-    height: "100%",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-  },
-  loadingSpinner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    overflow: "hidden",
-    marginBottom: 8,
-  },
-  spinnerGradient: {
-    flex: 1,
-  },
-  loadingText: {
-    color: "white",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  formContainer: {
-    paddingHorizontal: 24,
-    paddingTop: 40, // Significantly reduced from 80
-    paddingBottom: 24, // Reduced from 32
-  },
-  formField: {
-    marginBottom: 12, // Reduced from 20
-  },
-  fieldLabel: {
-    color: "white",
-    fontSize: 14, // Reduced from 16
-    fontWeight: "600",
-    marginBottom: 6, // Reduced from 8
-    marginLeft: 4,
-  },
-  inputContainer: {
-    borderRadius: 14, // Slightly smaller
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "rgba(250, 204, 21, 0.2)",
-    flexDirection: "row",
-    alignItems: "center",
-    position: "relative",
-  },
-  inputBlur: {
-    flex: 1,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-  },
-  inputIconContainer: {
-    width: 45, // Reduced from 50
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 1,
-  },
-  textInput: {
-    flex: 1,
-    paddingVertical: 14, // Reduced from 16
-    paddingRight: 16,
-    color: "white",
-    fontSize: 15, // Slightly smaller
-    zIndex: 1,
-  },
-  saveButtonContainer: {
-    borderRadius: 16,
-    overflow: "hidden",
-    marginTop: 16, // Reduced from 20
-    elevation: 8,
-    shadowColor: "#FACC15",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-  },
-  saveButton: {
-    paddingVertical: 16, // Reduced from 18
-    alignItems: "center",
-    justifyContent: "center",
-    flexDirection: "row",
-  },
-  saveButtonText: {
-    color: "white",
-    fontWeight: "bold",
-    fontSize: 16, // Reduced from 18
-    marginLeft: 8,
-    letterSpacing: 0.5,
   },
 })
 

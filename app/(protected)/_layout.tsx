@@ -1,8 +1,7 @@
 import { useAuthContext } from '@/context/authContext';
-import * as NavigationBar from 'expo-navigation-bar';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Platform, StatusBar } from 'react-native';
+import { StatusBar } from 'react-native';
 
 export default function ProtectedLayout() {
   const router = useRouter();
@@ -19,10 +18,7 @@ export default function ProtectedLayout() {
 
   // Navigation bar styling
   useEffect(() => {
-    if (Platform.OS === 'android') {
-      NavigationBar.setBackgroundColorAsync('#000000');
-      NavigationBar.setButtonStyleAsync('light');
-    }
+    // No Android-specific styling needed
   }, []);
 
   return (

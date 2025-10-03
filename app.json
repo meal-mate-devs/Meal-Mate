@@ -7,25 +7,8 @@
     "icon": "./assets/icon.png",
     "scheme": "authapp",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "statusBar": {
-        "backgroundColor": "#000000",
-        "barStyle": "light-content",
-        "translucent": true
-      },
-      "navigationBar": {
-        "backgroundColor": "#000000",
-        "barStyle": "light-content"
-      }
     },
     "web": {
       "bundler": "metro",
@@ -38,7 +21,7 @@
         "expo-splash-screen",
         {
           "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "imageWidth": 150,
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }

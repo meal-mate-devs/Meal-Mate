@@ -2,13 +2,14 @@
 
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useState } from "react";
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import DeleteAccountModal from "../../molecules/DeleteAccountModal";
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter()
+  const params = useLocalSearchParams()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const accountItems = [
@@ -115,7 +116,14 @@ const SettingsScreen: React.FC = () => {
       {/* Header with proper spacing */}
       <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-6">
         <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => router.push("/home")}>
+          <TouchableOpacity onPress={() => {
+            // If accessed from sidebar, go back to home screen
+            if (params.from === 'sidebar') {
+              router.push('/(protected)/(tabs)/home')
+            } else {
+              router.back()
+            }
+          }}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text className="text-white text-xl font-bold">Settings</Text>

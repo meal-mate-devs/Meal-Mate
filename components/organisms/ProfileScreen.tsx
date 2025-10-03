@@ -4,21 +4,29 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
+    Animated,
+    BackHandler,
+    Dimensions,
     Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
     StatusBar,
+    StyleSheet,
     Text,
     TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Dialog from '../atoms/Dialog';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface EnhancedImageAsset {
     uri: string;
@@ -32,8 +40,29 @@ interface EnhancedImageAsset {
 
 const ProfileScreen: React.FC = () => {
     const { profile, updateUserProfile, refreshProfile } = useAuthContext();
+    const router = useRouter();
+    const insets = useSafeAreaInsets();
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Animation values
+    const fadeAnim = React.useRef(new Animated.Value(0)).current;
+    const slideAnim = React.useRef(new Animated.Value(50)).current;
+    const profileImageScale = React.useRef(new Animated.Value(1)).current;
+
+    // Original values for comparison
+    const [originalValues, setOriginalValues] = useState({
+        userName: '',
+        firstName: '',
+        lastName: '',
+        age: '',
+        gender: '',
+        dateOfBirth: '',
+        phoneNumber: ''
+    });
+    
+    // Unsaved changes state
+    const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
     // Form state
     const [userName, setUserName] = useState('');
@@ -66,6 +95,9 @@ const ProfileScreen: React.FC = () => {
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
     const [showGenderPicker, setShowGenderPicker] = useState(false);
+    
+    // Unsaved changes dialog state
+    const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
 
     useEffect(() => {
         const loadProfileData = async () => {
@@ -76,13 +108,26 @@ const ProfileScreen: React.FC = () => {
                     await refreshProfile();
                 } else {
                     // Initialize form with profile data if it already exists
-                    setUserName(profile.userName || '');
-                    setFirstName(profile.firstName || '');
-                    setLastName(profile.lastName || '');
-                    setAge(profile.age ? profile.age.toString() : '');
-                    setGender(profile.gender as 'male' | 'female' | 'other' | '' || '');
-                    setDateOfBirth(profile.dateOfBirth || '');
-                    setPhoneNumber(profile.phoneNumber || '');
+                    const initialData = {
+                        userName: profile.userName || '',
+                        firstName: profile.firstName || '',
+                        lastName: profile.lastName || '',
+                        age: profile.age ? profile.age.toString() : '',
+                        gender: profile.gender as 'male' | 'female' | 'other' | '' || '',
+                        dateOfBirth: profile.dateOfBirth || '',
+                        phoneNumber: profile.phoneNumber || ''
+                    };
+                    
+                    setUserName(initialData.userName);
+                    setFirstName(initialData.firstName);
+                    setLastName(initialData.lastName);
+                    setAge(initialData.age);
+                    setGender(initialData.gender as 'male' | 'female' | 'other' | '');
+                    setDateOfBirth(initialData.dateOfBirth);
+                    setPhoneNumber(initialData.phoneNumber);
+                    
+                    // Store original values for comparison
+                    setOriginalValues(initialData);
 
                     // Set profile image URL if it exists
                     if (profile.profileImage?.url) {
@@ -103,20 +148,112 @@ const ProfileScreen: React.FC = () => {
     // Update form fields when profile changes
     useEffect(() => {
         if (profile) {
-            setUserName(profile.userName || '');
-            setFirstName(profile.firstName || '');
-            setLastName(profile.lastName || '');
-            setAge(profile.age ? profile.age.toString() : '');
-            setGender(profile.gender as 'male' | 'female' | 'other' | '' || '');
-            setDateOfBirth(profile.dateOfBirth || '');
-            setPhoneNumber(profile.phoneNumber || '');
+            const profileData = {
+                userName: profile.userName || '',
+                firstName: profile.firstName || '',
+                lastName: profile.lastName || '',
+                age: profile.age ? profile.age.toString() : '',
+                gender: profile.gender as 'male' | 'female' | 'other' | '' || '',
+                dateOfBirth: profile.dateOfBirth || '',
+                phoneNumber: profile.phoneNumber || ''
+            };
+            
+            setUserName(profileData.userName);
+            setFirstName(profileData.firstName);
+            setLastName(profileData.lastName);
+            setAge(profileData.age);
+            setGender(profileData.gender as 'male' | 'female' | 'other' | '');
+            setDateOfBirth(profileData.dateOfBirth);
+            setPhoneNumber(profileData.phoneNumber);
+            
+            // Update original values to match loaded profile data
+            setOriginalValues(profileData);
 
             // Set profile image URL if it exists
             if (profile.profileImage?.url) {
                 setCurrentProfileImageUrl(profile.profileImage.url);
             }
         }
-    }, [profile]);    // Handle form submission
+    }, [profile]);    
+    
+    // Check for unsaved changes
+    useEffect(() => {
+        const currentValues = {
+            userName,
+            firstName,
+            lastName,
+            age,
+            gender,
+            dateOfBirth,
+            phoneNumber
+        };
+        
+        const hasChanges = Object.keys(originalValues).some(key => 
+            originalValues[key as keyof typeof originalValues] !== currentValues[key as keyof typeof currentValues]
+        );
+        
+        console.log('Checking for unsaved changes:', {
+            originalValues,
+            currentValues,
+            hasChanges
+        });
+        
+        setHasUnsavedChanges(hasChanges);
+    }, [userName, firstName, lastName, age, gender, dateOfBirth, phoneNumber, originalValues]);
+    
+    // Handle navigation with unsaved changes
+    const handleBackPress = () => {
+        console.log('Back press triggered, hasUnsavedChanges:', hasUnsavedChanges);
+        if (hasUnsavedChanges) {
+            setShowUnsavedDialog(true);
+        } else {
+            router.back();
+        }
+    };
+    
+    // Add navigation event listener to intercept back navigation
+    useEffect(() => {
+        const onBackPress = () => {
+            if (hasUnsavedChanges) {
+                setShowUnsavedDialog(true);
+                return true; // Prevent default back action
+            }
+            return false; // Allow default back action
+        };
+
+        // Add event listener for hardware back button (Android)
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+        return () => backHandler.remove();
+    }, [hasUnsavedChanges]);
+    
+    // Handle discard changes
+    const handleDiscardChanges = () => {
+        // Reset form to original values
+        setUserName(originalValues.userName);
+        setFirstName(originalValues.firstName);
+        setLastName(originalValues.lastName);
+        setAge(originalValues.age);
+        setGender(originalValues.gender as 'male' | 'female' | 'other' | '');
+        setDateOfBirth(originalValues.dateOfBirth);
+        setPhoneNumber(originalValues.phoneNumber);
+        
+        setShowUnsavedDialog(false);
+        router.back();
+    };
+    
+    // Handle save and leave
+    const handleSaveAndLeave = async () => {
+        setShowUnsavedDialog(false);
+        try {
+            await handleSaveProfile();
+            router.back();
+        } catch (error) {
+            console.log('Failed to save before leaving:', error);
+        }
+    };
+    
+    // Handle form submission
     const handleSaveProfile = async () => {
         // Basic validation
         const errors = {
@@ -163,6 +300,21 @@ const ProfileScreen: React.FC = () => {
                 // Clear the local profileImage state since we now have the server URL
                 setProfileImage(null);
             }
+            
+            // Update original values to reflect saved data
+            const updatedValues = {
+                userName,
+                firstName,
+                lastName,
+                age,
+                gender,
+                dateOfBirth,
+                phoneNumber
+            };
+            setOriginalValues(updatedValues);
+
+            // Refresh profile data to ensure all components get updated
+            await refreshProfile();
         } catch (error) {
             console.log('Error updating profile:', error);
             setDialogVisible(false);
@@ -195,6 +347,20 @@ const ProfileScreen: React.FC = () => {
             return `${year}-${month}-${day}`;
         } catch (error) {
             return '';
+        }
+    };
+
+    // Helper function to format date for display
+    const formatDateForDisplay = (dateString: string) => {
+        if (!dateString) return 'Select Date of Birth';
+        try {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${day}/${month}/${year}`;
+        } catch (error) {
+            return dateString;
         }
     };
 
@@ -236,6 +402,31 @@ const ProfileScreen: React.FC = () => {
         setDialogVisible(true);
     };
 
+    const uploadImageOnly = async (imageAsset: EnhancedImageAsset) => {
+        try {
+            showLoadingDialog('Uploading Image', 'Please wait while we upload your profile picture...');
+            
+            const response = await updateUserProfile({}, imageAsset);
+            
+            setDialogVisible(false);
+            showSuccessDialog('Image Uploaded', 'Your profile picture has been successfully updated.');
+            
+            // Update the current profile image URL if available in the response
+            if (response?.user?.profileImage?.url) {
+                console.log('Setting new profile image URL:', response.user.profileImage.url);
+                setCurrentProfileImageUrl(response.user.profileImage.url);
+                setProfileImage(null); // Clear local state
+            }
+            
+            // Refresh profile data to ensure all components get updated
+            await refreshProfile();
+        } catch (error) {
+            console.log('Error uploading image:', error);
+            setDialogVisible(false);
+            showErrorDialog('Failed to upload image. Please try again later.');
+        }
+    };
+
     const pickImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -272,6 +463,9 @@ const ProfileScreen: React.FC = () => {
 
             console.log('Selected image:', enhancedImage);
             setProfileImage(enhancedImage);
+            
+            // Automatically upload the image
+            await uploadImageOnly(enhancedImage);
         }
     };
 
@@ -311,316 +505,387 @@ const ProfileScreen: React.FC = () => {
 
             console.log('Captured image:', enhancedImage);
             setProfileImage(enhancedImage);
+            
+            // Automatically upload the image
+            await uploadImageOnly(enhancedImage);
         }
     };
 
+    // Initialize animations
+    React.useEffect(() => {
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 800,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
     if (isLoading) {
         return (
-            <View className="flex-1 bg-black justify-center items-center">
-                <ActivityIndicator size="large" color="#FBBF24" />
-                <Text className="text-white mt-4">Loading profile...</Text>
+            <View style={styles.loadingContainer}>
+                <LinearGradient
+                    colors={['#121212', '#0a0a0a', '#000000']}
+                    style={StyleSheet.absoluteFill}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 0, y: 1 }}
+                />
+                <StatusBar barStyle="light-content" backgroundColor="#121212" />
+                <View style={styles.loadingContent}>
+                    <Animated.View
+                        style={[
+                            styles.loadingSpinner,
+                            {
+                                transform: [{
+                                    rotate: fadeAnim.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['0deg', '360deg'],
+                                    })
+                                }]
+                            }
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={['#FACC15', '#F97316']}
+                            style={styles.spinnerGradient}
+                        />
+                    </Animated.View>
+                    <Text style={styles.loadingText}>Loading your profile...</Text>
+                </View>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-black">
-            <StatusBar barStyle="light-content" />
-
-            {/* Header */}
+        <View style={styles.container}>
             <LinearGradient
-                colors={['rgba(25, 25, 25, 1)', 'rgba(0, 0, 0, 1)']}
-                className="pt-14 pb-4 px-4 rounded-b-3xl"
-            >
-                <View className="flex-row items-center justify-center">
-                    <Text className="text-white text-xl font-bold">My Profile</Text>
-                </View>
-            </LinearGradient>
+                colors={['#121212', '#0a0a0a', '#000000']}
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+            />
+            <StatusBar barStyle="light-content" backgroundColor="#121212" />
+
+            {/* Custom Header with Back Button */}
+            <View style={styles.header}>
+                <TouchableOpacity 
+                    onPress={handleBackPress}
+                    style={styles.backButton}
+                    activeOpacity={0.7}
+                >
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Profile</Text>
+                <View style={styles.headerRight} />
+            </View>
 
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={{ flex: 1 }}
             >
-                <ScrollView className="flex-1 px-4 pt-6">
-                    {/* Profile Image */}
-                    <View className="items-center mb-6">
-                        <TouchableOpacity onPress={pickImage}>
-                            <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
-                                {profileImage ? (
-                                    <Image
-                                        source={{ uri: profileImage.uri }}
-                                        className="w-full h-full"
-                                        resizeMode="cover"
-                                    />
-                                ) : currentProfileImageUrl ? (
-                                    <Image
-                                        source={{ uri: `${currentProfileImageUrl}?timestamp=${Date.now()}` }}
-                                        className="w-full h-full"
-                                        resizeMode="cover"
-                                        onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
-                                    />
-                                ) : (
-                                    <Image
-                                        source={require('../../assets/images/avatar.png')}
-                                        className="w-full h-full"
-                                        resizeMode="cover"
-                                    />
-                                )}
-                                {/* Show camera overlay only when no image is selected */}
-                                {!profileImage && !currentProfileImageUrl && (
-                                    <View className="absolute inset-0 bg-black bg-opacity-20 items-center justify-center">
-                                        <Ionicons name="camera" size={28} color="#FFFFFF" />
-                                        <Text className="text-white text-xs mt-1">Tap to change</Text>
-                                    </View>
-                                )}
-                                {/* Show a small camera icon in the corner when an image is selected */}
-                                {(profileImage || currentProfileImageUrl) && (
-                                    <View className="absolute bottom-0 right-0 bg-black bg-opacity-50 rounded-tl-lg p-2">
-                                        <Ionicons name="camera" size={16} color="#FFFFFF" />
-                                    </View>
-                                )}
+                <ScrollView
+                    style={styles.scrollView}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                >
+                    {/* Enhanced Profile Image Section */}
+                    <Animated.View
+                        style={[
+                            styles.profileImageSection,
+                            {
+                                opacity: fadeAnim,
+                                transform: [{ scale: profileImageScale }]
+                            }
+                        ]}
+                    >
+                        <TouchableOpacity
+                            onPress={() => {
+                                Animated.sequence([
+                                    Animated.spring(profileImageScale, {
+                                        toValue: 0.95,
+                                        useNativeDriver: true,
+                                    }),
+                                    Animated.spring(profileImageScale, {
+                                        toValue: 1,
+                                        useNativeDriver: true,
+                                    }),
+                                ]).start();
+                                pickImage();
+                            }}
+                            activeOpacity={0.9}
+                        >
+                            <View style={styles.profileImageContainer}>
+                                <View style={styles.profileImageWrapper}>
+                                    {profileImage ? (
+                                        <Image
+                                            source={{ uri: profileImage.uri }}
+                                            style={styles.profileImage}
+                                            resizeMode="cover"
+                                        />
+                                    ) : currentProfileImageUrl ? (
+                                        <Image
+                                            source={{ uri: `${currentProfileImageUrl}?timestamp=${Date.now()}` }}
+                                            style={styles.profileImage}
+                                            resizeMode="cover"
+                                            onError={(e) => console.log('Image loading error:', e.nativeEvent.error)}
+                                        />
+                                    ) : (
+                                        <View style={styles.profileImagePlaceholder}>
+                                            <Ionicons name="person" size={60} color="#FACC15" />
+                                        </View>
+                                    )}
+                                </View>
                             </View>
                         </TouchableOpacity>
 
-                        <View className="flex-row mt-2">
+                        {/* Enhanced action buttons */}
+                        <View style={styles.imageActionsContainer}>
                             <TouchableOpacity
                                 onPress={pickImage}
-                                className="bg-zinc-800 rounded-full py-1 px-3 mr-2 flex-row items-center"
+                                style={styles.actionButton}
+                                activeOpacity={0.8}
                             >
-                                <Ionicons name="images-outline" size={16} color="#FFFFFF" />
-                                <Text className="text-white text-xs ml-1">Gallery</Text>
+                                <View style={styles.actionButtonContent}>
+                                    <Ionicons name="images-outline" size={16} color="#D4AF37" />
+                                    <Text style={styles.actionButtonText}>Gallery</Text>
+                                </View>
                             </TouchableOpacity>
+
                             <TouchableOpacity
                                 onPress={takePicture}
-                                className="bg-zinc-800 rounded-full py-1 px-3 flex-row items-center"
+                                style={styles.actionButton}
+                                activeOpacity={0.8}
                             >
-                                <Ionicons name="camera-outline" size={16} color="#FFFFFF" />
-                                <Text className="text-white text-xs ml-1">Camera</Text>
+                                <View style={styles.actionButtonContent}>
+                                    <Ionicons name="camera-outline" size={16} color="#D4AF37" />
+                                    <Text style={styles.actionButtonText}>Camera</Text>
+                                </View>
                             </TouchableOpacity>
                         </View>
-                    </View>
+                    </Animated.View>
 
-                    {/* Form Fields */}
-                    {/* Username */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Username</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="at-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Username"
-                                placeholderTextColor="#9CA3AF"
-                                value={userName}
-                                onChangeText={(text) => {
-                                    setUserName(text);
-                                    if (formErrors.userName) setFormErrors({ ...formErrors, userName: '' });
-                                }}
-                                autoCapitalize="none"
-                            />
-                        </View>
-                        {formErrors.userName ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.userName}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* First Name */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">First Name</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="First Name"
-                                placeholderTextColor="#9CA3AF"
-                                value={firstName}
-                                onChangeText={(text) => {
-                                    setFirstName(text);
-                                    if (formErrors.firstName) setFormErrors({ ...formErrors, firstName: '' });
-                                }}
-                                autoCapitalize="words"
-                            />
-                        </View>
-                        {formErrors.firstName ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.firstName}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Last Name */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Last Name</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="person-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Last Name"
-                                placeholderTextColor="#9CA3AF"
-                                value={lastName}
-                                onChangeText={(text) => {
-                                    setLastName(text);
-                                    if (formErrors.lastName) setFormErrors({ ...formErrors, lastName: '' });
-                                }}
-                                autoCapitalize="words"
-                            />
-                        </View>
-                        {formErrors.lastName ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.lastName}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Age */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Age</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Age"
-                                placeholderTextColor="#9CA3AF"
-                                value={age}
-                                onChangeText={(text) => {
-                                    // Only allow numbers
-                                    const numericText = text.replace(/[^0-9]/g, '');
-                                    setAge(numericText);
-                                    if (formErrors.age) setFormErrors({ ...formErrors, age: '' });
-                                }}
-                                keyboardType="numeric"
-                                maxLength={3}
-                            />
-                        </View>
-                        {formErrors.age ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.age}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Gender Selection */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Gender</Text>
-                        <TouchableOpacity
-                            onPress={() => setShowGenderPicker(!showGenderPicker)}
-                            className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center justify-between px-5 h-14 border border-zinc-700"
+                    {/* Simplified Form Fields */}
+                    <View style={styles.formContainer}>
+                        {/* Username */}
+                        <Animated.View
+                            style={[
+                                styles.formField,
+                                {
+                                    opacity: fadeAnim,
+                                    transform: [{ translateY: slideAnim }]
+                                }
+                            ]}
                         >
-                            <View className="flex-row items-center">
-                                <Ionicons name="person-circle-outline" size={20} color="#FFFFFF" />
-                                <Text className="text-white text-base ml-3">
+                            <Text style={styles.fieldLabel}>Username</Text>
+                            <View style={[styles.inputContainer, formErrors.userName && styles.inputError]}>
+                                <Ionicons name="at-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter username"
+                                    placeholderTextColor="#666"
+                                    value={userName}
+                                    onChangeText={(text) => {
+                                        setUserName(text);
+                                        if (formErrors.userName) setFormErrors({ ...formErrors, userName: '' });
+                                    }}
+                                    autoCapitalize="none"
+                                    selectionColor="#FACC15"
+                                />
+                            </View>
+                            {formErrors.userName ? (
+                                <Text style={styles.errorText}>{formErrors.userName}</Text>
+                            ) : null}
+                        </Animated.View>
+
+                        {/* First Name */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>First Name</Text>
+                            <View style={[styles.inputContainer, formErrors.firstName && styles.inputError]}>
+                                <Ionicons name="person-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter first name"
+                                    placeholderTextColor="#666"
+                                    value={firstName}
+                                    onChangeText={(text) => {
+                                        setFirstName(text);
+                                        if (formErrors.firstName) setFormErrors({ ...formErrors, firstName: '' });
+                                    }}
+                                    autoCapitalize="words"
+                                    selectionColor="#FACC15"
+                                />
+                            </View>
+                            {formErrors.firstName ? (<Text style={styles.errorText}>{formErrors.firstName}</Text>) : null}
+                        </Animated.View>
+
+                        {/* Last Name */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>Last Name</Text>
+                            <View style={[styles.inputContainer, formErrors.lastName && styles.inputError]}>
+                                <Ionicons name="person-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter last name"
+                                    placeholderTextColor="#666"
+                                    value={lastName}
+                                    onChangeText={(text) => {
+                                        setLastName(text);
+                                        if (formErrors.lastName) setFormErrors({ ...formErrors, lastName: '' });
+                                    }}
+                                    autoCapitalize="words"
+                                    selectionColor="#FACC15"
+                                />
+                            </View>
+                            {formErrors.lastName ? (<Text style={styles.errorText}>{formErrors.lastName}</Text>) : null}
+                        </Animated.View>
+
+                        {/* Age */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>Age</Text>
+                            <View style={[styles.inputContainer, formErrors.age && styles.inputError]}>
+                                <Ionicons name="calendar-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter your age"
+                                    placeholderTextColor="#666"
+                                    value={age}
+                                    onChangeText={(text) => {
+                                        const numericText = text.replace(/[^0-9]/g, '');
+                                        setAge(numericText);
+                                        if (formErrors.age) setFormErrors({ ...formErrors, age: '' });
+                                    }}
+                                    keyboardType="numeric"
+                                    maxLength={3}
+                                    selectionColor="#FACC15"
+                                />
+                            </View>
+                            {formErrors.age ? (<Text style={styles.errorText}>{formErrors.age}</Text>) : null}
+                        </Animated.View>
+
+                        {/* Gender Selection */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>Gender</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowGenderPicker(!showGenderPicker)}
+                                style={[styles.inputContainer, formErrors.gender && styles.inputError]}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="person-circle-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <Text style={[styles.textInput, { paddingVertical: 18 }]}>
                                     {gender ? gender.charAt(0).toUpperCase() + gender.slice(1) : 'Select Gender'}
                                 </Text>
+                                <Ionicons
+                                    name={showGenderPicker ? "chevron-up-outline" : "chevron-down-outline"}
+                                    size={20}
+                                    color="#666"
+                                    style={{ marginRight: 16 }}
+                                />
+                            </TouchableOpacity>
+
+                            {showGenderPicker && (
+                                <View style={styles.genderPicker}>
+                                    {['male', 'female', 'other'].map((genderOption) => (
+                                        <TouchableOpacity
+                                            key={genderOption}
+                                            onPress={() => handleSelectGender(genderOption as 'male' | 'female' | 'other')}
+                                            style={styles.genderOption}
+                                            activeOpacity={0.8}
+                                        >
+                                            <Ionicons
+                                                name={gender === genderOption ? "radio-button-on" : "radio-button-off"}
+                                                size={20}
+                                                color={gender === genderOption ? "#FACC15" : "#666"}
+                                            />
+                                            <Text style={[
+                                                styles.genderOptionText,
+                                                gender === genderOption && styles.genderOptionTextActive
+                                            ]}>
+                                                {genderOption.charAt(0).toUpperCase() + genderOption.slice(1)}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </View>
+                            )}
+                            {formErrors.gender ? (<Text style={styles.errorText}>{formErrors.gender}</Text>) : null}
+                        </Animated.View>
+
+                        {/* Date of Birth */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>Date of Birth</Text>
+                            <TouchableOpacity
+                                style={[styles.inputContainer, formErrors.dateOfBirth && styles.inputError]}
+                                onPress={() => setShowDatePicker(true)}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="calendar-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <Text style={[styles.textInput, { paddingVertical: 18 }]}>
+                                    {formatDateForDisplay(dateOfBirth)}
+                                </Text>
+                            </TouchableOpacity>
+                            {showDatePicker && (
+                                <DateTimePicker
+                                    value={dateOfBirth ? new Date(dateOfBirth) : new Date()}
+                                    mode="date"
+                                    display="default"
+                                    onChange={handleDateChange}
+                                    maximumDate={new Date()}
+                                />
+                            )}
+                            {formErrors.dateOfBirth && (<Text style={styles.errorText}>{formErrors.dateOfBirth}</Text>)}
+                        </Animated.View>
+
+                        {/* Phone Number */}
+                        <Animated.View style={[styles.formField, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <Text style={styles.fieldLabel}>Phone Number</Text>
+                            <View style={[styles.inputContainer, formErrors.phoneNumber && styles.inputError]}>
+                                <Ionicons name="call-outline" size={18} color="#666" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.textInput}
+                                    placeholder="Enter phone number"
+                                    placeholderTextColor="#666"
+                                    value={phoneNumber}
+                                    onChangeText={(text) => {
+                                        setPhoneNumber(text);
+                                        if (formErrors.phoneNumber) setFormErrors({ ...formErrors, phoneNumber: '' });
+                                    }}
+                                    keyboardType="phone-pad"
+                                    selectionColor="#FACC15"
+                                />
                             </View>
-                            <Ionicons
-                                name={showGenderPicker ? "chevron-up-outline" : "chevron-down-outline"}
-                                size={20}
-                                color="#FFFFFF"
-                            />
-                        </TouchableOpacity>
+                            {formErrors.phoneNumber ? (<Text style={styles.errorText}>{formErrors.phoneNumber}</Text>) : null}
+                        </Animated.View>
 
-                        {showGenderPicker && (
-                            <View className="mt-1 bg-zinc-800 rounded-lg overflow-hidden border border-zinc-700">
-                                <TouchableOpacity
-                                    onPress={() => handleSelectGender('male')}
-                                    className="flex-row items-center px-5 py-3"
-                                >
-                                    <Ionicons
-                                        name={gender === 'male' ? "radio-button-on" : "radio-button-off"}
-                                        size={20}
-                                        color={gender === 'male' ? "#FBBF24" : "#FFFFFF"}
-                                    />
-                                    <Text className="text-white text-base ml-3">Male</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => handleSelectGender('female')}
-                                    className="flex-row items-center px-5 py-3"
-                                >
-                                    <Ionicons
-                                        name={gender === 'female' ? "radio-button-on" : "radio-button-off"}
-                                        size={20}
-                                        color={gender === 'female' ? "#FBBF24" : "#FFFFFF"}
-                                    />
-                                    <Text className="text-white text-base ml-3">Female</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => handleSelectGender('other')}
-                                    className="flex-row items-center px-5 py-3"
-                                >
-                                    <Ionicons
-                                        name={gender === 'other' ? "radio-button-on" : "radio-button-off"}
-                                        size={20}
-                                        color={gender === 'other' ? "#FBBF24" : "#FFFFFF"}
-                                    />
-                                    <Text className="text-white text-base ml-3">Other</Text>
-                                </TouchableOpacity>
-                            </View>
-                        )}
-
-                        {formErrors.gender ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.gender}</Text>
-                        ) : null}
+                        {/* Save Button */}
+                        <Animated.View style={[styles.saveButtonContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+                            <TouchableOpacity
+                                onPress={handleSaveProfile}
+                                disabled={isSaving}
+                                activeOpacity={0.8}
+                                style={styles.saveButton}
+                            >
+                                <LinearGradient
+                                    colors={['#FACC15', '#F97316']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={StyleSheet.absoluteFill}
+                                />
+                                {isSaving ? (
+                                    <ActivityIndicator size="small" color="#000" />
+                                ) : (
+                                    <Ionicons name="checkmark-circle" size={20} color="#000" />
+                                )}
+                                <Text style={styles.saveButtonText}>
+                                    {isSaving ? 'Saving...' : 'Save Profile'}
+                                </Text>
+                            </TouchableOpacity>
+                        </Animated.View>
                     </View>
-
-                    {/* Date of Birth */}
-                    <View className="mb-4">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Date of Birth</Text>
-                        <TouchableOpacity
-                            className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700"
-                            onPress={() => setShowDatePicker(true)}
-                        >
-                            <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                            <Text className="flex-1 text-white text-base ml-3">
-                                {dateOfBirth ? dateOfBirth : "Select Date of Birth"}
-                            </Text>
-                        </TouchableOpacity>
-                        {showDatePicker && (
-                            <DateTimePicker
-                                value={dateOfBirth ? new Date(dateOfBirth) : new Date()}
-                                mode="date"
-                                display="default"
-                                onChange={handleDateChange}
-                                maximumDate={new Date()}
-                            />
-                        )}
-                        {formErrors.dateOfBirth && (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.dateOfBirth}</Text>
-                        )}
-                    </View>
-
-                    {/* Phone Number */}
-                    <View className="mb-6">
-                        <Text className="text-gray-400 mb-2 text-sm pl-2">Phone Number</Text>
-                        <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
-                            <Ionicons name="call-outline" size={20} color="#FFFFFF" />
-                            <TextInput
-                                className="flex-1 text-white text-base ml-3"
-                                placeholder="Phone Number"
-                                placeholderTextColor="#9CA3AF"
-                                value={phoneNumber}
-                                onChangeText={(text) => {
-                                    setPhoneNumber(text);
-                                    if (formErrors.phoneNumber) setFormErrors({ ...formErrors, phoneNumber: '' });
-                                }}
-                                keyboardType="phone-pad"
-                            />
-                        </View>
-                        {formErrors.phoneNumber ? (
-                            <Text className="text-red-500 text-sm ml-4 mt-1">{formErrors.phoneNumber}</Text>
-                        ) : null}
-                    </View>
-
-                    {/* Save Button */}
-                    <TouchableOpacity
-                        className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
-                        onPress={handleSaveProfile}
-                        disabled={isSaving}
-                    >
-                        <LinearGradient
-                            colors={['#FBBF24', '#F97416']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            className="w-full h-full absolute"
-                        />
-                        <Text className="text-white text-base font-bold">
-                            {isSaving ? 'Saving...' : 'Save Profile'}
-                        </Text>
-                    </TouchableOpacity>
                 </ScrollView>
             </KeyboardAvoidingView>
 
@@ -634,8 +899,250 @@ const ProfileScreen: React.FC = () => {
                 onConfirm={() => setDialogVisible(false)}
                 confirmText="OK"
             />
+            
+            {/* Unsaved Changes Dialog */}
+            <Dialog
+                visible={showUnsavedDialog}
+                type="warning"
+                title="Unsaved Changes"
+                message="You have unsaved changes. What would you like to do?"
+                onClose={handleDiscardChanges}
+                onConfirm={handleSaveAndLeave}
+                confirmText="Save & Leave"
+                cancelText="Discard Changes"
+                showCancelButton={true}
+            />
         </View>
     );
 };
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#121212',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20,
+        paddingTop: 50,
+        paddingBottom: 10,
+        backgroundColor: 'transparent',
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerTitle: {
+        color: '#FFFFFF',
+        fontSize: 20,
+        fontWeight: '600',
+        textAlign: 'center',
+    },
+    headerRight: {
+        width: 40,
+        height: 40,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#121212',
+    },
+    loadingContent: {
+        alignItems: 'center',
+        gap: 20,
+    },
+    loadingSpinner: {
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        overflow: 'hidden',
+    },
+    spinnerGradient: {
+        flex: 1,
+    },
+    loadingText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    scrollView: {
+        flex: 1,
+    },
+    scrollContent: {
+        paddingHorizontal: 24,
+        paddingBottom: 40,
+        paddingTop: 20,
+    },
+    profileImageSection: {
+        alignItems: 'center',
+        marginTop: 20,
+        marginBottom: 30,
+    },
+    profileImageContainer: {
+        position: 'relative',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileImageWrapper: {
+        width: 160,
+        height: 160,
+        borderRadius: 80,
+        overflow: 'hidden',
+        position: 'relative',
+        shadowColor: '#FACC15',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    profileImage: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileImagePlaceholder: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#2a2a2a',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    imageActionsContainer: {
+        flexDirection: 'row',
+        marginTop: 20,
+        gap: 12,
+    },
+    actionButton: {
+        borderRadius: 20,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(250, 204, 21, 0.2)',
+        backgroundColor: 'rgba(250, 204, 21, 0.05)',
+    },
+    actionButtonContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 10,
+        gap: 8,
+    },
+    actionButtonText: {
+        color: '#E6B800',
+        fontSize: 14,
+        fontWeight: '500',
+    },
+    // Form styles
+    formContainer: {
+        gap: 16,
+    },
+    formTitle: {
+        color: '#FFFFFF',
+        fontSize: 22,
+        fontWeight: '700',
+        marginBottom: 8,
+        textAlign: 'center',
+        letterSpacing: -0.3,
+    },
+    formField: {
+        gap: 8,
+    },
+    fieldLabel: {
+        color: '#FFFFFF',
+        fontSize: 15,
+        fontWeight: '600',
+        marginLeft: 4,
+    },
+    inputContainer: {
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.15)',
+        backgroundColor: 'rgba(255, 255, 255, 0.08)',
+        flexDirection: 'row',
+        alignItems: 'center',
+        position: 'relative',
+        minHeight: 56,
+    },
+    inputError: {
+        borderColor: '#EF4444',
+        borderWidth: 2,
+    },
+    inputIcon: {
+        marginLeft: 16,
+        marginRight: 12,
+    },
+    textInput: {
+        flex: 1,
+        paddingVertical: 16,
+        paddingRight: 16,
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    errorText: {
+        color: '#EF4444',
+        fontSize: 14,
+        marginLeft: 4,
+        fontWeight: '500',
+    },
+    // Gender picker styles
+    genderPicker: {
+        marginTop: 8,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    genderOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+        paddingVertical: 16,
+        gap: 12,
+    },
+    genderOptionText: {
+        color: '#999',
+        fontSize: 16,
+        fontWeight: '500',
+    },
+    genderOptionTextActive: {
+        color: '#FACC15',
+        fontWeight: '600',
+    },
+    // Save button styles
+    saveButtonContainer: {
+        marginTop: 20,
+        borderRadius: 18,
+        overflow: 'hidden',
+        elevation: 8,
+        shadowColor: '#FACC15',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 15,
+    },
+    saveButton: {
+        paddingVertical: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 10,
+        position: 'relative',
+    },
+    saveButtonText: {
+        color: '#000',
+        fontWeight: '700',
+        fontSize: 17,
+        letterSpacing: 0.3,
+    },
+});
 
 export default ProfileScreen;
