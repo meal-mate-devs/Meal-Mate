@@ -5,6 +5,7 @@ import { GeneratedRecipe, RecipeFilters } from "@/lib/types/recipeGeneration"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
+import LottieView from "lottie-react-native"
 import React, { JSX, useEffect, useRef, useState } from "react"
 import { Alert, Animated, ScrollView, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
@@ -189,24 +190,26 @@ export default function RecipeResponseRoute(): JSX.Element {
 
   return (
     <View className="flex-1 bg-zinc-900">
-      {/* Header */}
-      <View 
-        className="flex-row items-center justify-between px-4 py-2"
-        style={{ paddingTop: insets.top + 10 }}
-      >
-        <TouchableOpacity 
-          onPress={handleClose}
-          className="w-10 h-10 rounded-full bg-zinc-800 items-center justify-center"
+      {/* Minimal Header - Only show when not generating */}
+      {!isGenerating && (
+        <View
+          className="flex-row items-center justify-between px-4 py-3"
+          style={{ paddingTop: insets.top + 8 }}
         >
-          <Ionicons name="close" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        
-        <Text className="text-white text-lg font-bold">Recipe Generation</Text>
-        
-        <View className="w-10" />
-      </View>
+          <TouchableOpacity
+            onPress={handleClose}
+            className="w-8 h-8 rounded-full bg-zinc-800/50 items-center justify-center"
+          >
+            <Ionicons name="close" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
 
-      <Animated.View 
+          <Text className="text-white text-base font-semibold">Recipe Generation</Text>
+
+          <View className="w-8" />
+        </View>
+      )}
+
+      <Animated.View
         className="flex-1"
         style={{
           opacity: fadeAnim,
@@ -214,143 +217,85 @@ export default function RecipeResponseRoute(): JSX.Element {
         }}
       >
         {isGenerating && !error && !generatedRecipe && (
-          <View className="flex-1">
-            {/* Beautiful gradient background */}
-            <LinearGradient
-              colors={["#0F0F23", "#1A1A2E", "#16213E"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              className="flex-1 justify-center items-center px-6"
-            >
-              {/* Floating particles background effect */}
-              <View className="absolute inset-0">
-                <Animated.View 
-                  className="absolute top-20 left-10 w-2 h-2 bg-orange-400/30 rounded-full"
-                  style={{
-                    transform: [{
-                      translateY: pulseAnim.interpolate({
-                        inputRange: [1, 1.1],
-                        outputRange: [0, -10]
-                      })
-                    }]
-                  }}
-                />
-                <Animated.View 
-                  className="absolute top-40 right-16 w-3 h-3 bg-amber-400/20 rounded-full"
-                  style={{
-                    transform: [{
-                      translateY: pulseAnim.interpolate({
-                        inputRange: [1, 1.1],
-                        outputRange: [0, 15]
-                      })
-                    }]
-                  }}
-                />
-                <Animated.View 
-                  className="absolute bottom-32 left-20 w-1.5 h-1.5 bg-yellow-400/40 rounded-full"
-                  style={{
-                    transform: [{
-                      translateY: pulseAnim.interpolate({
-                        inputRange: [1, 1.1],
-                        outputRange: [0, -8]
-                      })
-                    }]
-                  }}
-                />
-              </View>
-
-              <Animated.View 
-                className="items-center"
+          <LinearGradient
+            colors={["#0F0F23", "#1A1A2E", "#16213E"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            className="flex-1 justify-center items-center"
+          >
+            {/* Subtle animated background elements */}
+            <View className="absolute inset-0">
+              {/* Floating circles with gentle animation */}
+              <Animated.View
+                className="absolute w-32 h-32 rounded-full border border-orange-400/10"
                 style={{
-                  transform: [{ scale: pulseAnim }]
+                  top: '15%',
+                  left: '10%',
+                  transform: [{
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.1],
+                      outputRange: [1, 1.05]
+                    })
+                  }]
                 }}
-              >
-                {/* Beautiful loading animation container */}
-                <View className="relative mb-12">
-                  {/* Outer glow ring */}
-                  <Animated.View 
-                    className="absolute -inset-4 rounded-full border-2 border-orange-400/30"
-                    style={{
-                      transform: [{
-                        rotate: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: ['0deg', '360deg']
-                        })
-                      }]
-                    }}
-                  />
-                  
-                  {/* Main loading container with gradient background */}
-                  <LinearGradient
-                    colors={["#F97316", "#F59E0B", "#EAB308"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="w-28 h-28 rounded-full items-center justify-center shadow-2xl"
-                  >
-                    {/* Chef hat icon instead of lottie */}
-                    <Ionicons name="restaurant" size={40} color="#FFFFFF" />
-                  </LinearGradient>
-                  
-                  {/* Rotating dots around the circle */}
-                  <Animated.View 
-                    className="absolute inset-0"
-                    style={{
-                      transform: [{
-                        rotate: pulseAnim.interpolate({
-                          inputRange: [1, 1.1],
-                          outputRange: ['0deg', '180deg']
-                        })
-                      }]
-                    }}
-                  >
-                    <View className="absolute -top-1 left-1/2 w-2 h-2 bg-white rounded-full transform -translate-x-1" />
-                    <View className="absolute -bottom-1 left-1/2 w-2 h-2 bg-white rounded-full transform -translate-x-1" />
-                    <View className="absolute top-1/2 -left-1 w-2 h-2 bg-white rounded-full transform -translate-y-1" />
-                    <View className="absolute top-1/2 -right-1 w-2 h-2 bg-white rounded-full transform -translate-y-1" />
-                  </Animated.View>
-                </View>
+              />
+              <Animated.View
+                className="absolute w-24 h-24 rounded-full border border-amber-400/15"
+                style={{
+                  top: '70%',
+                  right: '15%',
+                  transform: [{
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.1],
+                      outputRange: [1.05, 1]
+                    })
+                  }]
+                }}
+              />
+              <Animated.View
+                className="absolute w-20 h-20 rounded-full border border-yellow-400/20"
+                style={{
+                  bottom: '20%',
+                  left: '70%',
+                  transform: [{
+                    scale: pulseAnim.interpolate({
+                      inputRange: [1, 1.1],
+                      outputRange: [1, 1.03]
+                    })
+                  }]
+                }}
+              />
 
-                {/* Beautiful typography */}
-                <View className="items-center space-y-4 mb-8">
-                  <Text className="text-white text-2xl font-bold text-center">
-                    ✨ Crafting Your Recipe
-                  </Text>
-                  
-                  <Text className="text-zinc-300 text-center text-lg max-w-sm leading-7 font-medium">
-                    Our AI chef is carefully selecting the perfect ingredients and cooking methods just for you
-                  </Text>
-                </View>
+              {/* Subtle gradient orbs */}
+              <View className="absolute top-1/4 left-1/4 w-2 h-2 bg-orange-400/30 rounded-full" />
+              <View className="absolute top-3/4 right-1/3 w-1.5 h-1.5 bg-amber-400/40 rounded-full" />
+              <View className="absolute bottom-1/3 left-1/2 w-1 h-1 bg-yellow-400/50 rounded-full" />
+            </View>
 
-                {/* Modern progress bar with better contrast */}
-                <View className="w-64 h-2 bg-zinc-700/50 rounded-full overflow-hidden shadow-inner">
-                  <Animated.View 
-                    className="h-full rounded-full"
-                    style={{
-                      width: '40%',
-                      transform: [{
-                        translateX: fadeAnim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [-100, 200]
-                        })
-                      }]
-                    }}
-                  >
-                    <LinearGradient
-                      colors={["#F97316", "#F59E0B", "#EAB308"]}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 0 }}
-                      className="h-full rounded-full"
-                    />
-                  </Animated.View>
-                </View>
+            <Animated.View
+              className="items-center justify-center"
+              style={{
+                opacity: fadeAnim
+              }}
+            >
+              {/* Clean Lottie Animation */}
+              <LottieView
+                source={require('@/assets/lottie/loading.json')}
+                autoPlay
+                loop
+                style={{ width: 120, height: 120, marginBottom: 24 }}
+              />
 
-                {/* Loading tips */}
-                <Text className="text-zinc-400 text-center text-sm mt-6 max-w-xs">
-                  💡 Tip: The longer it takes, the more personalized your recipe will be!
-                </Text>
-              </Animated.View>
-            </LinearGradient>
-          </View>
+              {/* Simple App Title Style Text */}
+              <Text className="text-white text-2xl font-semibold tracking-wide mb-2">
+                Generating Recipe
+              </Text>
+              
+              <Text className="text-zinc-400 text-center text-base">
+                Please wait...
+              </Text>
+            </Animated.View>
+          </LinearGradient>
         )}
 
         {error && (
