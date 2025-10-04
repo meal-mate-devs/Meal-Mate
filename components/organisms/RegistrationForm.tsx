@@ -2,7 +2,6 @@ import { useAuthContext } from '@/context/authContext';
 import { getAuthErrorMessage } from '@/lib/utils/registerErrorHandlers';
 import { getProfileImagePermission, validateSignupForm } from '@/lib/utils/registerValidation';
 import { Ionicons } from '@expo/vector-icons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import NetInfo from '@react-native-community/netinfo';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -36,7 +35,6 @@ export default function RegistrationForm() {
     const [isConfirmPasswordVisible, setIsConfirmPasswordVisible] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [showGenderPicker, setShowGenderPicker] = useState(false);
-    const [showDatePicker, setShowDatePicker] = useState(false);
     interface EnhancedImageAsset {
         uri: string;
         width?: number;
@@ -67,11 +65,9 @@ export default function RegistrationForm() {
     const [dialogMessage, setDialogMessage] = useState('');
 
     const router = useRouter();
-    const { register, doesAccountExist, doesUsernameExist, refreshProfile } = useAuthContext() as {
+    const { register, doesAccountExist } = useAuthContext() as {
         register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage: any) => Promise<any>,
-        doesAccountExist: (email: string) => Promise<boolean>,
-        doesUsernameExist: (username: string) => Promise<boolean>,
-        refreshProfile: () => Promise<void>
+        doesAccountExist: (email: string) => Promise<boolean>
     };
 
     const clearErrors = () => {
@@ -150,7 +146,6 @@ export default function RegistrationForm() {
             showDialog('loading', 'Creating Account', 'Please wait while we set up your account...');
 
             let accountExists = false;
-            let usernameExists = false;
             try {
                 const accountCheckPromise = doesAccountExist(email.trim());
                 const accountCheckWithTimeout = Promise.race([
@@ -168,26 +163,8 @@ export default function RegistrationForm() {
                     setEmailError('Account already exists. Please login instead.');
                     return;
                 }
-
-                // Check username availability
-                const usernameCheckPromise = doesUsernameExist(username.trim());
-                const usernameCheckWithTimeout = Promise.race([
-                    usernameCheckPromise,
-                    new Promise((_, reject) =>
-                        setTimeout(() => reject(new Error('Username check timed out')), 10000)
-                    )
-                ]);
-
-                usernameExists = await usernameCheckWithTimeout as boolean;
-
-                if (usernameExists) {
-                    setIsLoading(false);
-                    setDialogVisible(false);
-                    setUsernameError('Username already taken. Please choose a different username.');
-                    return;
-                }
-            } catch (checkError) {
-                console.log('Account/Username check error:', checkError);
+            } catch (accountCheckError) {
+                console.log('Account check error:', accountCheckError);
                 const isStillConnected = await checkNetworkConnectivity();
                 if (!isStillConnected) {
                     setIsLoading(false);
@@ -195,13 +172,13 @@ export default function RegistrationForm() {
                     showDialog('error', 'Network Error', 'Network connection lost. Please check your internet and try again.');
                     return;
                 }
-                const { errorCode, errorMessage } = getAuthErrorMessage(checkError);
+                const { errorCode, errorMessage } = getAuthErrorMessage(accountCheckError);
                 if (errorCode === 'network-error') {
-                    showDialog('error', 'Network Error', 'Network error while checking account availability. Please check your connection and try again.');
+                    showDialog('error', 'Network Error', 'Network error while checking your account. Please check your connection and try again.');
                 } else if (errorMessage.toLowerCase().includes('timeout')) {
                     showDialog('error', 'Request Timeout', 'Request timed out. Please try again later.');
                 } else {
-                    showDialog('error', 'Check Error', 'Error checking account availability. Please try again later.');
+                    showDialog('error', 'Account Check Error', 'Error checking account. Please try again later.');
                 }
                 setIsLoading(false);
                 setDialogVisible(false);
@@ -228,16 +205,6 @@ export default function RegistrationForm() {
             );
 
             console.log('Registration response:', response);
-            
-            // Refresh the profile to ensure the UI has the latest user data
-            try {
-                await refreshProfile();
-                console.log('Profile refreshed after registration');
-            } catch (profileError) {
-                console.log('Profile refresh failed after registration:', profileError);
-                // Don't fail the registration process if profile refresh fails
-            }
-            
             setIsLoading(false);
             showDialog('success', 'Account Created!', 'Your account has been created successfully. We\'ve sent a verification email to your inbox. Please verify your email to complete registration.');
 
@@ -292,22 +259,19 @@ export default function RegistrationForm() {
     };
 
     // Helper function to format date string as YYYY-MM-DD
-    const formatDateString = (date: Date) => {
+    const formatDateString = (dateStr: string) => {
+        if (!dateStr) return '';
         try {
+            // Handle different date formats the user might input
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         } catch (error) {
-            return '';
-        }
-    };
-    
-    const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
-        if (selectedDate) {
-            setDateOfBirth(formatDateString(selectedDate));
-            if (dateOfBirthError) setDateOfBirthError('');
+            return dateStr;
         }
     };
 
@@ -495,23 +459,6 @@ export default function RegistrationForm() {
                                             setUsername(text);
                                             if (usernameError) setUsernameError('');
                                         }}
-                                        onBlur={async () => {
-                                            const trimmedUsername = username.trim();
-                                            if (trimmedUsername.length > 0) {
-                                                try {
-                                                    const exists = await doesUsernameExist(trimmedUsername);
-                                                    if (exists) {
-                                                        setUsernameError('Username already taken. Please choose a different username.');
-                                                    } else {
-                                                        // Clear any existing error if username is available
-                                                        if (usernameError) setUsernameError('');
-                                                    }
-                                                } catch (error) {
-                                                    console.log('Username check error:', error);
-                                                    // Don't show error to user for network issues during real-time check
-                                                }
-                                            }
-                                        }}
                                         autoCapitalize="none"
                                     />
                                 </View>
@@ -651,27 +598,26 @@ export default function RegistrationForm() {
                             <View className="mb-4">
                                 <View className="bg-zinc-800 rounded-full overflow-hidden flex-row items-center px-5 h-14 border border-zinc-700">
                                     <Ionicons name="calendar-outline" size={20} color="#FFFFFF" />
-                                    <TouchableOpacity 
-                                        className="flex-1"
-                                        onPress={() => setShowDatePicker(true)}
-                                    >
-                                        <Text className="text-white text-base ml-3">
-                                            {dateOfBirth ? dateOfBirth : "Select Date of Birth"}
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                                {showDatePicker && (
-                                    <DateTimePicker
-                                        value={dateOfBirth ? new Date(dateOfBirth) : new Date()}
-                                        mode="date"
-                                        display="default"
-                                        onChange={handleDateChange}
-                                        maximumDate={new Date()}
+                                    <TextInput
+                                        className="flex-1 text-white text-base ml-3"
+                                        placeholder="Date of Birth (YYYY-MM-DD)"
+                                        placeholderTextColor="#9CA3AF"
+                                        value={dateOfBirth}
+                                        onChangeText={(text) => {
+                                            setDateOfBirth(text);
+                                            if (dateOfBirthError) setDateOfBirthError('');
+                                        }}
+                                        onBlur={() => {
+                                            // Format the date properly when user finishes typing
+                                            setDateOfBirth(formatDateString(dateOfBirth));
+                                        }}
                                     />
-                                )}
+                                </View>
                                 {dateOfBirthError ? (
                                     <Text className="text-red-500 text-s ml-4 mt-1">{dateOfBirthError}</Text>
-                                ) : null}
+                                ) : (
+                                    <Text className="text-gray-400 text-xs ml-4 mt-1">Format: YYYY-MM-DD (e.g., 1990-01-31)</Text>
+                                )}
                             </View>
 
                             <View className="mb-4">

@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "authapp",
+    "owner": "your-expo-account-name",
     "userInterfaceStyle": "dark",
     "ios": {
       "supportsTablet": true
@@ -25,8 +26,17 @@
           "resizeMode": "contain",
           "backgroundColor": "#000000"
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin"
     ],
+    "android": {
+      "package": "com.mealmate.app",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#000000"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     },

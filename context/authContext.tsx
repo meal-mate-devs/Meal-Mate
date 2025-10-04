@@ -1,15 +1,20 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
+import * as WebBrowser from 'expo-web-browser';
 import {
   createUserWithEmailAndPassword,
   fetchSignInMethodsForEmail,
   onAuthStateChanged,
   sendEmailVerification,
   sendPasswordResetEmail,
+  signInWithCredential,
   signInWithEmailAndPassword,
   signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+
+// Make sure WebBrowser is ready to handle the auth redirect
+WebBrowser.maybeCompleteAuthSession();
 
 type User = {
   uid: string;
@@ -45,6 +50,7 @@ type AuthContextType = {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<any>;
+  googleLogin: () => Promise<any>;
   register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage?: any) => Promise<any>;
   updateUserProfile: (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => Promise<any>;
   logout: () => Promise<void>;
@@ -281,6 +287,111 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       return userCredential.user;
     } catch (error) {
+      throw error;
+    }
+  };
+
+  // Google Login function
+  const googleLogin = async () => {
+    try {
+      console.log('Starting Google Sign-In process');
+      
+      try {
+        // Dynamic import to avoid loading this on initial render
+        const { getGoogleAuthCredential } = await import('@/lib/utils/expoGoogleSignIn');
+        
+        console.log('Getting Google auth credential...');
+        const credential = await getGoogleAuthCredential();
+        
+        if (!credential) {
+          console.error('No credential received from Google authentication');
+          throw new Error('Failed to get authentication credentials from Google');
+        }
+        
+        console.log('Credential received, signing in with Firebase...');
+        const userCredential = await signInWithCredential(auth, credential);
+
+        console.log('Google sign-in successful:', userCredential.user.displayName);
+
+        try {
+          const newUser = userCredential.user;
+          console.log('Getting Firebase ID token...');
+          const token = await newUser.getIdToken();
+          
+          console.log('Fetching user profile from API...');
+          const profileResponse = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          // If user doesn't exist in our backend yet, create a profile
+          if (profileResponse.status === 404) {
+            console.log('User profile not found in backend, creating one...');
+            const displayName = newUser.displayName || '';
+            const email = newUser.email || '';
+
+            const nameParts = displayName ? displayName.split(' ') : [];
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
+
+            const formData = new FormData();
+            formData.append('userName', email.split('@')[0] || 'user');
+            formData.append('firstName', firstName);
+            formData.append('lastName', lastName);
+            formData.append('age', '0');
+            formData.append('gender', '');
+            formData.append('dateOfBirth', '');
+            formData.append('phoneNumber', '');
+
+            if (newUser.photoURL) {
+              formData.append('profileImageUrl', newUser.photoURL);
+            }
+
+            console.log('Creating new profile in backend...');
+            const registerResponse = await fetch(`${API_BASE_URL}/auth/register`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+              },
+              body: formData,
+            });
+
+            if (!registerResponse.ok) {
+              console.error('Failed to create backend profile', {
+                status: registerResponse.status,
+                statusText: registerResponse.statusText
+              });
+              try {
+                const errorData = await registerResponse.json();
+                console.error('Register error data:', errorData);
+              } catch (e) {
+                console.error('Could not parse register error response');
+              }
+            } else {
+              console.log('Backend profile created successfully');
+            }
+          } else if (!profileResponse.ok) {
+            console.error('Error fetching profile', {
+              status: profileResponse.status,
+              statusText: profileResponse.statusText
+            });
+          } else {
+            console.log('User profile found in backend');
+          }
+        } catch (profileError) {
+          console.error('Error handling Google user profile:', profileError);
+        }
+
+        return userCredential.user;
+      } catch (authError) {
+        console.error('Google auth credential or Firebase sign-in error:', authError);
+        throw new Error(`Google authentication failed: ${authError instanceof Error ? authError.message : 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Google Sign-In Error:', error);
       throw error;
     }
   };
@@ -565,6 +676,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         isLoading,
         login,
+        googleLogin,
         register,
         updateUserProfile,
         logout,

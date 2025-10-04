@@ -31,7 +31,7 @@ export default function LoginForm() {
     const [dialogMessage, setDialogMessage] = useState('');
 
     const router = useRouter();
-    const { login, doesAccountExist } = useAuthContext();
+    const { login, googleLogin, doesAccountExist } = useAuthContext();
 
     const clearErrors = () => {
         setEmailError('');
@@ -159,6 +159,44 @@ export default function LoginForm() {
         setIsPasswordVisible(!isPasswordVisible);
     };
 
+    // Handle Google Sign In
+    const onGoogleSignInPress = async () => {
+        try {
+            setIsLoading(true);
+            showDialog('loading', 'Signing In with Google', 'Please wait...');
+
+            const isConnected = await checkNetworkConnectivity();
+            if (!isConnected) {
+                setDialogVisible(false);
+                showDialog('error', 'Network Error', 'No internet connection. Please check your network and try again.');
+                return;
+            }
+
+            const userCredential = await googleLogin();
+
+            if (!userCredential) {
+                // User cancelled the sign-in
+                setDialogVisible(false);
+                return;
+            }
+
+            setDialogVisible(false);
+            showDialog('success', 'Success!', 'You have been successfully logged in with Google.');
+
+            setTimeout(() => {
+                setDialogVisible(false);
+                router.push('/(protected)/(tabs)/home');
+            }, 1500);
+
+        } catch (error) {
+            console.log('Google Sign-In error:', error);
+            setDialogVisible(false);
+            showDialog('error', 'Google Sign-In Failed', 'An error occurred during Google Sign-In. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const handleDialogConfirm = () => {
         setDialogVisible(false);
     };
@@ -256,7 +294,7 @@ export default function LoginForm() {
 
                                 {/* Sign In Button - Now with Gradient */}
                                 <TouchableOpacity
-                                    className="rounded-full h-14 justify-center items-center mb-8 overflow-hidden"
+                                    className="rounded-full h-14 justify-center items-center mb-4 mt-6 overflow-hidden"
                                     onPress={handleLogin}
                                     disabled={isLoading}
                                 >
@@ -272,39 +310,28 @@ export default function LoginForm() {
                                 </TouchableOpacity>
 
                                 {/* Divider */}
-                                <View className="flex-row items-center justify-center mb-8">
+                                {/* <View className="flex-row items-center justify-center mb-8">
                                     <View className="h-px bg-zinc-700 flex-1" />
-                                </View>
+                                </View> */}
 
                                 {/* Or continue with */}
-                                <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
+                                <Text className="text-zinc-400 text-center text-sm mb-3">or continue with</Text>
 
-                                {/* Social Login Buttons */}
-                                <View className="flex-row gap-4 justify-center mb-8">
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/fblogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/googlelogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white border border-white justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/applelogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
+                                {/* Google Sign-In Button */}
+                                <TouchableOpacity
+                                    className="flex-row items-center justify-center bg-white rounded-full h-14 mb-8 px-4"
+                                    onPress={onGoogleSignInPress}
+                                    disabled={isLoading}
+                                >
+                                    <Image
+                                        source={require('../../assets/images/googlelogo.png')}
+                                        className="w-6 h-6 mr-3"
+                                        resizeMode="contain"
+                                    />
+                                    <Text className="text-gray-800 font-semibold text-base">
+                                        Continue with Google
+                                    </Text>
+                                </TouchableOpacity>
 
                                 {/* Sign Up Link */}
                                 <View className="flex-row justify-center items-center">
