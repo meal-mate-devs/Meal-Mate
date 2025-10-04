@@ -3,7 +3,6 @@
 import { recipeGenerationService } from "@/lib/services/recipeGenerationService"
 import type { GeneratedRecipe, RecipeFilters } from "@/lib/types/recipeGeneration"
 import { Ionicons } from "@expo/vector-icons"
-import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import LottieView from "lottie-react-native"
 import React, { type JSX, useEffect, useRef, useState } from "react"
@@ -26,11 +25,19 @@ export default function RecipeResponseRoute(): JSX.Element {
 
   // Dialog states
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false)
+  const [showUnsafeIngredientsDialog, setShowUnsafeIngredientsDialog] = useState(false)
+  const [unsafeIngredientsData, setUnsafeIngredientsData] = useState<{
+    flaggedIngredients: string[]
+    safeIngredients: string[]
+    message: string
+  } | null>(null)
 
   // Get state from route params or global state
   const [isGenerating, setIsGenerating] = useState(true)
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [missingIngredients, setMissingIngredients] = useState<string[]>([])
+  const [pantryAnalysis, setPantryAnalysis] = useState<any>(null)
 
   useEffect(() => {
     // Start animations
@@ -145,8 +152,11 @@ export default function RecipeResponseRoute(): JSX.Element {
       }
 
       setGeneratedRecipe(response.recipe)
+      setMissingIngredients(response.missingIngredients || [])
+      setPantryAnalysis(response.pantryAnalysis || null)
 
       if (response.missingIngredients.length > 0) {
+        console.log("Missing ingredients:", response.missingIngredients)
       }
     } catch (error: any) {
       console.log("Recipe generation failed:", error)
@@ -154,6 +164,29 @@ export default function RecipeResponseRoute(): JSX.Element {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
+      }
+
+      // Check if this is an unsafe ingredients error
+      const errorMessage = error.message || ""
+      if (errorMessage.includes("Unsafe ingredients detected") || errorMessage.includes("API Error: 400")) {
+        try {
+          // Try to extract the error data from the API response
+          const errorMatch = errorMessage.match(/\{.*\}/)
+          if (errorMatch) {
+            const errorData = JSON.parse(errorMatch[0])
+            if (errorData.flaggedIngredients || errorData.error === "Unsafe ingredients detected") {
+              setUnsafeIngredientsData({
+                flaggedIngredients: errorData.flaggedIngredients || [],
+                safeIngredients: errorData.safeIngredients || [],
+                message: errorData.message || "Some ingredients are not safe for cooking."
+              })
+              setShowUnsafeIngredientsDialog(true)
+              return // Don't set generic error
+            }
+          }
+        } catch (parseError) {
+          console.log("Could not parse unsafe ingredients error:", parseError)
+        }
       }
 
       setError(error.message || "Failed to generate recipe. Please try again.")
@@ -179,6 +212,12 @@ export default function RecipeResponseRoute(): JSX.Element {
     router.back()
   }
 
+  const handleUnsafeIngredientsClose = (): void => {
+    setShowUnsafeIngredientsDialog(false)
+    setUnsafeIngredientsData(null)
+    router.back()
+  }
+
   const handleSaveRecipe = (recipe: GeneratedRecipe): void => {
     // TODO: Implement save to favorites
     Alert.alert("Saved!", "Recipe saved to your favorites")
@@ -187,6 +226,34 @@ export default function RecipeResponseRoute(): JSX.Element {
   const handleShareRecipe = (recipe: GeneratedRecipe): void => {
     // TODO: Implement recipe sharing
     Alert.alert("Shared!", "Recipe link copied to clipboard")
+  }
+
+  // Helper function to format error messages user-friendly
+  const formatErrorMessage = (errorMessage: string): { title: string; message: string; isServerError: boolean } => {
+    // Check if it's a server error (API Error: 500)
+    if (errorMessage.includes("API Error: 500") || errorMessage.includes("sufficiencyAnalysis is not defined") || errorMessage.includes("Server Error")) {
+      return {
+        title: "Server Error",
+        message: "We'll be back shortly. Please try again in a few moments.",
+        isServerError: true
+      }
+    }
+    
+    // Check for timeout errors
+    if (errorMessage.includes("timeout") || errorMessage.includes("network") || errorMessage.includes("connection")) {
+      return {
+        title: "Connection Issue",
+        message: "Please check your internet connection and try again.",
+        isServerError: false
+      }
+    }
+    
+    // All other errors - keep it simple
+    return {
+      title: "Something Went Wrong",
+      message: "Unable to process your request. Please try again.",
+      isServerError: false
+    }
   }
 
   return (
@@ -290,38 +357,62 @@ export default function RecipeResponseRoute(): JSX.Element {
       )}
 
       {/* Error Screen */}
-      {error && (
-        <ScrollView className="flex-1 px-6" contentContainerStyle={{ justifyContent: "center", minHeight: "80%" }}>
-          <View className="items-center space-y-8">
-            {/* Premium error icon */}
-            <View className="relative">
-              <View className="absolute inset-0 bg-yellow-500/15 rounded-full blur-2xl" />
-              <View className="w-24 h-24 rounded-full bg-zinc-800 border-2 border-yellow-500/30 items-center justify-center">
-                <Ionicons name="warning-outline" size={48} color="#FBBF24" />
-              </View>
-            </View>
-
-            <View className="items-center space-y-3">
-              <Text className="text-white text-2xl font-bold tracking-tight">Something Went Wrong</Text>
-              <Text className="text-zinc-400 text-center text-base leading-relaxed px-4">{error}</Text>
-            </View>
-
-            <TouchableOpacity
-              onPress={handleRetry}
-              className="rounded-xl overflow-hidden"
-            >
-              <LinearGradient
-                colors={["#FBBF24", "#F97416"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                className="py-4 px-10"
+      {error && (() => {
+        const formattedError = formatErrorMessage(error)
+        return (
+              <ScrollView
+                className="flex-1 bg-zinc-900"
+                contentContainerStyle={{ justifyContent: "flex-start", paddingTop: 180 }}
               >
-                <Text className="text-white font-bold text-lg tracking-wide text-center">Try Again</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      )}
+                <View className="items-center px-12 py-4">
+                  {/* Minimal error icon */}
+                  <View className="mb-6">
+                    <View className="w-20 h-20 rounded-full bg-zinc-800 border border-amber-500/30 items-center justify-center">
+                      <Ionicons name="alert-circle-outline" size={40} color="#F59E0B" />
+                    </View>
+                  </View>
+
+                  {/* Typography section with elegant spacing */}
+                  <View className="items-center space-y-4 mb-8">
+                    <Text className="text-white text-3xl font-light tracking-tight text-center leading-tight px-4">
+                      {formattedError.title}
+                    </Text>
+
+                    <View className="w-12 h-px bg-zinc-700 my-4" />
+
+                    <Text className="text-zinc-400 text-center text-base font-light leading-relaxed px-8 max-w-md">
+                      {formattedError.message}
+                    </Text>
+                  </View>
+
+                  {/* Action buttons */}
+                  <View className="flex-row justify-between w-full max-w-sm">
+                    {/* Secondary Go Back button */}
+                    <TouchableOpacity
+                      onPress={handleClose}
+                      className="flex-1 border border-zinc-600 rounded-full px-6 py-4"
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-zinc-400 font-medium text-sm tracking-widest uppercase text-center">
+                        Go Back
+                      </Text>
+                    </TouchableOpacity>
+
+                    {/* Primary Try Again button */}
+                    <TouchableOpacity
+                      onPress={handleRetry}
+                      className="flex-1 border border-amber-500/50 rounded-full px-6 py-4 ml-4"
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-amber-400 font-medium text-sm tracking-widest uppercase text-center">
+                        {formattedError.isServerError ? "Try Again" : "Retry"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            )
+      })()}
 
       {/* Recipe Display - Premium Black & Yellow Design */}
       {generatedRecipe && !isGenerating && (
@@ -376,232 +467,198 @@ export default function RecipeResponseRoute(): JSX.Element {
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
           >
-            {/* Premium Metrics Grid */}
-            <View className="px-6 py-8">
-              <View className="bg-zinc-800 border border-zinc-700 rounded-3xl p-6">
-                <View className="flex-row flex-wrap justify-between">
-                  {/* Servings */}
-                  <View className="items-center w-[48%] mb-6">
-                    <View className="w-14 h-14 bg-emerald-500/20 border border-emerald-500/40 rounded-2xl items-center justify-center mb-3">
-                      <Ionicons name="people-outline" size={26} color="#10b981" />
-                    </View>
-                    <Text className="text-neutral-500 text-xs font-semibold uppercase tracking-widest mb-2">
-                      Servings
-                    </Text>
-                    <Text className="text-white text-2xl font-bold">{generatedRecipe.servings}</Text>
-                  </View>
-
-                  {/* Total Time */}
-                  <View className="items-center w-[48%] mb-6">
-                    <View className="w-14 h-14 bg-blue-500/20 border border-blue-500/40 rounded-2xl items-center justify-center mb-3">
-                      <Ionicons name="time-outline" size={26} color="#3b82f6" />
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2">
-                      Total Time
-                    </Text>
-                    <Text className="text-white text-2xl font-bold">
-                      {generatedRecipe.cookTime + generatedRecipe.prepTime}m
-                    </Text>
-                  </View>
-
-                  {/* Difficulty */}
-                  <View className="items-center w-[48%]">
-                    <View className="w-14 h-14 bg-purple-500/20 border border-purple-500/40 rounded-2xl items-center justify-center mb-3">
-                      <Ionicons name="speedometer-outline" size={26} color="#8b5cf6" />
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2">
-                      Difficulty
-                    </Text>
-                    <Text className="text-white text-2xl font-bold">{generatedRecipe.difficulty}</Text>
-                  </View>
-
-                  {/* Cuisine */}
-                  <View className="items-center w-[48%]">
-                    <View className="w-14 h-14 bg-amber-500/20 border border-amber-500/40 rounded-2xl items-center justify-center mb-3">
-                      <Ionicons name="restaurant-outline" size={26} color="#f59e0b" />
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-widest mb-2">
-                      Cuisine
-                    </Text>
-                    <Text className="text-white text-xl font-bold">{generatedRecipe.cuisine}</Text>
-                  </View>
+            {/* Compact Recipe Info Bar */}
+            <View className="px-5 py-4 bg-zinc-800/50 border-b border-zinc-700">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-row items-center">
+                  <Ionicons name="people-outline" size={16} color="#10b981" />
+                  <Text className="text-white text-sm font-semibold ml-2">{generatedRecipe.servings}</Text>
+                  <Text className="text-zinc-500 text-xs ml-1">servings</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="time-outline" size={16} color="#3b82f6" />
+                  <Text className="text-white text-sm font-semibold ml-2">{generatedRecipe.prepTime + generatedRecipe.cookTime}m</Text>
+                  <Text className="text-zinc-500 text-xs ml-1">total</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="speedometer-outline" size={16} color="#8b5cf6" />
+                  <Text className="text-white text-sm font-semibold ml-2">{generatedRecipe.difficulty}</Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Ionicons name="restaurant-outline" size={16} color="#f59e0b" />
+                  <Text className="text-white text-sm font-semibold ml-2">{generatedRecipe.cuisine}</Text>
                 </View>
               </View>
             </View>
 
-            {/* Sophisticated Nutrition Panel */}
-            <View className="px-6 mb-8">
-              <View className="flex-row items-center mb-5">
-                <View className="w-1 h-6 bg-yellow-500 rounded-full mr-3" />
-                <Text className="text-white text-2xl font-bold tracking-tight">Nutrition Facts</Text>
-              </View>
-
-              <View className="bg-zinc-800 border border-zinc-700 rounded-3xl p-6">
-                <Text className="text-zinc-400 text-sm font-semibold text-center mb-6 uppercase tracking-wider">
-                  Per Serving
-                </Text>
-                <View className="flex-row justify-between">
-                  <View className="items-center flex-1">
-                    <View className="w-20 h-20 bg-zinc-900 border-2 border-yellow-500/30 rounded-2xl items-center justify-center mb-3">
-                      <Text className="text-yellow-400 font-bold text-xl">
-                        {generatedRecipe.nutritionInfo.calories}
-                      </Text>
-                      <Text className="text-yellow-400/60 text-xs font-medium">kcal</Text>
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Calories</Text>
-                  </View>
-                  <View className="items-center flex-1">
-                    <View className="w-20 h-20 bg-zinc-900 border-2 border-yellow-500/30 rounded-2xl items-center justify-center mb-3">
-                      <Text className="text-yellow-400 font-bold text-xl">{generatedRecipe.nutritionInfo.protein}</Text>
-                      <Text className="text-yellow-400/60 text-xs font-medium">g</Text>
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Protein</Text>
-                  </View>
-                  <View className="items-center flex-1">
-                    <View className="w-20 h-20 bg-zinc-900 border-2 border-yellow-500/30 rounded-2xl items-center justify-center mb-3">
-                      <Text className="text-yellow-400 font-bold text-xl">{generatedRecipe.nutritionInfo.carbs}</Text>
-                      <Text className="text-yellow-400/60 text-xs font-medium">g</Text>
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Carbs</Text>
-                  </View>
-                  <View className="items-center flex-1">
-                    <View className="w-20 h-20 bg-zinc-900 border-2 border-yellow-500/30 rounded-2xl items-center justify-center mb-3">
-                      <Text className="text-yellow-400 font-bold text-xl">{generatedRecipe.nutritionInfo.fat}</Text>
-                      <Text className="text-yellow-400/60 text-xs font-medium">g</Text>
-                    </View>
-                    <Text className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">Fat</Text>
-                  </View>
+            {/* Compact Nutrition Facts - Single Line */}
+            <View className="px-5 py-3 bg-zinc-800/30">
+              <View className="flex-row items-center justify-around">
+                <View className="items-center">
+                  <Text className="text-yellow-400 text-lg font-bold">{generatedRecipe.nutritionInfo.calories}</Text>
+                  <Text className="text-zinc-500 text-xs">cal</Text>
+                </View>
+                <View className="w-px h-8 bg-zinc-700" />
+                <View className="items-center">
+                  <Text className="text-emerald-400 text-lg font-bold">{generatedRecipe.nutritionInfo.protein}g</Text>
+                  <Text className="text-zinc-500 text-xs">protein</Text>
+                </View>
+                <View className="w-px h-8 bg-zinc-700" />
+                <View className="items-center">
+                  <Text className="text-blue-400 text-lg font-bold">{generatedRecipe.nutritionInfo.carbs}g</Text>
+                  <Text className="text-zinc-500 text-xs">carbs</Text>
+                </View>
+                <View className="w-px h-8 bg-zinc-700" />
+                <View className="items-center">
+                  <Text className="text-orange-400 text-lg font-bold">{generatedRecipe.nutritionInfo.fat}g</Text>
+                  <Text className="text-zinc-500 text-xs">fat</Text>
                 </View>
               </View>
             </View>
 
-            {/* Refined Ingredients Section */}
-            <View className="px-6 mb-8">
-              <View className="flex-row items-center mb-5">
-                <View className="w-1 h-6 bg-yellow-400 rounded-full mr-3" />
-                <Text className="text-white text-2xl font-bold tracking-tight">Ingredients</Text>
-              </View>
-
-              <View className="space-y-3">
+            {/* Minimal Ingredients Section */}
+            <View className="px-5 py-4">
+              <Text className="text-white text-lg font-bold mb-3">Ingredients</Text>
+              <View className="bg-zinc-800 rounded-xl p-4">
                 {generatedRecipe.ingredients.map((ingredient, index) => (
                   <View
                     key={`ingredient-${index}`}
-                    className="bg-zinc-800 border border-zinc-700 rounded-2xl p-5"
+                    className={`flex-row items-center py-2 ${index !== generatedRecipe.ingredients.length - 1 ? 'border-b border-zinc-700' : ''}`}
                   >
-                    <View className="flex-row items-center">
-                      <View className="w-10 h-10 bg-emerald-500/15 border border-emerald-500/30 rounded-xl items-center justify-center mr-4">
-                        <Text className="text-emerald-400 text-sm font-bold">{index + 1}</Text>
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-white font-semibold text-base leading-relaxed">
-                          {ingredient.amount} {ingredient.unit} {ingredient.name}
-                        </Text>
-                        {ingredient.notes && (
-                          <Text className="text-zinc-400 text-sm mt-1.5 leading-relaxed">{ingredient.notes}</Text>
-                        )}
-                      </View>
+                    <View className="w-6 h-6 rounded-full bg-emerald-500/20 items-center justify-center mr-3">
+                      <Text className="text-emerald-400 text-xs font-bold">{index + 1}</Text>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-white text-sm">
+                        <Text className="font-semibold">{ingredient.amount} {ingredient.unit}</Text>
+                        <Text className="text-zinc-300"> {ingredient.name}</Text>
+                      </Text>
+                      {ingredient.notes && (
+                        <Text className="text-zinc-500 text-xs mt-0.5">{ingredient.notes}</Text>
+                      )}
                     </View>
                   </View>
                 ))}
               </View>
             </View>
 
-            {/* Premium Instructions Section */}
-            <View className="px-6 mb-8">
-              <View className="flex-row items-center mb-5">
-                <View className="w-1 h-6 bg-yellow-400 rounded-full mr-3" />
-                <Text className="text-white text-2xl font-bold tracking-tight">Instructions</Text>
-              </View>
-
-              <View className="space-y-4">
-                {generatedRecipe.instructions.map((instruction, index) => (
-                  <View
-                    key={`instruction-${index}`}
-                    className="bg-zinc-800 border border-zinc-700 rounded-2xl p-6"
-                  >
-                    <View className="flex-row">
-                      <View className="w-12 h-12 bg-yellow-400 rounded-xl items-center justify-center mr-4 mt-1">
-                        <Text className="text-black font-bold text-base">{instruction.step}</Text>
-                      </View>
-                      <View className="flex-1">
-                        <Text className="text-white text-base leading-7 mb-3">{instruction.instruction}</Text>
-                        {instruction.duration && (
-                          <View className="flex-row items-center mb-3">
-                            <View className="w-6 h-6 bg-yellow-500/15 rounded-lg items-center justify-center mr-2">
-                              <Ionicons name="timer-outline" size={14} color="#FBBF24" />
-                            </View>
-                            <Text className="text-yellow-400 text-sm font-semibold">
-                              {instruction.duration} minutes
-                            </Text>
-                          </View>
-                        )}
-                        {instruction.tips && (
-                          <View className="bg-yellow-500/5 border border-yellow-500/20 rounded-xl p-4 mt-2">
-                            <View className="flex-row items-start">
-                              <View className="w-5 h-5 bg-yellow-500/20 rounded-lg items-center justify-center mr-3 mt-0.5">
-                                <Ionicons name="bulb-outline" size={12} color="#FBBF24" />
-                              </View>
-                              <Text className="text-yellow-200 text-sm leading-6 flex-1">{instruction.tips}</Text>
-                            </View>
-                          </View>
-                        )}
-                      </View>
-                    </View>
+            {/* Missing Ingredients Section */}
+            {missingIngredients.length > 0 && (
+              <View className="px-5 py-4">
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-white text-lg font-bold">Missing Ingredients</Text>
+                  <View className="bg-red-500/20 px-3 py-1 rounded-full">
+                    <Text className="text-red-400 text-xs font-semibold">{missingIngredients.length} needed</Text>
                   </View>
-                ))}
-              </View>
-            </View>
-
-            {/* Elegant Chef's Tips Section */}
-            {generatedRecipe.tips.length > 0 && (
-              <View className="px-6 mb-8">
-                <View className="flex-row items-center mb-5">
-                  <View className="w-1 h-6 bg-yellow-400 rounded-full mr-3" />
-                  <Text className="text-white text-2xl font-bold tracking-tight">Chef's Tips</Text>
                 </View>
-
-                <View className="bg-gradient-to-br from-yellow-500/5 to-yellow-500/10 border border-yellow-500/20 rounded-3xl p-6">
-                  <View className="space-y-4">
-                    {generatedRecipe.tips.map((tip, index) => (
-                      <View key={index} className="flex-row items-start">
-                        <View className="w-7 h-7 bg-yellow-500/20 border border-yellow-500/30 rounded-xl items-center justify-center mr-4 mt-0.5">
-                          <Ionicons name="star" size={14} color="#FBBF24" />
-                        </View>
-                        <Text className="text-yellow-100 text-base leading-7 flex-1">{tip}</Text>
+                <View className="bg-zinc-800 rounded-xl p-4">
+                  {missingIngredients.map((ingredient, index) => (
+                    <View
+                      key={`missing-${index}`}
+                      className={`flex-row items-center justify-between py-2 ${index !== missingIngredients.length - 1 ? 'border-b border-zinc-700' : ''}`}
+                    >
+                      <View className="flex-1 flex-row items-center">
+                        <Ionicons name="alert-circle-outline" size={16} color="#ef4444" />
+                        <Text className="text-zinc-300 text-sm ml-2">{ingredient}</Text>
                       </View>
-                    ))}
-                  </View>
+                      <TouchableOpacity
+                        onPress={() => Alert.alert("Add to Pantry", `Add ${ingredient} to your pantry?`)}
+                        className="bg-amber-500/20 px-3 py-1.5 rounded-lg"
+                      >
+                        <Text className="text-amber-400 text-xs font-semibold">Add to Pantry</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
                 </View>
               </View>
             )}
 
-            {/* Premium Action Buttons */}
-            <View className="px-6">
-              <View className="flex-row space-x-4">
+            {/* Pantry Match Info */}
+            {pantryAnalysis && (
+              <View className="px-5 py-2">
+                <View className="bg-zinc-800/50 rounded-lg p-3 flex-row items-center justify-between">
+                  <View className="flex-row items-center">
+                    <Ionicons name="pie-chart-outline" size={16} color="#10b981" />
+                    <Text className="text-zinc-400 text-xs ml-2">Pantry Match:</Text>
+                  </View>
+                  <Text className="text-emerald-400 text-sm font-bold">{pantryAnalysis.matchPercentage}%</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Minimal Instructions Section */}
+            <View className="px-5 py-4">
+              <Text className="text-white text-lg font-bold mb-3">Instructions</Text>
+              <View className="space-y-3">
+                {generatedRecipe.instructions.map((instruction, index) => (
+                  <View
+                    key={`instruction-${index}`}
+                    className="bg-zinc-800 rounded-xl p-4"
+                  >
+                    <View className="flex-row">
+                      <View className="w-7 h-7 bg-amber-500 rounded-lg items-center justify-center mr-3">
+                        <Text className="text-black font-bold text-sm">{instruction.step}</Text>
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-white text-sm leading-6">{instruction.instruction}</Text>
+                        {instruction.duration && (
+                          <View className="flex-row items-center mt-2">
+                            <Ionicons name="timer-outline" size={12} color="#FBBF24" />
+                            <Text className="text-amber-400 text-xs ml-1 font-medium">
+                              {instruction.duration} min
+                            </Text>
+                          </View>
+                        )}
+                        {instruction.tips && (
+                          <View className="bg-amber-500/10 rounded-lg p-2 mt-2">
+                            <View className="flex-row items-start">
+                              <Ionicons name="bulb-outline" size={12} color="#FBBF24" />
+                              <Text className="text-amber-200 text-xs leading-5 flex-1 ml-2">{instruction.tips}</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Chef's Tips Section */}
+            {generatedRecipe.tips.length > 0 && (
+              <View className="px-5 py-4">
+                <Text className="text-white text-lg font-bold mb-3">Chef's Tips</Text>
+                <View className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                  {generatedRecipe.tips.map((tip, index) => (
+                    <View key={index} className={`flex-row items-start ${index !== generatedRecipe.tips.length - 1 ? 'mb-3 pb-3 border-b border-amber-500/10' : ''}`}>
+                      <Ionicons name="star" size={14} color="#FBBF24" />
+                      <Text className="text-amber-100 text-sm leading-6 flex-1 ml-2">{tip}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Compact Action Buttons */}
+            <View className="px-5 py-4">
+              <View className="flex-row space-x-3">
                 <TouchableOpacity
                   onPress={() => handleSaveRecipe(generatedRecipe)}
-                  className="flex-1 bg-zinc-800 border-2 border-yellow-500/30 rounded-2xl py-5 items-center"
+                  className="flex-1 bg-zinc-800 border border-amber-500/30 rounded-xl py-3 flex-row items-center justify-center"
                 >
-                  <Ionicons name="bookmark" size={22} color="#FBBF24" />
-                  <Text className="text-yellow-400 font-bold mt-2 text-base tracking-wide">Save Recipe</Text>
+                  <Ionicons name="bookmark-outline" size={18} color="#D97706" />
+                  <Text className="text-amber-400 font-semibold ml-2 text-sm">Save</Text>
                 </TouchableOpacity>
 
-                <LinearGradient
-                  colors={["#FBBF24", "#F97416"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="flex-1 rounded-2xl"
+                <TouchableOpacity
+                  onPress={handleRetry}
+                  className="flex-1 bg-amber-500/20 border border-amber-500/30 rounded-xl py-3 flex-row items-center justify-center"
                 >
-                  <TouchableOpacity
-                    onPress={handleRetry}
-                    className="py-5 items-center"
-                  >
-                    <Ionicons name="refresh" size={22} color="#FFFFFF" />
-                    <Text className="text-white font-bold mt-2 text-base tracking-wide">New Recipe</Text>
-                  </TouchableOpacity>
-                </LinearGradient>
+                  <Ionicons name="refresh" size={18} color="#F59E0B" />
+                  <Text className="text-amber-400 font-semibold ml-2 text-sm">New Recipe</Text>
+                </TouchableOpacity>
               </View>
             </View>
           </ScrollView>
@@ -619,6 +676,24 @@ export default function RecipeResponseRoute(): JSX.Element {
         confirmText="Retry"
         cancelText="Go Back"
         showCancelButton={true}
+      />
+
+      {/* Unsafe Ingredients Dialog */}
+      <Dialog
+        visible={showUnsafeIngredientsDialog}
+        type="warning"
+        title="⚠️ Unsafe Ingredients Detected"
+        message={
+          unsafeIngredientsData ? (
+            `\n🚫  ${unsafeIngredientsData.flaggedIngredients.map(ingredient => 
+              ingredient.toUpperCase()
+            ).join(" • ")}\n\n` +
+            "Please remove unsafe ingredients and try again with only edible food items."
+          ) : "Please provide only safe, edible ingredients for recipe generation."
+        }
+        onClose={handleUnsafeIngredientsClose}
+        confirmText="Go Back"
+        showCancelButton={false}
       />
       
       {/* Black navigation bar background */}
