@@ -7,20 +7,17 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import LottieView from "lottie-react-native"
 import React, { JSX, useEffect, useRef, useState } from "react"
-import { Alert, Animated, ScrollView, Text, TouchableOpacity, View } from "react-native"
+import { Alert, Animated, Image, ScrollView, Text, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import GeneratedRecipeCard from "../../../components/organisms/Recipe/GeneratedRecipeCard"
-import RecipeDetailModal from "../../../components/organisms/Recipe/RecipieDetailModel"
 import Dialog from "../../atoms/Dialog"
 
-const TIMEOUT_DURATION = 30000 // 30 seconds timeout
+const TIMEOUT_DURATION = 40000 // 40 seconds timeout
 
 export default function RecipeResponseRoute(): JSX.Element {
   const router = useRouter()
   const params = useLocalSearchParams()
   const insets = useSafeAreaInsets()
   
-  const [showRecipeDetail, setShowRecipeDetail] = useState(false)
   const [fadeAnim] = useState(new Animated.Value(0))
   const [scaleAnim] = useState(new Animated.Value(0.8))
   const [pulseAnim] = useState(new Animated.Value(1))
@@ -148,15 +145,12 @@ export default function RecipeResponseRoute(): JSX.Element {
       
       setGeneratedRecipe(response.recipe)
 
-      // Log additional info if available
       if (response.missingIngredients.length > 0) {
-        console.log(`Recipe generated with ${response.missingIngredients.length} missing ingredients:`, response.missingIngredients)
       }
 
     } catch (error: any) {
       console.log("Recipe generation failed:", error)
       
-      // Clear timeout if error occurred
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -187,18 +181,12 @@ export default function RecipeResponseRoute(): JSX.Element {
 
   const handleSaveRecipe = (recipe: GeneratedRecipe): void => {
     // TODO: Implement save to favorites
-    console.log("Save recipe:", recipe.title)
     Alert.alert("Saved!", "Recipe saved to your favorites")
   }
 
   const handleShareRecipe = (recipe: GeneratedRecipe): void => {
     // TODO: Implement recipe sharing
-    console.log("Share recipe:", recipe.title)
     Alert.alert("Shared!", "Recipe link copied to clipboard")
-  }
-
-  const handleRecipeDetail = (recipe: GeneratedRecipe): void => {
-    setShowRecipeDetail(true)
   }
 
   return (
@@ -339,75 +327,179 @@ export default function RecipeResponseRoute(): JSX.Element {
         )}
 
         {generatedRecipe && !isGenerating && (
-          <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-            <View className="space-y-6 pb-8">
-              <View className="items-center space-y-4 py-6">
-                <View className="w-16 h-16 rounded-full bg-green-500 items-center justify-center">
-                  <Ionicons name="checkmark" size={32} color="#FFFFFF" />
-                </View>
-                <Text className="text-white text-2xl font-bold text-center">
-                  Recipe Ready! 🎉
+          <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+            {/* Recipe Header */}
+            <View className="relative">
+              <Image 
+                source={{ uri: generatedRecipe.image }} 
+                className="w-full h-56" 
+                resizeMode="cover" 
+              />
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.8)"]}
+                className="absolute bottom-0 left-0 right-0 h-20"
+              />
+              <View className="absolute bottom-4 left-4 right-4">
+                <Text className="text-white text-2xl font-bold mb-1">
+                  {generatedRecipe.title}
                 </Text>
-                <Text className="text-zinc-400 text-center">
-                  Your personalized recipe has been created
+                <Text className="text-zinc-300 text-sm">
+                  {generatedRecipe.description}
                 </Text>
               </View>
+            </View>
 
-              <GeneratedRecipeCard 
-                recipe={generatedRecipe} 
-                onPress={() => handleRecipeDetail(generatedRecipe)}
-              />
+            {/* Recipe Info */}
+            <View className="px-4 py-6">
+              <View className="flex-row justify-between bg-zinc-800/50 rounded-xl p-4 mb-6">
+                <View className="items-center flex-1">
+                  <Ionicons name="time-outline" size={20} color="#F97316" />
+                  <Text className="text-zinc-400 text-xs mt-1">Total Time</Text>
+                  <Text className="text-white font-semibold">
+                    {generatedRecipe.cookTime + generatedRecipe.prepTime} min
+                  </Text>
+                </View>
+                <View className="items-center flex-1">
+                  <Ionicons name="people-outline" size={20} color="#F97316" />
+                  <Text className="text-zinc-400 text-xs mt-1">Servings</Text>
+                  <Text className="text-white font-semibold">
+                    {generatedRecipe.servings}
+                  </Text>
+                </View>
+                <View className="items-center flex-1">
+                  <Ionicons name="restaurant-outline" size={20} color="#F97316" />
+                  <Text className="text-zinc-400 text-xs mt-1">Cuisine</Text>
+                  <Text className="text-white font-semibold">
+                    {generatedRecipe.cuisine}
+                  </Text>
+                </View>
+                <View className="items-center flex-1">
+                  <Ionicons name="speedometer-outline" size={20} color="#F97316" />
+                  <Text className="text-zinc-400 text-xs mt-1">Difficulty</Text>
+                  <Text className="text-white font-semibold">
+                    {generatedRecipe.difficulty}
+                  </Text>
+                </View>
+              </View>
+
+              {/* Nutrition Info */}
+              <View className="bg-zinc-800/50 rounded-xl p-4 mb-6">
+                <Text className="text-white font-bold text-lg mb-3">Nutrition (per serving)</Text>
+                <View className="flex-row justify-between">
+                  <View className="items-center">
+                    <Text className="text-orange-400 font-bold text-lg">
+                      {generatedRecipe.nutritionInfo.calories}
+                    </Text>
+                    <Text className="text-zinc-400 text-xs">Calories</Text>
+                  </View>
+                  <View className="items-center">
+                    <Text className="text-blue-400 font-bold text-lg">
+                      {generatedRecipe.nutritionInfo.protein}g
+                    </Text>
+                    <Text className="text-zinc-400 text-xs">Protein</Text>
+                  </View>
+                  <View className="items-center">
+                    <Text className="text-green-400 font-bold text-lg">
+                      {generatedRecipe.nutritionInfo.carbs}g
+                    </Text>
+                    <Text className="text-zinc-400 text-xs">Carbs</Text>
+                  </View>
+                  <View className="items-center">
+                    <Text className="text-yellow-400 font-bold text-lg">
+                      {generatedRecipe.nutritionInfo.fat}g
+                    </Text>
+                    <Text className="text-zinc-400 text-xs">Fat</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Ingredients */}
+              <View className="mb-6">
+                <Text className="text-white font-bold text-lg mb-4">Ingredients</Text>
+                {generatedRecipe.ingredients.map((ingredient, index) => (
+                  <View key={`ingredient-${index}`} className="flex-row items-center py-3 border-b border-zinc-800">
+                    <View className="w-6 h-6 rounded-full bg-orange-500/20 items-center justify-center mr-3">
+                      <Text className="text-orange-400 text-xs font-bold">{index + 1}</Text>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-white font-medium">
+                        {ingredient.amount} {ingredient.unit} {ingredient.name}
+                      </Text>
+                      {ingredient.notes && (
+                        <Text className="text-zinc-400 text-sm mt-1">{ingredient.notes}</Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* Instructions */}
+              <View className="mb-6">
+                <Text className="text-white font-bold text-lg mb-4">Instructions</Text>
+                {generatedRecipe.instructions.map((instruction, index) => (
+                  <View key={`instruction-${index}`} className="flex-row mb-4">
+                    <View className="w-8 h-8 rounded-full bg-orange-500 items-center justify-center mr-4 mt-1">
+                      <Text className="text-white font-bold text-sm">{instruction.step}</Text>
+                    </View>
+                    <View className="flex-1">
+                      <Text className="text-white leading-6">{instruction.instruction}</Text>
+                      {instruction.duration && (
+                        <Text className="text-orange-400 text-sm mt-1">
+                          ⏱️ {instruction.duration} minutes
+                        </Text>
+                      )}
+                      {instruction.tips && (
+                        <Text className="text-zinc-400 text-sm mt-1 italic">
+                          💡 {instruction.tips}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                ))}
+              </View>
+
+              {/* Tips */}
+              {generatedRecipe.tips.length > 0 && (
+                <View className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
+                  <Text className="text-amber-400 font-bold text-lg mb-3">Chef's Tips</Text>
+                  {generatedRecipe.tips.map((tip, index) => (
+                    <Text key={index} className="text-amber-200 mb-2 leading-5">
+                      • {tip}
+                    </Text>
+                  ))}
+                </View>
+              )}
 
               {/* Action Buttons */}
-              <View className="flex-row space-x-4">
+              <View className="flex-row space-x-3 mb-8">
                 <TouchableOpacity 
                   onPress={() => handleSaveRecipe(generatedRecipe)}
-                  className="flex-1 bg-zinc-800 rounded-2xl py-4 items-center"
+                  className="flex-1 bg-zinc-800 rounded-xl py-3 items-center"
                 >
-                  <View className="flex-row items-center space-x-2">
-                    <Ionicons name="bookmark" size={20} color="#F97316" />
-                    <Text className="text-white font-semibold">Save</Text>
-                  </View>
+                  <Ionicons name="bookmark-outline" size={20} color="#F97316" />
+                  <Text className="text-white font-medium mt-1">Save</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity 
                   onPress={() => handleShareRecipe(generatedRecipe)}
-                  className="flex-1 bg-zinc-800 rounded-2xl py-4 items-center"
+                  className="flex-1 bg-zinc-800 rounded-xl py-3 items-center"
                 >
-                  <View className="flex-row items-center space-x-2">
-                    <Ionicons name="share" size={20} color="#F97316" />
-                    <Text className="text-white font-semibold">Share</Text>
-                  </View>
+                  <Ionicons name="share-outline" size={20} color="#F97316" />
+                  <Text className="text-white font-medium mt-1">Share</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  onPress={handleRetry}
+                  className="flex-1 bg-orange-500 rounded-xl py-3 items-center"
+                >
+                  <Ionicons name="refresh" size={20} color="#FFFFFF" />
+                  <Text className="text-white font-medium mt-1">New Recipe</Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity 
-                onPress={handleRetry}
-                className="bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl py-4 items-center"
-              >
-                <LinearGradient
-                  colors={["#F97316", "#F59E0B"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  className="w-full py-4 rounded-2xl items-center"
-                >
-                  <View className="flex-row items-center space-x-2">
-                    <Ionicons name="refresh" size={20} color="#FFFFFF" />
-                    <Text className="text-white font-bold text-lg">Generate Another Recipe</Text>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
             </View>
           </ScrollView>
         )}
       </Animated.View>
-
-      {/* Recipe Detail Modal */}
-      <RecipeDetailModal
-        visible={showRecipeDetail}
-        recipe={generatedRecipe}
-        onClose={() => setShowRecipeDetail(false)}
-      />
 
       {/* Timeout Dialog */}
       <Dialog

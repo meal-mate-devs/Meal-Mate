@@ -60,9 +60,6 @@ export interface RecipeGenerationError {
 }
 
 class RecipeGenerationService {
-  /**
-   * Generate a recipe based on user preferences and pantry ingredients
-   */
   async generateRecipe(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
     try {
       console.log('🚀 Sending request to /recipe-generation/generate endpoint:', JSON.stringify(request, null, 2));
@@ -72,9 +69,7 @@ class RecipeGenerationService {
         '/recipe-generation/generate',
         request
       );
-      
-      console.log('📨 Raw server response received:', JSON.stringify(response, null, 2));
-      
+            
       if (!response.success) {
         const errorResponse = response as RecipeGenerationError;
         throw new Error(errorResponse.error?.message || 'Recipe generation failed');

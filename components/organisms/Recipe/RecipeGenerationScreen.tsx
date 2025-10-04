@@ -64,7 +64,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             const ingredientNames = usableItems.map(item => item.name)
             setPantryIngredients(ingredientNames)
             
-            console.log(`Loaded ${usableItems.length} pantry items for recipe generation (${pantryResponse.items.filter(item => item.expiryStatus === 'expiring').length} expiring)`)
+            // Removed console.log for pantry loading - not critical for production
         } catch (error) {
             console.log('Failed to load pantry ingredients:', error)
             // Don't show error alert, just continue with empty pantry
@@ -95,7 +95,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             return;
         }
         
-        console.log("Selected ingredients:", sanitizedIngredients);
+        // Removed console.log for selected ingredients - not critical for production
         
         // Update filters with unique ingredients (combine with existing ones)
         const uniqueIngredients = [...new Set([...filters.ingredients, ...sanitizedIngredients])];
@@ -139,23 +139,9 @@ export default function RecipeGenerationScreen(): JSX.Element {
         }
 
         // Navigate immediately to response screen with the recipe data
-        console.log('Starting recipe generation flow - navigating to response screen')
+        // Removed console.log for navigation tracking - not critical for production
         
-        // Log the full request being sent
-        console.log('Full Recipe Generation Request:', {
-            filters: filters,
-            availableIngredients: availableIngredients,
-            params: {
-                cuisines: filters.cuisines,
-                categories: filters.categories,
-                dietaryPreferences: filters.dietaryPreferences,
-                mealTime: filters.mealTime,
-                servings: filters.servings,
-                cookingTime: filters.cookingTime,
-                ingredients: availableIngredients,
-                difficulty: filters.difficulty,
-            }
-        })
+        // Removed verbose request logging - not critical for production
         
         // Pass filters and ingredients as route params
         const params = {
@@ -176,7 +162,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
     }
 
     const handleVoiceGeneration = (voiceInput: string): void => {
-        console.log("Voice input:", voiceInput)
+        // Removed console.log for voice input - not critical for production
         setShowVoiceControl(false)
         // TODO: Parse voice input to set filters appropriately
         handleGenerateRecipes()
