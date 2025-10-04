@@ -7,7 +7,8 @@
     "reset-project": "node ./scripts/reset-project.js",
     "ios": "npx @expo/cli start --ios",
     "web": "npx @expo/cli start --web",
-    "lint": "npx @expo/cli lint"
+    "lint": "npx @expo/cli lint",
+    "android": "expo run:android"
   },
   "dependencies": {
     "@expo-google-fonts/poppins": "^0.3.1",
@@ -32,6 +33,7 @@
     "expo-linear-gradient": "~14.1.5",
     "expo-linking": "~7.1.7",
     "expo-media-library": "~17.1.7",
+    "expo-navigation-bar": "~4.2.8",
     "expo-network": "~7.1.5",
     "expo-router": "~5.1.5",
     "expo-splash-screen": "^0.30.10",

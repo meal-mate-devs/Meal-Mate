@@ -376,7 +376,7 @@ export default function RecipeResponseRoute(): JSX.Element {
           <ScrollView
             className="flex-1"
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
           >
             {/* Premium Metrics Grid */}
             <View className="px-6 py-8">
@@ -619,6 +619,12 @@ export default function RecipeResponseRoute(): JSX.Element {
         confirmText="Retry"
         cancelText="Go Back"
         showCancelButton={true}
+      />
+      
+      {/* Black navigation bar background */}
+      <View 
+        className="bg-black"
+        style={{ height: insets.bottom }}
       />
     </View>
   )
