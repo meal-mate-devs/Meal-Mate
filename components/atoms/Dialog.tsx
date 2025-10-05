@@ -21,10 +21,12 @@ interface DialogProps {
     title: string;
     message?: string;
     onClose?: () => void;
+    onCloseButton?: () => void;
     onConfirm?: () => void;
     confirmText?: string;
     cancelText?: string;
     showCancelButton?: boolean;
+    showCloseButton?: boolean;
     autoClose?: boolean;
     autoCloseTime?: number;
 }
@@ -35,10 +37,12 @@ const Dialog = ({
     title,
     message,
     onClose,
+    onCloseButton,
     onConfirm,
     confirmText = 'OK',
     cancelText = 'Cancel',
     showCancelButton = false,
+    showCloseButton = false,
     autoClose = false,
     autoCloseTime = 2500
 }: DialogProps) => {
@@ -614,6 +618,16 @@ const Dialog = ({
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
+                        {showCloseButton && (onClose || onCloseButton) && (
+                            <TouchableOpacity
+                                style={styles.closeButton}
+                                onPress={onCloseButton || onClose}
+                                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            >
+                                <MaterialCommunityIcons name="close" size={20} color="#9CA3AF" />
+                            </TouchableOpacity>
+                        )}
+
                         {renderIcon()}
 
                         <Text style={styles.title}>
@@ -808,6 +822,18 @@ const styles = StyleSheet.create({
         color: 'rgba(255, 255, 255, 0.9)',
         fontSize: 16,
         fontWeight: '600',
+    },
+    closeButton: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1,
     },
 });
 

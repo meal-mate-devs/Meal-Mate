@@ -21,6 +21,11 @@ export interface RecipeGenerationResponse {
     fromPantry: string[];
     missing: string[];
     utilizationRate: number;
+    matchPercentage?: number;
+    availableFromPantry?: string[];
+    needToPurchase?: string[];
+    substitutionsUsed?: any[];
+    totalRequired?: number;
   };
   missingIngredients: string[];
   substitutions: Array<{
@@ -30,9 +35,13 @@ export interface RecipeGenerationResponse {
     notes: string;
   }>;
   adaptationNotes: {
-    difficulty: string;
-    cookingTime: string;
-    dietaryAdaptations: string[];
+    difficulty?: string;
+    cookingTime?: string;
+    dietaryAdaptations?: string[];
+    dietary?: string[];
+    general?: string[];
+    portion?: string[];
+    timing?: string[];
   };
   settings: {
     portionSize: number;
@@ -43,6 +52,13 @@ export interface RecipeGenerationResponse {
     foodCategory: string;
     mealTime: string;
     recipeDifficulty: string;
+  };
+  sufficiencyWarning?: string;
+  ingredientAnalysis?: {
+    categoriesCovered: string[];
+    isMinimallyViable: boolean;
+    isWellRounded: boolean;
+    totalAvailable: number;
   };
 }
 
