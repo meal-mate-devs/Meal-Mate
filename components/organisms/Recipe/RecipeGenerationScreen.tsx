@@ -10,7 +10,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { JSX, useEffect, useState } from "react"
-import { Alert, ScrollView, Text, TouchableOpacity, View } from "react-native"
+import { ScrollView, Text, TouchableOpacity, View } from "react-native"
+import Dialog from "../../atoms/Dialog"
 import IngredientSearchModal from "../../molecules/IngredientSearchModal"
 import FilterSection from "./FilterSection"
 import GeneratedRecipeCard from "./GeneratedRecipeCard"
@@ -43,6 +44,12 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
     const [isLoadingPantry, setIsLoadingPantry] = useState<boolean>(false)
 
+    // Dialog state variables
+    const [showIngredientsAddedDialog, setShowIngredientsAddedDialog] = useState<boolean>(false)
+    const [showSelectionRequiredDialog, setShowSelectionRequiredDialog] = useState<boolean>(false)
+    const [showErrorDialog, setShowErrorDialog] = useState<boolean>(false)
+    const [dialogMessage, setDialogMessage] = useState<string>("")
+
     // Load pantry ingredients on component mount
     useEffect(() => {
         loadPantryIngredients()
@@ -64,7 +71,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             const ingredientNames = usableItems.map(item => item.name)
             setPantryIngredients(ingredientNames)
             
-            // Removed console.log for pantry loading - not critical for production
+            console.log(`Loaded ${usableItems.length} pantry items for recipe generation (${pantryResponse.items.filter(item => item.expiryStatus === 'expiring').length} expiring)`)
         } catch (error) {
             console.log('Failed to load pantry ingredients:', error)
             // Don't show error alert, just continue with empty pantry
@@ -95,7 +102,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             return;
         }
         
-        // Removed console.log for selected ingredients - not critical for production
+        console.log("Selected ingredients:", sanitizedIngredients);
         
         // Update filters with unique ingredients (combine with existing ones)
         const uniqueIngredients = [...new Set([...filters.ingredients, ...sanitizedIngredients])];
@@ -106,42 +113,29 @@ export default function RecipeGenerationScreen(): JSX.Element {
         setScannedIngredients(uniqueScannedIngredients);
         
         // Show a notification about added ingredients
-        Alert.alert(
-            "Ingredients Added!", 
-            `Added ${sanitizedIngredients.length} ingredient${sanitizedIngredients.length > 1 ? 's' : ''} to your recipe.`,
-            [
-                { text: "Generate Recipes", onPress: handleGenerateRecipes },
-                { text: "OK", style: "cancel" }
-            ]
-        );
+        setDialogMessage(`Added ${sanitizedIngredients.length} ingredient${sanitizedIngredients.length > 1 ? 's' : ''} to your recipe.`)
+        setShowIngredientsAddedDialog(true)
     }
 
 
     const handleGenerateRecipes = (): void => {
         // Validate that user has selected at least one cuisine or category
         if (filters.cuisines.length === 0 && filters.categories.length === 0) {
-            Alert.alert("Selection Required", "Please select at least one cuisine or food category to generate recipes.")
+            setDialogMessage("Please select at least one cuisine or food category to generate recipes.")
+            setShowSelectionRequiredDialog(true)
             return
         }
 
         // Check if we have ingredients (either from pantry or manual selection)
         const availableIngredients = filters.ingredients.length > 0 ? filters.ingredients : pantryIngredients
         if (availableIngredients.length === 0) {
-            Alert.alert(
-                "No Ingredients Available", 
-                "Please add ingredients to your pantry or select ingredients manually to generate recipes.",
-                [
-                    { text: "Add to Pantry", onPress: () => setShowIngredientSelector(true) },
-                    { text: "Cancel", style: "cancel" }
-                ]
-            )
+            setDialogMessage("Please add ingredients to your pantry or select ingredients manually to generate recipes.")
+            setShowErrorDialog(true)
             return
         }
 
         // Navigate immediately to response screen with the recipe data
-        // Removed console.log for navigation tracking - not critical for production
-        
-        // Removed verbose request logging - not critical for production
+        console.log('Starting recipe generation flow - navigating to response screen')
         
         // Pass filters and ingredients as route params
         const params = {
@@ -162,7 +156,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
     }
 
     const handleVoiceGeneration = (voiceInput: string): void => {
-        // Removed console.log for voice input - not critical for production
+        console.log("Voice input:", voiceInput)
         setShowVoiceControl(false)
         // TODO: Parse voice input to set filters appropriately
         handleGenerateRecipes()
@@ -171,6 +165,25 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const handleRecipeSelect = (recipe: GeneratedRecipe): void => {
         setSelectedRecipe(recipe)
         setShowRecipeDetail(true)
+    }
+
+    // Dialog handlers
+    const handleIngredientsAddedDialog = (action: string) => {
+        setShowIngredientsAddedDialog(false)
+        if (action === 'generate') {
+            handleGenerateRecipes()
+        }
+    }
+
+    const handleSelectionRequiredDialog = () => {
+        setShowSelectionRequiredDialog(false)
+    }
+
+    const handleNoIngredientsDialog = (action: string) => {
+        setShowErrorDialog(false)
+        if (action === 'add') {
+            setShowIngredientSelector(true)
+        }
     }
 
     return (
@@ -422,6 +435,40 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 visible={showRecipeDetail}
                 recipe={selectedRecipe}
                 onClose={() => setShowRecipeDetail(false)}
+            />
+
+            <Dialog
+                visible={showIngredientsAddedDialog}
+                type="success"
+                title="Ingredients Added!"
+                message={dialogMessage}
+                onClose={() => handleIngredientsAddedDialog('ok')}
+                onConfirm={() => handleIngredientsAddedDialog('generate')}
+                confirmText="Generate Recipes"
+                cancelText="OK"
+                showCancelButton={true}
+            />
+
+            <Dialog
+                visible={showSelectionRequiredDialog}
+                type="warning"
+                title="Selection Required"
+                message={dialogMessage}
+                onClose={handleSelectionRequiredDialog}
+                confirmText="OK"
+                showCancelButton={false}
+            />
+
+            <Dialog
+                visible={showErrorDialog}
+                type="warning"
+                title="No Ingredients Available"
+                message={dialogMessage}
+                onClose={() => handleNoIngredientsDialog('cancel')}
+                onConfirm={() => handleNoIngredientsDialog('add')}
+                confirmText="Add to Pantry"
+                cancelText="Cancel"
+                showCancelButton={true}
             />
         </View>
     )

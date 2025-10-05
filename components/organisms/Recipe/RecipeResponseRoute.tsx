@@ -11,7 +11,7 @@ import { Alert, Animated, BackHandler, Dimensions, ScrollView, Share, Text, Touc
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Dialog from "../../atoms/Dialog"
 
-const TIMEOUT_DURATION = 40000
+const TIMEOUT_DURATION = 50000
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 export default function RecipeResponseRoute(): JSX.Element {
@@ -648,20 +648,20 @@ export default function RecipeResponseRoute(): JSX.Element {
 
                   <TouchableOpacity
                     onPress={() => handleShareRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-2xl bg-gray-700 border-2 border-gray-600 items-center justify-center mr-3 shadow-xl"
+                    className="w-12 h-12 rounded-xl bg-gray-700/10 border border-gray-600/40 items-center justify-center mr-3 shadow-sm"
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="share-outline" size={22} color="#FBBF24" />
+                    <Ionicons name="share-outline" size={20} color="#FBBF24" />
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => handleSaveRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-2xl bg-gray-700 border-2 border-gray-600 items-center justify-center shadow-xl"
+                    className="w-12 h-12 rounded-xl bg-gray-700/10 border border-gray-600/40 items-center justify-center shadow-sm"
                     activeOpacity={0.7}
                   >
                     <Ionicons
                       name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"}
-                      size={22}
+                      size={20}
                       color="#F59E0B"
                     />
                   </TouchableOpacity>
@@ -765,9 +765,9 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {/* Pantry Match & Nutrition */}
             <View className="px-4 pt-3">
-              <View className="flex-row space-x-3">
+              <View className="flex-row space-x-6">
                 {pantryAnalysis && (
-                  <TouchableOpacity className="flex-1 bg-emerald-500/15 border border-emerald-500/40 rounded-xl p-3 flex-row items-center justify-center shadow-md">
+                  <TouchableOpacity className="flex-1 mr-1 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3 flex-row items-center justify-center shadow-sm">
                     <Ionicons name="pie-chart-outline" size={16} color="#10b981" />
                     <View className="ml-2">
                       <Text className="text-emerald-200 text-xs font-semibold">Pantry Match</Text>
@@ -779,7 +779,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                 {!showFullNutrition && (
                   <TouchableOpacity
                     onPress={() => setShowFullNutrition(true)}
-                    className="flex-1 bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-md"
+                    className="flex-1 ml-1 bg-amber-500/10 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
                     activeOpacity={0.7}
                   >
                     <View className="flex-row items-center">
@@ -796,7 +796,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                 {showFullNutrition && (
                   <TouchableOpacity
                     onPress={() => setShowFullNutrition(false)}
-                    className="flex-1 bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-md"
+                    className="flex-1 ml-1 bg-amber-500/10 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
                     activeOpacity={0.7}
                   >
                     <View className="flex-row items-center">
@@ -858,8 +858,8 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {/* Missing Ingredients */}
             {missingIngredients.length > 0 && (
-              <View className="px-4 pt-6">
-                <View className="flex-row items-center justify-between mb-4">
+              <View className="px-4 pt-4">
+                <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
                     <View className="w-1 h-6 bg-red-500 rounded-full mr-3" />
                     <Text className="text-white text-xl font-bold tracking-tight">Missing Items</Text>
@@ -868,11 +868,11 @@ export default function RecipeResponseRoute(): JSX.Element {
                     <Text className="text-red-200 text-xs font-bold">{missingIngredients.length} needed</Text>
                   </View>
                 </View>
-                <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-5 shadow-xl">
+                <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-3 shadow-xl">
                   {missingIngredients.map((ingredient, index) => (
                     <View
                       key={`missing-${index}`}
-                      className={`flex-row items-start justify-between py-4 ${
+                      className={`flex-row items-start justify-between py-2 ${
                         index !== missingIngredients.length - 1 ? "border-b border-gray-500" : ""
                       }`}
                     >
@@ -887,10 +887,10 @@ export default function RecipeResponseRoute(): JSX.Element {
                           setSelectedIngredient(ingredient)
                           setShowAddToPantryDialog(true)
                         }}
-                        className="bg-amber-500/25 border-2 border-amber-400/60 px-6 py-3 rounded-xl shadow-lg min-w-[70px]"
+                        className="bg-amber-500/10 border border-amber-400/40 px-4 py-2 rounded-xl shadow-sm min-w-[100px]"
                         activeOpacity={0.7}
                       >
-                        <Text className="text-amber-100 text-sm font-bold tracking-wide text-center">Add</Text>
+                        <Text className="text-amber-200 text-sm font-bold tracking-wide text-center">Add to Grocery</Text>
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -899,13 +899,13 @@ export default function RecipeResponseRoute(): JSX.Element {
             )}
 
             {sufficiencyWarning && (
-              <View className="px-4 mt-5">
-                <View className="bg-amber-500/20 border-2 border-amber-400/60 rounded-2xl p-6 shadow-lg">
+              <View className="px-4 mt-3">
+                <View className="bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 shadow-sm">
                   <View className="flex-row items-start">
-                    <View className="w-10 h-10 rounded-xl bg-amber-500/25 items-center justify-center mr-4 mt-1">
-                      <Ionicons name="warning" size={20} color="#FCD34D" />
+                    <View className="w-6 h-6 rounded-lg bg-amber-500/20 items-center justify-center mr-3 mt-0.5">
+                      <Ionicons name="warning" size={14} color="#FCD34D" />
                     </View>
-                    <Text className="text-amber-100 text-base leading-7 flex-1 font-medium">You provided insufficient ingredients for a standard recipe.</Text>
+                    <Text className="text-amber-200 text-sm leading-5 flex-1 font-medium">You provided insufficient ingredients for a standard recipe.</Text>
                   </View>
                 </View>
               </View>
@@ -1132,20 +1132,22 @@ export default function RecipeResponseRoute(): JSX.Element {
             <View className="px-4 pb-6">
               <TouchableOpacity
                 onPress={() => handleSaveRecipe(generatedRecipe)}
-                className="bg-amber-600 border-2 border-amber-500 rounded-2xl py-5 flex-row items-center justify-center shadow-xl mb-3"
-                activeOpacity={0.8}
+                className="bg-amber-500/10 border border-amber-400/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
+                activeOpacity={0.7}
               >
-                <Ionicons name="bookmark-outline" size={24} color="#FCD34D" />
-                <Text className="text-white font-bold ml-3 text-lg tracking-wide">Save to Favorites</Text>
+                <Ionicons name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"} size={20} color="#FCD34D" />
+                <Text className="text-amber-200 font-bold ml-3 text-base tracking-wide">
+                  {isFavorite(generatedRecipe.id) ? "Saved to Favorites" : "Save to Favorites"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleRetry}
-                className="bg-gray-700 border-2 border-gray-600 rounded-2xl py-5 flex-row items-center justify-center shadow-xl"
-                activeOpacity={0.8}
+                className="bg-gray-700/10 border border-gray-600/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm"
+                activeOpacity={0.7}
               >
-                <Ionicons name="refresh" size={24} color="#FCD34D" />
-                <Text className="text-white font-bold ml-3 text-lg tracking-wide">Generate New Recipe</Text>
+                <Ionicons name="refresh" size={20} color="#FCD34D" />
+                <Text className="text-gray-200 font-bold ml-3 text-base tracking-wide">Generate New Recipe</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -1163,6 +1165,8 @@ export default function RecipeResponseRoute(): JSX.Element {
         confirmText="Retry"
         cancelText="Go Back"
         showCancelButton={true}
+        showCloseButton={true}
+        onCloseButton={() => setShowTimeoutDialog(false)}
       />
 
       <Dialog
