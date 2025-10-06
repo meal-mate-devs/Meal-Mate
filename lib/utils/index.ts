@@ -6,11 +6,41 @@ export const isValidEmail = (email: string) => {
     return emailRegex.test(email);
 };
 
-
+export const DIETARY_PREFERENCES: DietaryPreference[] = [
+    { id: "vegan", name: "Vegan", icon: "🌱" },
+    { id: "vegetarian", name: "Vegetarian", icon: "🥬" },
+    { id: "dairy-free", name: "Dairy-Free", icon: "🥛" },
+    { id: "gluten-free", name: "Gluten-Free", icon: "🌾" },
+    { id: "keto", name: "Keto", icon: "🥑" },
+    { id: "paleo", name: "Paleo", icon: "🥩" },
+    { id: "low-carb", name: "Low-Carb", icon: "🥒" },
+    { id: "high-protein", name: "High-Protein", icon: "💪" },
+    { id: "low-sodium", name: "Low-Sodium", icon: "🧂" },
+    { id: "diabetic-friendly", name: "Diabetic-Friendly", icon: "⚖️" },
+    { id: "heart-healthy", name: "Heart-Healthy", icon: "❤️" },
+    { id: "nut-free", name: "Nut-Free", icon: "🥜" },
+];
 
 export interface Recipe {
     id: string;
-    title: string;
+    name: string;
+    image: string;
+    category: string;
+    prepTime: number;
+    rating: number;
+    author: string;
+    calories: number;
+    weight: number;
+    ingredients: Array<{
+        name: string;
+        amount: string;
+        icon: string;
+    }>;
+}
+
+export interface Recipe {
+    id: string;
+    name: string;
     image: string;
     category: string;
     prepTime: number;
@@ -29,7 +59,7 @@ export interface Recipe {
 export const dummyRecipes: Recipe[] = [
     {
         id: '1',
-        title: 'Toast with egg and avocado',
+        name: 'Toast with egg and avocado',
         image: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2380&q=80',
         category: 'Breakfast',
         prepTime: 15,
@@ -48,7 +78,7 @@ export const dummyRecipes: Recipe[] = [
     },
     {
         id: '2',
-        title: 'Breakfast burrito',
+        name: 'Breakfast burrito',
         image: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
         category: 'Breakfast',
         prepTime: 20,
@@ -66,7 +96,7 @@ export const dummyRecipes: Recipe[] = [
     },
     {
         id: '3',
-        title: 'Veggie pasta',
+        name: 'Veggie pasta',
         image: 'https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=880&q=80',
         category: 'Dinner',
         prepTime: 30,
@@ -90,6 +120,7 @@ export const INITIAL_POSTS: Post[] = [
         id: "1",
         author: {
             id: "1",
+            mongoId: "1",
             name: "Jessica Parker",
             username: "chef_jessica",
             avatar: require("../../assets/images/avatar.png"),
@@ -125,6 +156,7 @@ export const INITIAL_POSTS: Post[] = [
                 id: "c1",
                 author: {
                     id: "2",
+                    mongoId: "2",
                     name: "Alex Thompson",
                     username: "pasta_lover",
                     avatar: require("../../assets/images/avatar.png"),
@@ -138,6 +170,7 @@ export const INITIAL_POSTS: Post[] = [
         id: "2",
         author: {
             id: "2",
+            mongoId: "2",
             name: "Michael Chen",
             username: "chef_michael",
             avatar: require("../../assets/images/avatar.png"),
@@ -186,6 +219,7 @@ export const INITIAL_POSTS: Post[] = [
                 id: "c2",
                 author: {
                     id: "5",
+                    mongoId: "5",
                     name: "Lisa Wong",
                     username: "spice_enthusiast",
                     avatar: require("../../assets/images/avatar.png"),
@@ -199,6 +233,7 @@ export const INITIAL_POSTS: Post[] = [
         id: "3",
         author: {
             id: "3",
+            mongoId: "3",
             name: "Sarah Johnson",
             username: "baking_queen",
             avatar: require("../../assets/images/avatar.png"),
@@ -250,6 +285,7 @@ export const INITIAL_POSTS: Post[] = [
                 id: "c3",
                 author: {
                     id: "6",
+                    mongoId: "6",
                     name: "David Miller",
                     username: "sweet_tooth",
                     avatar: require("../../assets/images/avatar.png"),
@@ -263,6 +299,7 @@ export const INITIAL_POSTS: Post[] = [
         id: "4",
         author: {
             id: "4",
+            mongoId: "4",
             name: "Robert Kim",
             username: "bbq_master",
             avatar: require("../../assets/images/avatar.png"),
@@ -309,6 +346,7 @@ export const INITIAL_POSTS: Post[] = [
 
 
 export const CUISINES: Cuisine[] = [
+    { id: "pakistani", name: "Pakistani", icon: "🍛" },
     { id: "italian", name: "Italian", icon: "🍝" },
     { id: "chinese", name: "Chinese", icon: "🥢" },
     { id: "mexican", name: "Mexican", icon: "🌮" },
@@ -317,6 +355,12 @@ export const CUISINES: Cuisine[] = [
     { id: "french", name: "French", icon: "🥐" },
     { id: "thai", name: "Thai", icon: "🍜" },
     { id: "american", name: "American", icon: "🍔" },
+    { id: "mediterranean", name: "Mediterranean", icon: "🫒" },
+    { id: "korean", name: "Korean", icon: "🥘" },
+    { id: "middle-eastern", name: "Middle Eastern", icon: "🧆" },
+    { id: "spanish", name: "Spanish", icon: "🥘" },
+    { id: "greek", name: "Greek", icon: "🫒" },
+    { id: "turkish", name: "Turkish", icon: "🥙" },
 ]
 
 export const FOOD_CATEGORIES: FoodCategory[] = [
@@ -330,17 +374,6 @@ export const FOOD_CATEGORIES: FoodCategory[] = [
     { id: "vegetarian", name: "Vegetarian", icon: "🥕" },
     { id: "snack", name: "Snack", icon: "🍿" },
     { id: "beverage", name: "Beverage", icon: "🥤" },
-]
-
-export const DIETARY_PREFERENCES: DietaryPreference[] = [
-    { id: "vegan", name: "Vegan", icon: "🌱" },
-    { id: "vegetarian", name: "Vegetarian", icon: "🥬" },
-    { id: "keto", name: "Keto", icon: "🥑" },
-    { id: "paleo", name: "Paleo", icon: "🥩" },
-    { id: "gluten-free", name: "Gluten-Free", icon: "🌾" },
-    { id: "dairy-free", name: "Dairy-Free", icon: "🥛" },
-    { id: "low-carb", name: "Low-Carb", icon: "🥒" },
-    { id: "high-protein", name: "High-Protein", icon: "💪" },
 ]
 
 export const MEAL_TIMES: MealTime[] = [

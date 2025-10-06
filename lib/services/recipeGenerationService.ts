@@ -78,9 +78,6 @@ export interface RecipeGenerationError {
 class RecipeGenerationService {
   async generateRecipe(request: RecipeGenerationRequest): Promise<RecipeGenerationResponse> {
     try {
-      console.log('🚀 Sending request to /recipe-generation/generate endpoint:', JSON.stringify(request, null, 2));
-      console.log('📊 Request portionSize being sent:', request.portionSize);
-      
       const response = await apiClient.post<RecipeGenerationResponse | RecipeGenerationError>(
         '/recipe-generation/generate',
         request
@@ -92,8 +89,6 @@ class RecipeGenerationService {
       }
       
       const successResponse = response as RecipeGenerationResponse;
-      console.log('✅ Recipe servings in response:', successResponse.recipe.servings);
-      console.log('⚙️ Settings portionSize in response:', successResponse.settings?.portionSize);
       
       return successResponse;
     } catch (error: any) {

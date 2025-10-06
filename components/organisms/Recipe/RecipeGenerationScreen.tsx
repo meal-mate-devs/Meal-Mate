@@ -27,8 +27,8 @@ export default function RecipeGenerationScreen(): JSX.Element {
         categories: [],
         dietaryPreferences: [],
         mealTime: "",
-        servings: 4,
-        cookingTime: 30,
+        servings: 1,
+        cookingTime: 20,
         ingredients: [],
         difficulty: "Any",
     })
@@ -43,6 +43,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const [pantryIngredients, setPantryIngredients] = useState<string[]>([])
     const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
     const [isLoadingPantry, setIsLoadingPantry] = useState<boolean>(false)
+    const [selectedPantryCategories, setSelectedPantryCategories] = useState<Set<string>>(new Set())
 
     // Dialog state variables
     const [showIngredientsAddedDialog, setShowIngredientsAddedDialog] = useState<boolean>(false)
@@ -54,6 +55,13 @@ export default function RecipeGenerationScreen(): JSX.Element {
     useEffect(() => {
         loadPantryIngredients()
     }, [])
+
+    // Monitor ingredient changes to update dietary restrictions
+    useEffect(() => {
+        if (filters.ingredients.length > 0) {
+            updatePantryCategories(filters.ingredients)
+        }
+    }, [filters.ingredients])
 
     const loadPantryIngredients = async () => {
         setIsLoadingPantry(true)
@@ -82,10 +90,42 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
 
     const handleFilterChange = (key: keyof RecipeFilters, value: any): void => {
-        setFilters((prev) => ({
-            ...prev,
-            [key]: value,
-        }))
+        // Special handling for dietary preferences with smart restrictions
+        if (key === 'dietaryPreferences') {
+            const newPreferences = Array.isArray(value) ? value : []
+            
+            // Check for conflicts with selected pantry categories
+            const filteredPreferences = newPreferences.filter(pref => {
+                // Don't allow vegan/vegetarian if meat is selected (neither can eat meat)
+                if ((pref === 'vegan' || pref === 'vegetarian') && selectedPantryCategories.has('meat')) {
+                    return false
+                }
+                // Don't allow vegan if dairy is selected (vegetarians can eat dairy, vegans cannot)
+                if (pref === 'vegan' && selectedPantryCategories.has('dairy')) {
+                    return false
+                }
+                // Don't allow dairy-free if dairy is selected
+                if (pref === 'dairy-free' && selectedPantryCategories.has('dairy')) {
+                    return false
+                }
+                return true
+            })
+            
+            setFilters((prev) => ({
+                ...prev,
+                [key]: filteredPreferences,
+            }))
+        } else {
+            setFilters((prev) => ({
+                ...prev,
+                [key]: value,
+            }))
+            
+            // If ingredients are being updated, update pantry categories for dietary restrictions
+            if (key === 'ingredients') {
+                updatePantryCategories(value)
+            }
+        }
     }
 
     const handleIngredientsDetected = (ingredients: string[]): void => {
@@ -112,11 +152,80 @@ export default function RecipeGenerationScreen(): JSX.Element {
         const uniqueScannedIngredients = [...new Set([...scannedIngredients, ...sanitizedIngredients])];
         setScannedIngredients(uniqueScannedIngredients);
         
+        // Update pantry categories for dietary restrictions logic
+        updatePantryCategories(uniqueIngredients);
+        
         // Show a notification about added ingredients
         setDialogMessage(`Added ${sanitizedIngredients.length} ingredient${sanitizedIngredients.length > 1 ? 's' : ''} to your recipe.`)
         setShowIngredientsAddedDialog(true)
     }
 
+    // Function to categorize ingredients and update dietary restrictions logic
+    const updatePantryCategories = (ingredients: string[]) => {
+        const categories = new Set<string>()
+        
+        // Map ingredients to their likely categories based on pantry items
+        ingredients.forEach(ingredient => {
+            const lowerIngredient = ingredient.toLowerCase()
+            
+            // Meat category detection (including seafood)
+            if (lowerIngredient.includes('chicken') || lowerIngredient.includes('beef') || 
+                lowerIngredient.includes('pork') || lowerIngredient.includes('lamb') || 
+                lowerIngredient.includes('fish') || lowerIngredient.includes('salmon') ||
+                lowerIngredient.includes('tuna') || lowerIngredient.includes('meat') ||
+                lowerIngredient.includes('bacon') || lowerIngredient.includes('ham') ||
+                lowerIngredient.includes('turkey') || lowerIngredient.includes('duck') ||
+                lowerIngredient.includes('seafood') || lowerIngredient.includes('shrimp') ||
+                lowerIngredient.includes('crab') || lowerIngredient.includes('lobster') ||
+                lowerIngredient.includes('cod') || lowerIngredient.includes('mackerel')) {
+                categories.add('meat')
+            }
+            
+            // Dairy category detection
+            if (lowerIngredient.includes('milk') || lowerIngredient.includes('cheese') || 
+                lowerIngredient.includes('butter') || lowerIngredient.includes('cream') ||
+                lowerIngredient.includes('yogurt') || lowerIngredient.includes('dairy') ||
+                lowerIngredient.includes('mozzarella') || lowerIngredient.includes('cheddar') ||
+                lowerIngredient.includes('parmesan') || lowerIngredient.includes('cottage cheese') ||
+                lowerIngredient.includes('sour cream') || lowerIngredient.includes('heavy cream')) {
+                categories.add('dairy')
+            }
+        })
+        
+        // Also check pantry items for categories
+        pantryItems.forEach(item => {
+            if (ingredients.includes(item.name)) {
+                categories.add(item.category)
+            }
+        })
+        
+        setSelectedPantryCategories(categories)
+        
+        // Auto-adjust dietary preferences based on selected categories
+        const currentDietary = new Set(filters.dietaryPreferences)
+        
+        // If meat is selected, remove both vegan and vegetarian options (neither can eat meat)
+        if (categories.has('meat')) {
+            currentDietary.delete('vegan')
+            currentDietary.delete('vegetarian')
+        }
+        
+        // If dairy is selected, only remove vegan option (vegetarians can eat dairy, vegans cannot)
+        if (categories.has('dairy')) {
+            currentDietary.delete('vegan')
+            currentDietary.delete('dairy-free')
+        }
+        
+        // Update dietary preferences if changes were made
+        const newDietaryArray = Array.from(currentDietary)
+        if (newDietaryArray.length !== filters.dietaryPreferences.length || 
+            !newDietaryArray.every(pref => filters.dietaryPreferences.includes(pref))) {
+            setFilters((prev) => ({
+                ...prev,
+                dietaryPreferences: newDietaryArray
+            }))
+        }
+    }
 
     const handleGenerateRecipes = (): void => {
         // Validate that user has selected at least one cuisine or category
@@ -214,10 +323,10 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
                         <TouchableOpacity
                             className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[140px]"
-                            onPress={() => setShowVoiceControl(true)}
+                            onPress={() => router.push('/(protected)/recipe/favorites')}
                         >
-                            <Ionicons name="mic-outline" size={18} color="#FBBF24" />
-                            <Text className="text-white ml-2 text-sm font-medium">Voice Chef</Text>
+                            <Ionicons name="heart-outline" size={18} color="#FBBF24" />
+                            <Text className="text-white ml-2 text-sm font-medium">Favorites</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -305,7 +414,36 @@ export default function RecipeGenerationScreen(): JSX.Element {
                     selectedItems={filters.dietaryPreferences}
                     onSelectionChange={(selected) => handleFilterChange("dietaryPreferences", selected)}
                     multiSelect={true}
+                    disabledItems={Array.from(selectedPantryCategories).reduce((disabled: string[], category) => {
+                        if (category === 'meat') {
+                            disabled.push('vegan', 'vegetarian')
+                        }
+                        if (category === 'dairy') {
+                            disabled.push('dairy-free')
+                        }
+                        return disabled
+                    }, [])}
                 />
+
+                {/* Smart Dietary Restrictions Info */}
+                {(selectedPantryCategories.has('meat') || selectedPantryCategories.has('dairy')) && (
+                    <View className="px-4 mb-4">
+                        <View className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                            <View className="flex-row items-center mb-2">
+                                <Ionicons name="information-circle" size={20} color="#F59E0B" />
+                                <Text className="text-amber-500 font-bold ml-2">Smart Dietary Filtering</Text>
+                            </View>
+                            <Text className="text-amber-200 text-sm leading-relaxed">
+                                {selectedPantryCategories.has('meat') && selectedPantryCategories.has('dairy') 
+                                    ? "Vegan, vegetarian, and dairy-free options are unavailable due to selected meat and dairy ingredients."
+                                    : selectedPantryCategories.has('meat')
+                                    ? "Vegan and vegetarian options are unavailable due to selected meat ingredients."
+                                    : "Dairy-free options are unavailable due to selected dairy ingredients."
+                                }
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 <FilterSection
                     title="Meal Time"

@@ -18,6 +18,7 @@ let globalFavorites: FavoriteRecipe[] = [];
 let globalIsLoading = false;
 let globalError: string | null = null;
 let subscribers: (() => void)[] = [];
+let hasInitialized = false; // Track if we've attempted initial load
 
 // Subscribe to store changes
 const subscribe = (callback: () => void) => {
@@ -53,6 +54,28 @@ export const useFavoritesStore = (): FavoritesStore => {
       setError(globalError);
     });
     return unsubscribe;
+  }, []);
+
+  // Auto-load favorites on first hook usage
+  useEffect(() => {
+    if (!hasInitialized) {
+      hasInitialized = true;
+      updateGlobalState({ isLoading: true, error: null });
+      
+      favoritesService.getFavorites()
+        .then((response) => {
+          if (response.success) {
+            updateGlobalState({ favorites: response.data.favorites, isLoading: false });
+          } else {
+            updateGlobalState({ isLoading: false, error: response.message || 'Failed to get favorites' });
+          }
+        })
+        .catch((error) => {
+          console.log('❌ Auto-load getFavorites error:', error);
+          const errorMessage = error instanceof Error ? error.message : 'Failed to get favorites';
+          updateGlobalState({ isLoading: false, error: errorMessage });
+        });
+    }
   }, []);
 
   const addToFavorites = useCallback(async (recipe: AddToFavoritesRequest): Promise<boolean> => {
@@ -111,9 +134,11 @@ export const useFavoritesStore = (): FavoritesStore => {
         updateGlobalState({ favorites: response.data.favorites, isLoading: false });
       } else {
         updateGlobalState({ isLoading: false, error: response.message || 'Failed to get favorites' });
+        console.log('❌ getFavorites: Failed with message:', response.message);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get favorites';
+      console.log('❌ getFavorites: Exception caught:', error);
       updateGlobalState({ isLoading: false, error: errorMessage });
     }
   }, []);

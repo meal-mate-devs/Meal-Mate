@@ -83,9 +83,6 @@ export const handleLoginError = (error: any, setEmailError: (error: string) => v
         }
     }
 
-    console.log('Error code:', errorCode);
-    console.log('Error message:', errorMessage);
-
     if (isNetworkRelatedError(error)) {
         showDialog('error', 'Network Error', 'Network issue. Please check your connection and try again.');
     } else if (errorCode) {

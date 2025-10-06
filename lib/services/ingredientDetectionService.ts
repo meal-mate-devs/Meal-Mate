@@ -19,7 +19,6 @@ class IngredientDetectionService {
       // Check if the file exists
       const fileInfo = await FileSystem.getInfoAsync(imageUri);
       if (!fileInfo.exists) {
-        console.log("File not found:", imageUri);
         throw this.createError("File not found", "The specified image file does not exist", 404);
       }
 
@@ -36,8 +35,6 @@ class IngredientDetectionService {
         formData.append("include_confidence", "true");
       }
 
-      console.log("Sending request to API:", this.apiUrl);
-
       // Make the API request
       const response = await fetch(this.apiUrl, {
         method: "POST",
@@ -46,8 +43,6 @@ class IngredientDetectionService {
         },
         body: formData,
       });
-
-      console.log("Response status:", response.status);
 
       // Handle non-200 responses
       if (!response.ok) {

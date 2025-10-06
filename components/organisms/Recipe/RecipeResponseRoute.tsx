@@ -1,13 +1,16 @@
 "use client"
 
 import { useFavoritesStore } from "@/hooks/useFavoritesStore"
+import { groceryService, type AddGroceryItemData } from "@/lib/services/groceryService"
 import { recipeGenerationService } from "@/lib/services/recipeGenerationService"
 import type { GeneratedRecipe, RecipeFilters } from "@/lib/types/recipeGeneration"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
+import DateTimePicker from "@react-native-community/datetimepicker"
+import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import LottieView from "lottie-react-native"
-import React, { type JSX, useEffect, useRef, useState } from "react"
-import { Alert, Animated, BackHandler, Dimensions, ScrollView, Share, Text, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useRef, useState, type JSX } from "react"
+import { Alert, Animated, BackHandler, Dimensions, KeyboardAvoidingView, Modal, Platform, ScrollView, Share, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Dialog from "../../atoms/Dialog"
 
@@ -26,6 +29,12 @@ const getIngredientName = (ingredient: string | MissingIngredient): string => {
   return typeof ingredient === 'string' ? ingredient : ingredient.name;
 }
 
+// Units for grocery items
+const GROCERY_UNITS = [
+  "pieces", "kilograms", "grams", "liters", "milliliters", 
+  "cups", "tablespoons", "teaspoons", "ounces", "pounds"
+]
+
 export default function RecipeResponseRoute(): JSX.Element {
   const router = useRouter()
   const params = useLocalSearchParams()
@@ -41,10 +50,23 @@ export default function RecipeResponseRoute(): JSX.Element {
   const [showUnsafeIngredientsDialog, setShowUnsafeIngredientsDialog] = useState(false)
   const [showSaveSuccessDialog, setShowSaveSuccessDialog] = useState(false)
   const [showRemoveSuccessDialog, setShowRemoveSuccessDialog] = useState(false)
-  const [showAddToPantryDialog, setShowAddToPantryDialog] = useState(false)
+  const [showAddToGroceryModal, setShowAddToGroceryModal] = useState(false)
+  const [showGrocerySuccessDialog, setShowGrocerySuccessDialog] = useState(false)
+  const [addedGroceryItems, setAddedGroceryItems] = useState<Set<string>>(new Set())
+  const [isAddingToGrocery, setIsAddingToGrocery] = useState(false)
   const [showBackDialog, setShowBackDialog] = useState(false)
   const [showGenerateNewDialog, setShowGenerateNewDialog] = useState(false)
   const [selectedIngredient, setSelectedIngredient] = useState<string>("")
+  const [newItemForm, setNewItemForm] = useState({
+    name: "",
+    quantity: "1",
+    unit: "pieces",
+    urgency: "normal" as "normal" | "urgent",
+    purchaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    notes: ""
+  })
+  const [showPurchaseDatePicker, setShowPurchaseDatePicker] = useState(false)
+  const [isUnitDropdownOpen, setIsUnitDropdownOpen] = useState(false)
   const [unsafeIngredientsData, setUnsafeIngredientsData] = useState<{
     flaggedIngredients: string[]
     safeIngredients: string[]
@@ -60,12 +82,12 @@ export default function RecipeResponseRoute(): JSX.Element {
   const [adaptationNotes, setAdaptationNotes] = useState<any>(null)
   const [ingredientAnalysis, setIngredientAnalysis] = useState<any>(null)
   const [substitutions, setSubstitutions] = useState<
-    Array<{
+    {
       original: string
       substitute: string
       ratio: string
       notes: string
-    }>
+    }[]
   >([])
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [showFullNutrition, setShowFullNutrition] = useState(false)
@@ -171,18 +193,11 @@ export default function RecipeResponseRoute(): JSX.Element {
         throw new Error(validation.errors.join(", "))
       }
 
-      console.log("Generating recipe with request:", request)
-      console.log("Requested servings:", request.portionSize)
-
       const response = await recipeGenerationService.generateRecipe(request)
-
-      console.log("Recipe generation successful:", response.recipe.title)
-      console.log("Server returned servings:", response.recipe.servings)
 
       // 🔧 PRODUCTION FIX: Ensure recipe has a unique ID
       if (!response.recipe.id) {
         response.recipe.id = `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        console.log("🛠️ Generated missing recipe ID:", response.recipe.id);
       }
 
       // 🔧 PRODUCTION FIX: Ensure all ingredients have IDs
@@ -211,12 +226,6 @@ export default function RecipeResponseRoute(): JSX.Element {
       setIngredientAnalysis(response.ingredientAnalysis || null)
       setSubstitutions(response.substitutions || [])
 
-      if (response.missingIngredients.length > 0) {
-        console.log("Missing ingredients:", response.missingIngredients)
-      }
-      if (response.sufficiencyWarning) {
-        console.log("⚠️ Sufficiency warning:", response.sufficiencyWarning)
-      }
     } catch (error: any) {
       console.log("Recipe generation failed:", error)
 
@@ -285,31 +294,23 @@ export default function RecipeResponseRoute(): JSX.Element {
   }
 
   const handleSaveRecipe = (recipe: GeneratedRecipe): void => {
-    console.log('🔍 Recipe data before saving:', {
-      id: recipe.id,
-      title: recipe.title,
-      ingredientsCount: recipe.ingredients?.length,
-      hasEmptyIngredients: recipe.ingredients?.some(ing => !ing.name || !ing.amount || !ing.unit)
-    });
-
     // 🔧 PRODUCTION: Robust validation with auto-fix
     const validatedRecipe = { ...recipe };
     
     // Auto-generate ID if missing
     if (!validatedRecipe.id || validatedRecipe.id.trim() === '') {
       validatedRecipe.id = `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log('🛠️ Auto-generated recipe ID:', validatedRecipe.id);
     }
 
     // Validate and auto-fix critical fields
     if (!validatedRecipe.title || validatedRecipe.title.trim() === '') {
-      console.error('❌ Critical: Recipe title is missing');
+      console.log('❌ Critical: Recipe title is missing');
       Alert.alert('Error', 'Recipe data is corrupted. Please generate a new recipe.');
       return;
     }
 
     if (!validatedRecipe.ingredients || validatedRecipe.ingredients.length === 0) {
-      console.error('❌ Critical: Recipe has no ingredients');
+      console.log('❌ Critical: Recipe has no ingredients');
       Alert.alert('Error', 'Recipe has no ingredients. Please generate a new recipe.');
       return;
     }
@@ -456,6 +457,95 @@ export default function RecipeResponseRoute(): JSX.Element {
     return newlineIndex !== -1 ? text.substring(0, newlineIndex).trim() : text
   }
 
+  const formatDisplayDate = (value: Date | string) => {
+    const date = typeof value === "string" ? new Date(value) : value;
+    return date.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  // 🛒 GROCERY FUNCTIONALITY
+  const handleOpenGroceryModal = (ingredientName: string): void => {
+    setSelectedIngredient(ingredientName)
+    setNewItemForm({
+      name: ingredientName,
+      quantity: "1",
+      unit: "pieces",
+      urgency: "normal",
+      purchaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+      notes: ""
+    })
+    setIsUnitDropdownOpen(false)
+    setShowAddToGroceryModal(true)
+  }
+
+  const handleCloseGroceryModal = (): void => {
+    setShowAddToGroceryModal(false)
+    setIsUnitDropdownOpen(false)
+    setShowPurchaseDatePicker(false)
+  }
+
+  const handleAddToGrocery = async (): Promise<void> => {
+    if (!newItemForm.name.trim()) {
+      Alert.alert("Error", "Please enter an item name")
+      return
+    }
+
+    if (!newItemForm.quantity || parseFloat(newItemForm.quantity) <= 0) {
+      Alert.alert("Error", "Please enter a valid quantity")
+      return
+    }
+
+    try {
+      setIsAddingToGrocery(true)
+
+      const groceryData: AddGroceryItemData = {
+        name: newItemForm.name.trim(),
+        quantity: parseFloat(newItemForm.quantity),
+        unit: newItemForm.unit,
+        urgency: newItemForm.urgency,
+        purchaseDate: newItemForm.purchaseDate.toISOString(),
+        notes: newItemForm.notes.trim()
+      }
+
+      const response = await groceryService.addGroceryItem(groceryData)
+      
+      if (response.success) {
+        // Add to tracking set
+        setAddedGroceryItems(prev => new Set([...prev, newItemForm.name.trim()]))
+        
+        // Close modal and show success
+        setShowAddToGroceryModal(false)
+        setShowGrocerySuccessDialog(true)
+        
+        // Reset form
+        setSelectedIngredient("")
+        setNewItemForm({
+          name: "",
+          quantity: "1",
+          unit: "pieces",
+          urgency: "normal",
+          purchaseDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+          notes: ""
+        })
+      }
+    } catch (error) {
+      console.error("Failed to add to grocery:", error)
+      Alert.alert("Error", "Failed to add item to grocery list. Please try again.")
+    } finally {
+      setIsAddingToGrocery(false)
+    }
+  }
+
+  const handlePurchaseDateChange = (event: any, selectedDate?: Date): void => {
+    setShowPurchaseDatePicker(false)
+    if (selectedDate) {
+      setNewItemForm(prev => ({ ...prev, purchaseDate: selectedDate }))
+    }
+  }
+
   const formatErrorMessage = (errorMessage: string): { title: string; message: string; isServerError: boolean } => {
     if (
       errorMessage.includes("API Error: 500") ||
@@ -485,18 +575,30 @@ export default function RecipeResponseRoute(): JSX.Element {
   }
 
   return (
-    <View className="flex-1 bg-gray-900">
-      {isGenerating && !error && !generatedRecipe && (
-        <View className="flex-1 justify-center items-center bg-gray-900">
+    <>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="#000000" 
+        translucent={false}
+      />
+      <LinearGradient
+        colors={["#000000", "#121212"]}
+        className="flex-1"
+      >
+        {isGenerating && !error && !generatedRecipe && (
+        <LinearGradient
+          colors={["#000000", "#121212"]}
+          className="flex-1 justify-center items-center"
+        >
           {/* Artistic background with refined glows */}
           <View className="absolute inset-0">
-            {/* Primary amber glow - top left */}
+            {/* Primary gold glow - top left */}
             <Animated.View
               className="absolute w-80 h-80 rounded-full"
               style={{
                 top: "-10%",
                 left: "-25%",
-                backgroundColor: "#F59E0B",
+                backgroundColor: "#FACC15",
                 opacity: 0.08,
                 transform: [
                   {
@@ -509,13 +611,13 @@ export default function RecipeResponseRoute(): JSX.Element {
               }}
             />
 
-            {/* Secondary amber glow - bottom right */}
+            {/* Secondary orange glow - bottom right */}
             <Animated.View
               className="absolute w-64 h-64 rounded-full"
               style={{
                 bottom: "5%",
                 right: "-20%",
-                backgroundColor: "#FBBF24",
+                backgroundColor: "#F97316",
                 opacity: 0.06,
                 transform: [
                   {
@@ -536,7 +638,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                 left: "50%",
                 marginLeft: -192,
                 marginTop: -192,
-                backgroundColor: "#D97706",
+                backgroundColor: "#F59E0B",
                 opacity: 0.04,
                 transform: [
                   {
@@ -550,18 +652,18 @@ export default function RecipeResponseRoute(): JSX.Element {
             />
 
             {/* Elegant divider lines */}
-            <View className="absolute top-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
-            <View className="absolute bottom-1/3 left-0 right-0 h-px bg-gradient-to-r from-transparent via-amber-500/10 to-transparent" />
+            <View className="absolute top-1/3 left-0 right-0 h-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }} />
+            <View className="absolute bottom-1/3 left-0 right-0 h-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }} />
 
             {/* Vertical accent lines */}
-            <View className="absolute top-0 bottom-0 left-1/4 w-px bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
-            <View className="absolute top-0 bottom-0 right-1/4 w-px bg-gradient-to-b from-transparent via-amber-500/5 to-transparent" />
+            <View className="absolute top-0 bottom-0 left-1/4 w-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.05)' }} />
+            <View className="absolute top-0 bottom-0 right-1/4 w-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.05)' }} />
           </View>
 
           <Animated.View className="items-center justify-center z-10 px-8" style={{ opacity: fadeAnim }}>
             {/* Premium Lottie with refined glow */}
             <View className="relative mb-12">
-              <View className="absolute inset-0 bg-amber-500/15 rounded-full blur-3xl scale-150" />
+              <View className="absolute inset-0 rounded-full blur-3xl scale-150" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }} />
               <View className="relative">
                 <LottieView
                   source={require("@/assets/lottie/loading.json")}
@@ -574,15 +676,15 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {/* Refined typography */}
             <View className="items-center space-y-4">
-              <Text className="text-white text-4xl font-light tracking-tight text-center leading-tight">
+              <Text className="text-4xl font-light tracking-tight text-center leading-tight" style={{ color: '#FFFFFF' }}>
                 Crafting Your{"\n"}
-                <Text className="font-bold text-amber-400">Perfect Recipe</Text>
+                <Text className="font-bold" style={{ color: '#FACC15' }}>Perfect Recipe</Text>
               </Text>
 
               {/* Elegant divider */}
-              <View className="w-16 h-px bg-amber-500/30 my-2" />
+              <View className="w-16 h-px my-2" style={{ backgroundColor: 'rgba(250, 204, 21, 0.3)' }} />
 
-              <Text className="text-zinc-300 text-center text-base font-light leading-relaxed max-w-xs">
+              <Text className="text-center text-base font-light leading-relaxed max-w-xs" style={{ color: '#94A3B8' }}>
                 Our AI chef is analyzing ingredients and creating something extraordinary
               </Text>
             </View>
@@ -590,8 +692,9 @@ export default function RecipeResponseRoute(): JSX.Element {
             {/* Sophisticated loading dots */}
             <View className="mt-12 flex-row items-center space-x-3">
               <Animated.View
-                className="w-2.5 h-2.5 rounded-full bg-amber-500"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
+                  backgroundColor: '#FACC15',
                   opacity: pulseAnim.interpolate({
                     inputRange: [1, 1.1],
                     outputRange: [0.2, 1],
@@ -599,8 +702,9 @@ export default function RecipeResponseRoute(): JSX.Element {
                 }}
               />
               <Animated.View
-                className="w-2.5 h-2.5 rounded-full bg-amber-400"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
+                  backgroundColor: '#F97316',
                   opacity: pulseAnim.interpolate({
                     inputRange: [1, 1.1],
                     outputRange: [0.4, 1],
@@ -608,8 +712,9 @@ export default function RecipeResponseRoute(): JSX.Element {
                 }}
               />
               <Animated.View
-                className="w-2.5 h-2.5 rounded-full bg-amber-500"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
+                  backgroundColor: '#FACC15',
                   opacity: pulseAnim.interpolate({
                     inputRange: [1, 1.1],
                     outputRange: [0.6, 1],
@@ -617,8 +722,9 @@ export default function RecipeResponseRoute(): JSX.Element {
                 }}
               />
               <Animated.View
-                className="w-2.5 h-2.5 rounded-full bg-amber-400"
+                className="w-2.5 h-2.5 rounded-full"
                 style={{
+                  backgroundColor: '#F97316',
                   opacity: pulseAnim.interpolate({
                     inputRange: [1, 1.1],
                     outputRange: [1, 0.2],
@@ -627,35 +733,39 @@ export default function RecipeResponseRoute(): JSX.Element {
               />
             </View>
           </Animated.View>
-        </View>
+        </LinearGradient>
       )}
 
       {error &&
         (() => {
           const formattedError = formatErrorMessage(error)
           return (
-            <ScrollView
-              className="flex-1 bg-zinc-900"
-              contentContainerStyle={{ justifyContent: "flex-start", paddingTop: 200 }}
+            <LinearGradient
+              colors={["#000000", "#121212"]}
+              className="flex-1"
             >
+              <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ justifyContent: "flex-start", paddingTop: 200 }}
+              >
               <View className="items-center px-8 py-6">
                 <View className="mb-8">
                   <View className="relative">
-                    <View className="absolute inset-0 bg-amber-500/15 rounded-full blur-2xl scale-125" />
-                    <View className="w-24 h-24 rounded-full bg-zinc-800/90 border-2 border-amber-500/30 items-center justify-center">
-                      <Ionicons name="alert-circle-outline" size={48} color="#FCD34D" />
+                    <View className="absolute inset-0 rounded-full blur-2xl scale-125" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }} />
+                    <View className="w-24 h-24 rounded-full items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
+                      <Ionicons name="alert-circle-outline" size={48} color="#FACC15" />
                     </View>
                   </View>
                 </View>
 
                 <View className="items-center space-y-5 mb-10">
-                  <Text className="text-zinc-100 text-4xl font-bold tracking-tight text-center leading-tight px-4">
+                  <Text className="text-4xl font-bold tracking-tight text-center leading-tight px-4" style={{ color: '#FFFFFF' }}>
                     {formattedError.title}
                   </Text>
 
-                  <View className="w-16 h-px bg-amber-500/40" />
+                  <View className="w-16 h-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.4)' }} />
 
-                  <Text className="text-zinc-200 text-center text-base leading-relaxed px-6 max-w-md">
+                  <Text className="text-center text-base leading-relaxed px-6 max-w-md" style={{ color: '#94A3B8' }}>
                     {formattedError.message}
                   </Text>
                 </View>
@@ -663,24 +773,27 @@ export default function RecipeResponseRoute(): JSX.Element {
                 <View className="w-full max-w-sm space-y-4">
                   <TouchableOpacity
                     onPress={handleRetry}
-                    className="w-full bg-amber-500/15 border-2 border-amber-500/40 rounded-2xl px-8 py-5"
+                    className="w-full rounded-2xl px-8 py-5"
+                    style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.4)' }}
                     activeOpacity={0.8}
                   >
-                    <Text className="text-amber-300 font-semibold text-base tracking-wide text-center">
+                    <Text className="font-semibold text-base tracking-wide text-center" style={{ color: '#FACC15' }}>
                       {formattedError.isServerError ? "Try Again" : "Retry"}
                     </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={handleClose}
-                    className="w-full border-2 border-zinc-500 rounded-2xl px-8 py-5"
+                    className="w-full rounded-2xl px-8 py-5"
+                    style={{ borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.1)' }}
                     activeOpacity={0.8}
                   >
-                    <Text className="text-zinc-200 font-semibold text-base tracking-wide text-center">Go Back</Text>
+                    <Text className="font-semibold text-base tracking-wide text-center" style={{ color: '#94A3B8' }}>Go Back</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </ScrollView>
+            </LinearGradient>
           )
         })()}
 
@@ -692,36 +805,42 @@ export default function RecipeResponseRoute(): JSX.Element {
             transform: [{ scale: scaleAnim }],
           }}
         >
-          <View className="bg-gray-900" style={{ paddingTop: insets.top }}>
+          <LinearGradient
+            colors={["#000000", "#121212"]}
+            style={{ paddingTop: insets.top }}
+          >
             <View className="px-4 py-3">
               <View className="flex-row items-center justify-between">
                 <TouchableOpacity
                   onPress={handleClose}
-                  className="w-12 h-12 rounded-full bg-gray-800 items-center justify-center"
+                  className="w-12 h-12 rounded-full items-center justify-center"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="arrow-back" size={22} color="#F9FAFB" />
+                  <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 <View className="flex-row items-center">
 
                   <TouchableOpacity
                     onPress={() => handleShareRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-xl bg-gray-700/10 border border-gray-600/40 items-center justify-center mr-3 shadow-sm"
+                    className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-sm"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="share-outline" size={20} color="#FBBF24" />
+                    <Ionicons name="share-outline" size={20} color="#FACC15" />
                   </TouchableOpacity>
 
                   <TouchableOpacity
                     onPress={() => handleSaveRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-xl bg-gray-700/10 border border-gray-600/40 items-center justify-center shadow-sm"
+                    className="w-12 h-12 rounded-xl items-center justify-center shadow-sm"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
                     activeOpacity={0.7}
                   >
                     <Ionicons
                       name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"}
                       size={20}
-                      color="#F59E0B"
+                      color="#FACC15"
                     />
                   </TouchableOpacity>
                 </View>
@@ -731,14 +850,14 @@ export default function RecipeResponseRoute(): JSX.Element {
             <View className="px-6 pb-4">
               <View className="space-y-3">
                 <View>
-                  <Text className="text-white text-2xl font-bold leading-tight tracking-tight">
+                  <Text className="text-2xl font-bold leading-tight tracking-tight" style={{ color: '#FFFFFF' }}>
                     {generatedRecipe.title}
                   </Text>
-                  <View className="w-8 h-0.5 bg-amber-500 rounded-full mt-2" />
+                  <View className="w-8 h-0.5 rounded-full mt-2" style={{ backgroundColor: '#FACC15' }} />
                 </View>
               </View>
             </View>
-          </View>
+          </LinearGradient>
 
           <ScrollView
             className="flex-1"
@@ -752,9 +871,9 @@ export default function RecipeResponseRoute(): JSX.Element {
                   onPress={() => setShowFullDescription(false)}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-gray-300 text-base leading-relaxed">
+                  <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
                     {generatedRecipe.description}
-                    <Text className="text-amber-400 text-sm font-medium"> Show Less</Text>
+                    <Text className="text-sm font-medium" style={{ color: '#FACC15' }}> Show Less</Text>
                   </Text>
                 </TouchableOpacity>
               ) : (
@@ -762,12 +881,12 @@ export default function RecipeResponseRoute(): JSX.Element {
                   onPress={() => setShowFullDescription(true)}
                   activeOpacity={0.7}
                 >
-                  <Text className="text-gray-300 text-base leading-relaxed">
+                  <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
                     {generatedRecipe.description.length > 120
                       ? `${generatedRecipe.description.substring(0, 120)}...`
                       : generatedRecipe.description
                     }
-                    <Text className="text-amber-400 text-sm font-medium">
+                    <Text className="text-sm font-medium" style={{ color: '#FACC15' }}>
                       {generatedRecipe.description.length > 120 ? ' Read More' : ''}
                     </Text>
                   </Text>
@@ -777,46 +896,46 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {/* Recipe Info Bar - Quick Overview */}
             <View className="px-4 mt-4">
-              <View className="bg-gray-800 border-2 border-gray-600 rounded-xl p-4 shadow-lg">
+              <View className="rounded-xl p-4 shadow-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
               <View className="flex-row items-center justify-between">
                 <View className="items-center">
-                  <View className="w-8 h-8 rounded-lg bg-emerald-500/20 items-center justify-center mb-1 shadow-sm">
-                    <Ionicons name="people-outline" size={16} color="#34d399" />
+                  <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                    <Ionicons name="people-outline" size={16} color="#22C55E" />
                   </View>
-                  <Text className="text-white text-sm font-bold">{generatedRecipe.servings}</Text>
-                  <Text className="text-gray-300 text-xs font-medium">servings</Text>
+                  <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{generatedRecipe.servings}</Text>
+                  <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>servings</Text>
                 </View>
 
-                <View className="w-px h-12 bg-gray-500" />
+                <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
                 <View className="items-center">
-                  <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mb-1 shadow-sm">
-                    <Ionicons name="time-outline" size={16} color="#60a5fa" />
+                  <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                    <Ionicons name="time-outline" size={16} color="#3B82F6" />
                   </View>
-                  <Text className="text-white text-sm font-bold">
+                  <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>
                     {generatedRecipe.prepTime + generatedRecipe.cookTime}m
                   </Text>
-                  <Text className="text-gray-300 text-xs font-medium">total</Text>
+                  <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>total</Text>
                 </View>
 
-                <View className="w-px h-12 bg-gray-500" />
+                <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
                 <View className="items-center">
-                  <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mb-1 shadow-sm">
-                    <Ionicons name="speedometer-outline" size={16} color="#a78bfa" />
+                  <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}>
+                    <Ionicons name="speedometer-outline" size={16} color="#A855F7" />
                   </View>
-                  <Text className="text-white text-sm font-bold">{generatedRecipe.difficulty}</Text>
-                  <Text className="text-gray-300 text-xs font-medium">level</Text>
+                  <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{generatedRecipe.difficulty}</Text>
+                  <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>level</Text>
                 </View>
 
-                <View className="w-px h-12 bg-gray-500" />
+                <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
                 <View className="items-center">
-                  <View className="w-8 h-8 rounded-lg bg-amber-500/20 items-center justify-center mb-1 shadow-sm">
-                    <Ionicons name="restaurant-outline" size={16} color="#fbbf24" />
+                  <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}>
+                    <Ionicons name="restaurant-outline" size={16} color="#FACC15" />
                   </View>
-                  <Text className="text-white text-sm font-bold">{generatedRecipe.cuisine}</Text>
-                  <Text className="text-gray-300 text-xs font-medium">cuisine</Text>
+                  <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{generatedRecipe.cuisine}</Text>
+                  <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>cuisine</Text>
                 </View>
               </View>
               </View>
@@ -826,11 +945,11 @@ export default function RecipeResponseRoute(): JSX.Element {
             <View className="px-4 pt-3">
               <View className="flex-row space-x-6">
                 {pantryAnalysis && (
-                  <TouchableOpacity className="flex-1 mr-1 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3 flex-row items-center justify-center shadow-sm">
-                    <Ionicons name="pie-chart-outline" size={16} color="#10b981" />
+                  <TouchableOpacity className="flex-1 mr-1 rounded-xl p-3 flex-row items-center justify-center shadow-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+                    <Ionicons name="pie-chart-outline" size={16} color="#22C55E" />
                     <View className="ml-2">
-                      <Text className="text-emerald-200 text-xs font-semibold">Pantry Match</Text>
-                      <Text className="text-emerald-300 text-sm font-bold">{pantryAnalysis.matchPercentage}%</Text>
+                      <Text className="text-xs font-semibold" style={{ color: '#94A3B8' }}>Pantry Match</Text>
+                      <Text className="text-sm font-bold" style={{ color: '#22C55E' }}>{pantryAnalysis.matchPercentage}%</Text>
                     </View>
                   </TouchableOpacity>
                 )}
@@ -838,77 +957,80 @@ export default function RecipeResponseRoute(): JSX.Element {
                 {!showFullNutrition && (
                   <TouchableOpacity
                     onPress={() => setShowFullNutrition(true)}
-                    className="flex-1 ml-1 bg-amber-500/10 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
+                    className="flex-1 ml-1 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
+                    style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
                     activeOpacity={0.7}
                   >
                     <View className="flex-row items-center">
-                      <Ionicons name="nutrition-outline" size={16} color="#F59E0B" />
+                      <Ionicons name="nutrition-outline" size={16} color="#FACC15" />
                       <View className="ml-2">
-                        <Text className="text-amber-200 text-xs font-semibold">Nutrition</Text>
-                        <Text className="text-amber-300 text-sm font-bold">{generatedRecipe.nutritionInfo.calories} kcal</Text>
+                        <Text className="text-xs font-semibold" style={{ color: '#94A3B8' }}>Nutrition</Text>
+                        <Text className="text-sm font-bold" style={{ color: '#FACC15' }}>{generatedRecipe.nutritionInfo.calories} kcal</Text>
                       </View>
                     </View>
-                    <Ionicons name="chevron-down" size={16} color="#F59E0B" />
+                    <Ionicons name="chevron-down" size={16} color="#FACC15" />
                   </TouchableOpacity>
                 )}
 
                 {showFullNutrition && (
                   <TouchableOpacity
                     onPress={() => setShowFullNutrition(false)}
-                    className="flex-1 ml-1 bg-amber-500/10 border border-amber-500/40 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
+                    className="flex-1 ml-1 rounded-xl p-3 flex-row items-center justify-between shadow-sm"
+                    style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
                     activeOpacity={0.7}
                   >
                     <View className="flex-row items-center">
-                      <Ionicons name="nutrition-outline" size={16} color="#F59E0B" />
+                      <Ionicons name="nutrition-outline" size={16} color="#FACC15" />
                       <View className="ml-2">
-                        <Text className="text-amber-200 text-xs font-semibold">Nutrition</Text>
-                        <Text className="text-amber-300 text-sm font-bold">{generatedRecipe.nutritionInfo.calories} kcal</Text>
+                        <Text className="text-xs font-semibold" style={{ color: '#94A3B8' }}>Nutrition</Text>
+                        <Text className="text-sm font-bold" style={{ color: '#FACC15' }}>{generatedRecipe.nutritionInfo.calories} kcal</Text>
                       </View>
                     </View>
-                    <Ionicons name="chevron-up" size={16} color="#F59E0B" />
+                    <Ionicons name="chevron-up" size={16} color="#FACC15" />
                   </TouchableOpacity>
                 )}
               </View>
 
               {showFullNutrition && (
-                <View className="mt-3 bg-gray-800 border-2 border-gray-600 rounded-xl p-4 shadow-lg">
+                <View className="mt-3 rounded-xl p-4 shadow-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
-                      <View className="w-1 h-4 bg-amber-500 rounded-full mr-2" />
-                      <Text className="text-white text-sm font-bold tracking-wide uppercase">
+                      <View className="w-1 h-4 rounded-full mr-2" style={{ backgroundColor: '#FACC15' }} />
+                      <Text className="text-sm font-bold tracking-wide uppercase" style={{ color: '#FFFFFF' }}>
                         Nutrition Per Serving
                       </Text>
                     </View>
                     <TouchableOpacity
                       onPress={() => setShowFullNutrition(false)}
-                      className="w-6 h-6 rounded-full bg-gray-700 items-center justify-center"
+                      className="w-6 h-6 rounded-full items-center justify-center"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
                     >
-                      <Ionicons name="close" size={14} color="#9CA3AF" />
+                      <Ionicons name="close" size={14} color="#64748B" />
                     </TouchableOpacity>
                   </View>
                   <View className="flex-row items-center justify-between">
                     <View className="items-center flex-1">
-                      <Text className="text-amber-400 text-xl font-bold mb-1">
+                      <Text className="text-xl font-bold mb-1" style={{ color: '#FACC15' }}>
                         {generatedRecipe.nutritionInfo.calories}
                       </Text>
-                      <Text className="text-gray-300 text-xs tracking-wide font-semibold">CALORIES</Text>
+                      <Text className="text-xs tracking-wide font-semibold" style={{ color: '#94A3B8' }}>CALORIES</Text>
                     </View>
-                    <View className="w-px h-12 bg-gray-500" />
+                    <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
                     <View className="items-center flex-1">
-                      <Text className="text-emerald-400 text-xl font-bold mb-1">
+                      <Text className="text-xl font-bold mb-1" style={{ color: '#22C55E' }}>
                         {generatedRecipe.nutritionInfo.protein}g
                       </Text>
-                      <Text className="text-gray-300 text-xs tracking-wide font-semibold">PROTEIN</Text>
+                      <Text className="text-xs tracking-wide font-semibold" style={{ color: '#94A3B8' }}>PROTEIN</Text>
                     </View>
-                    <View className="w-px h-12 bg-gray-500" />
+                    <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
                     <View className="items-center flex-1">
-                      <Text className="text-blue-400 text-xl font-bold mb-1">{generatedRecipe.nutritionInfo.carbs}g</Text>
-                      <Text className="text-gray-300 text-xs tracking-wide font-semibold">CARBS</Text>
+                      <Text className="text-xl font-bold mb-1" style={{ color: '#3B82F6' }}>{generatedRecipe.nutritionInfo.carbs}g</Text>
+                      <Text className="text-xs tracking-wide font-semibold" style={{ color: '#94A3B8' }}>CARBS</Text>
                     </View>
-                    <View className="w-px h-12 bg-gray-500" />
+                    <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
                     <View className="items-center flex-1">
-                      <Text className="text-orange-400 text-xl font-bold mb-1">{generatedRecipe.nutritionInfo.fat}g</Text>
-                      <Text className="text-gray-300 text-xs tracking-wide font-semibold">FAT</Text>
+                      <Text className="text-xl font-bold mb-1" style={{ color: '#F97316' }}>{generatedRecipe.nutritionInfo.fat}g</Text>
+                      <Text className="text-xs tracking-wide font-semibold" style={{ color: '#94A3B8' }}>FAT</Text>
                     </View>
                   </View>
                 </View>
@@ -920,39 +1042,47 @@ export default function RecipeResponseRoute(): JSX.Element {
               <View className="px-4 pt-4">
                 <View className="flex-row items-center justify-between mb-3">
                   <View className="flex-row items-center">
-                    <View className="w-1 h-6 bg-red-500 rounded-full mr-3" />
-                    <Text className="text-white text-xl font-bold tracking-tight">Missing Items</Text>
+                    <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#EF4444' }} />
+                    <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Missing Items</Text>
                   </View>
-                  <View className="bg-red-500/20 border-2 border-red-500/40 px-4 py-2 rounded-full shadow-md">
-                    <Text className="text-red-200 text-xs font-bold">{missingIngredients.length} needed</Text>
+                  <View className="px-4 py-2 rounded-full shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                    <Text className="text-xs font-bold" style={{ color: '#EF4444' }}>{missingIngredients.length} needed</Text>
                   </View>
                 </View>
-                <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-3 shadow-xl">
+                <View className="rounded-2xl p-3 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   {missingIngredients.map((ingredient, index) => (
                     <View
                       key={`missing-${index}`}
                       className={`flex-row items-start justify-between py-2 ${
-                        index !== missingIngredients.length - 1 ? "border-b border-gray-500" : ""
+                        index !== missingIngredients.length - 1 ? "border-b" : ""
                       }`}
+                      style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                     >
                       <View className="flex-1 flex-row items-center mr-3">
-                        <View className="w-9 h-9 rounded-xl bg-red-500/20 items-center justify-center mr-3 shadow-sm">
-                          <Ionicons name="alert-circle-outline" size={20} color="#f87171" />
+                        <View className="w-9 h-9 rounded-xl items-center justify-center mr-3 shadow-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
+                          <Ionicons name="alert-circle-outline" size={20} color="#EF4444" />
                         </View>
-                        <Text className="text-white text-base font-medium flex-1 flex-wrap">
+                        <Text className="text-base font-medium flex-1 flex-wrap" style={{ color: '#FFFFFF' }}>
                           {getIngredientName(ingredient)}
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          setSelectedIngredient(getIngredientName(ingredient))
-                          setShowAddToPantryDialog(true)
-                        }}
-                        className="bg-amber-500/10 border border-amber-400/40 px-4 py-2 rounded-xl shadow-sm min-w-[100px]"
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-amber-200 text-sm font-bold tracking-wide text-center">Add to Grocery</Text>
-                      </TouchableOpacity>
+                      {addedGroceryItems.has(getIngredientName(ingredient)) ? (
+                        <View className="px-4 py-2 rounded-xl shadow-sm min-w-[100px] items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+                          <View className="flex-row items-center">
+                            <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+                            <Text className="text-sm font-bold tracking-wide text-center ml-1" style={{ color: '#22C55E' }}>Added</Text>
+                          </View>
+                        </View>
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => handleOpenGroceryModal(getIngredientName(ingredient))}
+                          className="px-4 py-2 rounded-xl shadow-sm min-w-[100px]"
+                          style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
+                          activeOpacity={0.7}
+                        >
+                          <Text className="text-sm font-bold tracking-wide text-center" style={{ color: '#FACC15' }}>Add to Grocery</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -961,12 +1091,12 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {sufficiencyWarning && (
               <View className="px-4 mt-3">
-                <View className="bg-amber-500/10 border border-amber-400/40 rounded-xl p-3 shadow-sm">
+                <View className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
                   <View className="flex-row items-start">
-                    <View className="w-6 h-6 rounded-lg bg-amber-500/20 items-center justify-center mr-3 mt-0.5">
-                      <Ionicons name="warning" size={14} color="#FCD34D" />
+                    <View className="w-6 h-6 rounded-lg items-center justify-center mr-3 mt-0.5" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
+                      <Ionicons name="warning" size={14} color="#F59E0B" />
                     </View>
-                    <Text className="text-amber-200 text-sm leading-5 flex-1 font-medium">You provided insufficient ingredients for a standard recipe.</Text>
+                    <Text className="text-sm leading-5 flex-1 font-medium" style={{ color: '#F59E0B' }}>You provided insufficient ingredients for a standard recipe.</Text>
                   </View>
                 </View>
               </View>
@@ -975,30 +1105,31 @@ export default function RecipeResponseRoute(): JSX.Element {
             {/* Ingredients Section */}
             <View className="px-4 py-4">
               <View className="flex-row items-center mb-3">
-                <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
-                <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
+                <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Ingredients</Text>
+                <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
               </View>
-              <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-3 shadow-xl">
+              <View className="rounded-2xl p-3 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                 {generatedRecipe.ingredients.map((ingredient, index) => (
                   <View
                     key={`ingredient-${index}`}
                     className={`flex-row items-start py-2 ${
-                      index !== generatedRecipe.ingredients.length - 1 ? "border-b border-gray-500" : ""
+                      index !== generatedRecipe.ingredients.length - 1 ? "border-b" : ""
                     }`}
+                    style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                   >
-                    <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
-                      <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
+                    <View className="w-12 h-12 rounded-2xl items-center justify-center mr-4 mt-0.5 shadow-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 2, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+                      <Text className="text-base font-bold" style={{ color: '#22C55E' }}>{index + 1}</Text>
                     </View>
                     <View className="flex-1">
-                      <Text className="text-white text-base leading-relaxed">
+                      <Text className="text-base leading-relaxed" style={{ color: '#FFFFFF' }}>
                         <Text className="font-bold">
                           {ingredient.amount} {ingredient.unit}
                         </Text>
                         <Text> {ingredient.name}</Text>
                       </Text>
                       {ingredient.notes && (
-                        <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
+                        <Text className="text-sm mt-2 leading-6 italic" style={{ color: '#94A3B8' }}>{ingredient.notes}</Text>
                       )}
                     </View>
                   </View>
@@ -1011,29 +1142,30 @@ export default function RecipeResponseRoute(): JSX.Element {
               <View className="px-4 pb-6">
                 <View className="flex-row items-center justify-between mb-5">
                   <View className="flex-row items-center">
-                    <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
-                    <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                    <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#3B82F6' }} />
+                    <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Substitutions</Text>
                   </View>
-                  <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
-                    <Text className="text-blue-300 text-xs font-bold">{substitutions.length} options</Text>
+                  <View className="px-4 py-2 rounded-full shadow-md" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', borderWidth: 2, borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+                    <Text className="text-xs font-bold" style={{ color: '#3B82F6' }}>{substitutions.length} options</Text>
                   </View>
                 </View>
-                <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-5 space-y-5 shadow-xl">
+                <View className="rounded-2xl p-5 space-y-5 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   {substitutions.map((sub, index) => (
                     <View
                       key={`sub-${index}`}
-                      className={`${index !== substitutions.length - 1 ? "pb-5 border-b border-gray-500" : ""}`}
+                      className={`${index !== substitutions.length - 1 ? "pb-5 border-b" : ""}`}
+                      style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                     >
                       <View className="flex-row items-center mb-3">
-                        <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
-                          <Ionicons name="swap-horizontal" size={18} color="#3b82f6" />
+                        <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                          <Ionicons name="swap-horizontal" size={18} color="#3B82F6" />
                         </View>
-                        <Text className="text-zinc-100 font-bold text-base flex-1">
+                        <Text className="font-bold text-base flex-1" style={{ color: '#FFFFFF' }}>
                           {sub.original} → {sub.substitute}
                         </Text>
                       </View>
-                      <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
-                      <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
+                      <Text className="text-sm mb-2 ml-12" style={{ color: '#94A3B8' }}>Ratio: {sub.ratio}</Text>
+                      <Text className="text-sm leading-6 ml-12" style={{ color: '#94A3B8' }}>{sub.notes}</Text>
                     </View>
                   ))}
                 </View>
@@ -1043,37 +1175,38 @@ export default function RecipeResponseRoute(): JSX.Element {
             {/* Instructions Section */}
             <View className="px-4 py-6">
               <View className="flex-row items-center mb-5">
-                <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
-                <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
+                <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Instructions</Text>
+                <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
               </View>
               <View className="space-y-4">
                 {generatedRecipe.instructions.map((instruction, index) => (
                   <View
                     key={`instruction-${index}`}
-                    className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-6 shadow-xl"
+                    className="rounded-2xl p-6 shadow-xl"
+                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}
                   >
                     <View className="flex-row">
-                      <View className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl items-center justify-center mr-4 shadow-xl border-2 border-amber-400/40">
-                        <Text className="text-white font-bold text-xl">{instruction.step}</Text>
+                      <View className="w-14 h-14 rounded-2xl items-center justify-center mr-4 shadow-xl border-2" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderColor: 'rgba(250, 204, 21, 0.3)' }}>
+                        <Text className="font-bold text-xl" style={{ color: '#FACC15' }}>{instruction.step}</Text>
                       </View>
                       <View className="flex-1">
-                        <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
+                        <Text className="text-base leading-7" style={{ color: '#FFFFFF' }}>{instruction.instruction}</Text>
                         {instruction.duration && (
-                          <View className="flex-row items-center mt-3 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl px-4 py-2.5 self-start">
-                            <Ionicons name="timer-outline" size={16} color="#FCD34D" />
-                            <Text className="text-amber-200 text-sm ml-2 font-semibold tracking-wide">
+                          <View className="flex-row items-center mt-3 rounded-xl px-4 py-2.5 self-start" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
+                            <Ionicons name="timer-outline" size={16} color="#FACC15" />
+                            <Text className="text-sm ml-2 font-semibold tracking-wide" style={{ color: '#FACC15' }}>
                               {instruction.duration} minutes
                             </Text>
                           </View>
                         )}
                         {instruction.tips && (
-                          <View className="bg-amber-500/10 border-2 border-amber-500/20 rounded-xl p-4 mt-3">
+                          <View className="rounded-xl p-4 mt-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.2)' }}>
                             <View className="flex-row items-start">
-                              <View className="w-7 h-7 rounded-lg bg-amber-500/15 items-center justify-center mr-3">
-                                <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
+                              <View className="w-7 h-7 rounded-lg items-center justify-center mr-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }}>
+                                <Ionicons name="bulb-outline" size={14} color="#FACC15" />
                               </View>
-                              <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
+                              <Text className="text-sm leading-6 flex-1" style={{ color: '#FACC15' }}>{instruction.tips}</Text>
                             </View>
                           </View>
                         )}
@@ -1088,22 +1221,23 @@ export default function RecipeResponseRoute(): JSX.Element {
             {generatedRecipe.tips.length > 0 && (
               <View className="px-4 pb-6">
                 <View className="flex-row items-center mb-5">
-                  <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                  <Text className="text-white text-xl font-bold tracking-tight">Chef's Tips</Text>
-                  <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                  <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
+                  <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Chef's Tips</Text>
+                  <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                 </View>
-                <View className="bg-amber-500/20 border-2 border-amber-400/60 rounded-2xl p-6 shadow-xl">
+                <View className="rounded-2xl p-6 shadow-xl" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
                   {generatedRecipe.tips.map((tip, index) => (
                     <View
                       key={index}
                       className={`flex-row items-start ${
-                        index !== generatedRecipe.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                        index !== generatedRecipe.tips.length - 1 ? "mb-5 pb-5 border-b" : ""
                       }`}
+                      style={{ borderBottomColor: 'rgba(250, 204, 21, 0.3)' }}
                     >
-                      <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
-                        <Ionicons name="star" size={14} color="#FCD34D" />
+                      <View className="w-7 h-7 rounded-lg items-center justify-center mr-3 mt-0.5" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }}>
+                        <Ionicons name="star" size={14} color="#FACC15" />
                       </View>
-                      <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                      <Text className="text-base leading-7 flex-1" style={{ color: '#FACC15' }}>{tip}</Text>
                     </View>
                   ))}
                 </View>
@@ -1118,21 +1252,21 @@ export default function RecipeResponseRoute(): JSX.Element {
                 adaptationNotes.portion?.length > 0) && (
                 <View className="px-4 pb-6">
                   <View className="flex-row items-center mb-5">
-                    <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                    <Text className="text-white text-xl font-bold tracking-tight">Recipe Notes</Text>
-                    <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                    <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
+                    <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Recipe Notes</Text>
+                    <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                   </View>
-                  <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-6 space-y-6 shadow-xl">
+                  <View className="rounded-2xl p-6 space-y-6 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                     {adaptationNotes.timing && adaptationNotes.timing.length > 0 && (
                       <View>
                         <View className="flex-row items-center mb-3">
-                          <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
-                            <Ionicons name="time-outline" size={18} color="#60a5fa" />
+                          <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                            <Ionicons name="time-outline" size={18} color="#3B82F6" />
                           </View>
-                          <Text className="text-blue-300 text-sm font-bold tracking-wide">TIMING NOTES</Text>
+                          <Text className="text-sm font-bold tracking-wide" style={{ color: '#3B82F6' }}>TIMING NOTES</Text>
                         </View>
                         {adaptationNotes.timing.map((note: string, index: number) => (
-                          <Text key={`timing-${index}`} className="text-white text-sm leading-7 mb-2 ml-10">
+                          <Text key={`timing-${index}`} className="text-sm leading-7 mb-2 ml-10" style={{ color: '#FFFFFF' }}>
                             • {trimTextBeforeNewline(note)}
                           </Text>
                         ))}
@@ -1140,15 +1274,15 @@ export default function RecipeResponseRoute(): JSX.Element {
                     )}
 
                     {adaptationNotes.general && adaptationNotes.general.length > 0 && (
-                      <View className="pt-6 border-t border-gray-500">
+                      <View className="pt-6 border-t" style={{ borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
                         <View className="flex-row items-center mb-3">
-                          <View className="w-9 h-9 rounded-xl bg-emerald-500/15 items-center justify-center mr-3">
-                            <Ionicons name="information-circle-outline" size={18} color="#34d399" />
+                          <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                            <Ionicons name="information-circle-outline" size={18} color="#22C55E" />
                           </View>
-                          <Text className="text-emerald-300 text-sm font-bold tracking-wide">GENERAL NOTES</Text>
+                          <Text className="text-sm font-bold tracking-wide" style={{ color: '#22C55E' }}>GENERAL NOTES</Text>
                         </View>
                         {adaptationNotes.general.map((note: string, index: number) => (
-                          <Text key={`general-${index}`} className="text-white text-sm leading-7 mb-2 ml-12">
+                          <Text key={`general-${index}`} className="text-sm leading-7 mb-2 ml-12" style={{ color: '#FFFFFF' }}>
                             • {trimTextBeforeNewline(note)}
                           </Text>
                         ))}
@@ -1158,13 +1292,13 @@ export default function RecipeResponseRoute(): JSX.Element {
                     {adaptationNotes.dietary && adaptationNotes.dietary.length > 0 && (
                       <View className="pt-3">
                         <View className="flex-row items-center mb-2">
-                          <View className="w-9 h-9 rounded-xl bg-purple-500/15 items-center justify-center mr-3">
-                            <Ionicons name="nutrition-outline" size={18} color="#a78bfa" />
+                          <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(168, 85, 247, 0.1)' }}>
+                            <Ionicons name="nutrition-outline" size={18} color="#A855F7" />
                           </View>
-                          <Text className="text-purple-300 text-sm font-bold tracking-wide">DIETARY NOTES</Text>
+                          <Text className="text-sm font-bold tracking-wide" style={{ color: '#A855F7' }}>DIETARY NOTES</Text>
                         </View>
                         {adaptationNotes.dietary.map((note: string, index: number) => (
-                          <Text key={`dietary-${index}`} className="text-white text-sm leading-6 mb-1 ml-12">
+                          <Text key={`dietary-${index}`} className="text-sm leading-6 mb-1 ml-12" style={{ color: '#FFFFFF' }}>
                             • {trimTextBeforeNewline(note)}
                           </Text>
                         ))}
@@ -1172,15 +1306,15 @@ export default function RecipeResponseRoute(): JSX.Element {
                     )}
 
                     {adaptationNotes.portion && adaptationNotes.portion.length > 0 && (
-                      <View className="pt-6 border-t border-gray-500">
+                      <View className="pt-6 border-t" style={{ borderTopColor: 'rgba(255, 255, 255, 0.1)' }}>
                         <View className="flex-row items-center mb-3">
-                          <View className="w-9 h-9 rounded-xl bg-amber-500/15 items-center justify-center mr-3">
-                            <Ionicons name="people-outline" size={18} color="#fbbf24" />
+                          <View className="w-9 h-9 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}>
+                            <Ionicons name="people-outline" size={18} color="#FACC15" />
                           </View>
-                          <Text className="text-amber-300 text-sm font-bold tracking-wide">PORTION NOTES</Text>
+                          <Text className="text-sm font-bold tracking-wide" style={{ color: '#FACC15' }}>PORTION NOTES</Text>
                         </View>
                         {adaptationNotes.portion.map((note: string, index: number) => (
-                          <Text key={`portion-${index}`} className="text-white text-sm leading-7 mb-2 ml-12">
+                          <Text key={`portion-${index}`} className="text-sm leading-7 mb-2 ml-12" style={{ color: '#FFFFFF' }}>
                             • {trimTextBeforeNewline(note)}
                           </Text>
                         ))}
@@ -1193,27 +1327,248 @@ export default function RecipeResponseRoute(): JSX.Element {
             <View className="px-4 pb-6">
               <TouchableOpacity
                 onPress={() => handleSaveRecipe(generatedRecipe)}
-                className="bg-amber-500/10 border border-amber-400/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
+                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
+                style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
                 activeOpacity={0.7}
               >
-                <Ionicons name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"} size={20} color="#FCD34D" />
-                <Text className="text-amber-200 font-bold ml-3 text-base tracking-wide">
+                <Ionicons name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"} size={20} color="#FACC15" />
+                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: '#FACC15' }}>
                   {isFavorite(generatedRecipe.id) ? "Saved to Favorites" : "Save to Favorites"}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={handleRetry}
-                className="bg-gray-700/10 border border-gray-600/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm"
+                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="refresh" size={20} color="#FCD34D" />
-                <Text className="text-gray-200 font-bold ml-3 text-base tracking-wide">Generate New Recipe</Text>
+                <Ionicons name="refresh" size={20} color="#FACC15" />
+                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: '#94A3B8' }}>Generate New Recipe</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
         </Animated.View>
       )}
+
+      {/* Add to Grocery Modal */}
+      <Modal
+        visible={showAddToGroceryModal}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={handleCloseGroceryModal}
+      >
+        <KeyboardAvoidingView
+          style={styles.keyboardAvoidingContainer}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          <StatusBar barStyle="light-content" />
+          <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+
+          <View style={styles.modalHeader}>
+            <TouchableOpacity
+              onPress={handleCloseGroceryModal}
+              style={styles.closeButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="close-outline" size={28} color="white" />
+            </TouchableOpacity>
+            <Text style={styles.modalTitle}>Add New Item</Text>
+          </View>
+
+          <View style={styles.modalContentWrapper}>
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
+              style={styles.scrollViewTouchable}
+            >
+              <ScrollView
+                style={styles.modalContent}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.formField}>
+                  <Text style={styles.fieldLabel}>Item Name *</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
+                    <TextInput
+                      style={styles.textInput}
+                      value={newItemForm.name}
+                      onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, name: text }))}
+                      placeholder="Enter item name"
+                      placeholderTextColor="#64748B"
+                      returnKeyType="next"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.formRow}>
+                  <View style={[styles.formField, { flex: 1 }]}>
+                    <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
+                    <View style={styles.inputContainer}>
+                      <Ionicons name="cube-outline" size={18} color="#FACC15" />
+                      <TextInput
+                        style={styles.textInput}
+                        value={newItemForm.quantity}
+                        onChangeText={(text: string) => setNewItemForm((prev) => ({ ...prev, quantity: text }))}
+                        placeholder="0"
+                        placeholderTextColor="#64748B"
+                        keyboardType="numeric"
+                        returnKeyType="done"
+                      />
+                      <TouchableOpacity
+                        style={styles.unitButton}
+                        onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
+                      >
+                        <Text style={styles.unitButtonText}>
+                          {newItemForm.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
+                        </Text>
+                      </TouchableOpacity>
+
+                      {isUnitDropdownOpen && (
+                        <View style={styles.unitDropdown}>
+                          <ScrollView
+                            showsVerticalScrollIndicator={false}
+                            style={styles.unitDropdownScroll}
+                            contentContainerStyle={styles.unitDropdownScrollContent}
+                            nestedScrollEnabled={true}
+                          >
+                            {GROCERY_UNITS.map((unit) => (
+                              <TouchableOpacity
+                                key={unit}
+                                style={[
+                                  styles.unitDropdownItem,
+                                  newItemForm.unit === unit && styles.unitDropdownItemSelected
+                                ]}
+                                onPress={() => {
+                                  setNewItemForm(prev => ({ ...prev, unit }));
+                                  setIsUnitDropdownOpen(false);
+                                }}
+                              >
+                                <Text style={[
+                                  styles.unitDropdownItemText,
+                                  newItemForm.unit === unit && styles.unitDropdownItemTextSelected
+                                ]}>
+                                  {unit}
+                                </Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+
+                <View style={styles.formField}>
+                  <Text style={styles.fieldLabel}>Urgency Level</Text>
+                  <View style={styles.categorySelection}>
+                    <TouchableOpacity
+                      onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "normal" }))}
+                      style={[
+                        styles.categoryOption,
+                        newItemForm.urgency === "normal" && styles.selectedCategoryOption,
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="time-outline" size={20} color="#FACC15" />
+                      <Text style={[styles.categoryOptionText, newItemForm.urgency === "normal" && styles.selectedCategoryOptionText]}>
+                        Normal
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "urgent" }))}
+                      style={[
+                        styles.categoryOption,
+                        newItemForm.urgency === "urgent" && styles.selectedCategoryOption,
+                      ]}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="alert-circle" size={20} color="#FACC15" />
+                      <Text style={[styles.categoryOptionText, newItemForm.urgency === "urgent" && styles.selectedCategoryOptionText]}>
+                        Urgent
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                <View style={styles.formField}>
+                  <Text style={styles.fieldLabel}>Purchase Date</Text>
+                  <TouchableOpacity
+                    style={styles.dateInput}
+                    onPress={() => setShowPurchaseDatePicker(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="calendar-outline" size={18} color="#FACC15" />
+                    <Text style={styles.dateText}>{formatDisplayDate(newItemForm.purchaseDate)}</Text>
+                    <Ionicons name="chevron-down" size={18} color="#64748B" />
+                  </TouchableOpacity>
+                  {showPurchaseDatePicker && (
+                    <DateTimePicker
+                      value={newItemForm.purchaseDate}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={handlePurchaseDateChange}
+                      minimumDate={new Date()}
+                      themeVariant="dark"
+                    />
+                  )}
+                </View>
+
+                <View style={styles.formField}>
+                  <Text style={styles.fieldLabel}>Notes (Optional)</Text>
+                  <View style={[styles.inputContainer, { minHeight: 80, alignItems: 'flex-start', paddingVertical: 16 }]}>
+                    <TextInput
+                      style={[styles.textInput, { textAlignVertical: 'top', marginLeft: 0 }]}
+                      value={newItemForm.notes}
+                      onChangeText={(text: string) => setNewItemForm(prev => ({ ...prev, notes: text }))}
+                      placeholder="Add any notes about this item..."
+                      placeholderTextColor="#64748B"
+                      multiline
+                      numberOfLines={3}
+                    />
+                  </View>
+                </View>
+              </ScrollView>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+
+        {/* Bottom Action Buttons - Fixed Position */}
+        <View style={styles.actionRow}>
+          <TouchableOpacity
+            onPress={handleCloseGroceryModal}
+            style={[styles.actionButton, styles.secondaryAction]}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="close-circle" size={20} color="#94A3B8" />
+            <Text style={styles.secondaryActionText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleAddToGrocery}
+            style={[styles.actionButton, styles.primaryAction]}
+            disabled={isAddingToGrocery}
+            activeOpacity={0.7}
+          >
+            {isAddingToGrocery ? (
+              <LottieView
+                source={require("@/assets/lottie/loading.json")}
+                autoPlay
+                loop
+                style={{ width: 20, height: 20 }}
+              />
+            ) : (
+              <Ionicons name="add-circle" size={20} color="#FACC15" />
+            )}
+            <Text style={styles.primaryActionText}>
+              {isAddingToGrocery ? 'Adding...' : 'Add'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
 
       {/* Dialogs */}
       <Dialog
@@ -1263,6 +1618,17 @@ export default function RecipeResponseRoute(): JSX.Element {
         title="Recipe Removed!"
         message="Recipe has been removed from your favorites"
         onClose={() => setShowRemoveSuccessDialog(false)}
+        confirmText="OK"
+        autoClose={true}
+        autoCloseTime={2000}
+      />
+
+      <Dialog
+        visible={showGrocerySuccessDialog}
+        type="success"
+        title="Added to Grocery List! 🛒"
+        message={`${selectedIngredient} has been added to your grocery list`}
+        onClose={() => setShowGrocerySuccessDialog(false)}
         confirmText="OK"
         autoClose={true}
         autoCloseTime={2000}
@@ -1322,22 +1688,219 @@ export default function RecipeResponseRoute(): JSX.Element {
         showCloseButton={true}
       />
 
-      <Dialog
-        visible={showAddToPantryDialog}
-        type="warning"
-        title="Add to Pantry"
-        message={`Add ${selectedIngredient} to your pantry?`}
-        onClose={() => setShowAddToPantryDialog(false)}
-        onConfirm={() => {
-          console.log(`Adding ${selectedIngredient} to pantry`)
-          setShowAddToPantryDialog(false)
-        }}
-        confirmText="Add"
-        cancelText="Cancel"
-        showCancelButton={true}
-      />
-
-      <View className="bg-gray-900" style={{ height: insets.bottom }} />
-    </View>
+      <View style={{ backgroundColor: '#000000', height: insets.bottom }} />
+      </LinearGradient>
+    </>
   )
 }
+
+const styles = StyleSheet.create({
+  keyboardAvoidingContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    left: 20,
+    top: 60,
+    zIndex: 1,
+    padding: 4,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: 'white',
+    textAlign: 'center',
+  },
+  modalContentWrapper: {
+    flex: 1,
+  },
+  scrollViewTouchable: {
+    flex: 1,
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  scrollContent: {
+    paddingTop: 20,
+    paddingBottom: 40,
+    flexGrow: 1,
+  },
+  formField: {
+    marginBottom: 24,
+  },
+  formRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 8,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    position: 'relative',
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 16,
+    color: 'white',
+    marginLeft: 12,
+  },
+  unitButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  unitButtonText: {
+    fontSize: 16,
+    color: '#FACC15',
+    fontWeight: '500',
+  },
+  unitDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(18, 18, 18, 0.98)',
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    zIndex: 1000,
+    maxHeight: 200,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+  },
+  unitDropdownScroll: {
+    maxHeight: 200,
+  },
+  unitDropdownScrollContent: {
+    paddingVertical: 4,
+  },
+  unitDropdownItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  unitDropdownItemSelected: {
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+  },
+  unitDropdownItemText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '400',
+  },
+  unitDropdownItemTextSelected: {
+    color: '#FACC15',
+    fontWeight: '600',
+  },
+  categorySelection: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  categoryOption: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  selectedCategoryOption: {
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+    borderColor: 'rgba(250, 204, 21, 0.3)',
+  },
+  categoryOptionText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#94A3B8',
+    marginLeft: 8,
+  },
+  selectedCategoryOptionText: {
+    color: '#FACC15',
+    fontWeight: '600',
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  dateText: {
+    flex: 1,
+    fontSize: 16,
+    color: 'white',
+    marginLeft: 12,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    gap: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  secondaryAction: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  primaryAction: {
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(250, 204, 21, 0.3)',
+  },
+  secondaryActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#94A3B8',
+  },
+  primaryActionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FACC15',
+  },
+});

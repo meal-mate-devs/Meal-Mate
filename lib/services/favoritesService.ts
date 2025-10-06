@@ -90,13 +90,6 @@ class FavoritesService {
     try {
       const headers = await this.getAuthHeaders()
       
-      console.log('🔍 Original recipe data received:', {
-        hasRecipeId: !!recipeData.recipeId,
-        recipeIdValue: recipeData.recipeId,
-        title: recipeData.title,
-        ingredientsCount: recipeData.ingredients?.length
-      });
-      
       // 🔧 PRODUCTION: Robust data validation and cleaning
       const cleanedData = {
         ...recipeData,
@@ -130,28 +123,21 @@ class FavoritesService {
         substitutions: recipeData.substitutions || []
       }
       
-      console.log('🔄 Adding to favorites:', `${API_BASE_URL}/favorites`)
-      console.log('📦 Cleaned request data:', JSON.stringify(cleanedData, null, 2))
-      
       const response = await fetch(`${API_BASE_URL}/favorites`, {
         method: 'POST',
         headers,
         body: JSON.stringify(cleanedData)
       })
 
-      console.log('📡 Response status:', response.status)
-      console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()))
-
       // Check if response is JSON
       const contentType = response.headers.get('content-type')
       if (!contentType || !contentType.includes('application/json')) {
         const textResponse = await response.text()
-        console.error('❌ Server returned non-JSON response:', textResponse.substring(0, 500))
+        console.log('❌ Server returned non-JSON response:', textResponse.substring(0, 500))
         throw new Error(`Server error: Expected JSON but got ${contentType}. Status: ${response.status}`)
       }
 
       const data = await response.json()
-      console.log('📨 Response data:', data)
 
       if (!response.ok) {
         throw new Error(data.message || 'Failed to add recipe to favorites')
@@ -159,7 +145,7 @@ class FavoritesService {
 
       return data
     } catch (error) {
-      console.error('Error adding to favorites:', error)
+      console.log('Error adding to favorites:', error)
       throw error
     }
   }
@@ -174,7 +160,9 @@ class FavoritesService {
         search
       })
 
-      const response = await fetch(`${API_BASE_URL}/favorites?${queryParams}`, {
+      const apiUrl = `${API_BASE_URL}/favorites?${queryParams}`;
+
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers
       })
@@ -182,12 +170,13 @@ class FavoritesService {
       const data = await response.json()
 
       if (!response.ok) {
+        console.log('❌ API error response:', data);
         throw new Error(data.message || 'Failed to get favorites')
       }
 
       return data
     } catch (error) {
-      console.error('Error getting favorites:', error)
+      console.log('❌ getFavorites: Error caught:', error)
       throw error
     }
   }
@@ -209,7 +198,7 @@ class FavoritesService {
 
       return data
     } catch (error) {
-      console.error('Error removing from favorites:', error)
+      console.log('Error removing from favorites:', error)
       throw error
     }
   }
@@ -231,7 +220,7 @@ class FavoritesService {
 
       return data
     } catch (error) {
-      console.error('Error checking favorite status:', error)
+      console.log('Error checking favorite status:', error)
       throw error
     }
   }
@@ -253,7 +242,7 @@ class FavoritesService {
 
       return data
     } catch (error) {
-      console.error('Error getting favorite recipe:', error)
+      console.log('Error getting favorite recipe:', error)
       throw error
     }
   }
