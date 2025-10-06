@@ -11,8 +11,20 @@ import { Alert, Animated, BackHandler, Dimensions, ScrollView, Share, Text, Touc
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Dialog from "../../atoms/Dialog"
 
+// 🔧 PRODUCTION FIX: Interface for missing ingredients
+interface MissingIngredient {
+  name: string;
+  category?: string;
+  priority?: string;
+}
+
 const TIMEOUT_DURATION = 50000
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
+
+// 🔧 PRODUCTION FIX: Helper function to extract ingredient name
+const getIngredientName = (ingredient: string | MissingIngredient): string => {
+  return typeof ingredient === 'string' ? ingredient : ingredient.name;
+}
 
 export default function RecipeResponseRoute(): JSX.Element {
   const router = useRouter()
@@ -42,7 +54,7 @@ export default function RecipeResponseRoute(): JSX.Element {
   const [isGenerating, setIsGenerating] = useState(true)
   const [generatedRecipe, setGeneratedRecipe] = useState<GeneratedRecipe | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [missingIngredients, setMissingIngredients] = useState<string[]>([])
+  const [missingIngredients, setMissingIngredients] = useState<(string | MissingIngredient)[]>([])
   const [pantryAnalysis, setPantryAnalysis] = useState<any>(null)
   const [sufficiencyWarning, setSufficiencyWarning] = useState<string | null>(null)
   const [adaptationNotes, setAdaptationNotes] = useState<any>(null)
@@ -167,6 +179,24 @@ export default function RecipeResponseRoute(): JSX.Element {
       console.log("Recipe generation successful:", response.recipe.title)
       console.log("Server returned servings:", response.recipe.servings)
 
+      // 🔧 PRODUCTION FIX: Ensure recipe has a unique ID
+      if (!response.recipe.id) {
+        response.recipe.id = `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        console.log("🛠️ Generated missing recipe ID:", response.recipe.id);
+      }
+
+      // 🔧 PRODUCTION FIX: Ensure all ingredients have IDs
+      response.recipe.ingredients = response.recipe.ingredients.map((ingredient, index) => ({
+        ...ingredient,
+        id: ingredient.id || `ing_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`
+      }));
+
+      // 🔧 PRODUCTION FIX: Ensure all instructions have IDs  
+      response.recipe.instructions = response.recipe.instructions.map((instruction, index) => ({
+        ...instruction,
+        id: instruction.id || `inst_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`
+      }));
+
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
         timeoutRef.current = null
@@ -255,36 +285,65 @@ export default function RecipeResponseRoute(): JSX.Element {
   }
 
   const handleSaveRecipe = (recipe: GeneratedRecipe): void => {
-    if (isFavorite(recipe.id)) {
-      removeFromFavorites(recipe.id)
+    console.log('🔍 Recipe data before saving:', {
+      id: recipe.id,
+      title: recipe.title,
+      ingredientsCount: recipe.ingredients?.length,
+      hasEmptyIngredients: recipe.ingredients?.some(ing => !ing.name || !ing.amount || !ing.unit)
+    });
+
+    // 🔧 PRODUCTION: Robust validation with auto-fix
+    const validatedRecipe = { ...recipe };
+    
+    // Auto-generate ID if missing
+    if (!validatedRecipe.id || validatedRecipe.id.trim() === '') {
+      validatedRecipe.id = `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      console.log('🛠️ Auto-generated recipe ID:', validatedRecipe.id);
+    }
+
+    // Validate and auto-fix critical fields
+    if (!validatedRecipe.title || validatedRecipe.title.trim() === '') {
+      console.error('❌ Critical: Recipe title is missing');
+      Alert.alert('Error', 'Recipe data is corrupted. Please generate a new recipe.');
+      return;
+    }
+
+    if (!validatedRecipe.ingredients || validatedRecipe.ingredients.length === 0) {
+      console.error('❌ Critical: Recipe has no ingredients');
+      Alert.alert('Error', 'Recipe has no ingredients. Please generate a new recipe.');
+      return;
+    }
+
+    if (isFavorite(validatedRecipe.id)) {
+      removeFromFavorites(validatedRecipe.id)
       setIsRecipeSaved(false)
       setShowRemoveSuccessDialog(true)
     } else {
       addToFavorites({
-        id: recipe.id,
-        title: recipe.title,
-        description: recipe.description,
-        image: recipe.image,
-        cookTime: recipe.cookTime,
-        prepTime: recipe.prepTime,
-        servings: recipe.servings,
-        difficulty: recipe.difficulty,
-        cuisine: recipe.cuisine,
-        category: recipe.category,
-        ingredients: recipe.ingredients.map((ing) => ({
+        recipeId: validatedRecipe.id,
+        title: validatedRecipe.title,
+        description: validatedRecipe.description,
+        image: validatedRecipe.image,
+        cookTime: validatedRecipe.cookTime,
+        prepTime: validatedRecipe.prepTime,
+        servings: validatedRecipe.servings,
+        difficulty: validatedRecipe.difficulty as 'Easy' | 'Medium' | 'Hard',
+        cuisine: validatedRecipe.cuisine,
+        category: validatedRecipe.category,
+        ingredients: validatedRecipe.ingredients.map((ing) => ({
           name: ing.name,
           amount: ing.amount,
           unit: ing.unit,
           notes: ing.notes,
         })),
-        instructions: recipe.instructions.map((inst) => ({
+        instructions: validatedRecipe.instructions.map((inst) => ({
           step: inst.step,
           instruction: inst.instruction,
           duration: inst.duration,
           tips: inst.tips,
         })),
-        nutritionInfo: recipe.nutritionInfo,
-        tips: recipe.tips,
+        nutritionInfo: validatedRecipe.nutritionInfo,
+        tips: validatedRecipe.tips,
         substitutions: substitutions,
       })
       setIsRecipeSaved(true)
@@ -880,11 +939,13 @@ export default function RecipeResponseRoute(): JSX.Element {
                         <View className="w-9 h-9 rounded-xl bg-red-500/20 items-center justify-center mr-3 shadow-sm">
                           <Ionicons name="alert-circle-outline" size={20} color="#f87171" />
                         </View>
-                        <Text className="text-white text-base font-medium flex-1 flex-wrap">{ingredient}</Text>
+                        <Text className="text-white text-base font-medium flex-1 flex-wrap">
+                          {getIngredientName(ingredient)}
+                        </Text>
                       </View>
                       <TouchableOpacity
                         onPress={() => {
-                          setSelectedIngredient(ingredient)
+                          setSelectedIngredient(getIngredientName(ingredient))
                           setShowAddToPantryDialog(true)
                         }}
                         className="bg-amber-500/10 border border-amber-400/40 px-4 py-2 rounded-xl shadow-sm min-w-[100px]"

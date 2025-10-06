@@ -1,136 +1,135 @@
-"use client"
+import { favoritesService } from "@/lib/services/favoritesService";
+import type { AddToFavoritesRequest, FavoriteRecipe } from "@/lib/types/favorites";
+import { useCallback, useEffect, useState } from "react";
 
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useCallback, useEffect, useState } from "react"
-
-export interface FavoriteRecipe {
-  id: string
-  title: string
-  description: string
-  image?: string
-  cookTime: number
-  prepTime: number
-  servings: number
-  difficulty: string
-  cuisine: string
-  category: string
-  ingredients: Array<{
-    name: string
-    amount: string
-    unit: string
-    notes?: string
-  }>
-  instructions: Array<{
-    step: number
-    instruction: string
-    duration?: number
-    tips?: string
-  }>
-  nutritionInfo: {
-    calories: number
-    protein: number
-    carbs: number
-    fat: number
-  }
-  tips: string[]
-  substitutions?: Array<{
-    original: string
-    substitute: string
-    ratio: string
-    notes: string
-  }>
-  dateAdded: string
+interface FavoritesStore {
+  favorites: FavoriteRecipe[];
+  isLoading: boolean;
+  error: string | null;
+  addToFavorites: (recipe: AddToFavoritesRequest) => Promise<boolean>;
+  removeFromFavorites: (recipeId: string) => Promise<boolean>;
+  isFavorite: (recipeId: string) => boolean;
+  getFavorites: () => Promise<void>;
+  refreshFavorites: () => Promise<void>;
 }
 
-// Global state store
-let globalFavorites: FavoriteRecipe[] = []
-let subscribers: Array<(favorites: FavoriteRecipe[]) => void> = []
+// Global store state
+let globalFavorites: FavoriteRecipe[] = [];
+let globalIsLoading = false;
+let globalError: string | null = null;
+let subscribers: (() => void)[] = [];
 
-const FAVORITES_STORAGE_KEY = '@meal_mate_favorites'
+// Subscribe to store changes
+const subscribe = (callback: () => void) => {
+  subscribers.push(callback);
+  return () => {
+    subscribers = subscribers.filter(sub => sub !== callback);
+  };
+};
 
-export const useFavoritesStore = () => {
-  const [favorites, setFavorites] = useState<FavoriteRecipe[]>(globalFavorites)
+// Notify all subscribers of store changes
+const notifySubscribers = () => {
+  subscribers.forEach(callback => callback());
+};
 
-  // Load favorites from AsyncStorage on mount
+// Update global state and notify subscribers
+const updateGlobalState = (updates: Partial<{ favorites: FavoriteRecipe[], isLoading: boolean, error: string | null }>) => {
+  if (updates.favorites !== undefined) globalFavorites = updates.favorites;
+  if (updates.isLoading !== undefined) globalIsLoading = updates.isLoading;
+  if (updates.error !== undefined) globalError = updates.error;
+  notifySubscribers();
+};
+
+export const useFavoritesStore = (): FavoritesStore => {
+  const [favorites, setFavorites] = useState<FavoriteRecipe[]>(globalFavorites);
+  const [isLoading, setIsLoading] = useState(globalIsLoading);
+  const [error, setError] = useState<string | null>(globalError);
+
+  // Subscribe to global state changes
   useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        const stored = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY)
-        if (stored) {
-          const parsedFavorites = JSON.parse(stored)
-          globalFavorites = parsedFavorites
-          setFavorites(parsedFavorites)
-        }
-      } catch (error) {
-        console.error('Error loading favorites:', error)
+    const unsubscribe = subscribe(() => {
+      setFavorites(globalFavorites);
+      setIsLoading(globalIsLoading);
+      setError(globalError);
+    });
+    return unsubscribe;
+  }, []);
+
+  const addToFavorites = useCallback(async (recipe: AddToFavoritesRequest): Promise<boolean> => {
+    try {
+      updateGlobalState({ isLoading: true, error: null });
+      
+      const response = await favoritesService.addToFavorites(recipe);
+      
+      if (response.success && response.data) {
+        const newFavorites = [...globalFavorites, response.data];
+        updateGlobalState({ favorites: newFavorites, isLoading: false });
+        return true;
       }
+      
+      updateGlobalState({ isLoading: false, error: response.message || 'Failed to add to favorites' });
+      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add to favorites';
+      updateGlobalState({ isLoading: false, error: errorMessage });
+      return false;
     }
+  }, []);
 
-    loadFavorites()
-  }, [])
-
-  // Save favorites to AsyncStorage whenever globalFavorites changes
-  useEffect(() => {
-    const saveFavorites = async () => {
-      try {
-        await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(globalFavorites))
-      } catch (error) {
-        console.error('Error saving favorites:', error)
+  const removeFromFavorites = useCallback(async (recipeId: string): Promise<boolean> => {
+    try {
+      updateGlobalState({ isLoading: true, error: null });
+      
+      const response = await favoritesService.removeFromFavorites(recipeId);
+      
+      if (response.success) {
+        const newFavorites = globalFavorites.filter(fav => fav.recipeId !== recipeId);
+        updateGlobalState({ favorites: newFavorites, isLoading: false });
+        return true;
       }
+      
+      updateGlobalState({ isLoading: false, error: response.message || 'Failed to remove from favorites' });
+      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove from favorites';
+      updateGlobalState({ isLoading: false, error: errorMessage });
+      return false;
     }
+  }, []);
 
-    saveFavorites()
-  }, [])
+  const isFavorite = useCallback((recipeId: string): boolean => {
+    return globalFavorites.some(fav => fav.recipeId === recipeId);
+  }, []);
 
-  const subscribe = useCallback((callback: (favorites: FavoriteRecipe[]) => void) => {
-    subscribers.push(callback)
-    return () => {
-      subscribers = subscribers.filter(sub => sub !== callback)
+  const getFavorites = useCallback(async (): Promise<void> => {
+    try {
+      updateGlobalState({ isLoading: true, error: null });
+      
+      const response = await favoritesService.getFavorites();
+      
+      if (response.success) {
+        updateGlobalState({ favorites: response.data.favorites, isLoading: false });
+      } else {
+        updateGlobalState({ isLoading: false, error: response.message || 'Failed to get favorites' });
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get favorites';
+      updateGlobalState({ isLoading: false, error: errorMessage });
     }
-  }, [])
+  }, []);
 
-  const addToFavorites = useCallback((recipe: Omit<FavoriteRecipe, 'dateAdded'>) => {
-    const favoriteRecipe: FavoriteRecipe = {
-      ...recipe,
-      dateAdded: new Date().toISOString()
-    }
-
-    // Check if recipe already exists
-    const existingIndex = globalFavorites.findIndex(fav => fav.id === recipe.id)
-    if (existingIndex >= 0) {
-      // Update existing recipe
-      globalFavorites[existingIndex] = favoriteRecipe
-    } else {
-      // Add new recipe
-      globalFavorites = [favoriteRecipe, ...globalFavorites]
-    }
-
-    setFavorites([...globalFavorites])
-    subscribers.forEach(callback => callback(globalFavorites))
-  }, [])
-
-  const removeFromFavorites = useCallback((recipeId: string) => {
-    globalFavorites = globalFavorites.filter(recipe => recipe.id !== recipeId)
-    setFavorites([...globalFavorites])
-    subscribers.forEach(callback => callback(globalFavorites))
-  }, [])
-
-  const isFavorite = useCallback((recipeId: string) => {
-    return globalFavorites.some(recipe => recipe.id === recipeId)
-  }, [])
-
-  const clearAllFavorites = useCallback(() => {
-    globalFavorites = []
-    setFavorites([])
-    subscribers.forEach(callback => callback(globalFavorites))
-  }, [])
+  const refreshFavorites = useCallback(async (): Promise<void> => {
+    await getFavorites();
+  }, [getFavorites]);
 
   return {
     favorites,
+    isLoading,
+    error,
     addToFavorites,
     removeFromFavorites,
     isFavorite,
-    clearAllFavorites,
-    subscribe
-  }
-}
+    getFavorites,
+    refreshFavorites
+  };
+};
