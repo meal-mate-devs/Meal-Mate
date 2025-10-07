@@ -25,7 +25,7 @@ const RecipeDetailScreen = () => {
             />
 
             <View className="px-4 py-4">
-                <Text className="text-2xl font-bold text-gray-800">{recipe.title}</Text>
+                <Text className="text-2xl font-bold text-gray-800">{recipe.name}</Text>
 
                 <View className="flex-row justify-between mt-4">
                     <View className="items-center">

@@ -4,22 +4,21 @@ import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/service
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Share,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -145,6 +144,19 @@ const GroceryListScreen: React.FC = () => {
     canRetry: boolean;
   } | null>(null);
 
+  // Dialog state variables
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: '',
+    message: '',
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    showCancelButton: false,
+    onConfirm: () => {},
+    onCancel: () => {},
+  });
+
   const filteredItems = useMemo(() => {
     let base = groceryItems.filter((item) => !item.isPurchased);
 
@@ -186,6 +198,33 @@ const GroceryListScreen: React.FC = () => {
 
   const resetPurchaseForm = useCallback(() => {
     setPurchaseForm(createInitialPurchaseForm());
+  }, []);
+
+  const showCustomDialog = useCallback((
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: string,
+    message: string,
+    confirmText = 'OK',
+    cancelText = 'Cancel',
+    showCancelButton = false,
+    onConfirm = () => {},
+    onCancel = () => {}
+  ) => {
+    setDialogConfig({
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancelButton,
+      onConfirm,
+      onCancel,
+    });
+    setShowDialog(true);
+  }, []);
+
+  const hideDialog = useCallback(() => {
+    setShowDialog(false);
   }, []);
 
   const analyzeError = (error: any) => {
@@ -275,15 +314,22 @@ const GroceryListScreen: React.FC = () => {
     loadGroceryItems();
   }, [loadGroceryItems]);
 
+  // Refresh grocery data when screen comes into focus (e.g., after adding items)
+  useFocusEffect(
+    useCallback(() => {
+      loadGroceryItems();
+    }, [])
+  );
+
   const handleAddItem = useCallback(async () => {
     if (!newItemForm.name.trim()) {
-      Alert.alert("Missing name", "Please enter the item name before saving.");
+      showCustomDialog('warning', 'Missing name', 'Please enter the item name before saving.');
       return;
     }
 
     const parsedQuantity = Number(newItemForm.quantity);
     if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      Alert.alert("Invalid quantity", "Enter a valid quantity greater than zero.");
+      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity greater than zero.');
       return;
     }
 
@@ -309,40 +355,29 @@ const GroceryListScreen: React.FC = () => {
       resetAddForm();
     } catch (err) {
       console.log('Failed to add grocery item:', err);
-      Alert.alert('Error', 'Failed to add grocery item. Please try again.');
+      showCustomDialog('error', 'Error', 'Failed to add grocery item. Please try again.');
     } finally {
       setIsSyncing(false);
     }
   }, [newItemForm, resetAddForm]);
 
   const handleDeleteItem = useCallback(async (id: string) => {
-    Alert.alert(
-      "Remove item",
-      "Are you sure you want to remove this grocery item?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setIsSyncing(true);
-              await groceryService.deleteGroceryItem(id);
-              setGroceryItems((prev) => {
-                const updated = prev.filter((item) => item.id !== id);
-                setCachedGroceryItems(updated);
-                return updated;
-              });
-            } catch (err) {
-              console.log('Failed to delete grocery item:', err);
-              Alert.alert('Error', 'Failed to delete grocery item. Please try again.');
-            } finally {
-              setIsSyncing(false);
-            }
-          },
-        },
-      ]
-    );
+    showCustomDialog('confirm', 'Remove item', 'Are you sure you want to remove this grocery item?', 'Remove', 'Cancel', true, async () => {
+      try {
+        setIsSyncing(true);
+        await groceryService.deleteGroceryItem(id);
+        setGroceryItems((prev) => {
+          const updated = prev.filter((item) => item.id !== id);
+          setCachedGroceryItems(updated);
+          return updated;
+        });
+      } catch (err) {
+        console.log('Failed to delete grocery item:', err);
+        showCustomDialog('error', 'Error', 'Failed to delete grocery item. Please try again.');
+      } finally {
+        setIsSyncing(false);
+      }
+    });
   }, []);
 
   const openPurchaseModal = useCallback((item: GroceryItem) => {
@@ -361,7 +396,7 @@ const GroceryListScreen: React.FC = () => {
 
     const parsedQuantity = Number(purchaseForm.quantity || selectedPurchaseItem.quantity);
     if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      Alert.alert("Invalid quantity", "Enter a valid quantity before saving.");
+      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity before saving.');
       return;
     }
 
@@ -384,19 +419,13 @@ const GroceryListScreen: React.FC = () => {
         return updated;
       });
       
-      Alert.alert(
-        "Purchase completed",
-        `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`
-      );
+      showCustomDialog('success', 'Purchase completed', `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`);
       setShowPurchaseModal(false);
       setSelectedPurchaseItem(null);
       resetPurchaseForm();
     } catch (error) {
       console.log("Failed to complete purchase:", error);
-      Alert.alert(
-        "Purchase failed",
-        "Unable to complete the purchase. Please try again."
-      );
+      showCustomDialog('error', 'Purchase failed', 'Unable to complete the purchase. Please try again.');
     } finally {
       setIsSyncing(false);
     }
@@ -404,7 +433,7 @@ const GroceryListScreen: React.FC = () => {
 
   const handleShareList = useCallback(async () => {
     if (filteredItems.length === 0) {
-      Alert.alert("Nothing to share", "All items are already planned or purchased.");
+      showCustomDialog('info', 'Nothing to share', 'All items are already planned or purchased.');
       return;
     }
 
@@ -422,7 +451,7 @@ const GroceryListScreen: React.FC = () => {
       });
     } catch (error) {
       console.log("Unable to share grocery list", error);
-      Alert.alert("Unable to share", "Please try again later.");
+      showCustomDialog('error', 'Unable to share', 'Please try again later.');
     }
   }, [filteredItems]);
 

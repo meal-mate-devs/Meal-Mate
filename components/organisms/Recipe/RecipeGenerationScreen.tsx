@@ -8,8 +8,8 @@ import type {
 import { CUISINES, DIETARY_PREFERENCES, FOOD_CATEGORIES, MEAL_TIMES } from "@/lib/utils"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import { useRouter } from "expo-router"
-import React, { JSX, useEffect, useState } from "react"
+import { useFocusEffect, useRouter } from "expo-router"
+import React, { JSX, useCallback, useEffect, useState } from "react"
 import { ScrollView, Text, TouchableOpacity, View } from "react-native"
 import Dialog from "../../atoms/Dialog"
 import IngredientSearchModal from "../../molecules/IngredientSearchModal"
@@ -55,6 +55,13 @@ export default function RecipeGenerationScreen(): JSX.Element {
     useEffect(() => {
         loadPantryIngredients()
     }, [])
+
+    // Refresh pantry data when screen comes into focus (e.g., after adding items)
+    useFocusEffect(
+        useCallback(() => {
+            loadPantryIngredients()
+        }, [])
+    )
 
     // Monitor ingredient changes to update dietary restrictions
     useEffect(() => {
@@ -164,35 +171,75 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const updatePantryCategories = (ingredients: string[]) => {
         const categories = new Set<string>()
         
-        // Map ingredients to their likely categories based on pantry items
+        // Map ingredients to their likely categories based on comprehensive keyword matching
         ingredients.forEach(ingredient => {
-            const lowerIngredient = ingredient.toLowerCase()
+            const lowerIngredient = ingredient.toLowerCase().trim()
             
-            // Meat category detection (including seafood)
-            if (lowerIngredient.includes('chicken') || lowerIngredient.includes('beef') || 
-                lowerIngredient.includes('pork') || lowerIngredient.includes('lamb') || 
-                lowerIngredient.includes('fish') || lowerIngredient.includes('salmon') ||
-                lowerIngredient.includes('tuna') || lowerIngredient.includes('meat') ||
-                lowerIngredient.includes('bacon') || lowerIngredient.includes('ham') ||
-                lowerIngredient.includes('turkey') || lowerIngredient.includes('duck') ||
-                lowerIngredient.includes('seafood') || lowerIngredient.includes('shrimp') ||
-                lowerIngredient.includes('crab') || lowerIngredient.includes('lobster') ||
-                lowerIngredient.includes('cod') || lowerIngredient.includes('mackerel')) {
+            // Meat category detection (including seafood, poultry, etc.)
+            const meatKeywords = [
+                'chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'goose', 'quail',
+                'fish', 'salmon', 'tuna', 'cod', 'halibut', 'swordfish', 'mackerel', 'sardine', 'anchovy',
+                'shrimp', 'prawn', 'crab', 'lobster', 'crayfish', 'scallop', 'clam', 'mussel', 'oyster', 'squid',
+                'meat', 'bacon', 'ham', 'sausage', 'hot dog', 'pepperoni', 'salami', 'prosciutto',
+                'veal', 'rabbit', 'venison', 'bison', 'ostrich', 'emu', 'frog', 'snail',
+                'poultry', 'seafood', 'shellfish', 'red meat', 'white meat', 'game meat'
+            ]
+            if (meatKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('meat')
             }
             
             // Dairy category detection
-            if (lowerIngredient.includes('milk') || lowerIngredient.includes('cheese') || 
-                lowerIngredient.includes('butter') || lowerIngredient.includes('cream') ||
-                lowerIngredient.includes('yogurt') || lowerIngredient.includes('dairy') ||
-                lowerIngredient.includes('mozzarella') || lowerIngredient.includes('cheddar') ||
-                lowerIngredient.includes('parmesan') || lowerIngredient.includes('cottage cheese') ||
-                lowerIngredient.includes('sour cream') || lowerIngredient.includes('heavy cream')) {
+            const dairyKeywords = [
+                'milk', 'cheese', 'butter', 'cream', 'yogurt', 'dairy', 'cheddar', 'mozzarella',
+                'parmesan', 'ricotta', 'feta', 'gouda', 'brie', 'camembert', 'blue cheese',
+                'goat cheese', 'sheep cheese', 'cottage cheese', 'cream cheese', 'mascarpone',
+                'sour cream', 'heavy cream', 'whipping cream', 'half and half', 'evaporated milk',
+                'condensed milk', 'buttermilk', 'kefir', 'whey', 'casein', 'lactose'
+            ]
+            if (dairyKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('dairy')
+            }
+            
+            // Additional category detection for better dietary filtering
+            const vegetableKeywords = [
+                'lettuce', 'spinach', 'kale', 'broccoli', 'cauliflower', 'carrot', 'potato',
+                'tomato', 'onion', 'garlic', 'ginger', 'celery', 'cucumber', 'pepper', 'bell pepper',
+                'zucchini', 'eggplant', 'mushroom', 'corn', 'peas', 'beans', 'lentils', 'chickpeas',
+                'vegetable', 'greens', 'herbs', 'leafy greens', 'root vegetable', 'cruciferous'
+            ]
+            if (vegetableKeywords.some(keyword => lowerIngredient.includes(keyword))) {
+                categories.add('vegetable')
+            }
+            
+            const fruitKeywords = [
+                'apple', 'banana', 'orange', 'lemon', 'lime', 'grape', 'strawberry', 'blueberry',
+                'raspberry', 'blackberry', 'cherry', 'peach', 'pear', 'plum', 'apricot',
+                'mango', 'pineapple', 'kiwi', 'watermelon', 'cantaloupe', 'honeydew',
+                'fruit', 'berry', 'citrus', 'tropical fruit'
+            ]
+            if (fruitKeywords.some(keyword => lowerIngredient.includes(keyword))) {
+                categories.add('fruit')
+            }
+            
+            const grainKeywords = [
+                'rice', 'wheat', 'flour', 'bread', 'pasta', 'noodle', 'oat', 'barley',
+                'quinoa', 'couscous', 'bulgur', 'farro', 'spelt', 'rye', 'cornmeal',
+                'grain', 'cereal', 'baked goods', 'pastry'
+            ]
+            if (grainKeywords.some(keyword => lowerIngredient.includes(keyword))) {
+                categories.add('grain')
+            }
+            
+            const nutKeywords = [
+                'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia',
+                'peanut', 'nut', 'seed', 'chia', 'flax', 'sesame', 'sunflower', 'pumpkin'
+            ]
+            if (nutKeywords.some(keyword => lowerIngredient.includes(keyword))) {
+                categories.add('nut')
             }
         })
         
-        // Also check pantry items for categories
+        // Also check pantry items for categories (for ingredients that exist in pantry)
         pantryItems.forEach(item => {
             if (ingredients.includes(item.name)) {
                 categories.add(item.category)
@@ -346,7 +393,6 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 {filters.ingredients.length > 0 && (
                     <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
                         <View className="flex-row items-center mb-3">
-                            <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                             <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
                             <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
                                 <Text className="text-white text-xs font-bold">{filters.ingredients.length}</Text>

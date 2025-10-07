@@ -3,20 +3,37 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
+import { useProfileStore } from '../../../hooks/useProfileStore';
 import DeleteAccountModal from "../../molecules/DeleteAccountModal";
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter()
   const params = useLocalSearchParams()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  
+  // Get real user profile data
+  const { profileData, subscribe } = useProfileStore();
+  const [userData, setUserData] = useState(profileData);
+
+  // Subscribe to profile updates
+  useEffect(() => {
+    const unsubscribe = subscribe((updatedData) => {
+      setUserData(updatedData);
+    });
+    
+    // Initialize with current data
+    setUserData(profileData);
+    
+    return unsubscribe;
+  }, [subscribe, profileData]);
 
   const accountItems = [
     {
       id: "profile",
-      title: "Max Mustermann",
-      subtitle: "max@mustermann.com",
+      title: userData.name || "User",
+      subtitle: userData.email || "user@example.com",
       link: "/settings/profile",
       showBadge: false,
       icon: "person-circle-outline",
@@ -117,9 +134,9 @@ const SettingsScreen: React.FC = () => {
       <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-6">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => {
-            // If accessed from sidebar, go back to home screen
+            // If accessed from sidebar, go back with smooth transition
             if (params.from === 'sidebar') {
-              router.push('/(protected)/(tabs)/home')
+              router.back()
             } else {
               router.back()
             }

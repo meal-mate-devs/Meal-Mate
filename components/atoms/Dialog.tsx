@@ -13,7 +13,7 @@ import {
     View
 } from 'react-native';
 
-type DialogType = 'success' | 'error' | 'warning' | 'loading';
+type DialogType = 'success' | 'error' | 'warning' | 'loading' | 'confirm' | 'info';
 
 interface DialogProps {
     visible: boolean;
@@ -575,6 +575,102 @@ const Dialog = ({
                         ]}
                     >
                         <FontAwesome5 name={icon} size={18} color="#FFFFFF" />
+                    </Animated.View>
+                </View>
+            );
+        }
+        
+        if (type === 'confirm') {
+            return (
+                <View style={styles.iconContainer}>
+                    {/* Plate with confirm gradient */}
+                    <View style={styles.plateContainer}>
+                        <LinearGradient
+                            colors={['rgba(59, 130, 246, 0.3)', 'rgba(37, 99, 235, 0.1)']}
+                            style={styles.plateGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        />
+                    </View>
+                    
+                    {/* Food with question mark */}
+                    <Animated.View 
+                        style={[
+                            styles.foodCircle,
+                            {
+                                transform: [
+                                    { scale: foodScale },
+                                    { rotate: plateRotation }
+                                ]
+                            }
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={gradientColors}
+                            style={styles.iconBackground}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <MaterialCommunityIcons name={foodIcon as any} size={26} color={iconColor} />
+                        </LinearGradient>
+                    </Animated.View>
+                    
+                    {/* Question mark overlay */}
+                    <Animated.View 
+                        style={[
+                            styles.checkmarkOverlay,
+                            { opacity: iconOpacity }
+                        ]}
+                    >
+                        <MaterialCommunityIcons name="help-circle" size={22} color="#FFFFFF" />
+                    </Animated.View>
+                </View>
+            );
+        }
+        
+        if (type === 'info') {
+            return (
+                <View style={styles.iconContainer}>
+                    {/* Plate with info gradient */}
+                    <View style={styles.plateContainer}>
+                        <LinearGradient
+                            colors={['rgba(14, 165, 233, 0.3)', 'rgba(2, 132, 199, 0.1)']}
+                            style={styles.plateGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        />
+                    </View>
+                    
+                    {/* Food with info icon */}
+                    <Animated.View 
+                        style={[
+                            styles.foodCircle,
+                            {
+                                transform: [
+                                    { scale: foodScale },
+                                    { rotate: plateRotation }
+                                ]
+                            }
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={gradientColors}
+                            style={styles.iconBackground}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <MaterialCommunityIcons name={foodIcon as any} size={26} color={iconColor} />
+                        </LinearGradient>
+                    </Animated.View>
+                    
+                    {/* Info icon overlay */}
+                    <Animated.View 
+                        style={[
+                            styles.checkmarkOverlay,
+                            { opacity: iconOpacity }
+                        ]}
+                    >
+                        <MaterialCommunityIcons name="information" size={22} color="#FFFFFF" />
                     </Animated.View>
                 </View>
             );

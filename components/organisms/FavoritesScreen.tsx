@@ -220,7 +220,7 @@ const FavoritesScreen: React.FC = () => {
           <TouchableOpacity
             onPress={() => {
               if (params.from === "sidebar") {
-                router.push("/(protected)/(tabs)/home")
+                router.back()
               } else {
                 router.back()
               }

@@ -2,7 +2,7 @@
 
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import { router } from "expo-router"
+import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useState } from "react"
 import { Image, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
@@ -18,6 +18,8 @@ interface Notification {
 }
 
 const NotificationsScreen: React.FC = () => {
+  const router = useRouter()
+  const params = useLocalSearchParams()
   const [notifications, setNotifications] = useState<Notification[]>([
     // Pantry Notifications
     {
@@ -380,7 +382,14 @@ const NotificationsScreen: React.FC = () => {
       {/* Header */}
       <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => router.push('/home')}>
+          <TouchableOpacity onPress={() => {
+            // If accessed from sidebar, go back with smooth transition
+            if (params.from === 'sidebar') {
+              router.back()
+            } else {
+              router.back()
+            }
+          }}>
             <Ionicons name="arrow-back" size={24} color="white" />
           </TouchableOpacity>
           <Text className="text-white text-xl font-bold">Notifications</Text>

@@ -1,5 +1,6 @@
 "use client"
 
+import Dialog from "@/components/atoms/Dialog"
 import ErrorDisplay from "@/components/atoms/ErrorDisplay"
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
@@ -7,26 +8,26 @@ import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScann
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { useFocusEffect } from "@react-navigation/native"
 import { Image } from "expo-image"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -414,6 +415,19 @@ const PantryManagementScreen: React.FC = () => {
   })
   const [showEditDatePicker, setShowEditDatePicker] = useState(false)
 
+  // Dialog state variables
+  const [showDialog, setShowDialog] = useState(false)
+  const [dialogConfig, setDialogConfig] = useState({
+    type: 'info' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: '',
+    message: '',
+    confirmText: 'OK',
+    cancelText: 'Cancel',
+    showCancelButton: false,
+    onConfirm: () => {},
+    onCancel: () => {},
+  })
+
   // Ingredient scanner hook
   const {
     detectedIngredientsWithConfidence: hookDetectedIngredients,
@@ -548,6 +562,40 @@ const PantryManagementScreen: React.FC = () => {
     }
   }, []);
 
+  // Auto-refresh pantry items when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      loadPantryItems();
+    }, [loadPantryItems])
+  );
+
+  const showCustomDialog = useCallback((
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: string,
+    message: string,
+    confirmText = 'OK',
+    cancelText = 'Cancel',
+    showCancelButton = false,
+    onConfirm = () => {},
+    onCancel = () => {}
+  ) => {
+    setDialogConfig({
+      type,
+      title,
+      message,
+      confirmText,
+      cancelText,
+      showCancelButton,
+      onConfirm,
+      onCancel,
+    });
+    setShowDialog(true);
+  }, []);
+
+  const hideDialog = useCallback(() => {
+    setShowDialog(false);
+  }, []);
+
   // Animation effects
   useEffect(() => {
     // Static button without continuous animation for better performance
@@ -670,10 +718,7 @@ const PantryManagementScreen: React.FC = () => {
   // Handle adding new item
   const handleAddItem = useCallback(async () => {
     if (!newItem.name || !newItem.quantity) {
-      Alert.alert(
-        "Missing Information",
-        "Please fill in at least the name and quantity fields."
-      )
+      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.');
       return
     }
 
@@ -722,47 +767,33 @@ const PantryManagementScreen: React.FC = () => {
           }),
         ]).start();
       } else {
-        Alert.alert("Error", "Failed to add item to pantry.");
+        showCustomDialog('error', 'Error', 'Failed to add item to pantry.');
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to add item to pantry. Please try again.");
+      showCustomDialog('error', 'Error', 'Failed to add item to pantry. Please try again.');
     }
   }, [newItem, scaleAnim])
 
   // Handle item removal with confirmation
   const handleRemoveItem = useCallback(async (itemId: string) => {
     // Show confirmation dialog
-    Alert.alert(
-      "Remove Item",
-      "Are you sure you want to remove this item?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        {
-          text: "Remove",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              const response = await pantryService.deletePantryItem(itemId);
+    showCustomDialog('confirm', 'Remove Item', 'Are you sure you want to remove this item?', 'Remove', 'Cancel', true, async () => {
+      try {
+        const response = await pantryService.deletePantryItem(itemId);
 
-              if (response.success) {
-                // Remove item from state and close detail modal if open
-                setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
-                if (showItemDetails?.id === itemId) {
-                  setShowItemDetails(null)
-                }
-              } else {
-                Alert.alert("Error", "Failed to remove item from pantry.");
-              }
-            } catch (error) {
-              Alert.alert("Error", "Failed to remove item from pantry. Please try again.");
-            }
-          },
-        },
-      ]
-    )
+        if (response.success) {
+          // Remove item from state and close detail modal if open
+          setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
+          if (showItemDetails?.id === itemId) {
+            setShowItemDetails(null)
+          }
+        } else {
+          showCustomDialog('error', 'Error', 'Failed to remove item from pantry.');
+        }
+      } catch (error) {
+        showCustomDialog('error', 'Error', 'Failed to remove item from pantry. Please try again.');
+      }
+    });
   }, [showItemDetails])
 
   // Unified image picker - offers both camera and gallery options
@@ -785,10 +816,7 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync()
       if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Please grant camera access to capture food photos."
-        )
+        showCustomDialog('warning', 'Permission Required', 'Please grant camera access to capture food photos.');
         return
       }
 
@@ -829,10 +857,7 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
-        Alert.alert(
-          "Permission Required",
-          "Please grant photo library access to add item photos."
-        )
+        showCustomDialog('warning', 'Permission Required', 'Please grant photo library access to add item photos.');
         return
       }
 
@@ -940,10 +965,7 @@ const PantryManagementScreen: React.FC = () => {
 
     // Validate required fields
     if (!editFormData.name.trim() || !editFormData.quantity.trim()) {
-      Alert.alert(
-        "Missing Information",
-        "Please fill in at least the name and quantity fields."
-      )
+      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.');
       return
     }
 
@@ -980,10 +1002,10 @@ const PantryManagementScreen: React.FC = () => {
           expiryDate: new Date()
         })
 
-        Alert.alert("Success", "Item updated successfully!")
+        showCustomDialog('success', 'Success', 'Item updated successfully!')
       }
     } catch (error) {
-      Alert.alert("Error", "Failed to update item. Please try again.")
+      showCustomDialog('error', 'Error', 'Failed to update item. Please try again.')
     }
   }, [editingItem, editFormData, pantryService])
 
@@ -2659,9 +2681,9 @@ const PantryManagementScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => {
-                // If accessed from sidebar, go back to home screen
+                // If accessed from sidebar, go back with smooth transition
                 if (params.from === 'sidebar') {
-                  router.push('/(protected)/(tabs)/home')
+                  router.back()
                 } else {
                   router.back()
                 }
@@ -2903,6 +2925,19 @@ const PantryManagementScreen: React.FC = () => {
           ingredients={detectedIngredients}
           onSelectIngredient={handleSelectIngredient}
           isLoading={isDetecting}
+        />
+
+        {/* Custom Dialog */}
+        <Dialog
+          visible={showDialog}
+          type={dialogConfig.type}
+          title={dialogConfig.title}
+          message={dialogConfig.message}
+          onConfirm={dialogConfig.onConfirm}
+          confirmText={dialogConfig.confirmText}
+          cancelText={dialogConfig.cancelText}
+          showCancelButton={dialogConfig.showCancelButton}
+          onClose={hideDialog}
         />
       </>
     </View>

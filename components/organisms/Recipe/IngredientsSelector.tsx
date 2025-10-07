@@ -4,7 +4,7 @@ import { PantryItem } from "@/lib/services/pantryService"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useState } from "react"
-import { ActivityIndicator, Keyboard, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native"
 
 
 interface IngredientSelectorProps {
@@ -220,6 +220,70 @@ export default function IngredientSelector({
                         </View>
                     </View>
 
+                    {/* Selected Ingredients Category - Always visible */}
+                    {selectedIngredients.length > 0 && (
+                        <View className="mb-4 mr-4 ml-4 p-3 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl border border-green-500/30">
+                            <View className="flex-row items-center mb-3">
+                                <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
+                                <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
+                                    <Text className="text-white text-xs font-bold">{selectedIngredients.length}</Text>
+                                </View>
+                            </View>
+                            <View className="flex-row flex-wrap">
+                                {/* Selected Pantry Items */}
+                                {selectedPantryItems.map((item) => {
+                                    const expiryLabel = getExpiryLabel(item)
+                                    return (
+                                        <TouchableOpacity
+                                            key={item.id}
+                                            onPress={() => handleIngredientToggle(item.name)}
+                                            className="mr-3 mb-3 rounded-2xl border bg-yellow-400 border-yellow-400"
+                                        >
+                                            {expiryLabel && (
+                                                <View className={`${expiryLabel.color} rounded-t-xl px-3 py-1`}>
+                                                    <Text className="text-white text-xs font-bold text-center">
+                                                        {expiryLabel.text}
+                                                    </Text>
+                                                </View>
+                                            )}
+                                            <View className={`px-4 py-3 ${expiryLabel ? '' : 'rounded-2xl'}`}>
+                                                <View className="flex-row items-center">
+                                                    <Text className="font-medium text-black">
+                                                        {typeof item.name === 'string' ? item.name : 'Unknown Ingredient'}
+                                                    </Text>
+                                                    {item.quantity > 0 && item.unit && (
+                                                        <Text className="ml-2 text-sm text-black opacity-70">
+                                                            ({item.quantity} {item.unit})
+                                                        </Text>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                                {/* Custom Ingredients */}
+                                {customIngredients.map((ingredient) => (
+                                    <TouchableOpacity
+                                        key={`custom-${ingredient}`}
+                                        onPress={() => handleIngredientToggle(ingredient)}
+                                        className="mr-3 mb-3 rounded-2xl border bg-purple-500 border-purple-500"
+                                    >
+                                        <View className="px-4 py-3 rounded-2xl">
+                                            <View className="flex-row items-center">
+                                                <Text className="font-medium text-white">
+                                                    {ingredient}
+                                                </Text>
+                                                <View className="ml-2 bg-purple-700 rounded-full px-2 py-0.5">
+                                                    <Text className="text-xs font-bold text-white">Custom</Text>
+                                                </View>
+                                            </View>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
                     {/* Loading State */}
                     {isLoadingPantry ? (
                         <View className="flex-1 justify-center items-center">
@@ -228,13 +292,27 @@ export default function IngredientSelector({
                         </View>
                     ) : (
                         <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+                            {/* Custom Ingredient Section - Always show */}
+                            <View className="mb-6 pb-6">
+                                <Text className="text-white text-lg font-bold mb-3">Add Custom Ingredient</Text>
+                                
+                                <TouchableOpacity
+                                    onPress={() => setShowIngredientScanner(true)}
+                                    className="flex-row items-center justify-center bg-zinc-800 border border-zinc-600 rounded-full px-4 py-3"
+                                >
+                                    <Ionicons name="add-outline" size={20} color="#FBBF24" />
+                                    <Ionicons name="camera-outline" size={20} color="#FBBF24" />
+                                    <Text className="text-white ml-2 text-sm font-medium">Manually Add Ingredients</Text>
+                                </TouchableOpacity>
+                            </View>
+
                             {/* Empty State */}
                             {pantryItems.length === 0 ? (
-                                <View className="flex-1 justify-center items-center py-20">
+                                <View className="justify-center items-center py-10">
                                     <Ionicons name="basket-outline" size={64} color="#4B5563" />
                                     <Text className="text-zinc-400 text-lg font-medium mt-4">Your pantry is empty</Text>
                                     <Text className="text-zinc-500 text-center mt-2">
-                                        Add ingredients to your pantry to see them here
+                                        Scan ingredients or add them manually above
                                     </Text>
                                 </View>
                             ) : (
@@ -248,71 +326,6 @@ export default function IngredientSelector({
                                                 <View className="bg-red-500 rounded-full px-2 py-0.5">
                                                     <Text className="text-white text-xs font-bold">{unselectedExpiringItems.length}</Text>
                                                 </View>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    {/* Selected Ingredients Category */}
-                                    {(selectedPantryItems.length > 0 || customIngredients.length > 0) && (
-                                        <View className="mb-6">
-                                            <View className="flex-row items-center mb-3">
-                                                <Text className="text-green-400 text-lg font-bold">Selected</Text>
-                                                <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
-                                                    <Text className="text-white text-xs font-bold">{selectedIngredients.length}</Text>
-                                                </View>
-                                            </View>
-                                            <View className="flex-row flex-wrap">
-                                                {/* Selected Pantry Items */}
-                                                {selectedPantryItems.map((item) => {
-                                                    const isSelected = selectedIngredients.includes(item.name)
-                                                    const expiryLabel = getExpiryLabel(item)
-                                                    return (
-                                                        <TouchableOpacity
-                                                            key={item.id}
-                                                            onPress={() => handleIngredientToggle(item.name)}
-                                                            className="mr-3 mb-3 rounded-2xl border bg-yellow-400 border-yellow-400"
-                                                        >
-                                                            {expiryLabel && (
-                                                                <View className={`${expiryLabel.color} rounded-t-xl px-3 py-1`}>
-                                                                    <Text className="text-white text-xs font-bold text-center">
-                                                                        {expiryLabel.text}
-                                                                    </Text>
-                                                                </View>
-                                                            )}
-                                                            <View className={`px-4 py-3 ${expiryLabel ? '' : 'rounded-2xl'}`}>
-                                                                <View className="flex-row items-center">
-                                                                    <Text className="font-medium text-black">
-                                                                        {typeof item.name === 'string' ? item.name : 'Unknown Ingredient'}
-                                                                    </Text>
-                                                                    {item.quantity > 0 && item.unit && (
-                                                                        <Text className="ml-2 text-sm text-black opacity-70">
-                                                                            ({item.quantity} {item.unit})
-                                                                        </Text>
-                                                                    )}
-                                                                </View>
-                                                            </View>
-                                                        </TouchableOpacity>
-                                                    )
-                                                })}
-                                                {/* Custom Ingredients */}
-                                                {customIngredients.map((ingredient) => (
-                                                    <TouchableOpacity
-                                                        key={`custom-${ingredient}`}
-                                                        onPress={() => handleIngredientToggle(ingredient)}
-                                                        className="mr-3 mb-3 rounded-2xl border bg-purple-500 border-purple-500"
-                                                    >
-                                                        <View className="px-4 py-3 rounded-2xl">
-                                                            <View className="flex-row items-center">
-                                                                <Text className="font-medium text-white">
-                                                                    {ingredient}
-                                                                </Text>
-                                                                <View className="ml-2 bg-purple-700 rounded-full px-2 py-0.5">
-                                                                    <Text className="text-xs font-bold text-white">Custom</Text>
-                                                                </View>
-                                                            </View>
-                                                        </View>
-                                                    </TouchableOpacity>
-                                                ))}
                                             </View>
                                         </View>
                                     )}
@@ -430,20 +443,6 @@ export default function IngredientSelector({
                                             </View>
                                         </View>
                                     ))}
-
-                                    {/* Custom Ingredient Section */}
-                                    <View className="mb-6 pb-6">
-                                        <Text className="text-white text-lg font-bold mb-3">Add Custom Ingredient</Text>
-                                        
-                                        <TouchableOpacity
-                                            onPress={() => setShowIngredientScanner(true)}
-                                            className="flex-row items-center justify-center bg-zinc-800 border border-zinc-600 rounded-full px-4 py-3"
-                                        >
-                                            <Ionicons name="add-outline" size={20} color="#FBBF24" />
-                                            <Ionicons name="camera-outline" size={20} color="#FBBF24" />
-                                            <Text className="text-white ml-2 text-sm font-medium">Manually Add Ingredients</Text>
-                                        </TouchableOpacity>
-                                    </View>
                                 </>
                             )}
                         </ScrollView>
