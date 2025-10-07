@@ -3,8 +3,9 @@ import { checkNetworkConnectivity, handleLoginError, validateEmail } from '@/lib
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+    Animated,
     Image,
     ImageBackground,
     KeyboardAvoidingView,
@@ -29,6 +30,35 @@ export default function LoginForm() {
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
+
+    // Animated orbs
+    const orb1Anim = useRef(new Animated.Value(0)).current;
+    const orb2Anim = useRef(new Animated.Value(0)).current;
+    const orb3Anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Start orb animations
+        const animateOrb = (anim: Animated.Value, delay: number = 0) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        };
+
+        animateOrb(orb1Anim, 0);
+        animateOrb(orb2Anim, 1000);
+        animateOrb(orb3Anim, 2000);
+    }, []);
 
     const router = useRouter();
     const { login, doesAccountExist } = useAuthContext();
@@ -101,9 +131,9 @@ export default function LoginForm() {
 
                     if (!accountExists) {
                         setDialogVisible(false);
-                        setEmailError('Account does not exist. Please sign up first.');
-                        setIsLoading(false);
-                        return;
+                    setEmailError('Account does not exist. Please sign up first.');
+                    setIsLoading(false);
+                    return;
                     }
                 } catch (accountCheckError) {
                     console.log('Account check error:', accountCheckError);
@@ -130,13 +160,12 @@ export default function LoginForm() {
                 return;
             }
 
-            setDialogVisible(false);
-            showDialog('success', 'Success!', 'You have been successfully logged in.');
-
+            // Login successful - keep dialog visible during navigation
             setTimeout(() => {
                 setDialogVisible(false);
+                setIsLoading(false);
                 router.push('/(protected)/(tabs)/home');
-            }, 1500);
+            }, 800);
 
         } catch (error) {
             console.log('Login error:', error);
@@ -177,6 +206,55 @@ export default function LoginForm() {
                     end={{ x: 0, y: 1 }}
                     style={{ flex: 1, width: '100%', height: '100%' }}
                 >
+                    {/* Animated Orbs */}
+                    <Animated.View
+                        style={{
+                            position: 'absolute',
+                            top: '20%',
+                            left: '10%',
+                            transform: [{
+                                translateY: orb1Anim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0, 50],
+                                }),
+                            }],
+                        }}
+                    >
+                        <View className="w-4 h-4 bg-yellow-600/30 rounded-full blur-sm" />
+                    </Animated.View>
+
+                    <Animated.View
+                        style={{
+                            position: 'absolute',
+                            top: '15%',
+                            right: '8%',
+                            transform: [{
+                                translateY: orb2Anim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0, -40],
+                                }),
+                            }],
+                        }}
+                    >
+                        <View className="w-6 h-6 bg-yellow-600/20 rounded-full blur-sm" />
+                    </Animated.View>
+
+                    <Animated.View
+                        style={{
+                            position: 'absolute',
+                            bottom: '30%',
+                            left: '20%',
+                            transform: [{
+                                translateX: orb3Anim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [0, 30],
+                                }),
+                            }],
+                        }}
+                    >
+                        <View className="w-3 h-3 bg-yellow-600/40 rounded-full blur-sm" />
+                    </Animated.View>
+
                     <KeyboardAvoidingView
                         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                         style={{ flex: 1 }}
@@ -188,7 +266,7 @@ export default function LoginForm() {
                                 </Text>
 
                                 <View className="items-center mb-6">
-                                    <View className="w-36 h-36 rounded-full overflow-hidden border-2 border-yellow-400">
+                                    <View className="w-36 h-36 rounded-2xl overflow-hidden border-2 border-yellow-600">
                                         <Image
                                             source={require('../../assets/images/avatar.png')}
                                             className="w-full h-full"
@@ -248,9 +326,9 @@ export default function LoginForm() {
                                 </View>
 
                                 {/* Forget Password */}
-                                <View className='py-4 pb-6'>
+                                <View className='py-4 pb-6 pt-0'>
                                     <TouchableOpacity onPress={handleForgetPassword} className="items-end">
-                                        <Text className="text-yellow-400 text-sm font-semibold">Forgot password?</Text>
+                                        <Text className="text-yellow-600 text-sm font-semibold">Forgot password?</Text>
                                     </TouchableOpacity>
                                 </View>
 
@@ -310,7 +388,7 @@ export default function LoginForm() {
                                 <View className="flex-row justify-center items-center">
                                     <Text className="text-zinc-400 text-sm">Don't have an account? </Text>
                                     <TouchableOpacity onPress={handleSignUp}>
-                                        <Text className="text-yellow-400 text-sm font-bold">Sign Up</Text>
+                                        <Text className="text-yellow-600 text-sm font-bold">Sign Up</Text>
                                     </TouchableOpacity>
                                 </View>
                             </View>

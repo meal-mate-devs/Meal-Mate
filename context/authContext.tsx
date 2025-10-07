@@ -1,13 +1,13 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
 import {
-  createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signOut
+    createUserWithEmailAndPassword,
+    fetchSignInMethodsForEmail,
+    onAuthStateChanged,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    signInWithEmailAndPassword,
+    signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -299,8 +299,24 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
       const token = await userCredential.user.getIdToken();
 
-      const dobDate = new Date(dateOfBirth);
-      const formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
+      // Handle DD-MM-YYYY format from frontend
+      let dobDate;
+      let formattedDOB;
+      
+      try {
+        // Check if dateOfBirth is in DD-MM-YYYY format
+        if (typeof dateOfBirth === 'string' && dateOfBirth.includes('-') && dateOfBirth.length === 10) {
+          const [day, month, year] = dateOfBirth.split('-').map(Number);
+          dobDate = new Date(year, month - 1, day); // month is 0-indexed
+        } else {
+          dobDate = new Date(dateOfBirth);
+        }
+        
+        formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
+      } catch (error) {
+        console.log('Date parsing error:', error);
+        formattedDOB = dateOfBirth;
+      }
 
       const formData = new FormData();
       formData.append('userName', username);
@@ -505,8 +521,24 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
       // Handle date of birth with proper formatting
       if (userData.dateOfBirth) {
-        const dobDate = new Date(userData.dateOfBirth);
-        const formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
+        let dobDate;
+        let formattedDOB;
+        
+        try {
+          // Check if dateOfBirth is in DD-MM-YYYY format
+          if (typeof userData.dateOfBirth === 'string' && userData.dateOfBirth.includes('-') && userData.dateOfBirth.length === 10) {
+            const [day, month, year] = userData.dateOfBirth.split('-').map(Number);
+            dobDate = new Date(year, month - 1, day); // month is 0-indexed
+          } else {
+            dobDate = new Date(userData.dateOfBirth);
+          }
+          
+          formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
+        } catch (error) {
+          console.log('Date parsing error in updateUserProfile:', error);
+          formattedDOB = userData.dateOfBirth;
+        }
+        
         formData.append('dateOfBirth', formattedDOB);
       }
 

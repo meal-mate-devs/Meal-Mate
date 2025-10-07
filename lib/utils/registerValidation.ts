@@ -80,10 +80,23 @@ export const validateSignupForm = (
         errors.dateOfBirthError = 'Please enter your date of birth';
         hasError = true;
     } else {
-        // Check if date is valid
-        const dobDate = new Date(dateOfBirth);
+        // Check if date is valid - handle DD-MM-YYYY format
+        let dobDate;
+        
+        try {
+            // Check if dateOfBirth is in DD-MM-YYYY format
+            if (typeof dateOfBirth === 'string' && dateOfBirth.includes('-') && dateOfBirth.length === 10) {
+                const [day, month, year] = dateOfBirth.split('-').map(Number);
+                dobDate = new Date(year, month - 1, day); // month is 0-indexed
+            } else {
+                dobDate = new Date(dateOfBirth);
+            }
+        } catch (error) {
+            dobDate = new Date('Invalid');
+        }
+        
         if (isNaN(dobDate.getTime())) {
-            errors.dateOfBirthError = 'Please enter a valid date in YYYY-MM-DD format';
+            errors.dateOfBirthError = 'Please enter a valid date in DD-MM-YYYY format';
             hasError = true;
         } else {
             // Check if user is at least 13 years old

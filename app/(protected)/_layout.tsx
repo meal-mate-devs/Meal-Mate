@@ -33,8 +33,10 @@ export default function ProtectedLayout() {
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: '#000000' },
-          animation: 'fade',
-          animationDuration: 200,
+          animation: 'slide_from_right',
+          animationDuration: 600,
+          presentation: 'modal',
+          gestureEnabled: false,
         }} 
       />
     </>

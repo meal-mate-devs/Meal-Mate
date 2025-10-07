@@ -3,8 +3,9 @@ import { auth } from '@/lib/config/clientApp';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+    Animated,
     ScrollView,
     Text,
     TouchableOpacity,
@@ -26,6 +27,35 @@ export default function VerifyEmailForm() {
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
+
+    // Animated orbs
+    const orb1Anim = useRef(new Animated.Value(0)).current;
+    const orb2Anim = useRef(new Animated.Value(0)).current;
+    const orb3Anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Start orb animations
+        const animateOrb = (anim: Animated.Value, delay: number = 0) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        };
+
+        animateOrb(orb1Anim, 0);
+        animateOrb(orb2Anim, 1000);
+        animateOrb(orb3Anim, 2000);
+    }, []);
 
     // Auto-redirect when email becomes verified (only if not currently showing a dialog, checking verification, or showing manual verification dialog)
     useEffect(() => {
@@ -136,6 +166,55 @@ export default function VerifyEmailForm() {
 
     return (
         <View className="flex-1 bg-black">
+            {/* Animated Orbs */}
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: '20%',
+                    left: '10%',
+                    transform: [{
+                        translateY: orb1Anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 50],
+                        }),
+                    }],
+                }}
+            >
+                <View className="w-4 h-4 bg-yellow-600/30 rounded-full blur-sm" />
+            </Animated.View>
+
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    top: '15%',
+                    right: '8%',
+                    transform: [{
+                        translateY: orb2Anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, -40],
+                        }),
+                    }],
+                }}
+            >
+                <View className="w-6 h-6 bg-yellow-600/20 rounded-full blur-sm" />
+            </Animated.View>
+
+            <Animated.View
+                style={{
+                    position: 'absolute',
+                    bottom: '30%',
+                    left: '20%',
+                    transform: [{
+                        translateX: orb3Anim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [0, 30],
+                        }),
+                    }],
+                }}
+            >
+                <View className="w-3 h-3 bg-yellow-600/40 rounded-full blur-sm" />
+            </Animated.View>
+
             <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
                 <View className="flex-1 pt-12 px-6 pb-6">
                     <Text className="text-white text-3xl font-bold mb-8">
@@ -153,7 +232,7 @@ export default function VerifyEmailForm() {
                             We've sent a verification email to:
                         </Text>
 
-                        <Text className="text-yellow-400 text-lg font-semibold mb-8 text-center">
+                        <Text className="text-yellow-600 text-lg font-semibold mb-8 text-center">
                             {user?.email}
                         </Text>
 
@@ -240,7 +319,7 @@ export default function VerifyEmailForm() {
                     </TouchableOpacity>
 
                     <TouchableOpacity className="items-center">
-                        <Text className="text-yellow-400 text-sm font-semibold">Need Help? Contact Support</Text>
+                        <Text className="text-yellow-600 text-sm font-semibold">Need Help? Contact Support</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

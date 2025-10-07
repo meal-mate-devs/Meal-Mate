@@ -338,13 +338,13 @@ const ProfileScreen: React.FC = () => {
         }
     };
 
-    // Helper function to format date string as YYYY-MM-DD
+    // Helper function to format date string as DD-MM-YYYY (consistent with RegistrationForm)
     const formatDateString = (date: Date) => {
         try {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+            return `${day}-${month}-${year}`;
         } catch (error) {
             return '';
         }
@@ -354,7 +354,20 @@ const ProfileScreen: React.FC = () => {
     const formatDateForDisplay = (dateString: string) => {
         if (!dateString) return 'Select Date of Birth';
         try {
-            const date = new Date(dateString);
+            let date;
+            
+            // Check if dateString is in DD-MM-YYYY format
+            if (typeof dateString === 'string' && dateString.includes('-') && dateString.length === 10) {
+                const [day, month, year] = dateString.split('-').map(Number);
+                date = new Date(year, month - 1, day); // month is 0-indexed
+            } else {
+                date = new Date(dateString);
+            }
+            
+            if (isNaN(date.getTime())) {
+                return dateString;
+            }
+            
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');

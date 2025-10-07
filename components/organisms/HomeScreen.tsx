@@ -147,7 +147,7 @@ const HomeScreen: React.FC = () => {
                         />
                         <View className="p-4">
                             <View className="flex-row justify-between items-center">
-                                <Text className="text-white font-bold text-lg">{recipe.title}</Text>
+                                <Text className="text-white font-bold text-lg">{recipe.name}</Text>
                                 <View className="flex-row items-center">
                                     <Ionicons name="star" size={16} color="#FACC15" />
                                     <Text className="text-gray-300 ml-1">{recipe.rating}</Text>

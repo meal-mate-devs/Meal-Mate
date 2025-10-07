@@ -4,8 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import NetInfo from '@react-native-community/netinfo';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+    Animated,
     ImageBackground,
     KeyboardAvoidingView,
     Platform,
@@ -27,6 +28,35 @@ export default function ResetPasswordForm() {
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
+
+    // Animated orbs
+    const orb1Anim = useRef(new Animated.Value(0)).current;
+    const orb2Anim = useRef(new Animated.Value(0)).current;
+    const orb3Anim = useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+        // Start orb animations
+        const animateOrb = (anim: Animated.Value, delay: number = 0) => {
+            Animated.loop(
+                Animated.sequence([
+                    Animated.timing(anim, {
+                        toValue: 1,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(anim, {
+                        toValue: 0,
+                        duration: 3000 + delay,
+                        useNativeDriver: true,
+                    }),
+                ])
+            ).start();
+        };
+
+        animateOrb(orb1Anim, 0);
+        animateOrb(orb2Anim, 1000);
+        animateOrb(orb3Anim, 2000);
+    }, []);
 
     const { sendPasswordReset, doesAccountExist } = useAuthContext();
     const router = useRouter();
@@ -348,6 +378,55 @@ export default function ResetPasswordForm() {
                 end={{ x: 0, y: 1 }}
                 style={{ flex: 1, width: '100%', height: '100%' }}
             >
+                {/* Animated Orbs */}
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        top: '20%',
+                        left: '10%',
+                        transform: [{
+                            translateY: orb1Anim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, 50],
+                            }),
+                        }],
+                    }}
+                >
+                    <View className="w-4 h-4 bg-yellow-600/30 rounded-full blur-sm" />
+                </Animated.View>
+
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        top: '15%',
+                        right: '8%',
+                        transform: [{
+                            translateY: orb2Anim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, -40],
+                            }),
+                        }],
+                    }}
+                >
+                    <View className="w-6 h-6 bg-yellow-600/20 rounded-full blur-sm" />
+                </Animated.View>
+
+                <Animated.View
+                    style={{
+                        position: 'absolute',
+                        bottom: '30%',
+                        left: '20%',
+                        transform: [{
+                            translateX: orb3Anim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: [0, 30],
+                            }),
+                        }],
+                    }}
+                >
+                    <View className="w-3 h-3 bg-yellow-600/40 rounded-full blur-sm" />
+                </Animated.View>
+
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={{ flex: 1 }}
@@ -408,7 +487,7 @@ export default function ResetPasswordForm() {
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={handleBackToLogin} className="items-center">
-                                    <Text className="text-yellow-400 text-sm font-semibold">Back To Login</Text>
+                                    <Text className="text-yellow-600 text-sm font-semibold">Back To Login</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>

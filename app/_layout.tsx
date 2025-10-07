@@ -1,6 +1,7 @@
 import CustomSplashScreen from "@/components/molecules/CustomSplashScreen";
 import { AuthContextProvider, useAuthContext } from "@/context/authContext";
 import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
+import * as NavigationBar from 'expo-navigation-bar';
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import React, { useEffect } from "react";
@@ -18,7 +19,11 @@ export default function RootLayout() {
 
   // Set background colors on app startup
   useEffect(() => {
-    // Force dark mode
+    // Force dark mode and set navigation bar to black
+    if (Platform.OS === 'android') {
+      NavigationBar.setBackgroundColorAsync('#000000');
+      NavigationBar.setButtonStyleAsync('light');
+    }
   }, []);
 
   // Handle splash screen - prevent auto-hide and show immediately
@@ -55,7 +60,7 @@ export default function RootLayout() {
 
   // Always show custom splash screen first, regardless of font loading
   return (
-    <View style={{ flex: 1, backgroundColor: '#0F172A' }}>
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
       {!fontsLoaded ? (
         <CustomSplashScreen />
       ) : (
@@ -87,20 +92,21 @@ function RootLayoutContent() {
   return (
     <>
       <SafeAreaProvider>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#0F172A' }}>
+        <GestureHandlerRootView style={{ flex: 1, backgroundColor: '#000000' }}>
           <View style={styles.container}>
             {/* Status bar background for edge-to-edge support */}
             <View style={styles.statusBarBackground} />
             
             <ExpoStatusBar 
               style="light" 
+              backgroundColor="#000000"
               translucent={true}
             />
             
             <Stack 
               screenOptions={{
                 headerShown: false,  // Hide header by default
-                contentStyle: { backgroundColor: '#0F172A' },
+                contentStyle: { backgroundColor: '#000000' },
                 animation: 'fade',  // Use fade instead of default slide
                 animationDuration: 200,
                 presentation: 'transparentModal',  // Prevent white flash
@@ -116,7 +122,7 @@ function RootLayoutContent() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#000000',
   },
   statusBarBackground: {
     position: 'absolute',
@@ -124,7 +130,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: Platform.OS === 'ios' ? 50 : StatusBar.currentHeight || 24,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#000000',
     zIndex: 1,
   },
 });
