@@ -1,3 +1,4 @@
+import Dialog from "@/components/atoms/Dialog";
 import ErrorDisplay from "@/components/atoms/ErrorDisplay";
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation";
 import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/services/groceryService";
@@ -323,13 +324,13 @@ const GroceryListScreen: React.FC = () => {
 
   const handleAddItem = useCallback(async () => {
     if (!newItemForm.name.trim()) {
-      showCustomDialog('warning', 'Missing name', 'Please enter the item name before saving.');
+      showCustomDialog('warning', 'Missing name', 'Please enter the item name before saving.', 'OK', '', false, hideDialog);
       return;
     }
 
     const parsedQuantity = Number(newItemForm.quantity);
     if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity greater than zero.');
+      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity greater than zero.', 'OK', '', false, hideDialog);
       return;
     }
 
@@ -355,30 +356,43 @@ const GroceryListScreen: React.FC = () => {
       resetAddForm();
     } catch (err) {
       console.log('Failed to add grocery item:', err);
-      showCustomDialog('error', 'Error', 'Failed to add grocery item. Please try again.');
+      showCustomDialog('error', 'Error', 'Failed to add grocery item. Please try again.', 'OK', '', false, hideDialog);
     } finally {
       setIsSyncing(false);
     }
   }, [newItemForm, resetAddForm]);
 
   const handleDeleteItem = useCallback(async (id: string) => {
-    showCustomDialog('confirm', 'Remove item', 'Are you sure you want to remove this grocery item?', 'Remove', 'Cancel', true, async () => {
-      try {
-        setIsSyncing(true);
-        await groceryService.deleteGroceryItem(id);
-        setGroceryItems((prev) => {
-          const updated = prev.filter((item) => item.id !== id);
-          setCachedGroceryItems(updated);
-          return updated;
-        });
-      } catch (err) {
-        console.log('Failed to delete grocery item:', err);
-        showCustomDialog('error', 'Error', 'Failed to delete grocery item. Please try again.');
-      } finally {
-        setIsSyncing(false);
+    showCustomDialog(
+      'confirm', 
+      'Remove item', 
+      'Are you sure you want to remove this grocery item?', 
+      'Remove', 
+      'Cancel', 
+      true, 
+      async () => {
+        hideDialog(); // Close dialog first
+        try {
+          setIsSyncing(true);
+          await groceryService.deleteGroceryItem(id);
+          setGroceryItems((prev) => {
+            const updated = prev.filter((item) => item.id !== id);
+            setCachedGroceryItems(updated);
+            return updated;
+          });
+          showCustomDialog('success', 'Success', 'Item removed successfully.', 'OK', '', false, hideDialog);
+        } catch (err) {
+          console.log('Failed to delete grocery item:', err);
+          showCustomDialog('error', 'Error', 'Failed to delete grocery item. Please try again.', 'OK', '', false, hideDialog);
+        } finally {
+          setIsSyncing(false);
+        }
+      },
+      () => {
+        hideDialog(); // Close dialog on cancel
       }
-    });
-  }, []);
+    );
+  }, [hideDialog]);
 
   const openPurchaseModal = useCallback((item: GroceryItem) => {
     setSelectedPurchaseItem(item);
@@ -396,7 +410,7 @@ const GroceryListScreen: React.FC = () => {
 
     const parsedQuantity = Number(purchaseForm.quantity || selectedPurchaseItem.quantity);
     if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity before saving.');
+      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity before saving.', 'OK', '', false, hideDialog);
       return;
     }
 
@@ -419,21 +433,22 @@ const GroceryListScreen: React.FC = () => {
         return updated;
       });
       
-      showCustomDialog('success', 'Purchase completed', `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`);
+      showCustomDialog('success', 'Purchase completed', `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`, 'OK', '', false, hideDialog);
       setShowPurchaseModal(false);
       setSelectedPurchaseItem(null);
       resetPurchaseForm();
     } catch (error) {
       console.log("Failed to complete purchase:", error);
-      showCustomDialog('error', 'Purchase failed', 'Unable to complete the purchase. Please try again.');
+      showCustomDialog('error', 'Purchase failed', 'Unable to complete the purchase. Please try again.', 'OK', '', false, hideDialog);
     } finally {
       setIsSyncing(false);
     }
   }, [purchaseForm, resetPurchaseForm, selectedPurchaseItem]);
 
   const handleShareList = useCallback(async () => {
-    if (filteredItems.length === 0) {
-      showCustomDialog('info', 'Nothing to share', 'All items are already planned or purchased.');
+    const unpurchasedItems = groceryItems.filter((item) => !item.isPurchased);
+    if (unpurchasedItems.length === 0) {
+      showCustomDialog('info', 'Nothing to share', 'Your grocery list is empty. Add some items first!', 'OK', '', false, hideDialog);
       return;
     }
 
@@ -451,9 +466,9 @@ const GroceryListScreen: React.FC = () => {
       });
     } catch (error) {
       console.log("Unable to share grocery list", error);
-      showCustomDialog('error', 'Unable to share', 'Please try again later.');
+      showCustomDialog('error', 'Unable to share', 'Please try again later.', 'OK', '', false, hideDialog);
     }
-  }, [filteredItems]);
+  }, [groceryItems]);
 
   const handlePurchaseDateChange = useCallback(
     (_event: any, selectedDate?: Date) => {
@@ -1141,6 +1156,20 @@ const GroceryListScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Custom Dialog */}
+      <Dialog
+        visible={showDialog}
+        type={dialogConfig.type}
+        title={dialogConfig.title}
+        message={dialogConfig.message}
+        onConfirm={dialogConfig.onConfirm}
+        onCancel={dialogConfig.onCancel}
+        confirmText={dialogConfig.confirmText}
+        cancelText={dialogConfig.cancelText}
+        showCancelButton={dialogConfig.showCancelButton}
+        onClose={hideDialog}
+      />
       </View>
     </SafeAreaView>
   );
