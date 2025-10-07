@@ -296,7 +296,7 @@ export default function CreatePostDrawer({
         <Modal visible={visible} animationType="slide" transparent={true}>
             <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
                 <View className="flex-1 bg-black bg-opacity-50 justify-end">
-                    <View className="bg-zinc-900 rounded-t-3xl" style={{ height: height * 0.95, maxHeight: height * 0.95 }}>
+                    <View className="bg-zinc-900 rounded-t-3xl flex-1">
                         <View className="flex-row justify-between items-center p-4 border-b border-zinc-800">
                             <TouchableOpacity onPress={handleClose}>
                                 <Ionicons name="close" size={24} color="#FFFFFF" />

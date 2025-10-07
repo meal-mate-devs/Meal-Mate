@@ -28,7 +28,6 @@ export default function OtherUsersProfileModel({
     const [postsError, setPostsError] = useState<string | null>(null)
 
     const isOwnProfile = user?.id === currentUserId
-
     const handleFollow = (): void => {
         setIsFollowing(!isFollowing)
     }
@@ -40,7 +39,7 @@ export default function OtherUsersProfileModel({
             setPostsLoading(true)
             setPostsError(null)
             try {
-                const resp = await communityService.getUserPosts(user.id, 1, 20)
+                const resp = await communityService.getUserPosts(currentUserId, 1, 20)
                 if (resp && resp.posts) {
                     setUserPosts(resp.posts.map((p: any) => ({
                         ...p,
