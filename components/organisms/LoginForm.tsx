@@ -198,7 +198,7 @@ export default function LoginForm() {
                 source={require('../../assets/images/authbg.png')}
                 resizeMode="cover"
                 style={{ width: '100%', height: '100%' }}
-                imageStyle={{ opacity: 0.8 }}
+                imageStyle={{ opacity: 0.9 }}
             >
                 <LinearGradient
                     colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
