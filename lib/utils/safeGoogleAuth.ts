@@ -205,10 +205,19 @@ export const configureGoogleSignIn = (webClientId?: string) => {
     return Promise.resolve();
   }
 
-  if (!webClientId) {
-    throw new Error('Google Web Client ID is required for configuration');
+  // Try multiple sources for the web client ID
+  const clientId = webClientId || 
+                   process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ||
+                   Constants.expoConfig?.extra?.googleWebClientId ||
+                   '230655221183-5n78pgvp7ubplngladbmmhepebqrlqgf.apps.googleusercontent.com'; // Fallback to your known client ID
+  
+  if (!clientId) {
+    console.error('Google Sign-In: No client ID found in any source');
+    throw new Error('Google Web Client ID is required for configuration. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file');
   }
-  return safeGoogleAuth.configure(webClientId);
+  
+  console.log('Google Sign-In: Configuring with client ID:', clientId.substring(0, 20) + '...');
+  return safeGoogleAuth.configure(clientId);
 };
 
 export const signInWithGoogle = () => safeGoogleAuth.signIn();

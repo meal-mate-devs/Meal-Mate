@@ -1,5 +1,6 @@
 import { useAuthContext } from '@/context/authContext';
 import { canUseGoogleSignIn } from '@/lib/utils/developmentMode';
+import { validateGoogleEnvironment } from '@/lib/utils/envValidation';
 import { checkNetworkConnectivity, handleLoginError, validateEmail } from '@/lib/utils/loginAuthHelpers';
 import { configureGoogleSignIn, signInWithGoogle } from '@/lib/utils/safeGoogleAuth';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +42,13 @@ export default function LoginForm() {
     useEffect(() => {
         // Configure Google Sign-In only if not in Expo Go
         if (canUseGoogleSignIn()) {
-            configureGoogleSignIn();
+            try {
+                validateGoogleEnvironment();
+                configureGoogleSignIn();
+                console.log('Google Sign-In configured successfully');
+            } catch (error) {
+                console.error('Failed to configure Google Sign-In:', error);
+            }
         }
 
         // Start orb animations
