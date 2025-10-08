@@ -5,7 +5,7 @@
 
 import Constants from 'expo-constants';
 
-// Type definitions for Google Sign-In responses
+// Type definitions for Google Sign-In response
 export interface GoogleSignInResult {
   success: boolean;
   idToken?: string;
@@ -79,12 +79,25 @@ class SafeGoogleAuth {
       throw new Error('Google Sign-In native module not available. Please create a development build.');
     }
 
-    this.GoogleSignin.configure({
-      webClientId,
-      offlineAccess: true,
-      hostedDomain: '',
-      forceCodeForRefreshToken: true,
-    });
+    try {
+      console.log('Google Sign-In: Configuring with enhanced settings...');
+      console.log('App ownership:', Constants.appOwnership);
+      console.log('Client ID (first 20 chars):', webClientId.substring(0, 20) + '...');
+      console.log('Full Client ID:', webClientId);
+      console.log('Bundle ID/Package:', Constants.expoConfig?.android?.package);
+      
+      this.GoogleSignin.configure({
+        webClientId,
+        offlineAccess: true,
+        hostedDomain: '',
+        forceCodeForRefreshToken: true,
+      });
+      
+      console.log('Google Sign-In: Configuration completed successfully');
+    } catch (error) {
+      console.error('Google Sign-In: Configuration failed:', error);
+      throw error;
+    }
   }
 
   async signIn(): Promise<GoogleSignInResult> {
@@ -105,14 +118,20 @@ class SafeGoogleAuth {
     }
 
     try {
+      console.log('Google Sign-In: Checking Play Services...');
       await this.GoogleSignin.hasPlayServices();
+      
+      console.log('Google Sign-In: Starting sign-in process...');
       const result = await this.GoogleSignin.signIn();
       
+      console.log('Google Sign-In: Sign-in successful');
       return {
         success: true,
         idToken: result.data?.idToken
       };
     } catch (error: any) {
+      console.error('Google Sign-In error:', error);
+      
       if (error.code === this.statusCodes.SIGN_IN_CANCELLED) {
         return {
           success: false,
@@ -128,6 +147,15 @@ class SafeGoogleAuth {
         return {
           success: false,
           error: 'Google Play Services not available'
+        };
+      } else if (error.message?.includes('DEVELOPER_ERROR')) {
+        return {
+          success: false,
+          error: 'Google Sign-In configuration error. Please check:\n' +
+                 '1. SHA-1 fingerprint in Google Console\n' +
+                 '2. Package name matches: com.mealmate.app\n' +
+                 '3. Client ID configuration\n' +
+                 '4. google-services.json file'
         };
       } else {
         return {
