@@ -718,7 +718,9 @@ const PantryManagementScreen: React.FC = () => {
   // Handle adding new item
   const handleAddItem = useCallback(async () => {
     if (!newItem.name || !newItem.quantity) {
-      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.');
+      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.', 'OK', 'Cancel', false, () => {
+        hideDialog();
+      });
       return
     }
 
@@ -767,34 +769,57 @@ const PantryManagementScreen: React.FC = () => {
           }),
         ]).start();
       } else {
-        showCustomDialog('error', 'Error', 'Failed to add item to pantry.');
+        showCustomDialog('error', 'Error', 'Failed to add item to pantry.', 'OK', 'Cancel', false, () => {
+          hideDialog();
+        });
       }
     } catch (error) {
-      showCustomDialog('error', 'Error', 'Failed to add item to pantry. Please try again.');
+      showCustomDialog('error', 'Error', 'Failed to add item to pantry. Please try again.', 'OK', 'Cancel', false, () => {
+        hideDialog();
+      });
     }
   }, [newItem, scaleAnim])
 
   // Handle item removal with confirmation
   const handleRemoveItem = useCallback(async (itemId: string) => {
     // Show confirmation dialog
-    showCustomDialog('confirm', 'Remove Item', 'Are you sure you want to remove this item?', 'Remove', 'Cancel', true, async () => {
-      try {
-        const response = await pantryService.deletePantryItem(itemId);
+    showCustomDialog(
+      'confirm', 
+      'Remove Item', 
+      'Are you sure you want to remove this item?', 
+      'Remove', 
+      'Cancel', 
+      true, 
+      async () => {
+        hideDialog(); // Close dialog first
+        try {
+          const response = await pantryService.deletePantryItem(itemId);
 
-        if (response.success) {
-          // Remove item from state and close detail modal if open
-          setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
-          if (showItemDetails?.id === itemId) {
-            setShowItemDetails(null)
+          if (response.success) {
+            // Remove item from state and close detail modal if open
+            setPantryItems((prev) => prev.filter((item) => item.id !== itemId))
+            if (showItemDetails?.id === itemId) {
+              setShowItemDetails(null)
+            }
+            showCustomDialog('success', 'Success', 'Item removed successfully.', 'OK', 'Cancel', false, () => {
+              hideDialog();
+            });
+          } else {
+            showCustomDialog('error', 'Error', 'Failed to remove item from pantry.', 'OK', 'Cancel', false, () => {
+              hideDialog();
+            });
           }
-        } else {
-          showCustomDialog('error', 'Error', 'Failed to remove item from pantry.');
+        } catch (error) {
+          showCustomDialog('error', 'Error', 'Failed to remove item from pantry. Please try again.', 'OK', 'Cancel', false, () => {
+            hideDialog();
+          });
         }
-      } catch (error) {
-        showCustomDialog('error', 'Error', 'Failed to remove item from pantry. Please try again.');
+      },
+      () => {
+        hideDialog(); // Close dialog on cancel
       }
-    });
-  }, [showItemDetails])
+    );
+  }, [showItemDetails, hideDialog])
 
   // Unified image picker - offers both camera and gallery options
   const handleImagePicker = useCallback(async () => {
@@ -816,7 +841,9 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync()
       if (status !== "granted") {
-        showCustomDialog('warning', 'Permission Required', 'Please grant camera access to capture food photos.');
+        showCustomDialog('warning', 'Permission Required', 'Please grant camera access to capture food photos.', 'OK', 'Cancel', false, () => {
+          hideDialog();
+        });
         return
       }
 
@@ -857,7 +884,9 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
-        showCustomDialog('warning', 'Permission Required', 'Please grant photo library access to add item photos.');
+        showCustomDialog('warning', 'Permission Required', 'Please grant photo library access to add item photos.', 'OK', 'Cancel', false, () => {
+          hideDialog();
+        });
         return
       }
 
@@ -965,7 +994,9 @@ const PantryManagementScreen: React.FC = () => {
 
     // Validate required fields
     if (!editFormData.name.trim() || !editFormData.quantity.trim()) {
-      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.');
+      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.', 'OK', 'Cancel', false, () => {
+        hideDialog();
+      });
       return
     }
 
@@ -1002,16 +1033,18 @@ const PantryManagementScreen: React.FC = () => {
           expiryDate: new Date()
         })
 
-        showCustomDialog('success', 'Success', 'Item updated successfully!')
+        showCustomDialog('success', 'Success', 'Item updated successfully!', 'OK', 'Cancel', false, () => {
+          hideDialog();
+        });
       }
     } catch (error) {
-      showCustomDialog('error', 'Error', 'Failed to update item. Please try again.')
+      showCustomDialog('error', 'Error', 'Failed to update item. Please try again.', 'OK', 'Cancel', false, () => {
+        hideDialog();
+      });
     }
   }, [editingItem, editFormData, pantryService])
 
-  /**
-   * Modern Sleek Style Definitions
-   */
+
   const styles = StyleSheet.create({
     // Main container and layout
     container: {
@@ -1143,7 +1176,7 @@ const PantryManagementScreen: React.FC = () => {
       backgroundColor: "rgba(255, 255, 255, 0.06)",
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.12)",
-      height: 56, // Match height with add button
+      height: 56,
     },
     searchInput: {
       flex: 1,
@@ -1683,8 +1716,8 @@ const PantryManagementScreen: React.FC = () => {
     locationOption: {
       flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 12,
-      paddingVertical: 12,
+      paddingHorizontal: 20,
+      paddingVertical: 20,
       margin: 6,
       borderRadius: 12,
       backgroundColor: "rgba(255, 255, 255, 0.04)",
@@ -1951,9 +1984,6 @@ const PantryManagementScreen: React.FC = () => {
     },
   })
 
-  /**
-   * UI Rendering Components
-   */
 
   // Tab bar for filtering items by status
   const renderTabBar = () => {
@@ -2934,6 +2964,7 @@ const PantryManagementScreen: React.FC = () => {
           title={dialogConfig.title}
           message={dialogConfig.message}
           onConfirm={dialogConfig.onConfirm}
+          onCancel={dialogConfig.onCancel}
           confirmText={dialogConfig.confirmText}
           cancelText={dialogConfig.cancelText}
           showCancelButton={dialogConfig.showCancelButton}
