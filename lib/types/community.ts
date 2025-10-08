@@ -3,13 +3,15 @@ export interface User {
     mongoId: string
     name: string
     username: string
-    avatar: any // For require() images
+    avatar: any
     isVerified?: boolean
     followerCount?: number
+    followingCount?: number
     recipeCount?: number
     totalLikes?: number
     badges?: Badge[]
     rank?: number
+    isFollowing?: boolean
 }
 
 export interface Badge {
