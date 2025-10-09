@@ -111,7 +111,139 @@ export const dummyRecipes: Recipe[] = [
             { name: 'Garlic', amount: '3 cloves', icon: '🧄' },
             { name: 'Olive oil', amount: '2 tbsp', icon: '🫒' }
         ]
-    }
+    },
+    {
+        id: '4',
+        name: 'Grilled Chicken Salad',
+        image: 'https://images.unsplash.com/photo-1546793665-c74683f339c1?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Lunch',
+        prepTime: 25,
+        rating: 4.7,
+        author: 'Sarah Johnson',
+        calories: 380,
+        weight: 320,
+        ingredients: [
+            { name: 'Chicken breast', amount: '150 g', icon: '🍗' },
+            { name: 'Mixed greens', amount: '100 g', icon: '🥬' },
+            { name: 'Cherry tomatoes', amount: '5 pc', icon: '🍅' },
+            { name: 'Cucumber', amount: '1/2 pc', icon: '🥒' },
+            { name: 'Feta cheese', amount: '50 g', icon: '🧀' },
+            { name: 'Olive oil', amount: '2 tbsp', icon: '🫒' }
+        ]
+    },
+    {
+        id: '5',
+        name: 'Baked Salmon with Vegetables',
+        image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Dinner',
+        prepTime: 35,
+        rating: 4.9,
+        author: 'Chef Marco',
+        calories: 450,
+        weight: 380,
+        ingredients: [
+            { name: 'Salmon fillet', amount: '200 g', icon: '🐟' },
+            { name: 'Broccoli', amount: '150 g', icon: '🥦' },
+            { name: 'Carrots', amount: '2 pc', icon: '🥕' },
+            { name: 'Lemon', amount: '1 pc', icon: '🍋' },
+            { name: 'Garlic', amount: '2 cloves', icon: '🧄' },
+            { name: 'Herbs', amount: 'to taste', icon: '🌿' }
+        ]
+    },
+    {
+        id: '6',
+        name: 'Chocolate Lava Cake',
+        image: 'https://images.unsplash.com/photo-1606312619070-d48b4c652a52?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Dessert',
+        prepTime: 45,
+        rating: 4.8,
+        author: 'Sweet Chef Anna',
+        calories: 320,
+        weight: 180,
+        ingredients: [
+            { name: 'Dark chocolate', amount: '100 g', icon: '🍫' },
+            { name: 'Butter', amount: '50 g', icon: '🧈' },
+            { name: 'Eggs', amount: '2 pc', icon: '🥚' },
+            { name: 'Sugar', amount: '60 g', icon: '🧁' },
+            { name: 'Flour', amount: '30 g', icon: '🌾' },
+            { name: 'Vanilla extract', amount: '1 tsp', icon: '🍨' }
+        ]
+    },
+    {
+        id: '7',
+        name: 'Greek Yogurt Parfait',
+        image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Breakfast',
+        prepTime: 10,
+        rating: 4.6,
+        author: 'Healthy Chef Lisa',
+        calories: 280,
+        weight: 220,
+        ingredients: [
+            { name: 'Greek yogurt', amount: '200 g', icon: '🥛' },
+            { name: 'Granola', amount: '50 g', icon: '🥜' },
+            { name: 'Berries', amount: '100 g', icon: '🫐' },
+            { name: 'Honey', amount: '1 tbsp', icon: '🍯' },
+            { name: 'Almonds', amount: '20 g', icon: '🌰' }
+        ]
+    },
+    {
+        id: '8',
+        name: 'Turkey Club Sandwich',
+        image: 'https://images.unsplash.com/photo-1481070414801-51b21d9e8305?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Lunch',
+        prepTime: 15,
+        rating: 4.4,
+        author: 'Sandwich Master',
+        calories: 410,
+        weight: 280,
+        ingredients: [
+            { name: 'Turkey breast', amount: '100 g', icon: '🦃' },
+            { name: 'Bread', amount: '2 slices', icon: '🍞' },
+            { name: 'Lettuce', amount: '2 leaves', icon: '🥬' },
+            { name: 'Tomato', amount: '2 slices', icon: '🍅' },
+            { name: 'Bacon', amount: '2 strips', icon: '🥓' },
+            { name: 'Mayonnaise', amount: '1 tbsp', icon: '🥄' }
+        ]
+    },
+    {
+        id: '9',
+        name: 'Beef Stir Fry',
+        image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Dinner',
+        prepTime: 25,
+        rating: 4.7,
+        author: 'Asian Chef Wong',
+        calories: 480,
+        weight: 350,
+        ingredients: [
+            { name: 'Beef strips', amount: '150 g', icon: '🥩' },
+            { name: 'Bell peppers', amount: '2 pc', icon: '🫑' },
+            { name: 'Broccoli', amount: '100 g', icon: '🥦' },
+            { name: 'Soy sauce', amount: '2 tbsp', icon: '🍶' },
+            { name: 'Garlic', amount: '3 cloves', icon: '🧄' },
+            { name: 'Rice', amount: '100 g', icon: '🍚' }
+        ]
+    },
+    {
+        id: '10',
+        name: 'Strawberry Cheesecake',
+        image: 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=987&q=80',
+        category: 'Dessert',
+        prepTime: 60,
+        rating: 4.9,
+        author: 'Dessert Queen',
+        calories: 380,
+        weight: 150,
+        ingredients: [
+            { name: 'Cream cheese', amount: '200 g', icon: '🧀' },
+            { name: 'Strawberries', amount: '200 g', icon: '🍓' },
+            { name: 'Graham crackers', amount: '150 g', icon: '🍪' },
+            { name: 'Butter', amount: '100 g', icon: '🧈' },
+            { name: 'Sugar', amount: '80 g', icon: '🧁' },
+            { name: 'Heavy cream', amount: '100 ml', icon: '🥛' }
+        ]
+    },
 ];
 
 

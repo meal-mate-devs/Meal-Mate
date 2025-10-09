@@ -1,3 +1,5 @@
+import { groceryService } from '@/lib/services/groceryService';
+import { pantryService } from '@/lib/services/pantryService';
 import { dummyRecipes } from '@/lib/utils';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,16 +20,30 @@ import HomeHeader from '../molecules/HomeHeader';
 import ProfileSidebar from '../molecules/ProfileSidebar';
 
 const HomeScreen: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<string>('Breakfast');
+    const [activeTab, setActiveTab] = useState<string>('All');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     
+    // Animation state - using fresh values to avoid native driver conflicts
+    const [isScrolledUp, setIsScrolledUp] = useState(false);
+    const scrollY = useRef(new Animated.Value(0)).current;
+    
+    // Create fresh animated values each time to avoid driver conflicts
+    const [cardsAnimatedOpacity] = useState(() => new Animated.Value(1));
+    const [cardsAnimatedHeight] = useState(() => new Animated.Value(180));
+
     // Animation for progress bar
     const progressAnimation = useRef(new Animated.Value(0)).current;
     
     // Use the profile store instead of static userData
     const { profileData, subscribe } = useProfileStore();
     const [localUserData, setLocalUserData] = useState(profileData);
+
+    // Pantry and Grocery data
+    const [pantryData, setPantryData] = useState({ active: 0, expiring: 0, expired: 0, total: 0 });
+    const [groceryData, setGroceryData] = useState({ total: 0, pending: 0, purchased: 0, urgent: 0, overdue: 0 });
+    const [pantryLoading, setPantryLoading] = useState(false);
+    const [groceryLoading, setGroceryLoading] = useState(false);
 
     // Subscribe to profile updates
     useEffect(() => {
@@ -46,13 +62,13 @@ const HomeScreen: React.FC = () => {
         recipe.category === activeTab || activeTab === 'All'
     );
 
-    const tabs = ['Lunch', 'Breakfast', 'Dinner', 'Dessert'];
+    const tabs = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Dessert'];
 
     // Preload or reset state when the screen is focused
     useFocusEffect(
         useCallback(() => {
             // Reset any state or preload data here
-            setActiveTab('Breakfast'); // Example: Reset active tab
+            setActiveTab('All'); // Reset to All tab to show all recipes
             
             // Animate progress bar from 0 to target
             progressAnimation.setValue(0);
@@ -61,6 +77,15 @@ const HomeScreen: React.FC = () => {
                 duration: 1000, // 1 seconds animation
                 useNativeDriver: false, // Can't use native driver for width
             }).start();
+
+            // Reset scroll animations
+            cardsAnimatedOpacity.setValue(1);
+            cardsAnimatedHeight.setValue(180);
+            setIsScrolledUp(false);
+
+            // Fetch pantry and grocery data
+            fetchPantryData();
+            fetchGroceryData();
         }, [])
     );
 
@@ -76,6 +101,77 @@ const HomeScreen: React.FC = () => {
         router.push('/profile');
     };
 
+    const fetchPantryData = async () => {
+        try {
+            setPantryLoading(true);
+            const response = await pantryService.getPantryItems();
+            if (response.success) {
+                setPantryData(response.counts);
+            }
+        } catch (error) {
+            console.error('Error fetching pantry data:', error);
+        } finally {
+            setPantryLoading(false);
+        }
+    };
+
+    const fetchGroceryData = async () => {
+        try {
+            setGroceryLoading(true);
+            const response = await groceryService.getGroceryItems();
+            if (response.success) {
+                setGroceryData(response.counts);
+            }
+        } catch (error) {
+            console.error('Error fetching grocery data:', error);
+        } finally {
+            setGroceryLoading(false);
+        }
+    };
+
+    // Track previous scroll position for direction detection
+    const prevScrollY = useRef(0);
+
+    const handleScroll = Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        {
+            useNativeDriver: false,
+            listener: (event: any) => {
+                const currentScrollY = event.nativeEvent.contentOffset.y;
+                const isScrollingUp = currentScrollY > prevScrollY.current;
+                const isScrollingDown = currentScrollY < prevScrollY.current;
+                
+                // Hide cards when scrolling up past threshold
+                const shouldHideFromUp = isScrollingUp && currentScrollY > 50;
+                // Show cards immediately when scrolling down (regardless of position)
+                const shouldShowFromDown = isScrollingDown;
+                
+                const shouldHide = shouldHideFromUp && !shouldShowFromDown;
+                
+                if (shouldHide !== isScrolledUp) {
+                    setIsScrolledUp(shouldHide);
+                    
+                    // Smooth animation for cards only with height collapse
+                    Animated.parallel([
+                        Animated.timing(cardsAnimatedOpacity, {
+                            toValue: shouldHide ? 0 : 1,
+                            duration: 400,
+                            useNativeDriver: false,
+                        }),
+                        Animated.timing(cardsAnimatedHeight, {
+                            toValue: shouldHide ? 0 : 180, // Approximate height of cards container
+                            duration: 400,
+                            useNativeDriver: false,
+                        })
+                    ]).start();
+                }
+                
+                // Update previous scroll position
+                prevScrollY.current = currentScrollY;
+            }
+        }
+    );
+
     return (
         <SafeAreaView className="flex-1 bg-black">
             <StatusBar barStyle="light-content" />
@@ -87,29 +183,43 @@ const HomeScreen: React.FC = () => {
                 />
             </View>
 
-            {/* Only the content below header and search is scrollable */}
-            <ScrollView className="flex-1 px-4 pt-2">
+            {/* Smooth Animated Cards Container */}
+            <Animated.View 
+                className="px-4 bg-black"
+                style={{
+                    opacity: cardsAnimatedOpacity,
+                    height: cardsAnimatedHeight,
+                    overflow: 'hidden'
+                }}
+            >
+                <View className="py-2">
                 {/* Health Card - Compact */}
                 <TouchableOpacity
-                    className="mb-4"
+                    className="mb-3 w-full max-w-md"
                     onPress={() => router.push('/health')}
                     activeOpacity={0.8}
                 >
-                    <View className="bg-zinc-800 rounded-xl p-3">
-                        <View className="flex-row items-center justify-between mb-2">
-                            <Text className="text-white text-base font-semibold">Calories</Text>
+                    <View className="rounded-2xl overflow-hidden border border-zinc-700/50">
+                        <LinearGradient
+                            colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            className="p-2"
+                        >
+                        <View className="flex-row items-center justify-between mb-1">
+                            <Text className="ml-1 text-white text-xs font-semibold">Calories</Text>
                             <View className="flex-row items-center">
                                 <Text className="text-gray-400 text-xs mr-1">
                                     {Math.round((1850 / 2400) * 100)}%
                                 </Text>
-                                <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+                                <Ionicons name="chevron-forward" size={8} color="#9CA3AF" />
                             </View>
                         </View>
-                        <View className="flex-row items-end mb-2">
-                            <Text className="text-white text-2xl font-bold">1,850</Text>
-                            <Text className="text-gray-400 text-sm ml-1">/ 2,400</Text>
+                        <View className="ml-1 flex-row items-end mb-1">
+                            <Text className="text-white text-lg font-bold">1,850</Text>
+                            <Text className="text-gray-400 text-xs ml-1">/ 2,400</Text>
                         </View>
-                        <View className="bg-zinc-700 h-2 rounded-full overflow-hidden">
+                        <View className="ml-1 bg-zinc-700/60 h-2 rounded-full overflow-hidden w-full">
                             <Animated.View
                                 className="h-2 rounded-full"
                                 style={{
@@ -127,39 +237,157 @@ const HomeScreen: React.FC = () => {
                                 />
                             </Animated.View>
                         </View>
+                    </LinearGradient>
                     </View>
                 </TouchableOpacity>
 
+                {/* Pantry and Grocery Cards - Half Width */}
+                <View className="flex-row justify-between mb-4">
+                    {/* Pantry Card */}
+                    <TouchableOpacity
+                        className="flex-1 mr-2"
+                        onPress={() => router.push('recipe/pantry')}
+                        activeOpacity={0.8}
+                    >
+                        <View className="rounded-xl overflow-hidden border border-zinc-700/50">
+                            <LinearGradient
+                                colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                className="p-3"
+                            >
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <Text className="text-white text-sm font-semibold">Pantry</Text>
+                                    <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+                                </View>
+                                
+                                {/* Expiry Status Bars */}
+                                <View className="flex-row h-2 rounded-full overflow-hidden bg-zinc-700/60 mb-2">
+                                    {pantryData.total > 0 && (
+                                        <>
+                                            <View 
+                                                className="bg-green-500"
+                                                style={{ 
+                                                    width: `${(pantryData.active / pantryData.total) * 100}%`,
+                                                    height: '100%'
+                                                }}
+                                            />
+                                            <View 
+                                                className="bg-yellow-500"
+                                                style={{ 
+                                                    width: `${(pantryData.expiring / pantryData.total) * 100}%`,
+                                                    height: '100%'
+                                                }}
+                                            />
+                                            <View 
+                                                className="bg-red-500"
+                                                style={{ 
+                                                    width: `${(pantryData.expired / pantryData.total) * 100}%`,
+                                                    height: '100%'
+                                                }}
+                                            />
+                                        </>
+                                    )}
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Text className="text-yellow-400 text-xs">{pantryData.expiring} Expiring</Text>
+                                    <View />
+                                    <View />
+                                </View>
+                            </LinearGradient>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Grocery Card */}
+                    <TouchableOpacity
+                        className="flex-1 ml-2"
+                        onPress={() => router.push('(tabs)/(hidden)/settings/grocery-list')}
+                        activeOpacity={0.8}
+                    >
+                        <View className="rounded-xl overflow-hidden border border-zinc-700/50">
+                            <LinearGradient
+                                colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                className="p-3"
+                            >
+                                <View className="flex-row items-center justify-between mb-2">
+                                    <Text className="text-white text-sm font-semibold">Grocery</Text>
+                                    <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+                                </View>
+                                
+                                {/* Grocery Status Bars */}
+                                <View className="flex-row h-2 rounded-full overflow-hidden bg-zinc-700/60 mb-2">
+                                    {groceryData.total > 0 && (
+                                        <>
+                                            <View 
+                                                className="bg-blue-500"
+                                                style={{ 
+                                                    width: `${(groceryData.pending / groceryData.total) * 100}%`,
+                                                    height: '100%'
+                                                }}
+                                            />
+                                            <View 
+                                                className="bg-green-500"
+                                                style={{ 
+                                                    width: `${(groceryData.purchased / groceryData.total) * 100}%`,
+                                                    height: '100%'
+                                                }}
+                                            />
+                                        </>
+                                    )}
+                                </View>
+                                <View className="flex-row justify-between">
+                                    <Text className="text-blue-400 text-xs">{groceryData.pending} Pending</Text>
+                                    <View />
+                                </View>
+                            </LinearGradient>
+                        </View>
+                    </TouchableOpacity>
+                </View>
+                </View>
+            </Animated.View>
+
+            {/* Static Category Tabs - Always Visible */}
+            <View className="px-4 bg-black">
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
-                    className="mb-6"
+                    className="mb-3"
                 >
-                    {tabs.map((tab) => (
-                        <TouchableOpacity
-                            key={tab}
-                            onPress={() => setActiveTab(tab)}
-                            className={`py-2 px-6 mr-2 rounded-full ${activeTab === tab ? 'overflow-hidden' : 'bg-zinc-800'
-                                }`}
+                {tabs.map((tab) => (
+                    <TouchableOpacity
+                        key={tab}
+                        onPress={() => setActiveTab(tab)}
+                        className={`py-2 px-6 mr-2 rounded-full ${activeTab === tab ? 'overflow-hidden' : 'bg-zinc-800'
+                            }`}
+                    >
+                        {activeTab === tab ? (
+                            <LinearGradient
+                                colors={['#FACC15', '#F97316']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                className="absolute inset-0"
+                            />
+                        ) : null}
+                        <Text
+                            className={`${activeTab === tab ? 'text-white' : 'text-gray-400'
+                                } font-medium`}
                         >
-                            {activeTab === tab ? (
-                                <LinearGradient
-                                    colors={['#FACC15', '#F97316']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    className="absolute inset-0"
-                                />
-                            ) : null}
-                            <Text
-                                className={`${activeTab === tab ? 'text-white' : 'text-gray-400'
-                                    } font-medium`}
-                            >
-                                {tab}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
+                            {tab}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
                 </ScrollView>
+            </View>
 
+            {/* Only recipes are scrollable */}
+            <ScrollView 
+                className="flex-1 px-4"
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+            >
+                {/* Recipe Cards */}
                 {filteredRecipes.map((recipe) => (
                     <TouchableOpacity
                         key={recipe.id}
@@ -189,6 +417,7 @@ const HomeScreen: React.FC = () => {
                         </View>
                     </TouchableOpacity>
                 ))}
+
             </ScrollView>
 
             <ProfileSidebar
