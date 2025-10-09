@@ -1341,8 +1341,14 @@ export default function RecipeResponseRoute(): JSX.Element {
                   colors={['#FACC15', '#F97316']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={StyleSheet.absoluteFill}
-                  className="rounded-xl"
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    borderRadius: 8,
+                  }}
                 />
                 <Ionicons name="flame" size={20} color="#FFFFFF" />
                 <Text className="font-bold ml-3 text-base tracking-wide text-white">Start Cooking</Text>

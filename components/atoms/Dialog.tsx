@@ -19,7 +19,7 @@ interface DialogProps {
     visible: boolean;
     type: DialogType;
     title: string;
-    message?: string;
+    message?: string | React.ReactNode;
     onClose?: () => void;
     onCloseButton?: () => void;
     onConfirm?: () => void;
@@ -696,9 +696,15 @@ const Dialog = ({
                         </Text>
 
                         {message && (
-                            <Text style={styles.message}>
-                                {message}
-                            </Text>
+                            typeof message === 'string' || typeof message === 'number' ? (
+                                <Text style={styles.message}>
+                                    {message}
+                                </Text>
+                            ) : (
+                                <View style={{ marginTop: 12 }}>
+                                    {message}
+                                </View>
+                            )
                         )}
 
                         <View style={styles.buttonContainer}>
