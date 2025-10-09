@@ -12,7 +12,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
-  const order = ["home/index", "community/index", "create/index", "chef/index", "statistics/index"]
+  const order = ["home/index", "community/index", "create/index", "chef/index", "health/index"]
 
   const visibleRoutes = order
     .map((name) => state.routes.find((route) => route.name === name))
@@ -161,7 +161,7 @@ export default function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       ) : (
         <Ionicons name="restaurant-outline" {...iconProps} />
       )
-    } else if (cleanedName === "statistics") {
+    } else if (cleanedName === "health") {
       return focused ? (
         <Ionicons name="stats-chart" {...iconProps} />
       ) : (
