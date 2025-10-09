@@ -30,10 +30,10 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-                name="statistics/index"
+                name="health/index"
                 options={{
-                    title: 'Statistics',
-                    tabBarLabel: 'Statistics',
+                    title: 'Health',
+                    tabBarLabel: 'Health',
                 }}
             />
             <Tabs.Screen

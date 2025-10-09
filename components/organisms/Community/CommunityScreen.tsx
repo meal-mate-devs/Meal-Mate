@@ -2,6 +2,7 @@
 
 import type { Comment, Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
+import { useFocusEffect } from "@react-navigation/native"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useEffect, useRef, useState } from "react"
 import {
@@ -50,7 +51,7 @@ export default function CommunityScreen(): JSX.Element {
             ? `${profile.firstName} ${profile.lastName}`
             : profile?.userName || "You",
         username: profile?.userName || "you",
-        avatar: profile?.profileImage?.url
+        avatar: (profile?.profileImage && profile.profileImage.url)
             ? { uri: profile.profileImage.url }
             : require("../../../assets/images/avatar.png"),
     }
@@ -59,29 +60,42 @@ export default function CommunityScreen(): JSX.Element {
         loadPosts()
     }, [])
 
+    useFocusEffect(
+        React.useCallback(() => {
+            console.log('Community screen focused, loading posts...');
+            loadPosts();
+        }, [])
+    )
+
     const loadPosts = async (): Promise<void> => {
         try {
+            console.log('Loading posts...');
             setLoading(true)
             const response = await CommunityAPI.getPosts(1, 20, 'latest', 'all')
+            console.log('Posts response:', response);
 
             let postsData = []
             if (response.posts) {
                 postsData = response.posts.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             } else if (response.data) {
                 postsData = response.data.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             } else if (Array.isArray(response)) {
                 postsData = response.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             }
 
+            console.log('Processed posts data:', postsData.length, 'posts');
             setPosts(postsData)
         } catch (error) {
             console.log('Error loading posts:', error)
@@ -153,7 +167,7 @@ export default function CommunityScreen(): JSX.Element {
         try {
             const response = await CommunityAPI.addComment(postId, commentText)
 
-            const avatarForComment = profile?.profileImage?.url
+            const avatarForComment = (profile?.profileImage && profile.profileImage.url)
                 ? profile.profileImage.url
                 : "";
 
@@ -205,9 +219,15 @@ export default function CommunityScreen(): JSX.Element {
     };
 
     const onRefresh = async (): Promise<void> => {
+        console.log('Refreshing posts...');
         setRefreshing(true)
-        await loadPosts()
-        setRefreshing(false)
+        try {
+            await loadPosts()
+        } catch (error) {
+            console.log('Error during refresh:', error);
+        } finally {
+            setRefreshing(false)
+        }
     }
 
     const handleUserPress = (user: User): void => {
@@ -236,7 +256,7 @@ export default function CommunityScreen(): JSX.Element {
             }
 
 
-            const avatarUrl = profile?.profileImage?.url || '';
+            const avatarUrl = (profile?.profileImage && profile.profileImage.url) ? profile.profileImage.url : '';
 
             const newPost: Post = {
                 id: response.post?.id || Date.now().toString(),

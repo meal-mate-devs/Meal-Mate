@@ -1,20 +1,19 @@
 import { dummyRecipes } from '@/lib/utils';
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
+    Animated,
     Image,
     SafeAreaView,
     ScrollView,
     StatusBar,
     Text,
-    TextInput,
     TouchableOpacity,
     View
 } from 'react-native';
 import { useProfileStore } from '../../hooks/useProfileStore'; // Add this import
-import BottomProfileDrawer from '../molecules/BottomProfileDrawer';
 import HomeHeader from '../molecules/HomeHeader';
 import ProfileSidebar from '../molecules/ProfileSidebar';
 
@@ -22,6 +21,9 @@ const HomeScreen: React.FC = () => {
     const [activeTab, setActiveTab] = useState<string>('Breakfast');
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    // Animation for progress bar
+    const progressAnimation = useRef(new Animated.Value(0)).current;
     
     // Use the profile store instead of static userData
     const { profileData, subscribe } = useProfileStore();
@@ -51,6 +53,14 @@ const HomeScreen: React.FC = () => {
         useCallback(() => {
             // Reset any state or preload data here
             setActiveTab('Breakfast'); // Example: Reset active tab
+            
+            // Animate progress bar from 0 to target
+            progressAnimation.setValue(0);
+            Animated.timing(progressAnimation, {
+                toValue: 1850 / 2400, // Target progress ratio
+                duration: 1000, // 1 seconds animation
+                useNativeDriver: false, // Can't use native driver for width
+            }).start();
         }, [])
     );
 
@@ -63,10 +73,7 @@ const HomeScreen: React.FC = () => {
     };
 
     const handleEditProfile = () => {
-        setIsSidebarOpen(false); // Close sidebar first
-        setTimeout(() => {
-            setIsDrawerOpen(true); // Then open bottom drawer
-        }, 300);
+        router.push('/profile');
     };
 
     return (
@@ -75,31 +82,50 @@ const HomeScreen: React.FC = () => {
             {/* Header with extra top margin */}
             <View style={{ paddingTop: 38, backgroundColor: 'black' }}>
                 <HomeHeader
-                    onProfilePress={toggleSidebar}
-                />
-            </View>
-
-            {/* Static Search Bar */}
-            <View className="bg-zinc-800 rounded-full flex-row items-center px-4 py-3 mb-4 mx-4 mt-2">
-                <Feather name="search" size={20} color="#9CA3AF" />
-                <TextInput
-                    placeholder="Search by recipes"
-                    className="ml-2 flex-1 text-white"
-                    placeholderTextColor="#9CA3AF"
+                    onSidebarPress={toggleSidebar}
+                    onProfilePress={handleEditProfile}
                 />
             </View>
 
             {/* Only the content below header and search is scrollable */}
             <ScrollView className="flex-1 px-4 pt-2">
-                <TouchableOpacity className="rounded-3xl overflow-hidden mb-6 relative">
-                    <Image
-                        source={{ uri: 'https://plus.unsplash.com/premium_photo-1694141253763-209b4c8f8ace?q=80&w=2069&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' }}
-                        className="w-full h-40"
-                        resizeMode="cover"
-                    />
-                    <View className="absolute inset-0 flex items-center justify-center">
-                        <View className="bg-white/30 rounded-full p-3">
-                            <Feather name="play" size={24} color="white" />
+                {/* Health Card - Compact */}
+                <TouchableOpacity
+                    className="mb-4"
+                    onPress={() => router.push('/health')}
+                    activeOpacity={0.8}
+                >
+                    <View className="bg-zinc-800 rounded-xl p-3">
+                        <View className="flex-row items-center justify-between mb-2">
+                            <Text className="text-white text-base font-semibold">Calories</Text>
+                            <View className="flex-row items-center">
+                                <Text className="text-gray-400 text-xs mr-1">
+                                    {Math.round((1850 / 2400) * 100)}%
+                                </Text>
+                                <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+                            </View>
+                        </View>
+                        <View className="flex-row items-end mb-2">
+                            <Text className="text-white text-2xl font-bold">1,850</Text>
+                            <Text className="text-gray-400 text-sm ml-1">/ 2,400</Text>
+                        </View>
+                        <View className="bg-zinc-700 h-2 rounded-full overflow-hidden">
+                            <Animated.View
+                                className="h-2 rounded-full"
+                                style={{
+                                    width: progressAnimation.interpolate({
+                                        inputRange: [0, 1],
+                                        outputRange: ['0%', '100%'],
+                                    }),
+                                }}
+                            >
+                                <LinearGradient
+                                    colors={['#FACC15', '#F97316']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    className="h-full w-full rounded-full"
+                                />
+                            </Animated.View>
                         </View>
                     </View>
                 </TouchableOpacity>
@@ -169,11 +195,6 @@ const HomeScreen: React.FC = () => {
                 isOpen={isSidebarOpen}
                 onClose={() => setIsSidebarOpen(false)}
                 onEditProfile={handleEditProfile}
-            />
-
-            <BottomProfileDrawer
-                isOpen={isDrawerOpen}
-                onClose={() => setIsDrawerOpen(false)}
             />
         </SafeAreaView>
     );

@@ -3,7 +3,7 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef } from "react"
-import { Animated, Dimensions, StyleSheet, Text, View } from "react-native"
+import { Animated, Dimensions, StyleSheet, View } from "react-native"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
@@ -188,31 +188,6 @@ const PantryLoadingAnimation: React.FC<PantryLoadingAnimationProps> = ({
             </Animated.View>
           ))}
         </View>
-
-        {/* Animated loading text */}
-        <Animated.View
-          style={[
-            styles.textContainer,
-            {
-              transform: [{ translateY: bounceAnim }],
-            },
-          ]}
-        >
-          <Text style={styles.loadingText}>{message}</Text>
-          <View style={styles.dotsContainer}>
-            {[0, 1, 2].map((index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.dot,
-                  {
-                    opacity: dotAnimations[index],
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </Animated.View>
       </Animated.View>
     </View>
   )

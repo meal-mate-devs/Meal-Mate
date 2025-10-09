@@ -35,9 +35,9 @@ export default function PostImageCarousel({ images }: PostImageCarouselProps): J
         const image = images[0];
         const imageUri = typeof image === "string" ?
             image :
-            image.url ?
+            (image && image.url) ?
                 image.url :
-                image.uri ?
+                (image && image.uri) ?
                     image.uri :
                     null;
 
@@ -72,9 +72,9 @@ export default function PostImageCarousel({ images }: PostImageCarouselProps): J
                             source={
                                 typeof image === "string" ?
                                     { uri: image } :
-                                    image.url ?
+                                    (image && image.url) ?
                                         { uri: image.url } :
-                                        image.uri ?
+                                        (image && image.uri) ?
                                             { uri: image.uri } :
                                             image
                             }

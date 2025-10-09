@@ -293,33 +293,37 @@ export default function CreatePostDrawer({
     }
 
     return (
-        <Modal visible={visible} animationType="slide" transparent={true}>
-            <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
-                <View className="flex-1 bg-black bg-opacity-50 justify-end">
-                    <View className="bg-zinc-900 rounded-t-3xl flex-1">
-                        <View className="flex-row justify-between items-center p-4 border-b border-zinc-800">
-                            <TouchableOpacity onPress={handleClose}>
-                                <Ionicons name="close" size={24} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <Text className="text-white text-lg font-bold">Create Post</Text>
-                            <TouchableOpacity onPress={handleCreatePost}>
-                                <Text className="text-yellow-400 font-bold text-lg">Post</Text>
-                            </TouchableOpacity>
-                        </View>
+        <Modal visible={visible} animationType="slide" transparent={false} statusBarTranslucent={false}>
+            <KeyboardAvoidingView 
+                behavior={Platform.OS === "ios" ? "padding" : "height"} 
+                style={{ flex: 1, backgroundColor: '#18181b' }}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
+            >
+                <View className="bg-zinc-900" style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 44 : 25 }}>
+                    <View className="flex-row justify-between items-center p-4 border-b border-zinc-800">
+                        <TouchableOpacity onPress={handleClose}>
+                            <Ionicons name="close" size={24} color="#FFFFFF" />
+                        </TouchableOpacity>
+                        <Text className="text-white text-lg font-bold">Create Post</Text>
+                        <TouchableOpacity onPress={handleCreatePost}>
+                            <Text className="text-yellow-400 font-bold text-lg">Post</Text>
+                        </TouchableOpacity>
+                    </View>
 
-                        <ScrollView
-                            className="flex-1"
-                            showsVerticalScrollIndicator={false}
-                            keyboardShouldPersistTaps="handled"
-                            contentContainerStyle={{ paddingBottom: 20 }}
-                        >
-                            <View className="flex-row items-center p-4">
-                                <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
-                                <View className="ml-3">
-                                    <Text className="text-white font-bold">You</Text>
-                                    <Text className="text-zinc-400 text-sm">Sharing with Recipe Community</Text>
+
+                            <ScrollView
+                                className="flex-1"
+                                showsVerticalScrollIndicator={false}
+                                keyboardShouldPersistTaps="handled"
+                                contentContainerStyle={{ paddingBottom: 20 }}
+                            >
+                                <View className="flex-row items-center p-4">
+                                    <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
+                                    <View className="ml-3">
+                                        <Text className="text-white font-bold">You</Text>
+                                        <Text className="text-zinc-400 text-sm">Sharing with Recipe Community</Text>
+                                    </View>
                                 </View>
-                            </View>
 
                             <View className="px-4 mb-4">
                                 <View className="flex-row bg-zinc-800 rounded-xl p-1">
@@ -554,9 +558,9 @@ export default function CreatePostDrawer({
                             </View>
 
                         </ScrollView>
-                    </View>
+                </View>
 
-                    {/* Image Picker Modal */}
+                {/* Image Picker Modal */}
                     <Modal
                         animationType="slide"
                         transparent={true}
@@ -602,7 +606,6 @@ export default function CreatePostDrawer({
                         onClose={() => setDialogVisible(false)}
                         autoClose={dialogType !== 'loading'}
                     />
-                </View>
             </KeyboardAvoidingView>
         </Modal>
     )

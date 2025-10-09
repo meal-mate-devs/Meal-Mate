@@ -1,11 +1,14 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
+import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
     createUserWithEmailAndPassword,
     fetchSignInMethodsForEmail,
+    GoogleAuthProvider,
     onAuthStateChanged,
     sendEmailVerification,
     sendPasswordResetEmail,
+    signInWithCredential,
     signInWithEmailAndPassword,
     signOut
 } from 'firebase/auth';
@@ -46,6 +49,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage?: any) => Promise<any>;
+  loginWithGoogle: (idToken: string) => Promise<any>;
   updateUserProfile: (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => Promise<any>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -391,15 +395,124 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Google Sign-In function
+  const loginWithGoogle = async (idToken: string) => {
+    try {
+      console.log('Starting Google authentication with Firebase...');
+      
+      // Create Google credential with the ID token
+      const credential = GoogleAuthProvider.credential(idToken);
+
+      // Sign in with Firebase using the Google credential
+      const userCredential = await signInWithCredential(auth, credential);
+
+      if (userCredential.user) {
+        console.log('Google sign-in successful:', userCredential.user.email);
+
+        // Check if user profile exists in backend
+        try {
+          const token = await userCredential.user.getIdToken();
+          const profileResponse = await fetch(`${API_BASE_URL}/auth/profile`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            if (profileData.user) {
+              console.log('Existing Google user found:', profileData.user.userName);
+              setProfile(profileData.user);
+              return userCredential.user;
+            }
+          }
+        } catch (profileError) {
+          console.log('Profile check failed, user might not exist yet:', profileError);
+        }
+
+        // If profile doesn't exist, register the Google user in backend
+        console.log('Registering Google user in backend...');
+        try {
+          const token = await userCredential.user.getIdToken();
+          const registerResponse = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              firstName: userCredential.user.displayName?.split(' ')[0] || '',
+              lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
+              isGoogleUser: true
+            }),
+          });
+
+          if (registerResponse.ok) {
+            const registerData = await registerResponse.json();
+            console.log('Google user registered successfully:', registerData.user);
+            setProfile(registerData.user);
+            return userCredential.user;
+          } else {
+            console.log('Backend registration failed, using basic profile');
+          }
+        } catch (registerError) {
+          console.log('Backend registration error, using basic profile:', registerError);
+        }
+
+        // Create a basic profile for Google users if backend registration fails
+        const basicProfile: Profile = {
+          _id: '',
+          firebaseUid: userCredential.user.uid,
+          email: userCredential.user.email || '',
+          userName: userCredential.user.email?.split('@')[0] || userCredential.user.displayName?.replace(/\s+/g, '').toLowerCase() || 'googleuser',
+          firstName: userCredential.user.displayName?.split(' ')[0] || '',
+          lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
+          age: 0, // Google doesn't provide age
+          gender: '', // Google doesn't provide gender
+          dateOfBirth: '', // Google doesn't provide DOB
+          phoneNumber: '', // Will be set by backend
+          profileImage: {
+            url: userCredential.user.photoURL || null,
+            publicId: null
+          },
+          isProfileComplete: false, // Mark as incomplete since we don't have all required fields
+          isChef: false,
+          isPro: false
+        };
+
+        console.log('Using basic profile for Google user:', basicProfile);
+        setProfile(basicProfile);
+
+        return userCredential.user;
+      }
+
+      throw new Error('Google sign-in failed');
+    } catch (error) {
+      console.log('Google sign-in error:', error);
+      throw error;
+    }
+  };
 
 
 
 
 
-  // Logout function
+  // Enhanced logout function that handles Google sign-out
   const logout = async () => {
     try {
+      // Check if user is signed in to Google and sign out
+      const isGoogleUser = await isGoogleSignedIn();
+      if (isGoogleUser) {
+        console.log('Signing out from Google...');
+        await signOutFromGoogle();
+      }
+      
+      // Sign out from Firebase
       await signOut(auth);
+      
+      console.log('User signed out successfully');
     } catch (error) {
       console.log('Error signing out:', error);
       throw error;
@@ -598,6 +711,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         register,
+        loginWithGoogle,
         updateUserProfile,
         logout,
         deleteAccount,

@@ -100,7 +100,13 @@ export default function PostItem({
         <>
             <View className="bg-zinc-800 rounded-xl mb-4 overflow-hidden border border-zinc-700">
                 <TouchableOpacity className="flex-row items-center p-4" onPress={() => onUserPress(post.author)}>
-                    <Image source={{ uri: post.author.avatar }} className="w-10 h-10 rounded-full border border-yellow-400" />
+                    <Image 
+                        source={post.author.avatar && typeof post.author.avatar === 'string' 
+                            ? { uri: post.author.avatar } 
+                            : post.author.avatar || require("../../../assets/images/avatar.png")
+                        } 
+                        className="w-10 h-10 rounded-full border border-yellow-400" 
+                    />
                     <View className="ml-3 flex-1">
                         <Text className="text-white font-bold">{post.author.name}</Text>
                         <Text className="text-zinc-400 text-xs">{post.timeAgo}</Text>
@@ -183,7 +189,13 @@ export default function PostItem({
                                 {post.commentsList.map((comment) => (
                                     <View key={comment.id} className="mb-3">
                                         <View className="flex-row items-start">
-                                            <Image source={{ uri: comment.author.avatar }} className="w-8 h-8 rounded-full mr-3" />
+                                            <Image 
+                                                source={comment.author.avatar && typeof comment.author.avatar === 'string'
+                                                    ? { uri: comment.author.avatar }
+                                                    : require("../../../assets/images/avatar.png")
+                                                }
+                                                className="w-8 h-8 rounded-full mr-3" 
+                                            />
                                             <View className="flex-1">
                                                 <View className="bg-zinc-700 rounded-xl p-3">
                                                     <Text className="text-white font-bold text-sm mb-1">{comment.author.name}</Text>
@@ -202,7 +214,13 @@ export default function PostItem({
                         )}
 
                         <View className="flex-row items-center">
-                            <Image source={{ uri: currentUser.avatar.uri }} className="w-8 h-8 rounded-full mr-3" />
+                            <Image 
+                                source={currentUser.avatar && currentUser.avatar.uri
+                                    ? { uri: currentUser.avatar.uri }
+                                    : currentUser.avatar || require("../../../assets/images/avatar.png")
+                                }
+                                className="w-8 h-8 rounded-full mr-3" 
+                            />
                             <View className="flex-1 flex-row items-center bg-zinc-700 rounded-full">
                                 <TextInput
                                     className="flex-1 px-4 py-3 text-white text-sm"

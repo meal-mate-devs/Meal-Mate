@@ -23,6 +23,7 @@ interface DialogProps {
     onClose?: () => void;
     onCloseButton?: () => void;
     onConfirm?: () => void;
+    onCancel?: () => void;
     confirmText?: string;
     cancelText?: string;
     showCancelButton?: boolean;
@@ -39,6 +40,7 @@ const Dialog = ({
     onClose,
     onCloseButton,
     onConfirm,
+    onCancel,
     confirmText = 'OK',
     cancelText = 'Cancel',
     showCancelButton = false,
@@ -331,6 +333,7 @@ const Dialog = ({
             case 'success':
                 return {
                     icon: 'check-circle',
+                    iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'silverware-fork-knife',
                     gradientColors: ['#34D399', '#10B981'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
@@ -338,6 +341,7 @@ const Dialog = ({
             case 'error':
                 return {
                     icon: 'skull-outline',
+                    iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-off',
                     gradientColors: ['#F87171', '#DC2626'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
@@ -345,6 +349,7 @@ const Dialog = ({
             case 'warning':
                 return {
                     icon: 'fire',
+                    iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-hot-dog',
                     gradientColors: ['#FBBF24', '#D97706'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
@@ -352,14 +357,32 @@ const Dialog = ({
             case 'loading':
                 return {
                     icon: 'bowl-mix',
+                    iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-drumstick',
                     // Changed to match your app's yellow-orange theme
                     gradientColors: ['#FBBF24', '#F97416'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
                 };
+            case 'confirm':
+                return {
+                    icon: 'trash',
+                    iconLibrary: 'FontAwesome5',
+                    foodIcon: 'food-off',
+                    gradientColors: ['#F87171', '#DC2626'] as readonly [ColorValue, ColorValue],
+                    iconColor: 'white'
+                };
+            case 'info':
+                return {
+                    icon: 'share',
+                    iconLibrary: 'FontAwesome5',
+                    foodIcon: 'food-apple',
+                    gradientColors: ['#3B82F6', '#1D4ED8'] as readonly [ColorValue, ColorValue],
+                    iconColor: 'white'
+                };
             default:
                 return {
-                    icon: 'information',
+                    icon: 'share',
+                    iconLibrary: 'FontAwesome5',
                     foodIcon: 'food-apple',
                     gradientColors: ['#FBBF24', '#F97416'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
@@ -367,7 +390,7 @@ const Dialog = ({
         }
     };
 
-    const { icon, foodIcon, gradientColors, iconColor } = getIconAndColor();
+    const { icon, iconLibrary, foodIcon, gradientColors, iconColor } = getIconAndColor();
     
     // Create rotation interpolation for plate
     const plateRotation = plateRotate.interpolate({
@@ -478,7 +501,11 @@ const Dialog = ({
                             { opacity: iconOpacity }
                         ]}
                     >
-                        <MaterialCommunityIcons name={icon as any} size={22} color="#FFFFFF" />
+                        {iconLibrary === 'FontAwesome5' ? (
+                            <FontAwesome5 name={icon as any} size={22} color="#FFFFFF" />
+                        ) : (
+                            <MaterialCommunityIcons name={icon as any} size={22} color="#FFFFFF" />
+                        )}
                     </Animated.View>
                 </View>
             );
@@ -526,7 +553,11 @@ const Dialog = ({
                             { opacity: iconOpacity }
                         ]}
                     >
-                        <MaterialCommunityIcons name={icon as any} size={22} color="#FFFFFF" />
+                        {iconLibrary === 'FontAwesome5' ? (
+                            <FontAwesome5 name={icon as any} size={22} color="#FFFFFF" />
+                        ) : (
+                            <MaterialCommunityIcons name={icon as any} size={22} color="#FFFFFF" />
+                        )}
                     </Animated.View>
                 </View>
             );
@@ -583,47 +614,14 @@ const Dialog = ({
         if (type === 'confirm') {
             return (
                 <View style={styles.iconContainer}>
-                    {/* Plate with confirm gradient */}
-                    <View style={styles.plateContainer}>
-                        <LinearGradient
-                            colors={['rgba(59, 130, 246, 0.3)', 'rgba(37, 99, 235, 0.1)']}
-                            style={styles.plateGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        />
-                    </View>
-                    
-                    {/* Food with question mark */}
-                    <Animated.View 
-                        style={[
-                            styles.foodCircle,
-                            {
-                                transform: [
-                                    { scale: foodScale },
-                                    { rotate: plateRotation }
-                                ]
-                            }
-                        ]}
+                    <LinearGradient
+                        colors={['#3B82F6', '#2563EB']}
+                        style={styles.iconBackground}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <LinearGradient
-                            colors={gradientColors}
-                            style={styles.iconBackground}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        >
-                            <MaterialCommunityIcons name={foodIcon as any} size={26} color={iconColor} />
-                        </LinearGradient>
-                    </Animated.View>
-                    
-                    {/* Question mark overlay */}
-                    <Animated.View 
-                        style={[
-                            styles.checkmarkOverlay,
-                            { opacity: iconOpacity }
-                        ]}
-                    >
-                        <MaterialCommunityIcons name="help-circle" size={22} color="#FFFFFF" />
-                    </Animated.View>
+                        <MaterialCommunityIcons name="help-circle" size={32} color="#FFFFFF" />
+                    </LinearGradient>
                 </View>
             );
         }
@@ -631,47 +629,14 @@ const Dialog = ({
         if (type === 'info') {
             return (
                 <View style={styles.iconContainer}>
-                    {/* Plate with info gradient */}
-                    <View style={styles.plateContainer}>
-                        <LinearGradient
-                            colors={['rgba(14, 165, 233, 0.3)', 'rgba(2, 132, 199, 0.1)']}
-                            style={styles.plateGradient}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        />
-                    </View>
-                    
-                    {/* Food with info icon */}
-                    <Animated.View 
-                        style={[
-                            styles.foodCircle,
-                            {
-                                transform: [
-                                    { scale: foodScale },
-                                    { rotate: plateRotation }
-                                ]
-                            }
-                        ]}
+                    <LinearGradient
+                        colors={['#0EA5E9', '#0284C7']}
+                        style={styles.iconBackground}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
                     >
-                        <LinearGradient
-                            colors={gradientColors}
-                            style={styles.iconBackground}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                        >
-                            <MaterialCommunityIcons name={foodIcon as any} size={26} color={iconColor} />
-                        </LinearGradient>
-                    </Animated.View>
-                    
-                    {/* Info icon overlay */}
-                    <Animated.View 
-                        style={[
-                            styles.checkmarkOverlay,
-                            { opacity: iconOpacity }
-                        ]}
-                    >
-                        <MaterialCommunityIcons name="information" size={22} color="#FFFFFF" />
-                    </Animated.View>
+                        <MaterialCommunityIcons name="information" size={32} color="#FFFFFF" />
+                    </LinearGradient>
                 </View>
             );
         }
@@ -740,7 +705,13 @@ const Dialog = ({
                             {(type !== 'loading' && showCancelButton) && (
                                 <TouchableOpacity
                                     style={styles.cancelButton}
-                                    onPress={onClose}
+                                    onPress={() => {
+                                        if (onCancel) {
+                                            onCancel();
+                                        } else if (onClose) {
+                                            onClose();
+                                        }
+                                    }}
                                 >
                                     <Text style={styles.cancelText}>
                                         {cancelText}
@@ -754,7 +725,13 @@ const Dialog = ({
                                         styles.confirmButton, 
                                         !showCancelButton && styles.fullWidthButton
                                     ]}
-                                    onPress={onConfirm || onClose}
+                                    onPress={() => {
+                                        if (onConfirm) {
+                                            onConfirm();
+                                        } else if (onClose) {
+                                            onClose();
+                                        }
+                                    }}
                                 >
                                     <LinearGradient
                                         colors={gradientColors}
