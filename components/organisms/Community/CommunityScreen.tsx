@@ -213,7 +213,7 @@ export default function CommunityScreen(): JSX.Element {
 
             await loadPosts();
         } catch (error) {
-            console.error('Error updating post:', error);
+            console.log('Error updating post:', error);
             throw error;
         }
     };
@@ -280,7 +280,7 @@ export default function CommunityScreen(): JSX.Element {
 
             return response
         } catch (error) {
-            console.error('Error creating post:', error)
+            console.log('Error creating post:', error)
             throw error
         }
     }

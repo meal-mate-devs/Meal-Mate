@@ -109,7 +109,7 @@ const HomeScreen: React.FC = () => {
                 setPantryData(response.counts);
             }
         } catch (error) {
-            console.error('Error fetching pantry data:', error);
+            console.log('Error fetching pantry data:', error);
         } finally {
             setPantryLoading(false);
         }
@@ -123,7 +123,7 @@ const HomeScreen: React.FC = () => {
                 setGroceryData(response.counts);
             }
         } catch (error) {
-            console.error('Error fetching grocery data:', error);
+            console.log('Error fetching grocery data:', error);
         } finally {
             setGroceryLoading(false);
         }
@@ -155,12 +155,12 @@ const HomeScreen: React.FC = () => {
                     Animated.parallel([
                         Animated.timing(cardsAnimatedOpacity, {
                             toValue: shouldHide ? 0 : 1,
-                            duration: 400,
+                            duration: 800,
                             useNativeDriver: false,
                         }),
                         Animated.timing(cardsAnimatedHeight, {
                             toValue: shouldHide ? 0 : 180, // Approximate height of cards container
-                            duration: 400,
+                            duration: 800,
                             useNativeDriver: false,
                         })
                     ]).start();
@@ -246,7 +246,7 @@ const HomeScreen: React.FC = () => {
                     {/* Pantry Card */}
                     <TouchableOpacity
                         className="flex-1 mr-2"
-                        onPress={() => router.push('recipe/pantry')}
+                        onPress={() => router.push('/recipe/pantry')}
                         activeOpacity={0.8}
                     >
                         <View className="rounded-xl overflow-hidden border border-zinc-700/50">
@@ -301,7 +301,7 @@ const HomeScreen: React.FC = () => {
                     {/* Grocery Card */}
                     <TouchableOpacity
                         className="flex-1 ml-2"
-                        onPress={() => router.push('(tabs)/(hidden)/settings/grocery-list')}
+                        onPress={() => router.push('/settings/grocery-list')}
                         activeOpacity={0.8}
                     >
                         <View className="rounded-xl overflow-hidden border border-zinc-700/50">

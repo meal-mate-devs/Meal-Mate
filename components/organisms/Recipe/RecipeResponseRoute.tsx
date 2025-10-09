@@ -282,6 +282,21 @@ export default function RecipeResponseRoute(): JSX.Element {
     }
   }
 
+  const handleStartCooking = (recipe: GeneratedRecipe): void => {
+    if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
+      Alert.alert('Error', 'No cooking instructions available for this recipe.');
+      return;
+    }
+
+    // Navigate to cooking screen with recipe data
+    router.push({
+      pathname: '/recipe/cooking',
+      params: {
+        recipe: JSON.stringify(recipe),
+      },
+    });
+  }
+
   const handleTimeoutClose = (): void => {
     setShowTimeoutDialog(false)
     router.back()
@@ -532,7 +547,7 @@ export default function RecipeResponseRoute(): JSX.Element {
         })
       }
     } catch (error) {
-      console.error("Failed to add to grocery:", error)
+      console.log("Error adding grocery item:", error)
       Alert.alert("Error", "Failed to add item to grocery list. Please try again.")
     } finally {
       setIsAddingToGrocery(false)
@@ -578,8 +593,8 @@ export default function RecipeResponseRoute(): JSX.Element {
     <>
       <StatusBar 
         barStyle="light-content" 
-        backgroundColor="#000000" 
-        translucent={false}
+        backgroundColor="#000000"
+        translucent={true}
       />
       <LinearGradient
         colors={["#000000", "#121212"]}
@@ -650,14 +665,6 @@ export default function RecipeResponseRoute(): JSX.Element {
                 ],
               }}
             />
-
-            {/* Elegant divider lines */}
-            <View className="absolute top-1/3 left-0 right-0 h-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }} />
-            <View className="absolute bottom-1/3 left-0 right-0 h-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }} />
-
-            {/* Vertical accent lines */}
-            <View className="absolute top-0 bottom-0 left-1/4 w-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.05)' }} />
-            <View className="absolute top-0 bottom-0 right-1/4 w-px" style={{ backgroundColor: 'rgba(250, 204, 21, 0.05)' }} />
           </View>
 
           <Animated.View className="items-center justify-center z-10 px-8" style={{ opacity: fadeAnim }}>
@@ -1326,6 +1333,22 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             <View className="px-4 pb-6">
               <TouchableOpacity
+                onPress={() => handleStartCooking(generatedRecipe)}
+                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
+                activeOpacity={0.7}
+              >
+                <LinearGradient
+                  colors={['#FACC15', '#F97316']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                  className="rounded-xl"
+                />
+                <Ionicons name="flame" size={20} color="#FFFFFF" />
+                <Text className="font-bold ml-3 text-base tracking-wide text-white">Start Cooking</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 onPress={() => handleSaveRecipe(generatedRecipe)}
                 className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
                 style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
@@ -1378,18 +1401,13 @@ export default function RecipeResponseRoute(): JSX.Element {
           </View>
 
           <View style={styles.modalContentWrapper}>
-            <TouchableOpacity
-              activeOpacity={1}
-              onPress={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
-              style={styles.scrollViewTouchable}
+            <ScrollView
+              style={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.scrollContent}
+              onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
+              keyboardShouldPersistTaps="handled"
             >
-              <ScrollView
-                style={styles.modalContent}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-                onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
-                keyboardShouldPersistTaps="handled"
-              >
                 <View style={styles.formField}>
                   <Text style={styles.fieldLabel}>Item Name *</Text>
                   <View style={styles.inputContainer}>
@@ -1533,7 +1551,6 @@ export default function RecipeResponseRoute(): JSX.Element {
                   </View>
                 </View>
               </ScrollView>
-            </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
 
@@ -1702,8 +1719,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingHorizontal: 2,
+    paddingTop: 18,
     paddingBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.08)',
@@ -1712,7 +1729,7 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     left: 20,
-    top: 60,
+    top: 18,
     zIndex: 1,
     padding: 4,
   },
@@ -1770,6 +1787,9 @@ const styles = StyleSheet.create({
   unitButton: {
     paddingHorizontal: 8,
     paddingVertical: 4,
+    backgroundColor: 'rgba(250, 204, 21, 0.1)',
+    borderRadius: 10,
+    marginLeft: 16,
   },
   unitButtonText: {
     fontSize: 16,
@@ -1779,11 +1799,11 @@ const styles = StyleSheet.create({
   unitDropdown: {
     position: 'absolute',
     top: '100%',
-    left: 0,
+    left: 150,
     right: 0,
     backgroundColor: 'rgba(18, 18, 18, 0.98)',
     borderRadius: 12,
-    marginTop: 4,
+    marginTop: 6,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.15)',
     zIndex: 1000,
@@ -1868,11 +1888,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingBottom: 40,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.08)',
     gap: 12,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.91)',
   },
   actionButton: {
     flex: 1,

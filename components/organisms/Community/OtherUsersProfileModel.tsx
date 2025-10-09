@@ -44,7 +44,7 @@ export default function OtherUsersProfileModel({
             }
             return null;
         } catch (error) {
-            console.error('Error fetching user profile:', error);
+            console.log('Error fetching user profile:', error);
             return null;
         } finally {
             setProfileLoading(false);
@@ -65,7 +65,7 @@ export default function OtherUsersProfileModel({
                 await fetchUserProfile(user!.id);
             }
         } catch (error) {
-            console.error('Error toggling follow status:', error)
+            console.log('Error following/unfollowing user:', error)
         } finally {
             setFollowLoading(false)
         }
@@ -109,7 +109,7 @@ export default function OtherUsersProfileModel({
                     setUserPosts([])
                 }
             } catch (err) {
-                console.error('Error loading user posts', err)
+                console.log('Error fetching user posts:', err)
                 setPostsError('Failed to load posts')
             } finally {
                 setPostsLoading(false)

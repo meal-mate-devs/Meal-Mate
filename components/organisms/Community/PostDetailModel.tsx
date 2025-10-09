@@ -61,7 +61,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
             await CommunityAPI.toggleLikePost(post.id)
         } catch (error) {
-            console.error('Error toggling like:', error)
+            console.log('Error liking post:', error)
             setIsLiked(!isLiked)
             setLikes(isLiked ? likes + 1 : likes - 1)
             Alert.alert('Error', 'Failed to update like status')
@@ -75,7 +75,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
             await CommunityAPI.toggleSavePost(post.id)
         } catch (error) {
-            console.error('Error saving post:', error)
+            console.log('Error saving post:', error)
             setIsSaved(!isSaved)
             setSaves(isSaved ? saves + 1 : saves - 1)
             Alert.alert('Error', 'Failed to save post')

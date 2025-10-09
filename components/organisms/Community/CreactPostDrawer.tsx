@@ -286,7 +286,7 @@ export default function CreatePostDrawer({
             }, 1000)
 
         } catch (err: any) {
-            console.error('Error creating post (drawer):', err)
+            console.log('Error creating post:', err)
             showDialog('error', 'Failed to Create Post', err?.message || 'An error occurred while creating your post.')
             return Promise.reject(err)
         }
