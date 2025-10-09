@@ -83,14 +83,29 @@ export default function OtherUsersProfileModel({
             setPostsLoading(true)
             setPostsError(null)
             try {
-                const resp = await communityService.getUserPosts(user.id, 1, 20)
+                // Use user.id or user.mongoId for fetching the profile user's posts, not currentUserId
+                const userIdToFetch = user.mongoId || user.id;
+                console.log('=== USER PROFILE DEBUG ===');
+                console.log('Full user object:', JSON.stringify(user, null, 2));
+                console.log('user.mongoId:', user.mongoId);
+                console.log('user.id:', user.id);
+                console.log('userIdToFetch:', userIdToFetch);
+                console.log('currentUserId:', currentUserId);
+                console.log('========================');
+                
+                const resp = await communityService.getUserPosts(userIdToFetch, 1, 20)
+                console.log('getUserPosts response:', resp);
+                
                 if (resp && resp.posts) {
                     setUserPosts(resp.posts.map((p: any) => ({
                         ...p,
                         author: p.author || (freshUserData || user),
                         id: p.id || p._id,
+                        images: p.images || []
                     })))
+                    console.log('Loaded posts for user:', resp.posts.length, 'posts');
                 } else {
+                    console.log('No posts found for user');
                     setUserPosts([])
                 }
             } catch (err) {
@@ -115,7 +130,11 @@ export default function OtherUsersProfileModel({
     }
 
 
-    console.log("Rendering profile for user:", userPosts ? userPosts[0].images[0].url : "No posts available")
+    console.log("Rendering profile for user:", 
+        userPosts && userPosts.length > 0 && userPosts[0].images && userPosts[0].images.length > 0 
+            ? userPosts[0].images[0].url || userPosts[0].images[0]
+            : "No posts available"
+    )
 
     return (
         <Modal visible={visible} animationType="slide" transparent={false}>
@@ -298,17 +317,37 @@ export default function OtherUsersProfileModel({
                         {profileLoading ? (
                             // Skeleton loading for posts content
                             <View>
-                                {[...Array(3)].map((_, index) => (
-                                    <View key={index} className="bg-zinc-800 rounded-xl mb-4 overflow-hidden">
-                                        <View className="p-4">
-                                            <View className="w-3/4 h-4 bg-zinc-700 rounded opacity-50 mb-2" />
-                                            <View className="w-1/2 h-4 bg-zinc-700 rounded opacity-50 mb-3" />
-                                            <View className="w-full h-40 bg-zinc-700 rounded-lg opacity-50 mb-2" />
-                                            <View className="flex-row justify-between mt-3">
-                                                <View className="w-16 h-3 bg-zinc-700 rounded opacity-50" />
-                                                <View className="w-24 h-3 bg-zinc-700 rounded opacity-50" />
+                                {postsLoading ? (
+                                    <View className="py-8 items-center">
+                                        <ActivityIndicator size="large" color="#FBBF24" />
+                                        <Text className="text-zinc-400 mt-3">Loading posts...</Text>
+                                    </View>
+                                ) : postsError ? (
+                                    <View className="py-8 items-center">
+                                        <Text className="text-zinc-400">{postsError}</Text>
+                                    </View>
+                                ) : (userPosts && userPosts.length > 0 ? (
+                                    userPosts.map((post: Post) => (
+                                        <View key={post.id} className="bg-zinc-800 rounded-xl mb-4 overflow-hidden">
+                                            <View className="p-4">
+                                                <Text className="text-white mb-2">{post.content}</Text>
+                                                {post.images && post.images.length > 0 && (
+                                                    <Image 
+                                                        source={{ uri: post.images[0]?.url || post.images[0] }} 
+                                                        className="w-full h-48 rounded-lg" 
+                                                        resizeMode="cover" 
+                                                    />
+                                                )}
+                                                <View className="flex-row justify-between mt-3">
+                                                    <Text className="text-zinc-400 text-sm">{post.likes || 0} likes</Text>
+                                                    <Text className="text-zinc-400 text-sm">{post.timeAgo || ''}</Text>
+                                                </View>
                                             </View>
                                         </View>
+                                    ))
+                                ) : (
+                                    <View className="py-8 items-center">
+                                        <Text className="text-zinc-400">No posts yet.</Text>
                                     </View>
                                 ))}
                             </View>

@@ -78,17 +78,20 @@ export default function CommunityScreen(): JSX.Element {
             if (response.posts) {
                 postsData = response.posts.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             } else if (response.data) {
                 postsData = response.data.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             } else if (Array.isArray(response)) {
                 postsData = response.map((post: any) => ({
                     ...post,
-                    id: post._id || post.id
+                    id: post._id || post.id,
+                    images: post.images || []
                 }))
             }
 

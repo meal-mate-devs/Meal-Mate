@@ -1,5 +1,8 @@
 import { useAuthContext } from '@/context/authContext';
+import { canUseGoogleSignIn } from '@/lib/utils/developmentMode';
+import { validateGoogleEnvironment } from '@/lib/utils/envValidation';
 import { checkNetworkConnectivity, handleLoginError, validateEmail } from '@/lib/utils/loginAuthHelpers';
+import { configureGoogleSignIn, signInWithGoogle } from '@/lib/utils/safeGoogleAuth';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -37,6 +40,17 @@ export default function LoginForm() {
     const orb3Anim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
+        // Configure Google Sign-In only if not in Expo Go
+        if (canUseGoogleSignIn()) {
+            try {
+                validateGoogleEnvironment();
+                configureGoogleSignIn();
+                console.log('Google Sign-In configured successfully');
+            } catch (error) {
+                console.error('Failed to configure Google Sign-In:', error);
+            }
+        }
+
         // Start orb animations
         const animateOrb = (anim: Animated.Value, delay: number = 0) => {
             Animated.loop(
@@ -61,7 +75,7 @@ export default function LoginForm() {
     }, []);
 
     const router = useRouter();
-    const { login, doesAccountExist } = useAuthContext();
+    const { login, loginWithGoogle, doesAccountExist } = useAuthContext();
 
     const clearErrors = () => {
         setEmailError('');
@@ -184,6 +198,85 @@ export default function LoginForm() {
         router.push('/(auth)/forgot-password');
     };
 
+    const handleGoogleSignIn = async () => {
+        try {
+            setIsLoading(true);
+            showDialog('loading', 'Signing In', 'Connecting to Google...');
+
+            const isConnected = await checkNetworkConnectivity();
+            if (!isConnected) {
+                setDialogVisible(false);
+                showDialog('error', 'Network Error', 'No internet connection. Please check your network and try again.');
+                setIsLoading(false);
+                return;
+            }
+
+            // Sign in with Google
+            const googleUser = await signInWithGoogle();
+
+            if (googleUser?.success && googleUser.idToken) {
+                setDialogVisible(false);
+                showDialog('loading', 'Signing In', 'Authenticating with MealMate...');
+
+                // Use Firebase to sign in with Google credential
+                const firebaseUser = await loginWithGoogle(googleUser.idToken);
+
+                if (firebaseUser) {
+                    // Success - navigate to home or profile completion
+                    setTimeout(() => {
+                        setDialogVisible(false);
+                        setIsLoading(false);
+                        router.push('/(protected)/(tabs)/home');
+                    }, 800);
+                } else {
+                    throw new Error('Firebase authentication failed');
+                }
+            } else if (googleUser?.userCancelled) {
+                // User cancelled the sign-in
+                setDialogVisible(false);
+                setIsLoading(false);
+                showDialog('warning', 'Sign-In Cancelled', 'Google sign-in was cancelled.');
+                return;
+            } else {
+                // Sign-in failed
+                const errorMessage = googleUser?.error || 'Google sign-in failed - no ID token received';
+                throw new Error(errorMessage);
+            }
+
+        } catch (error: any) {
+            console.log('Google sign-in error:', error);
+            setDialogVisible(false);
+
+            let errorMessage = 'Google sign-in failed. Please try again.';
+            let errorTitle = 'Sign-In Failed';
+
+            if (error.message) {
+                if (error.message.includes('cancelled') || error.message.includes('CANCELLED')) {
+                    errorMessage = 'Google sign-in was cancelled.';
+                    errorTitle = 'Sign-In Cancelled';
+                } else if (error.message.includes('native module not available')) {
+                    errorMessage = 'Google Sign-In requires a development build. Please create one using EAS Build.';
+                    errorTitle = 'Development Build Required';
+                } else if (error.message.includes('NETWORK_ERROR') || error.message.includes('network')) {
+                    errorMessage = 'Network error. Please check your connection.';
+                    errorTitle = 'Network Error';
+                } else if (error.message.includes('Play Services')) {
+                    errorMessage = 'Google Play Services is required for Google sign-in.';
+                    errorTitle = 'Service Required';
+                } else if (error.message.includes('not configured')) {
+                    errorMessage = 'Google sign-in is not properly configured. Please contact support.';
+                    errorTitle = 'Configuration Error';
+                } else {
+                    errorMessage = error.message;
+                }
+            }
+
+            showDialog('error', errorTitle, errorMessage);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
     };
@@ -198,7 +291,7 @@ export default function LoginForm() {
                 source={require('../../assets/images/authbg.png')}
                 resizeMode="cover"
                 style={{ width: '100%', height: '100%' }}
-                imageStyle={{ opacity: 0.8 }}
+                imageStyle={{ opacity: 0.9 }}
             >
                 <LinearGradient
                     colors={['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.7)']}
@@ -355,34 +448,44 @@ export default function LoginForm() {
                                 </View>
 
                                 {/* Or continue with */}
-                                <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
+                                {canUseGoogleSignIn() && (
+                                    <Text className="text-zinc-400 text-center text-sm mb-6">or continue with</Text>
+                                )}
 
                                 {/* Social Login Buttons */}
-                                <View className="flex-row gap-4 justify-center mb-8">
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-blue-500 justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/fblogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
+                                {canUseGoogleSignIn() && (
+                                    <View className="flex-row gap-4 justify-center mb-8">
+                                        <TouchableOpacity
+                                            className="flex-row items-center justify-center bg-white rounded-full h-14 px-6 overflow-hidden"
+                                            onPress={handleGoogleSignIn}
+                                            disabled={isLoading}
+                                        >
+                                            <Image
+                                                source={require('../../assets/images/googlelogo.png')}
+                                                className="w-6 h-6 mr-3"
+                                                resizeMode="contain"
+                                            />
+                                            <Text className="text-gray-800 text-base font-semibold">
+                                                Continue with Google
+                                            </Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
 
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/googlelogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
-
-                                    <TouchableOpacity className="w-12 h-12 rounded-full bg-white border border-white justify-center items-center">
-                                        <Image
-                                            source={require('../../assets/images/applelogo.png')}
-                                            className="w-8 h-8"
-                                            resizeMode="contain"
-                                        />
-                                    </TouchableOpacity>
-                                </View>
+                                {/* Expo Go Notice */}
+                                {!canUseGoogleSignIn() && (
+                                    <View className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 mb-6">
+                                        <View className="flex-row items-center mb-2">
+                                            <Ionicons name="information-circle" size={20} color="#f59e0b" />
+                                            <Text className="text-amber-500 font-semibold ml-2">Development Mode</Text>
+                                        </View>
+                                        <Text className="text-amber-200 text-sm leading-5">
+                                            Google Sign-In requires a development build. Create one with{' '}
+                                            <Text className="font-mono text-amber-300">`eas build --profile development`</Text>{' '}
+                                            to test this feature.
+                                        </Text>
+                                    </View>
+                                )}
 
                                 {/* Sign Up Link */}
                                 <View className="flex-row justify-center items-center">
