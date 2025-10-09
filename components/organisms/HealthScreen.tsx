@@ -6,7 +6,7 @@ import { useRouter } from "expo-router"
 import React, { useState } from "react"
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
-const StatisticsScreen = () => {
+const HealthScreen = () => {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState("Week")
   const tabs = ["Day", "Week", "Month"]
@@ -369,4 +369,4 @@ const StatisticsScreen = () => {
   )
 }
 
-export default StatisticsScreen
+export default HealthScreen

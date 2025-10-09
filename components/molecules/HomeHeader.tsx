@@ -1,15 +1,19 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { Ionicons } from '@expo/vector-icons'
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef, useState } from "react"
 import { Animated, Image, Text, TouchableOpacity, View } from "react-native"
 import { useProfileStore } from "../../hooks/useProfileStore"
+
 interface StandaloneHomeHeaderProps {
+  onSidebarPress: () => void
   onProfilePress: () => void
 }
 
 const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
+  onSidebarPress,
   onProfilePress,
 }) => {
   const { profileData, subscribe } = useProfileStore()
@@ -128,6 +132,10 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
     onProfilePress()
   }
 
+  const handleSidebarPress = () => {
+    onSidebarPress()
+  }
+
   const firstName = localProfileData.name.split(" ")[0] || "User"
 
   return (
@@ -142,9 +150,22 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
 
       {/* Main Header Content */}
       <View className="flex-row items-center justify-between px-6 py-6 pt-3 pb-2">
-        {/* Greeting Section */}
+        {/* Sidebar Button */}
+        <TouchableOpacity
+          onPress={handleSidebarPress}
+          activeOpacity={0.7}
+          className="w-12 h-11 items-center justify-center rounded-lg"
+          style={{
+            borderWidth: 1,
+            borderColor: 'rgba(250, 204, 21, 0.4)',
+          }}
+        >
+          <Ionicons name="menu" size={28} color="#9ca3afff" />
+        </TouchableOpacity>
+
+        {/* Centered Greeting Section */}
         <Animated.View
-          className="flex-1"
+          className="flex-1 items-center"
           style={{
             opacity: greetingAnimation,
             transform: [
@@ -158,16 +179,16 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
           }}
         >
           <View className="mb-1">
-            <Text className="text-gray-400 text-sm font-medium tracking-wide">
+            <Text className="text-gray-400 text-sm font-medium tracking-wide text-center">
               {getGreeting()},
             </Text>
           </View>
-          <View className="flex-row items-center">
+          <View className="flex-row items-center justify-center">
             <Text className="text-white text-2xl font-bold mr-2">{firstName}</Text>
             <View className="w-2 h-2 rounded-full bg-orange-500 opacity-80" />
           </View>
           <View className="mt-1">
-            <Text className="text-gray-500 text-xs">Ready to cook something amazing?</Text>
+            <Text className="text-gray-500 text-xs text-center">Let's cook!</Text>
           </View>
         </Animated.View>
 
@@ -181,24 +202,14 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
             >
               {/* Profile Container */}
               <View className="relative w-16 h-16 items-center justify-center">
-                {/* Subtle fade border */}
-                <View 
-                  className="absolute" 
-                  style={{
-                    width: 64,
-                    height: 64,
-                    borderWidth: 1.5,
-                    borderColor: 'rgba(250, 204, 21, 0.3)',
-                    borderRadius: 32,
-                  }}
-                />
-                
                 {/* Profile Image/Avatar */}
                 <View 
                   className="rounded-full overflow-hidden"
                   style={{
                     width: 60,
                     height: 60,
+                    borderWidth: 1,
+                    borderColor: 'rgba(250, 204, 21, 0.4)',
                   }}
                 >
                   {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
@@ -228,8 +239,8 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
                   )}
                 </View>
               </View>
-              {/* Subtle Shadow */}
-              <View
+              {/* Subtle Shadow - Removed to prevent image edge coverage */}
+              {/* <View
                 className="absolute inset-0 rounded-full"
                 style={{
                   shadowColor: "#000000",
@@ -238,7 +249,7 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
                   shadowRadius: 4,
                   elevation: 4,
                 }}
-              />
+              /> */}
             </Animated.View>
           </TouchableOpacity>
         </View>
