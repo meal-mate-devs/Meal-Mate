@@ -434,8 +434,11 @@ const PantryManagementScreen: React.FC = () => {
     setDetectedIngredientsWithConfidence,
     isScanning,
     scanProgress,
+    showDialog: scannerShowDialog,
+    dialogConfig: scannerDialogConfig,
     processImage,
     resetIngredients,
+    closeDialog: scannerCloseDialog,
   } = useIngredientScanner({
     includeConfidence: true,
     allowMultiple: false,
@@ -516,16 +519,7 @@ const PantryManagementScreen: React.FC = () => {
       setIsLoading(true);
       setErrorDetails(null);
 
-      // Create a timeout promise
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 15000); // 15 second timeout
-      });
-
-      // Race between the API call and timeout
-      const response = await Promise.race([
-        pantryService.getPantryItems(),
-        timeoutPromise
-      ]) as any;
+      const response = await pantryService.getPantryItems();
 
       if (response.success) {
         const items = Array.isArray(response.items) ? response.items : [];
@@ -556,6 +550,22 @@ const PantryManagementScreen: React.FC = () => {
           canRetry: true,
         };
       setErrorDetails(enhancedError);
+      
+      // Show dialog for network/timeout errors
+      if (error.message?.includes('timeout') || error.message?.includes('connection') || error.message?.includes('network')) {
+        showCustomDialog(
+          'error',
+          'Connection Error',
+          'Unable to load pantry items. Please check your internet connection and try again.',
+          'OK',
+          'Cancel',
+          false,
+          () => {
+            hideDialog();
+          }
+        );
+      }
+      
       console.log('Error loading pantry items:', error);
     } finally {
       setIsLoading(false);
@@ -2969,6 +2979,18 @@ const PantryManagementScreen: React.FC = () => {
           cancelText={dialogConfig.cancelText}
           showCancelButton={dialogConfig.showCancelButton}
           onClose={hideDialog}
+        />
+
+        {/* Scanner Dialog */}
+        <Dialog
+          visible={scannerShowDialog}
+          type={scannerDialogConfig.type}
+          title={scannerDialogConfig.title}
+          message={scannerDialogConfig.message}
+          confirmText="OK"
+          showCancelButton={false}
+          onClose={scannerCloseDialog}
+          onConfirm={scannerCloseDialog}
         />
       </>
     </View>

@@ -35,14 +35,20 @@ class IngredientDetectionService {
         formData.append("include_confidence", "true");
       }
 
-      // Make the API request
+      // Make the API request with timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout for image processing
+
       const response = await fetch(this.apiUrl, {
         method: "POST",
         headers: {
           "Accept": "application/json",
         },
         body: formData,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       // Handle non-200 responses
       if (!response.ok) {
@@ -116,6 +122,16 @@ class IngredientDetectionService {
       }
 
       console.log("Error detecting ingredients:", error);
+      
+      // Handle timeout errors specifically
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw this.createError(
+          "Request Timeout",
+          "Image analysis took too long. Please try again.",
+          408
+        );
+      }
+      
       throw this.createError(
         "Detection Failed",
         error instanceof Error ? error.message : "An unknown error occurred",

@@ -123,11 +123,18 @@ class FavoritesService {
         substitutions: recipeData.substitutions || []
       }
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/favorites`, {
         method: 'POST',
         headers,
-        body: JSON.stringify(cleanedData)
+        body: JSON.stringify(cleanedData),
+        signal: controller.signal
       })
+
+      clearTimeout(timeoutId);
 
       // Check if response is JSON
       const contentType = response.headers.get('content-type')
@@ -146,6 +153,9 @@ class FavoritesService {
       return data
     } catch (error) {
       console.log('Error adding to favorites:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
       throw error
     }
   }
@@ -162,11 +172,17 @@ class FavoritesService {
 
       const apiUrl = `${API_BASE_URL}/favorites?${queryParams}`;
 
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
       const response = await fetch(apiUrl, {
         method: 'GET',
-        headers
+        headers,
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId);
       const data = await response.json()
 
       if (!response.ok) {
@@ -177,6 +193,9 @@ class FavoritesService {
       return data
     } catch (error) {
       console.log('❌ getFavorites: Error caught:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
       throw error
     }
   }
@@ -185,11 +204,17 @@ class FavoritesService {
     try {
       const headers = await this.getAuthHeaders()
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/favorites/${recipeId}`, {
         method: 'DELETE',
-        headers
+        headers,
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId);
       const data = await response.json()
 
       if (!response.ok) {
@@ -199,6 +224,9 @@ class FavoritesService {
       return data
     } catch (error) {
       console.log('Error removing from favorites:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
       throw error
     }
   }
@@ -207,11 +235,17 @@ class FavoritesService {
     try {
       const headers = await this.getAuthHeaders()
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/favorites/check/${recipeId}`, {
         method: 'GET',
-        headers
+        headers,
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId);
       const data = await response.json()
 
       if (!response.ok) {
@@ -221,6 +255,9 @@ class FavoritesService {
       return data
     } catch (error) {
       console.log('Error checking favorite status:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
       throw error
     }
   }
@@ -229,11 +266,17 @@ class FavoritesService {
     try {
       const headers = await this.getAuthHeaders()
       
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
       const response = await fetch(`${API_BASE_URL}/favorites/${recipeId}`, {
         method: 'GET',
-        headers
+        headers,
+        signal: controller.signal
       })
 
+      clearTimeout(timeoutId);
       const data = await response.json()
 
       if (!response.ok) {
@@ -243,6 +286,9 @@ class FavoritesService {
       return data
     } catch (error) {
       console.log('Error getting favorite recipe:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
       throw error
     }
   }

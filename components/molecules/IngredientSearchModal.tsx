@@ -2,9 +2,10 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { ingredientDetectionService } from "../../lib/services/ingredientDetectionService";
 import { IngredientWithConfidence } from "../../lib/types/ingredientDetection";
+import Dialog from "../atoms/Dialog";
 
 interface IngredientSearchModalProps {
   visible: boolean;
@@ -29,6 +30,20 @@ export default function IngredientSearchModal({
   const [scanProgress, setScanProgress] = useState(0);
   const [manualInput, setManualInput] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+
+  // Dialog state
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'info'>('error');
+  const [dialogTitle, setDialogTitle] = useState('');
+  const [dialogMessage, setDialogMessage] = useState('');
+
+  // Helper function to show dialog
+  const showCustomDialog = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
+    setDialogType(type);
+    setDialogTitle(title);
+    setDialogMessage(message);
+    setShowDialog(true);
+  };
 
   // Reset state when modal closes
   useEffect(() => {
@@ -62,7 +77,7 @@ export default function IngredientSearchModal({
     if (!selectedIngredients.some(item => item.name === ingredientItem.name)) {
       setSelectedIngredients(prev => [...prev, ingredientItem]);
     } else {
-      Alert.alert("Already Added", `${ingredientItem.name || 'This ingredient'} is already in your list`);
+      showCustomDialog('warning', 'Already Added', `${ingredientItem.name || 'This ingredient'} is already in your list`);
     }
   };
 
@@ -103,7 +118,7 @@ export default function IngredientSearchModal({
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Camera permission is needed to take photos of ingredients.");
+        showCustomDialog('warning', 'Permission Required', 'Camera permission is needed to take photos of ingredients.');
         return;
       }
 
@@ -119,7 +134,7 @@ export default function IngredientSearchModal({
       }
     } catch (error) {
       console.log("Error taking picture:", error);
-      Alert.alert("Error", "Failed to take picture. Please try again.");
+      showCustomDialog('error', 'Error', 'Failed to take picture. Please try again.');
     }
   };
 
@@ -128,7 +143,7 @@ export default function IngredientSearchModal({
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert("Permission Required", "Gallery permission is needed to select photos.");
+        showCustomDialog('warning', 'Permission Required', 'Gallery permission is needed to select photos.');
         return;
       }
 
@@ -144,7 +159,7 @@ export default function IngredientSearchModal({
       }
     } catch (error) {
       console.log("Error selecting from gallery:", error);
-      Alert.alert("Error", "Failed to select from gallery. Please try again.");
+      showCustomDialog('error', 'Error', 'Failed to select from gallery. Please try again.');
     }
   };
 
@@ -187,19 +202,26 @@ export default function IngredientSearchModal({
 
         if (newIngredients.length > 0) {
           setSelectedIngredients(prev => [...prev, ...newIngredients]);
-          Alert.alert(
-            "Ingredients Detected",
-            `Found ${newIngredients.length} new ingredient${newIngredients.length !== 1 ? 's' : ''} with confidence values.`
-          );
+          showCustomDialog('success', 'Ingredients Detected', `Found ${newIngredients.length} new ingredient${newIngredients.length !== 1 ? 's' : ''} with confidence values.`);
         } else {
-          Alert.alert("No New Ingredients", "No new ingredients were detected or they're already in your list.");
+          showCustomDialog('info', 'No New Ingredients', 'No new ingredients were detected or they\'re already in your list.');
         }
       } else {
-        Alert.alert("No Ingredients Detected", "Try taking a clearer picture of your ingredients.");
+        showCustomDialog('warning', 'No Ingredients Detected', 'Try taking a clearer picture of your ingredients.');
       }
     } catch (error) {
       console.log("Error processing image:", error);
-      Alert.alert("Error", "Failed to process image. Please try again.");
+      
+      // Check for timeout/network errors
+      const errorMessage = error && typeof error === 'object' && 'message' in error
+        ? String(error.message)
+        : "Failed to process image.";
+      
+      if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout')) {
+        showCustomDialog('error', 'Request Failed', 'Unable to analyze the image. Please check your connection and try again.');
+      } else {
+        showCustomDialog('error', 'Error', 'Failed to process image. Please try again.');
+      }
     } finally {
       setIsScanning(false);
     }
@@ -387,7 +409,16 @@ export default function IngredientSearchModal({
         </View>
       </View>
     </Modal>
-  );
+  )
+    {/* Custom Dialog */}
+    <Dialog
+      visible={showDialog}
+      type={dialogType}
+      title={dialogTitle}
+      message={dialogMessage}
+      onClose={() => setShowDialog(false)}
+      confirmText="OK"
+    />
 }
 
 const styles = StyleSheet.create({

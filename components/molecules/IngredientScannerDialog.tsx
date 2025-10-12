@@ -4,6 +4,7 @@ import React, { useEffect } from "react";
 import { Alert, Dimensions, Text, TouchableOpacity, View } from "react-native";
 import { useIngredientScanner } from "../../hooks/useIngredientScanner";
 import CustomDialog from "../atoms/CustomDialog";
+import Dialog from "../atoms/Dialog";
 
 interface IngredientScannerDialogProps {
   visible: boolean;
@@ -25,11 +26,14 @@ export default function IngredientScannerDialog({
     detectedIngredientsWithConfidence,
     isScanning,
     scanProgress,
+    showDialog,
+    dialogConfig,
     scanWithCamera,
     scanFromGallery,
     addCustomIngredient,
     removeIngredient,
     resetIngredients,
+    closeDialog,
   } = useIngredientScanner({
     onIngredientsDetected,
     allowMultiple,
@@ -68,12 +72,13 @@ export default function IngredientScannerDialog({
   if (!visible) return <></>;
 
   return (
-    <CustomDialog
-      visible={visible}
-      onClose={onClose}
-      title="Scan Ingredients"
-      height={detectedIngredients.length > 0 ? 600 : 500}
-    >
+    <>
+      <CustomDialog
+        visible={visible}
+        onClose={onClose}
+        title="Scan Ingredients"
+        height={detectedIngredients.length > 0 ? 600 : 500}
+      >
       <View className="flex-1">
         <View className="mb-6">
           <Text className="text-white text-center text-lg">
@@ -237,5 +242,16 @@ export default function IngredientScannerDialog({
         )}
       </View>
     </CustomDialog>
+    <Dialog
+      visible={showDialog}
+      type={dialogConfig.type}
+      title={dialogConfig.title}
+      message={dialogConfig.message}
+      confirmText="OK"
+      showCancelButton={false}
+      onClose={closeDialog}
+      onConfirm={closeDialog}
+    />
+    </>
   );
 }

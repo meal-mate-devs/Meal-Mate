@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Alert } from "react-native";
 import { ingredientDetectionService } from "../lib/services/ingredientDetectionService";
+import { Alert } from "react-native/Libraries/Alert/Alert";
 
 // Define ingredient type that can include confidence
 export interface IngredientItem {
@@ -29,6 +29,11 @@ interface UseIngredientScannerOptions {
    * Whether to include confidence values
    */
   includeConfidence?: boolean;
+
+  /**
+   * Callback for showing permission dialogs
+   */
+  onShowPermissionDialog?: (title: string, message: string) => void;
 }
 
 interface UseIngredientScannerResult {
@@ -51,6 +56,20 @@ interface UseIngredientScannerResult {
    * Progress of the scanning (0-100)
    */
   scanProgress: number;
+
+  /**
+   * Dialog visibility state
+   */
+  showDialog: boolean;
+
+  /**
+   * Dialog configuration
+   */
+  dialogConfig: {
+    type: 'success' | 'error' | 'warning' | 'info' | 'confirm';
+    title: string;
+    message: string;
+  };
 
   /**
    * Set detected ingredients
@@ -91,16 +110,51 @@ interface UseIngredientScannerResult {
    * Reset detected ingredients
    */
   resetIngredients: () => void;
+
+  /**
+   * Close the dialog
+   */
+  closeDialog: () => void;
 }
 
 /**
  * Hook to handle ingredient scanning functionality
  */
 export function useIngredientScanner(options: UseIngredientScannerOptions = {}): UseIngredientScannerResult {
+  const {
+    onIngredientsDetected,
+    allowMultiple = true,
+    alertOnDuplicates = false,
+    includeConfidence = false,
+    onShowPermissionDialog,
+  } = options;
+
+  // State variables
   const [detectedIngredients, setDetectedIngredients] = useState<string[]>([]);
   const [detectedIngredientsWithConfidence, setDetectedIngredientsWithConfidence] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
+  const [showDialog, setShowDialog] = useState(false);
+  const [dialogConfig, setDialogConfig] = useState({
+    type: 'error' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: '',
+    message: '',
+  });
+
+  /**
+   * Show custom dialog
+   */
+  const showCustomDialog = (type: 'success' | 'error' | 'warning' | 'info' | 'confirm', title: string, message: string) => {
+    setDialogConfig({ type, title, message });
+    setShowDialog(true);
+  };
+
+  /**
+   * Close dialog
+   */
+  const closeDialog = () => {
+    setShowDialog(false);
+  };
 
   /**
    * Check if camera permissions are granted
@@ -109,11 +163,9 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
     if (status !== "granted") {
-      Alert.alert(
-        "Camera Permission Required",
-        "Please enable camera access to scan ingredients",
-        [{ text: "OK" }]
-      );
+      if (onShowPermissionDialog) {
+        onShowPermissionDialog("Camera Permission Required", "Please enable camera access to scan ingredients");
+      }
       return false;
     }
 
@@ -127,11 +179,9 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
     if (status !== "granted") {
-      Alert.alert(
-        "Gallery Permission Required",
-        "Please enable gallery access to select images",
-        [{ text: "OK" }]
-      );
+      if (onShowPermissionDialog) {
+        onShowPermissionDialog("Gallery Permission Required", "Please enable gallery access to select images");
+      }
       return false;
     }
 
@@ -159,7 +209,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
       }
     } catch (error) {
       console.log("Error taking picture:", error);
-      Alert.alert("Error", "Failed to take picture.");
+      showCustomDialog('error', 'Camera Error', 'Failed to take picture. Please try again.');
     }
   };
 
@@ -184,7 +234,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
       }
     } catch (error) {
       console.log("Error selecting image from gallery:", error);
-      Alert.alert("Error", "Failed to select image from gallery.");
+      showCustomDialog('error', 'Gallery Error', 'Failed to select image from gallery. Please try again.');
     }
   };
 
@@ -308,7 +358,23 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : "Failed to scan image.";
-      // Log the error but don't show an alert
+      
+      // Show alert for timeout/network errors
+      if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout')) {
+        showCustomDialog(
+          'error',
+          'Request Failed',
+          'Unable to analyze the image. Please check your connection and try again.'
+        );
+      } else {
+        // For other errors, show a generic message
+        showCustomDialog(
+          'error',
+          'Scanning Failed',
+          'Could not detect ingredients from the image. Please try again.'
+        );
+      }
+      
       console.log("Ingredient detection error:", errorMessage);
     } finally {
       setIsScanning(false);
@@ -330,7 +396,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     setDetectedIngredientsWithConfidence(prev => {
       if (prev.some(item => item.name === trimmedIngredient)) {
         if (options.alertOnDuplicates) {
-          Alert.alert("Duplicate Ingredient", `${String(trimmedIngredient)} is already in your list.`);
+          showCustomDialog('warning', 'Duplicate Ingredient', `${trimmedIngredient} is already in your list.`);
         }
         return prev;
       }
@@ -343,7 +409,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     setDetectedIngredients(prev => {
       if (prev.includes(trimmedIngredient)) {
         if (options.alertOnDuplicates) {
-          Alert.alert("Duplicate Ingredient", `${String(trimmedIngredient)} is already in your list.`);
+          showCustomDialog('warning', 'Duplicate Ingredient', `${trimmedIngredient} is already in your list.`);
         }
         return prev;
       }
@@ -384,6 +450,8 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     detectedIngredientsWithConfidence,
     isScanning,
     scanProgress,
+    showDialog,
+    dialogConfig,
     setDetectedIngredients,
     setDetectedIngredientsWithConfidence,
     scanWithCamera,
@@ -392,5 +460,6 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     addCustomIngredient,
     removeIngredient,
     resetIngredients,
+    closeDialog,
   };
 }

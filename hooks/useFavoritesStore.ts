@@ -62,19 +62,29 @@ export const useFavoritesStore = (): FavoritesStore => {
       hasInitialized = true;
       updateGlobalState({ isLoading: true, error: null });
       
-      favoritesService.getFavorites()
-        .then((response) => {
+      // Add timeout wrapper for auto-load
+      const loadWithTimeout = async () => {
+        try {
+          const response = await Promise.race([
+            favoritesService.getFavorites(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout - please check your connection')), 12000)
+            )
+          ]) as any;
+          
           if (response.success) {
             updateGlobalState({ favorites: response.data.favorites, isLoading: false });
           } else {
             updateGlobalState({ isLoading: false, error: response.message || 'Failed to get favorites' });
           }
-        })
-        .catch((error) => {
+        } catch (error) {
           console.log('❌ Auto-load getFavorites error:', error);
           const errorMessage = error instanceof Error ? error.message : 'Failed to get favorites';
           updateGlobalState({ isLoading: false, error: errorMessage });
-        });
+        }
+      };
+      
+      loadWithTimeout();
     }
   }, []);
 

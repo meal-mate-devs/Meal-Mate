@@ -28,6 +28,12 @@ const FavoritesScreen: React.FC = () => {
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
   const [recipeToRemove, setRecipeToRemove] = useState<string | null>(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [errorDialogConfig, setErrorDialogConfig] = useState({
+    type: 'error' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
+    title: '',
+    message: '',
+  })
 
   useEffect(() => {
     const backAction = () => {
@@ -42,6 +48,42 @@ const FavoritesScreen: React.FC = () => {
 
     return () => backHandler.remove()
   }, [expandedRecipeId])
+
+  // Show error dialog for network/timeout errors
+  useEffect(() => {
+    if (error && (error.includes('timeout') || error.includes('connection') || error.includes('network'))) {
+      setErrorDialogConfig({
+        type: 'error',
+        title: 'Connection Error',
+        message: 'Unable to load favorites. Please check your internet connection and try again.',
+      })
+      setShowErrorDialog(true)
+    }
+  }, [error])
+
+  // Loading timeout - show error dialog if loading takes too long
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+    
+    if (isLoading && !error) {
+      timeoutId = setTimeout(() => {
+        console.log('⏰ Loading timeout reached, showing error dialog');
+        setErrorDialogConfig({
+          type: 'error',
+          title: 'Loading Timeout',
+          message: 'Taking longer than expected to load your favorites. Please check your connection and try again.',
+        });
+        setShowErrorDialog(true);
+        // Note: We don't force stop loading here as the store will handle it
+      }, 15000); // 15 second loading timeout
+    }
+    
+    return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+  }, [isLoading, error]);
 
   // Handle pull to refresh
   const handleRefresh = useCallback(async () => {
@@ -817,6 +859,24 @@ const FavoritesScreen: React.FC = () => {
         confirmText="Remove"
         cancelText="Cancel"
         showCancelButton={true}
+      />
+
+      {/* Error Dialog */}
+      <Dialog
+        visible={showErrorDialog}
+        type={errorDialogConfig.type}
+        title={errorDialogConfig.title}
+        message={errorDialogConfig.message}
+        confirmText="Retry"
+        cancelText="Cancel"
+        showCancelButton={true}
+        onClose={() => setShowErrorDialog(false)}
+        onConfirm={() => {
+          setShowErrorDialog(false);
+          // Clear the error and retry loading
+          handleRefresh();
+        }}
+        onCancel={() => setShowErrorDialog(false)}
       />
 
       {/* Full Screen Expanded Recipe Modal */}

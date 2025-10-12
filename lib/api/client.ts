@@ -71,7 +71,16 @@ class ApiClient {
 
             console.log(`Fetching ${API_BASE_URL}${endpoint}`);
             
-            const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            
+            const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                ...fetchOptions,
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
             console.log(`Response status: ${response.status}`);
 
             // Handle 401 specifically for auth refresh
@@ -114,6 +123,12 @@ class ApiClient {
             return await response.json();
         } catch (error) {
             console.log('API Request failed:', error);
+            
+            // Handle timeout errors specifically
+            if (error instanceof Error && error.name === 'AbortError') {
+                throw new Error('Request timeout - please check your connection');
+            }
+            
             throw error;
         }
     }
