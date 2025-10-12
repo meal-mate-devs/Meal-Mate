@@ -50,7 +50,7 @@ export default function PostItem({
             await onAddComment(post.id, commentText)
             setCommentText("")
         } catch (err) {
-            console.error("Failed to add comment", err)
+            console.log('Error adding comment:', err)
         } finally {
             setIsCommenting(false)
         }

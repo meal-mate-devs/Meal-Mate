@@ -47,7 +47,7 @@ export default function LoginForm() {
                 configureGoogleSignIn();
                 console.log('Google Sign-In configured successfully');
             } catch (error) {
-                console.error('Failed to configure Google Sign-In:', error);
+                console.log('Error configuring Google Sign-In:', error);
             }
         }
 

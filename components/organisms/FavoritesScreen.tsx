@@ -197,10 +197,25 @@ const FavoritesScreen: React.FC = () => {
     setShowRemoveDialog(false)
   }
 
+  const handleStartCooking = (recipe: any) => {
+    if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
+      console.log('❌ No cooking instructions available for this recipe.');
+      return;
+    }
+
+    // Navigate to cooking screen with recipe data
+    router.push({
+      pathname: '/recipe/cooking',
+      params: {
+        recipe: JSON.stringify(recipe),
+      },
+    });
+  }
+
   return (
     <View className="flex-1">
       <LinearGradient colors={["#000000", "#121212"]} style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* 🎨 Enhanced Header with Safe Area - Recipe Response Style */}
       <View
@@ -726,8 +741,36 @@ const FavoritesScreen: React.FC = () => {
                         </View>
                       )}
 
-                      {/* 🗑️ Enhanced Remove Button - Recipe Response Style */}
-                      <View className="flex-row justify-center mt-6">
+                      {/* � Start Cooking Button - Recipe Response Style */}
+                      <View className="flex-row justify-center mt-6 mb-3">
+                        <TouchableOpacity
+                          onPress={(e) => {
+                            e.stopPropagation()
+                            handleStartCooking(recipe)
+                          }}
+                          className="rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                          activeOpacity={0.7}
+                        >
+                          <LinearGradient
+                            colors={['#FACC15', '#F97316']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={{
+                              position: 'absolute',
+                              left: 0,
+                              right: 0,
+                              top: 0,
+                              bottom: 0,
+                              borderRadius: 12,
+                            }}
+                          />
+                          <Ionicons name="flame" size={20} color="#FFFFFF" />
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Start Cooking</Text>
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* �🗑️ Enhanced Remove Button - Recipe Response Style */}
+                      <View className="flex-row justify-center mt-3">
                         <TouchableOpacity
                           onPress={(e) => {
                             e.stopPropagation()
@@ -784,7 +827,7 @@ const FavoritesScreen: React.FC = () => {
             <View
               style={{
                 paddingTop: insets.top + 12,
-                paddingBottom: 16,
+                paddingBottom: 12,
                 borderBottomWidth: 1,
                 borderBottomColor: "rgba(255, 255, 255, 0.08)",
               }}
@@ -989,6 +1032,40 @@ const FavoritesScreen: React.FC = () => {
                         </View>
                       ))}
                     </View>
+                  </View>
+
+                  {/* 🔥 Start Cooking Button */}
+                  <View className="mb-6">
+                    <TouchableOpacity
+                      onPress={() => {
+                        const recipe = displayFilteredFavorites.find(r => {
+                          const rId = r.id || r._id || r.recipeId
+                          return rId === expandedRecipeId
+                        })
+                        if (recipe) {
+                          setExpandedRecipeId(null)
+                          handleStartCooking(recipe)
+                        }
+                      }}
+                      className="rounded-xl py-4 flex-row items-center justify-center shadow-lg"
+                      activeOpacity={0.7}
+                    >
+                      <LinearGradient
+                        colors={['#FACC15', '#F97316']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 0 }}
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          bottom: 0,
+                          borderRadius: 12,
+                        }}
+                      />
+                      <Ionicons name="flame" size={24} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>Start Cooking</Text>
+                    </TouchableOpacity>
                   </View>
 
                   {/* ⭐ Enhanced Chef's Tips */}

@@ -177,10 +177,11 @@ class CommunityService {
     }
 
     async getUserProfile(userId: string) {
-        return await apiClient.get<any>(`/community/users/${userId}`, false);
+        return await apiClient.get<any>(`/community/users/${userId}/profile`, true);
     }
 
     async followUser(userId: string) {
+        console.log("Following user with ID:", userId);
         return await apiClient.post<any>(`/community/users/${userId}/follow`, {}, true);
     }
 
