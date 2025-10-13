@@ -1,7 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { ingredientDetectionService } from "../lib/services/ingredientDetectionService";
 import { Alert } from "react-native/Libraries/Alert/Alert";
+import { ingredientDetectionService } from "../lib/services/ingredientDetectionService";
 
 // Define ingredient type that can include confidence
 export interface IngredientItem {
@@ -359,12 +359,15 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
         ? String(error.message)
         : "Failed to scan image.";
       
-      // Show alert for timeout/network errors
-      if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout')) {
+      // Show alert for timeout/network errors and AbortError
+      if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout') || 
+          (error instanceof Error && error.name === 'AbortError')) {
         showCustomDialog(
           'error',
           'Request Failed',
-          'Unable to analyze the image. Please check your connection and try again.'
+          errorMessage.includes('Request Timeout') || (error instanceof Error && error.name === 'AbortError') 
+            ? 'Image analysis took too long. Please try again.'
+            : 'Unable to analyze the image. Please check your connection and try again.'
         );
       } else {
         // For other errors, show a generic message
