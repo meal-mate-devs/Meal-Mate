@@ -879,12 +879,7 @@ const GroceryListScreen: React.FC = () => {
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => {
-              // If accessed from sidebar, go back to home screen
-              if (params.from === 'sidebar') {
-                router.push('/(protected)/(tabs)/home')
-              } else {
-                router.back()
-              }
+              router.push('/(protected)/(tabs)/home')
             }}
             style={styles.backButton}
             activeOpacity={0.7}
