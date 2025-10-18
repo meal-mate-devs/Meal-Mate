@@ -12,11 +12,8 @@ const firebaseConfig: FirebaseOptions = {
 
 // API configuration
 const apiConfig = {
-    // Default to environment variable or fallback to the hardcoded value if not available
-    apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://192.168.100.65:5000/api",
-    // Ingredient detection API URL
-    ingredientDetectionApiUrl: process.env.EXPO_PUBLIC_INGREDIENT_DETECTION_API_URL || "http://192.168.100.65:8000",
-    // The specific endpoint for ingredient detection
+    apiUrl: process.env.EXPO_PUBLIC_API_URL || "http://localhost:5000/api",
+    ingredientDetectionApiUrl: process.env.EXPO_PUBLIC_INGREDIENT_DETECTION_API_URL || "http://localhost:8000",
     ingredientDetectionEndpoint: "/detect",
 };
 
