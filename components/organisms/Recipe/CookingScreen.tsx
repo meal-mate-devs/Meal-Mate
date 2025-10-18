@@ -3,14 +3,14 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Dialog from '../../atoms/Dialog';
@@ -562,11 +562,11 @@ export default function CookingScreen() {
         type="success"
         title="Recipe Completed! 🎉"
         message={
-          <Text style={{ textAlign: 'center', fontSize: 15, lineHeight: 24 }}>
+          <Text style={{ textAlign: 'center', color: 'white', fontSize: 15, lineHeight: 24 }}>
             <Text>Congratulations! You've successfully completed:{'\n\n'}</Text>
             <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{completionTitleText}</Text>
             <Text>{'\n\n'}Total cooking time: </Text>
-            <Text style={{ fontWeight: '600' }}>{formatTime(overallTime)}</Text>
+            <Text style={{ fontWeight: '600' }}>{formatTime(overallTime)} {'\n'}</Text>
           </Text>
         }
         confirmText="Done"

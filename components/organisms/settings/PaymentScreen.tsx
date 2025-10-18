@@ -115,10 +115,10 @@ const PaymentScreen: React.FC = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
       <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* Header with proper spacing */}
-      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4">
+      <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => router.push("/settings")}>
             <Ionicons name="arrow-back" size={24} color="white" />

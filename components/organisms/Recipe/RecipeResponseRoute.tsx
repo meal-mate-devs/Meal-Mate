@@ -21,7 +21,7 @@ interface MissingIngredient {
   priority?: string;
 }
 
-const TIMEOUT_DURATION = 50000
+const TIMEOUT_DURATION = 60000
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 // 🔧 PRODUCTION FIX: Helper function to extract ingredient name
@@ -50,6 +50,7 @@ export default function RecipeResponseRoute(): JSX.Element {
   const [showUnsafeIngredientsDialog, setShowUnsafeIngredientsDialog] = useState(false)
   const [showSaveSuccessDialog, setShowSaveSuccessDialog] = useState(false)
   const [showRemoveSuccessDialog, setShowRemoveSuccessDialog] = useState(false)
+  const [showEditSuccessDialog, setShowEditSuccessDialog] = useState(false)
   const [showAddToGroceryModal, setShowAddToGroceryModal] = useState(false)
   const [showGrocerySuccessDialog, setShowGrocerySuccessDialog] = useState(false)
   const [addedGroceryItems, setAddedGroceryItems] = useState<Set<string>>(new Set())
@@ -92,6 +93,9 @@ export default function RecipeResponseRoute(): JSX.Element {
   const [showFullDescription, setShowFullDescription] = useState(false)
   const [showFullNutrition, setShowFullNutrition] = useState(false)
   const [isRecipeSaved, setIsRecipeSaved] = useState(false)
+  const [markedPresentIngredients, setMarkedPresentIngredients] = useState<Set<string>>(new Set())
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editedRecipe, setEditedRecipe] = useState<GeneratedRecipe | null>(null)
 
   useEffect(() => {
     Animated.parallel([
@@ -367,6 +371,25 @@ export default function RecipeResponseRoute(): JSX.Element {
     }
   }
 
+  const handleSaveEditedRecipe = (): void => {
+    if (editedRecipe) {
+      setGeneratedRecipe(editedRecipe)
+      setIsEditMode(false)
+      setEditedRecipe(null)
+
+      // Update pantry analysis with the new missing ingredients
+      if (pantryAnalysis) {
+        const updatedPantryAnalysis = {
+          ...pantryAnalysis,
+          missingIngredients: missingIngredients
+        };
+        setPantryAnalysis(updatedPantryAnalysis);
+      }
+
+      setShowEditSuccessDialog(true)
+    }
+  }
+
   const handleShareRecipe = async (recipe: GeneratedRecipe): Promise<void> => {
     let recipeText = `🍽️ ${recipe.title}\n\n`
     recipeText += `📝 ${recipe.description}\n\n`
@@ -554,6 +577,61 @@ export default function RecipeResponseRoute(): JSX.Element {
     }
   }
 
+  const handleToggleIngredientPresence = async (ingredientName: string, markAsPresent: boolean) => {
+    try {
+      if (markAsPresent) {
+        // Mark as present - remove from missing ingredients
+        setMarkedPresentIngredients(prev => new Set([...prev, ingredientName]));
+      } else {
+        // Mark as missing - remove from present ingredients
+        setMarkedPresentIngredients(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(ingredientName);
+          return newSet;
+        });
+      }
+
+      // Update the missing ingredients list
+      const updatedMissingIngredients = markAsPresent
+        ? missingIngredients.filter(ing => getIngredientName(ing) !== ingredientName)
+        : [...missingIngredients.filter(ing => getIngredientName(ing) !== ingredientName), ingredientName];
+
+      setMissingIngredients(updatedMissingIngredients);
+
+      // Update pantry analysis to reflect the change
+      if (pantryAnalysis && generatedRecipe) {
+        // Calculate available ingredients based on total recipe ingredients minus current missing ingredients
+        const allIngredientNames = generatedRecipe.ingredients.map(ing => ing.name);
+        const currentMissingNames = updatedMissingIngredients.map(ing => getIngredientName(ing));
+        const updatedAvailableIngredients = allIngredientNames.filter(name => !currentMissingNames.includes(name));
+
+        // Recalculate match percentage based on available ingredients vs total recipe ingredients
+        const totalIngredients = generatedRecipe.ingredients.length;
+        const availableCount = updatedAvailableIngredients.length;
+        const newMatchPercentage = Math.round((availableCount / totalIngredients) * 100);
+
+        const updatedPantryAnalysis = {
+          ...pantryAnalysis,
+          missingIngredients: updatedMissingIngredients,
+          availableIngredients: updatedAvailableIngredients,
+          matchPercentage: newMatchPercentage
+        };
+        setPantryAnalysis(updatedPantryAnalysis);
+      }
+
+      // Recalculate sufficiency warning based on updated missing ingredients
+      if (updatedMissingIngredients.length === 0) {
+        setSufficiencyWarning(null);
+      } else {
+        const missingNames = updatedMissingIngredients.map(ing => getIngredientName(ing));
+        setSufficiencyWarning(`You are missing: ${missingNames.join(', ')}. Consider substitutions or adding to grocery list.`);
+      }
+
+    } catch (error) {
+      console.log('Error updating ingredient presence:', error);
+    }
+  };
+
   const handlePurchaseDateChange = (event: any, selectedDate?: Date): void => {
     setShowPurchaseDatePicker(false)
     if (selectedDate) {
@@ -593,17 +671,19 @@ export default function RecipeResponseRoute(): JSX.Element {
     <>
       <StatusBar 
         barStyle="light-content" 
-        backgroundColor="#000000"
+        backgroundColor="#09090b"
         translucent={true}
       />
       <LinearGradient
-        colors={["#000000", "#121212"]}
-        className="flex-1"
+        colors={["#09090b", "#18181b"]}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
       >
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
         {isGenerating && !error && !generatedRecipe && (
-        <LinearGradient
-          colors={["#000000", "#121212"]}
-          className="flex-1 justify-center items-center"
+        <View
+          className="flex-1 justify-center items-center bg-black"
         >
           {/* Artistic background with refined glows */}
           <View className="absolute inset-0">
@@ -740,16 +820,15 @@ export default function RecipeResponseRoute(): JSX.Element {
               />
             </View>
           </Animated.View>
-        </LinearGradient>
+        </View>
       )}
 
       {error &&
         (() => {
           const formattedError = formatErrorMessage(error)
           return (
-            <LinearGradient
-              colors={["#000000", "#121212"]}
-              className="flex-1"
+            <View
+              className="flex-1 bg-zinc-900"
             >
               <ScrollView
                 className="flex-1"
@@ -800,7 +879,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                 </View>
               </View>
             </ScrollView>
-            </LinearGradient>
+            </View>
           )
         })()}
 
@@ -812,44 +891,75 @@ export default function RecipeResponseRoute(): JSX.Element {
             transform: [{ scale: scaleAnim }],
           }}
         >
-          <LinearGradient
-            colors={["#000000", "#121212"]}
-            style={{ paddingTop: insets.top }}
+          <View
+            style={{ paddingTop: insets.top, backgroundColor: 'transparent' }}
           >
             <View className="px-4 py-3">
               <View className="flex-row items-center justify-between">
                 <TouchableOpacity
-                  onPress={handleClose}
+                  onPress={isEditMode ? () => {
+                    setIsEditMode(false);
+                    setEditedRecipe(null);
+                  } : handleClose}
                   className="w-12 h-12 rounded-full items-center justify-center"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)' }}
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+                  <Ionicons name={isEditMode ? "close" : "arrow-back"} size={22} color="#FFFFFF" />
                 </TouchableOpacity>
 
                 <View className="flex-row items-center">
+                  {!isEditMode && (
+                    <>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setIsEditMode(true)
+                          setEditedRecipe(generatedRecipe ? { ...generatedRecipe } : null)
+                        }}
+                        className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-sm"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="create-outline" size={20} color="#FACC15" />
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => handleShareRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-sm"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="share-outline" size={20} color="#FACC15" />
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleShareRecipe(generatedRecipe)}
+                        className="w-12 h-12 rounded-xl items-center justify-center mr-3 shadow-sm"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="share-outline" size={20} color="#FACC15" />
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => handleSaveRecipe(generatedRecipe)}
-                    className="w-12 h-12 rounded-xl items-center justify-center shadow-sm"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons
-                      name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"}
-                      size={20}
-                      color="#FACC15"
-                    />
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleSaveRecipe(generatedRecipe)}
+                        className="w-12 h-12 rounded-xl items-center justify-center shadow-sm"
+                        style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons
+                          name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"}
+                          size={20}
+                          color="#FACC15"
+                        />
+                      </TouchableOpacity>
+                    </>
+                  )}
+
+                  {isEditMode && (
+                    <TouchableOpacity
+                      onPress={handleSaveEditedRecipe}
+                      className="px-6 py-3 rounded-xl items-center justify-center shadow-sm"
+                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
+                      activeOpacity={0.7}
+                    >
+                      <View className="flex-row items-center">
+                        <Ionicons name="checkmark" size={18} color="#22C55E" />
+                        <Text className="text-sm font-bold ml-2" style={{ color: '#22C55E' }}>Save Changes</Text>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
@@ -857,14 +967,25 @@ export default function RecipeResponseRoute(): JSX.Element {
             <View className="px-6 pb-4">
               <View className="space-y-3">
                 <View>
-                  <Text className="text-2xl font-bold leading-tight tracking-tight" style={{ color: '#FFFFFF' }}>
-                    {generatedRecipe.title}
-                  </Text>
+                  {isEditMode ? (
+                    <TextInput
+                      value={editedRecipe?.title || ''}
+                      onChangeText={(text) => setEditedRecipe(prev => prev ? { ...prev, title: text } : null)}
+                      className="text-2xl font-bold leading-tight tracking-tight"
+                      style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 8, padding: 8, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                      placeholder="Recipe Title"
+                      placeholderTextColor="#94A3B8"
+                    />
+                  ) : (
+                    <Text className="text-2xl font-bold leading-tight tracking-tight" style={{ color: '#FFFFFF' }}>
+                      {generatedRecipe.title}
+                    </Text>
+                  )}
                   <View className="w-8 h-0.5 rounded-full mt-2" style={{ backgroundColor: '#FACC15' }} />
                 </View>
               </View>
             </View>
-          </LinearGradient>
+          </View>
 
           <ScrollView
             className="flex-1"
@@ -873,37 +994,51 @@ export default function RecipeResponseRoute(): JSX.Element {
           >
             {/* Recipe Description */}
             <View className="px-6 pt-2 pb-4">
-              {showFullDescription ? (
-                <TouchableOpacity
-                  onPress={() => setShowFullDescription(false)}
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
-                    {generatedRecipe.description}
-                    <Text className="text-sm font-medium" style={{ color: '#FACC15' }}> Show Less</Text>
-                  </Text>
-                </TouchableOpacity>
+              {isEditMode ? (
+                <TextInput
+                  value={editedRecipe?.description || ''}
+                  onChangeText={(text) => setEditedRecipe(prev => prev ? { ...prev, description: text } : null)}
+                  multiline
+                  className="text-base leading-relaxed"
+                  style={{ color: '#94A3B8', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 8, padding: 8, backgroundColor: 'rgba(0, 0, 0, 0.2)', minHeight: 80 }}
+                  placeholder="Recipe Description"
+                  placeholderTextColor="#94A3B8"
+                />
               ) : (
-                <TouchableOpacity
-                  onPress={() => setShowFullDescription(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
-                    {generatedRecipe.description.length > 120
-                      ? `${generatedRecipe.description.substring(0, 120)}...`
-                      : generatedRecipe.description
-                    }
-                    <Text className="text-sm font-medium" style={{ color: '#FACC15' }}>
-                      {generatedRecipe.description.length > 120 ? ' Read More' : ''}
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
+                <>
+                  {showFullDescription ? (
+                    <TouchableOpacity
+                      onPress={() => setShowFullDescription(false)}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
+                        {generatedRecipe.description}
+                        <Text className="text-sm font-medium" style={{ color: '#FACC15' }}> Show Less</Text>
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => setShowFullDescription(true)}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
+                        {generatedRecipe.description.length > 120
+                          ? `${generatedRecipe.description.substring(0, 120)}...`
+                          : generatedRecipe.description
+                        }
+                        <Text className="text-sm font-medium" style={{ color: '#FACC15' }}>
+                          {generatedRecipe.description.length > 120 ? ' Read More' : ''}
+                        </Text>
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
             </View>
 
             {/* Recipe Info Bar - Quick Overview */}
             <View className="px-4 mt-4">
-              <View className="rounded-xl p-4 shadow-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+              <View className="rounded-xl p-4 shadow-lg bg-zinc-800" style={{ borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
               <View className="flex-row items-center justify-between">
                 <View className="items-center">
                   <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
@@ -999,7 +1134,7 @@ export default function RecipeResponseRoute(): JSX.Element {
               </View>
 
               {showFullNutrition && (
-                <View className="mt-3 rounded-xl p-4 shadow-lg" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                <View className="mt-3 rounded-xl p-4 shadow-lg bg-zinc-800" style={{ borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   <View className="flex-row items-center justify-between mb-4">
                     <View className="flex-row items-center">
                       <View className="w-1 h-4 rounded-full mr-2" style={{ backgroundColor: '#FACC15' }} />
@@ -1044,6 +1179,126 @@ export default function RecipeResponseRoute(): JSX.Element {
               )}
             </View>
 
+            {/* Ingredients Section */}
+            <View className="px-4 py-4">
+              <View className="flex-row items-center mb-3">
+                <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
+                <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Ingredients</Text>
+                <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
+              </View>
+              <View className="rounded-2xl p-3 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                {generatedRecipe.ingredients.map((ingredient, index) => {
+                  const isOriginallyMissing = missingIngredients.some(ing => getIngredientName(ing) === ingredient.name);
+                  const isMarkedPresent = markedPresentIngredients.has(ingredient.name);
+                  const showToggle = isOriginallyMissing && !isMarkedPresent;
+                  
+                  return (
+                    <View
+                      key={`ingredient-${index}`}
+                      className={`flex-row items-start py-2 ${
+                        index !== generatedRecipe.ingredients.length - 1 ? "border-b" : ""
+                      }`}
+                      style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
+                    >
+                      <View className="w-12 h-12 rounded-2xl items-center justify-center mr-4 mt-0.5 shadow-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 2, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+                        <Text className="text-base font-bold" style={{ color: '#22C55E' }}>{index + 1}</Text>
+                      </View>
+                      <View className="flex-1">
+                        {isEditMode ? (
+                          <View className="space-y-2">
+                            <View className="flex-row items-center space-x-2">
+                              <TextInput
+                                value={editedRecipe?.ingredients[index]?.amount?.toString() || ''}
+                                onChangeText={(text) => {
+                                  const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                  newIngredients[index] = { ...newIngredients[index], amount: text };
+                                  setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
+                                }}
+                                className="flex-1 text-sm"
+                                style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                                placeholder="Amount"
+                                placeholderTextColor="#94A3B8"
+                                keyboardType="numeric"
+                              />
+                              <TextInput
+                                value={editedRecipe?.ingredients[index]?.unit || ''}
+                                onChangeText={(text) => {
+                                  const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                  newIngredients[index] = { ...newIngredients[index], unit: text };
+                                  setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
+                                }}
+                                className="flex-1 text-sm"
+                                style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                                placeholder="Unit"
+                                placeholderTextColor="#94A3B8"
+                              />
+                            </View>
+                            <TextInput
+                              value={editedRecipe?.ingredients[index]?.name || ''}
+                              onChangeText={(text) => {
+                                const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                newIngredients[index] = { ...newIngredients[index], name: text };
+                                setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
+                              }}
+                              className="text-base"
+                              style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                              placeholder="Ingredient name"
+                              placeholderTextColor="#94A3B8"
+                            />
+                            <TextInput
+                              value={editedRecipe?.ingredients[index]?.notes || ''}
+                              onChangeText={(text) => {
+                                const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                newIngredients[index] = { ...newIngredients[index], notes: text };
+                                setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
+                              }}
+                              className="text-sm"
+                              style={{ color: '#94A3B8', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                              placeholder="Notes (optional)"
+                              placeholderTextColor="#94A3B8"
+                            />
+                          </View>
+                        ) : (
+                          <Text className="text-base leading-relaxed" style={{ color: '#FFFFFF' }}>
+                            <Text className="font-bold">
+                              {ingredient.amount} {ingredient.unit}
+                            </Text>
+                            <Text> {ingredient.name}</Text>
+                            {isOriginallyMissing && isMarkedPresent && (
+                              <Text className="text-xs text-green-400 ml-2">✓ Marked as present</Text>
+                            )}
+                          </Text>
+                        )}
+                        {!isEditMode && ingredient.notes && (
+                          <Text className="text-sm mt-2 leading-6 italic" style={{ color: '#94A3B8' }}>{ingredient.notes}</Text>
+                        )}
+                      </View>
+                      {!isEditMode && showToggle && (
+                        <TouchableOpacity
+                          onPress={() => handleToggleIngredientPresence(ingredient.name, true)}
+                          className="w-8 h-8 rounded-lg items-center justify-center ml-2"
+                          style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="checkmark" size={16} color="#22C55E" />
+                        </TouchableOpacity>
+                      )}
+                      {!isEditMode && isOriginallyMissing && isMarkedPresent && (
+                        <TouchableOpacity
+                          onPress={() => handleToggleIngredientPresence(ingredient.name, false)}
+                          className="w-8 h-8 rounded-lg items-center justify-center ml-2"
+                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close" size={16} color="#EF4444" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
             {/* Missing Ingredients */}
             {missingIngredients.length > 0 && (
               <View className="px-4 pt-4">
@@ -1052,11 +1307,26 @@ export default function RecipeResponseRoute(): JSX.Element {
                     <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#EF4444' }} />
                     <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Missing Items</Text>
                   </View>
-                  <View className="px-4 py-2 rounded-full shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
-                    <Text className="text-xs font-bold" style={{ color: '#EF4444' }}>{missingIngredients.length} needed</Text>
+                  <View className="flex-row items-center">
+                    {isEditMode && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const newMissingIngredients = [...missingIngredients, "New missing ingredient"];
+                          setMissingIngredients(newMissingIngredients);
+                        }}
+                        className="w-8 h-8 rounded-lg items-center justify-center mr-2"
+                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="add" size={16} color="#22C55E" />
+                      </TouchableOpacity>
+                    )}
+                    <View className="px-4 py-2 rounded-full shadow-md" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 2, borderColor: 'rgba(239, 68, 68, 0.3)' }}>
+                      <Text className="text-xs font-bold" style={{ color: '#EF4444' }}>{missingIngredients.length} needed</Text>
+                    </View>
                   </View>
                 </View>
-                <View className="rounded-2xl p-3 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                <View className="rounded-2xl p-3 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   {missingIngredients.map((ingredient, index) => (
                     <View
                       key={`missing-${index}`}
@@ -1069,27 +1339,59 @@ export default function RecipeResponseRoute(): JSX.Element {
                         <View className="w-9 h-9 rounded-xl items-center justify-center mr-3 shadow-sm" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)' }}>
                           <Ionicons name="alert-circle-outline" size={20} color="#EF4444" />
                         </View>
-                        <Text className="text-base font-medium flex-1 flex-wrap" style={{ color: '#FFFFFF' }}>
-                          {getIngredientName(ingredient)}
-                        </Text>
+                        {isEditMode ? (
+                          <TextInput
+                            value={typeof ingredient === 'string' ? ingredient : getIngredientName(ingredient)}
+                            onChangeText={(text) => {
+                              const newMissingIngredients = [...missingIngredients];
+                              newMissingIngredients[index] = text;
+                              setMissingIngredients(newMissingIngredients);
+                            }}
+                            className="text-base font-medium flex-1"
+                            style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                            placeholder="Missing ingredient"
+                            placeholderTextColor="#94A3B8"
+                          />
+                        ) : (
+                          <Text className="text-base font-medium flex-1 flex-wrap" style={{ color: '#FFFFFF' }}>
+                            {getIngredientName(ingredient)}
+                          </Text>
+                        )}
                       </View>
-                      {addedGroceryItems.has(getIngredientName(ingredient)) ? (
-                        <View className="px-4 py-2 rounded-xl shadow-sm min-w-[100px] items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
-                          <View className="flex-row items-center">
-                            <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
-                            <Text className="text-sm font-bold tracking-wide text-center ml-1" style={{ color: '#22C55E' }}>Added</Text>
+                      <View className="flex-row items-center">
+                        {isEditMode && (
+                          <TouchableOpacity
+                            onPress={() => {
+                              const newMissingIngredients = missingIngredients.filter((_, i) => i !== index);
+                              setMissingIngredients(newMissingIngredients);
+                            }}
+                            className="w-8 h-8 rounded-lg items-center justify-center mr-2"
+                            style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                          </TouchableOpacity>
+                        )}
+                        {addedGroceryItems.has(getIngredientName(ingredient)) ? (
+                          <View className="px-4 py-2 rounded-xl shadow-sm min-w-[100px] items-center justify-center" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
+                            <View className="flex-row items-center">
+                              <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+                              <Text className="text-sm font-bold tracking-wide text-center ml-1" style={{ color: '#22C55E' }}>Added</Text>
+                            </View>
                           </View>
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => handleOpenGroceryModal(getIngredientName(ingredient))}
-                          className="px-4 py-2 rounded-xl shadow-sm min-w-[100px]"
-                          style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="text-sm font-bold tracking-wide text-center" style={{ color: '#FACC15' }}>Add to Grocery</Text>
-                        </TouchableOpacity>
-                      )}
+                        ) : (
+                          !isEditMode && (
+                            <TouchableOpacity
+                              onPress={() => handleOpenGroceryModal(getIngredientName(ingredient))}
+                              className="px-4 py-2 rounded-xl shadow-sm min-w-[100px]"
+                              style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
+                              activeOpacity={0.7}
+                            >
+                              <Text className="text-sm font-bold tracking-wide text-center" style={{ color: '#FACC15' }}>Add to Grocery</Text>
+                            </TouchableOpacity>
+                          )
+                        )}
+                      </View>
                     </View>
                   ))}
                 </View>
@@ -1098,51 +1400,11 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             {sufficiencyWarning && (
               <View className="px-4 mt-3">
-                <View className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
-                  <View className="flex-row items-start">
-                    <View className="w-6 h-6 rounded-lg items-center justify-center mr-3 mt-0.5" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
-                      <Ionicons name="warning" size={14} color="#F59E0B" />
-                    </View>
-                    <Text className="text-sm leading-5 flex-1 font-medium" style={{ color: '#F59E0B' }}>You provided insufficient ingredients for a standard recipe.</Text>
-                  </View>
+                <View className="rounded-xl p-3 shadow-sm" style={{ backgroundColor: '#facc1506', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                  <Text className="text-sm leading-5 font-medium" style={{ color: '#94A3B8' }}>{sufficiencyWarning}</Text>
                 </View>
               </View>
             )}
-
-            {/* Ingredients Section */}
-            <View className="px-4 py-4">
-              <View className="flex-row items-center mb-3">
-                <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
-                <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Ingredients</Text>
-                <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
-              </View>
-              <View className="rounded-2xl p-3 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-                {generatedRecipe.ingredients.map((ingredient, index) => (
-                  <View
-                    key={`ingredient-${index}`}
-                    className={`flex-row items-start py-2 ${
-                      index !== generatedRecipe.ingredients.length - 1 ? "border-b" : ""
-                    }`}
-                    style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
-                  >
-                    <View className="w-12 h-12 rounded-2xl items-center justify-center mr-4 mt-0.5 shadow-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 2, borderColor: 'rgba(34, 197, 94, 0.3)' }}>
-                      <Text className="text-base font-bold" style={{ color: '#22C55E' }}>{index + 1}</Text>
-                    </View>
-                    <View className="flex-1">
-                      <Text className="text-base leading-relaxed" style={{ color: '#FFFFFF' }}>
-                        <Text className="font-bold">
-                          {ingredient.amount} {ingredient.unit}
-                        </Text>
-                        <Text> {ingredient.name}</Text>
-                      </Text>
-                      {ingredient.notes && (
-                        <Text className="text-sm mt-2 leading-6 italic" style={{ color: '#94A3B8' }}>{ingredient.notes}</Text>
-                      )}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            </View>
 
             {/* Substitutions */}
             {substitutions.length > 0 && (
@@ -1156,7 +1418,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                     <Text className="text-xs font-bold" style={{ color: '#3B82F6' }}>{substitutions.length} options</Text>
                   </View>
                 </View>
-                <View className="rounded-2xl p-5 space-y-5 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                <View className="rounded-2xl p-5 space-y-5 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                   {substitutions.map((sub, index) => (
                     <View
                       key={`sub-${index}`}
@@ -1186,36 +1448,86 @@ export default function RecipeResponseRoute(): JSX.Element {
                 <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Instructions</Text>
                 <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
               </View>
-              <View className="space-y-4">
+              <View className="">
                 {generatedRecipe.instructions.map((instruction, index) => (
                   <View
                     key={`instruction-${index}`}
-                    className="rounded-2xl p-6 shadow-xl"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}
+                    className={`rounded-2xl p-6 shadow-xl bg-zinc-800 ${
+                      index !== generatedRecipe.instructions.length - 1 ? "mb-4 border-b" : ""
+                    }`}
+                    style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                   >
                     <View className="flex-row">
                       <View className="w-14 h-14 rounded-2xl items-center justify-center mr-4 shadow-xl border-2" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderColor: 'rgba(250, 204, 21, 0.3)' }}>
                         <Text className="font-bold text-xl" style={{ color: '#FACC15' }}>{instruction.step}</Text>
                       </View>
                       <View className="flex-1">
-                        <Text className="text-base leading-7" style={{ color: '#FFFFFF' }}>{instruction.instruction}</Text>
-                        {instruction.duration && (
-                          <View className="flex-row items-center mt-3 rounded-xl px-4 py-2.5 self-start" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
-                            <Ionicons name="timer-outline" size={16} color="#FACC15" />
-                            <Text className="text-sm ml-2 font-semibold tracking-wide" style={{ color: '#FACC15' }}>
-                              {instruction.duration} minutes
-                            </Text>
-                          </View>
-                        )}
-                        {instruction.tips && (
-                          <View className="rounded-xl p-4 mt-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.2)' }}>
-                            <View className="flex-row items-start">
-                              <View className="w-7 h-7 rounded-lg items-center justify-center mr-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }}>
-                                <Ionicons name="bulb-outline" size={14} color="#FACC15" />
-                              </View>
-                              <Text className="text-sm leading-6 flex-1" style={{ color: '#FACC15' }}>{instruction.tips}</Text>
+                        {isEditMode ? (
+                          <View className="space-y-3">
+                            <TextInput
+                              value={editedRecipe?.instructions[index]?.instruction || ''}
+                              onChangeText={(text) => {
+                                const newInstructions = [...(editedRecipe?.instructions || [])];
+                                newInstructions[index] = { ...newInstructions[index], instruction: text };
+                                setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
+                              }}
+                              multiline
+                              className="text-base leading-7"
+                              style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 8, padding: 8, backgroundColor: 'rgba(0, 0, 0, 0.2)', minHeight: 60 }}
+                              placeholder="Instruction text"
+                              placeholderTextColor="#94A3B8"
+                            />
+                            <View className="flex-row items-center space-x-2">
+                              <TextInput
+                                value={editedRecipe?.instructions[index]?.duration?.toString() || ''}
+                                onChangeText={(text) => {
+                                  const newInstructions = [...(editedRecipe?.instructions || [])];
+                                  newInstructions[index] = { ...newInstructions[index], duration: parseInt(text) || undefined };
+                                  setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
+                                }}
+                                className="flex-1 text-sm"
+                                style={{ color: '#FACC15', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                                placeholder="Duration (minutes)"
+                                placeholderTextColor="#94A3B8"
+                                keyboardType="numeric"
+                              />
                             </View>
+                            <TextInput
+                              value={editedRecipe?.instructions[index]?.tips || ''}
+                              onChangeText={(text) => {
+                                const newInstructions = [...(editedRecipe?.instructions || [])];
+                                newInstructions[index] = { ...newInstructions[index], tips: text };
+                                setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
+                              }}
+                              multiline
+                              className="text-sm"
+                              style={{ color: '#FACC15', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)', minHeight: 40 }}
+                              placeholder="Tips (optional)"
+                              placeholderTextColor="#94A3B8"
+                            />
                           </View>
+                        ) : (
+                          <>
+                            <Text className="text-base leading-7" style={{ color: '#FFFFFF' }}>{instruction.instruction}</Text>
+                            {instruction.duration && (
+                              <View className="flex-row items-center mt-3 rounded-xl px-4 py-2.5 self-start" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
+                                <Ionicons name="timer-outline" size={16} color="#FACC15" />
+                                <Text className="text-sm ml-2 font-semibold tracking-wide" style={{ color: '#FACC15' }}>
+                                  {instruction.duration} minutes
+                                </Text>
+                              </View>
+                            )}
+                            {instruction.tips && (
+                              <View className="rounded-xl p-4 mt-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.2)' }}>
+                                <View className="flex-row items-start">
+                                  <View className="w-7 h-7 rounded-lg items-center justify-center mr-3" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }}>
+                                    <Ionicons name="bulb-outline" size={14} color="#FACC15" />
+                                  </View>
+                                  <Text className="text-sm leading-6 flex-1" style={{ color: '#FACC15' }}>{instruction.tips}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </>
                         )}
                       </View>
                     </View>
@@ -1229,7 +1541,7 @@ export default function RecipeResponseRoute(): JSX.Element {
               <View className="px-4 pb-6">
                 <View className="flex-row items-center mb-5">
                   <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
-                  <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Chef's Tips</Text>
+                  <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Chef&apos;s Tips</Text>
                   <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                 </View>
                 <View className="rounded-2xl p-6 shadow-xl" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
@@ -1244,7 +1556,23 @@ export default function RecipeResponseRoute(): JSX.Element {
                       <View className="w-7 h-7 rounded-lg items-center justify-center mr-3 mt-0.5" style={{ backgroundColor: 'rgba(250, 204, 21, 0.15)' }}>
                         <Ionicons name="star" size={14} color="#FACC15" />
                       </View>
-                      <Text className="text-base leading-7 flex-1" style={{ color: '#FACC15' }}>{tip}</Text>
+                      {isEditMode ? (
+                        <TextInput
+                          value={editedRecipe?.tips[index] || ''}
+                          onChangeText={(text) => {
+                            const newTips = [...(editedRecipe?.tips || [])];
+                            newTips[index] = text;
+                            setEditedRecipe(prev => prev ? { ...prev, tips: newTips } : null);
+                          }}
+                          multiline
+                          className="text-base leading-7 flex-1"
+                          style={{ color: '#FACC15', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
+                          placeholder="Chef's tip"
+                          placeholderTextColor="#94A3B8"
+                        />
+                      ) : (
+                        <Text className="text-base leading-7 flex-1" style={{ color: '#FACC15' }}>{tip}</Text>
+                      )}
                     </View>
                   ))}
                 </View>
@@ -1263,7 +1591,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                     <Text className="text-xl font-bold tracking-tight" style={{ color: '#FFFFFF' }}>Recipe Notes</Text>
                     <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                   </View>
-                  <View className="rounded-2xl p-6 space-y-6 shadow-xl" style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                  <View className="rounded-2xl p-6 space-y-6 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                     {adaptationNotes.timing && adaptationNotes.timing.length > 0 && (
                       <View>
                         <View className="flex-row items-center mb-3">
@@ -1333,12 +1661,13 @@ export default function RecipeResponseRoute(): JSX.Element {
 
             <View className="px-4 pb-6">
               <TouchableOpacity
-                onPress={() => handleStartCooking(generatedRecipe)}
+                onPress={() => !isEditMode && handleStartCooking(generatedRecipe)}
                 className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
-                activeOpacity={0.7}
+                activeOpacity={isEditMode ? 1 : 0.7}
+                disabled={isEditMode}
               >
                 <LinearGradient
-                  colors={['#FACC15', '#F97316']}
+                  colors={isEditMode ? ['#64748B', '#475569'] : ['#FACC15', '#F97316']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={{
@@ -1351,29 +1680,43 @@ export default function RecipeResponseRoute(): JSX.Element {
                   }}
                 />
                 <Ionicons name="flame" size={20} color="#FFFFFF" />
-                <Text className="font-bold ml-3 text-base tracking-wide text-white">Start Cooking</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => handleSaveRecipe(generatedRecipe)}
-                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
-                style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={isFavorite(generatedRecipe.id) ? "bookmark" : "bookmark-outline"} size={20} color="#FACC15" />
-                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: '#FACC15' }}>
-                  {isFavorite(generatedRecipe.id) ? "Saved to Favorites" : "Save to Favorites"}
+                <Text className="font-bold ml-3 text-base tracking-wide text-white">
+                  {isEditMode ? "Editing Recipe..." : "Start Cooking"}
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleRetry}
-                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
-                activeOpacity={0.7}
+                onPress={() => !isEditMode && handleSaveRecipe(isEditMode && editedRecipe ? editedRecipe : generatedRecipe)}
+                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-3"
+                style={{
+                  backgroundColor: isEditMode ? 'rgba(100, 116, 139, 0.1)' : 'rgba(250, 204, 21, 0.1)',
+                  borderWidth: 1,
+                  borderColor: isEditMode ? 'rgba(100, 116, 139, 0.3)' : 'rgba(250, 204, 21, 0.3)'
+                }}
+                activeOpacity={isEditMode ? 1 : 0.7}
+                disabled={isEditMode}
               >
-                <Ionicons name="refresh" size={20} color="#FACC15" />
-                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: '#94A3B8' }}>Generate New Recipe</Text>
+                <Ionicons name={isFavorite((isEditMode && editedRecipe ? editedRecipe : generatedRecipe).id) ? "bookmark" : "bookmark-outline"} size={20} color={isEditMode ? "#64748B" : "#FACC15"} />
+                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: isEditMode ? '#64748B' : '#FACC15' }}>
+                  {isEditMode ? "Save Disabled During Edit" : (isFavorite((isEditMode && editedRecipe ? editedRecipe : generatedRecipe).id) ? "Saved to Favorites" : "Save to Favorites")}
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => !isEditMode && handleRetry()}
+                className="rounded-xl py-3 flex-row items-center justify-center shadow-sm"
+                style={{
+                  backgroundColor: isEditMode ? 'rgba(100, 116, 139, 0.1)' : 'rgba(255, 255, 255, 0.04)',
+                  borderWidth: 1,
+                  borderColor: isEditMode ? 'rgba(100, 116, 139, 0.3)' : 'rgba(255, 255, 255, 0.08)'
+                }}
+                activeOpacity={isEditMode ? 1 : 0.7}
+                disabled={isEditMode}
+              >
+                <Ionicons name="refresh" size={20} color={isEditMode ? "#64748B" : "#FACC15"} />
+                <Text className="font-bold ml-3 text-base tracking-wide" style={{ color: isEditMode ? '#64748B' : '#94A3B8' }}>
+                  {isEditMode ? "Disabled During Edit" : "Generate New Recipe"}
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -1393,7 +1736,7 @@ export default function RecipeResponseRoute(): JSX.Element {
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
           <StatusBar barStyle="light-content" />
-          <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+          <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
 
           <View style={styles.modalHeader}>
             <TouchableOpacity
@@ -1625,11 +1968,11 @@ export default function RecipeResponseRoute(): JSX.Element {
       />
 
       <Dialog
-        visible={showSaveSuccessDialog}
+        visible={showEditSuccessDialog}
         type="success"
-        title="Recipe Saved!"
-        message="Recipe has been added to your favorites"
-        onClose={() => setShowSaveSuccessDialog(false)}
+        title="Changes Saved!"
+        message="Recipe changes have been saved successfully"
+        onClose={() => setShowEditSuccessDialog(false)}
         confirmText="OK"
         autoClose={true}
         autoCloseTime={2000}
@@ -1711,7 +2054,8 @@ export default function RecipeResponseRoute(): JSX.Element {
         showCloseButton={true}
       />
 
-      <View style={{ backgroundColor: '#000000', height: insets.bottom }} />
+      <View style={{ backgroundColor: '#09090b', height: insets.bottom }} />
+        </View>
       </LinearGradient>
     </>
   )

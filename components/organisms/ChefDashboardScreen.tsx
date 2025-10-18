@@ -1075,62 +1075,69 @@ const ChefDashboardScreen: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <LinearGradient colors={["#000000", "#1F2937"]} style={StyleSheet.absoluteFill} />
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: 'transparent' }]}>
+        {/* Screen content */}
 
-      {/* Replace ScrollView with FlatList */}
-      <FlatList
-        ref={scrollRef}
-        data={getSections()}
-        renderItem={renderSection}
-        keyExtractor={(item, index) => index.toString()}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          flexGrow: 1,
-          paddingBottom: showFeedbackDropdown ? 40 : 0,
-        }}
-        scrollEnabled={true}
-        bounces={showFeedbackDropdown}
-        onScrollToIndexFailed={(info) => {
-          // Fallback if scrollToIndex fails
-          const wait = new Promise(resolve => setTimeout(resolve, 500));
-          wait.then(() => {
-            scrollRef.current?.scrollToIndex({ index: info.index, animated: true });
-          });
-        }}
-        removeClippedSubviews={false}
-      />
-
-      {/* Recipe Upload Modal */}
-      <Modal
-        visible={showRecipeModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowRecipeModal(false)}
-      >
-        <RecipeUploadModal 
-          onClose={() => setShowRecipeModal(false)} 
-          onSave={(recipe) => {
-            setUserRecipes(prev => [recipe, ...prev])
+        {/* Replace ScrollView with FlatList */}
+        <FlatList
+          ref={scrollRef}
+          data={getSections()}
+          renderItem={renderSection}
+          keyExtractor={(item, index) => index.toString()}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: showFeedbackDropdown ? 40 : 0,
           }}
-        />
-      </Modal>
-
-      {/* Course Creation Modal */}
-      <Modal
-        visible={showCourseModal}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowCourseModal(false)}
-      >
-        <CourseCreationModal 
-          onClose={() => setShowCourseModal(false)} 
-          onSave={(course) => {
-            setUserCourses(prev => [course, ...prev])
+          scrollEnabled={true}
+          bounces={showFeedbackDropdown}
+          onScrollToIndexFailed={(info) => {
+            // Fallback if scrollToIndex fails
+            const wait = new Promise(resolve => setTimeout(resolve, 500));
+            wait.then(() => {
+              scrollRef.current?.scrollToIndex({ index: info.index, animated: true });
+            });
           }}
+          removeClippedSubviews={false}
         />
-      </Modal>
-    </View>
+
+        {/* Recipe Upload Modal */}
+        <Modal
+          visible={showRecipeModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowRecipeModal(false)}
+        >
+          <RecipeUploadModal
+            onClose={() => setShowRecipeModal(false)}
+            onSave={(recipe) => {
+              setUserRecipes(prev => [recipe, ...prev])
+            }}
+          />
+        </Modal>
+
+        {/* Course Creation Modal */}
+        <Modal
+          visible={showCourseModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowCourseModal(false)}
+        >
+          <CourseCreationModal
+            onClose={() => setShowCourseModal(false)}
+            onSave={(course) => {
+              setUserCourses(prev => [course, ...prev])
+            }}
+          />
+        </Modal>
+      </View>
+    </LinearGradient>
   )
 }
 
@@ -1541,7 +1548,7 @@ const styles = StyleSheet.create({
   },
   userTypeSelector: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 20,
     padding: 3,
     borderWidth: 1,
@@ -1593,7 +1600,7 @@ const styles = StyleSheet.create({
   chefCard: {
     width: 120,
     marginRight: 16,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     padding: 12,
     alignItems: "center",
@@ -1635,7 +1642,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 20,
     padding: 3,
     marginHorizontal: 24,
@@ -1713,7 +1720,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   recipeCard: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     overflow: "hidden",
     marginBottom: 16,
@@ -1832,7 +1839,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     padding: 16,
     borderRadius: 16,
   },
@@ -1859,7 +1866,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   feedbackDropdown: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     marginTop: 8,
     overflow: "hidden",
@@ -1867,7 +1874,7 @@ const styles = StyleSheet.create({
   feedbackItem: {
     flexDirection: "row",
     padding: 20,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     marginBottom: 12,
     borderWidth: 1,
@@ -1968,7 +1975,7 @@ const styles = StyleSheet.create({
   },
   imageUploadContainer: {
     height: 200,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     marginVertical: 20,
     overflow: "hidden",
@@ -2000,7 +2007,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 12,
     padding: 16,
     color: "white",
@@ -2018,7 +2025,7 @@ const styles = StyleSheet.create({
   premiumToggle: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
@@ -2038,7 +2045,7 @@ const styles = StyleSheet.create({
   },
   difficultySelector: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 12,
     padding: 4,
   },
@@ -2080,7 +2087,7 @@ const styles = StyleSheet.create({
   // Image Upload Styles
   imageUploadBox: {
     height: 120,
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 12,
     borderWidth: 2,
     borderColor: "#374151",
@@ -2135,7 +2142,7 @@ const styles = StyleSheet.create({
   },
   managementTabSelector: {
     flexDirection: "row",
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 20,
     padding: 3,
     marginBottom: 20,
@@ -2176,7 +2183,7 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   managementCard: {
-    backgroundColor: "#1F2937",
+    backgroundColor: "#27272a",
     borderRadius: 16,
     overflow: "hidden",
     borderWidth: 1,

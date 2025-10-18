@@ -173,39 +173,40 @@ const HomeScreen: React.FC = () => {
     );
 
     return (
-        <SafeAreaView className="flex-1 bg-black">
-            <StatusBar barStyle="light-content" />
-            {/* Header with extra top margin */}
-            <View style={{ paddingTop: 38, backgroundColor: 'black' }}>
-                <HomeHeader
-                    onSidebarPress={toggleSidebar}
-                    onProfilePress={handleEditProfile}
-                />
-            </View>
+        <LinearGradient
+            colors={["#09090b", "#18181b"]}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 0.5 }}
+        >
+            <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+                <StatusBar barStyle="light-content" />
+                {/* Header with extra top margin */}
+                <View style={{ paddingTop: 30 }}>
+                    <HomeHeader
+                        onSidebarPress={toggleSidebar}
+                        onProfilePress={handleEditProfile}
+                    />
+                </View>
 
             {/* Smooth Animated Cards Container */}
             <Animated.View 
-                className="px-4 bg-black"
+                className="px-4"
                 style={{
                     opacity: cardsAnimatedOpacity,
                     height: cardsAnimatedHeight,
                     overflow: 'hidden'
                 }}
             >
-                <View className="py-2">
+                <View className="py-4">
                 {/* Health Card - Compact */}
                 <TouchableOpacity
                     className="mb-3 w-full max-w-md"
                     onPress={() => router.push('/health')}
                     activeOpacity={0.8}
                 >
-                    <View className="rounded-2xl overflow-hidden border border-zinc-700/50">
-                        <LinearGradient
-                            colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 1 }}
-                            className="p-2"
-                        >
+                    <View className="rounded-2xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
+                        <View className="p-2">
                         <View className="flex-row items-center justify-between mb-1">
                             <Text className="ml-1 text-white text-xs font-semibold">Calories</Text>
                             <View className="flex-row items-center">
@@ -237,7 +238,7 @@ const HomeScreen: React.FC = () => {
                                 />
                             </Animated.View>
                         </View>
-                    </LinearGradient>
+                        </View>
                     </View>
                 </TouchableOpacity>
 
@@ -249,13 +250,8 @@ const HomeScreen: React.FC = () => {
                         onPress={() => router.push('/recipe/pantry')}
                         activeOpacity={0.8}
                     >
-                        <View className="rounded-xl overflow-hidden border border-zinc-700/50">
-                            <LinearGradient
-                                colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                className="p-3"
-                            >
+                        <View className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
+                            <View className="p-3">
                                 <View className="flex-row items-center justify-between mb-2">
                                     <Text className="text-white text-sm font-semibold">Pantry</Text>
                                     <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
@@ -294,7 +290,7 @@ const HomeScreen: React.FC = () => {
                                     <View />
                                     <View />
                                 </View>
-                            </LinearGradient>
+                            </View>
                         </View>
                     </TouchableOpacity>
 
@@ -304,13 +300,8 @@ const HomeScreen: React.FC = () => {
                         onPress={() => router.push('/settings/grocery-list')}
                         activeOpacity={0.8}
                     >
-                        <View className="rounded-xl overflow-hidden border border-zinc-700/50">
-                            <LinearGradient
-                                colors={['rgba(39, 39, 42, 0.8)', 'rgba(24, 24, 27, 0.9)']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 1 }}
-                                className="p-3"
-                            >
+                        <View className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
+                            <View className="p-3">
                                 <View className="flex-row items-center justify-between mb-2">
                                     <Text className="text-white text-sm font-semibold">Grocery</Text>
                                     <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
@@ -341,7 +332,7 @@ const HomeScreen: React.FC = () => {
                                     <Text className="text-blue-400 text-xs">{groceryData.pending} Pending</Text>
                                     <View />
                                 </View>
-                            </LinearGradient>
+                            </View>
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -349,7 +340,7 @@ const HomeScreen: React.FC = () => {
             </Animated.View>
 
             {/* Static Category Tabs - Always Visible */}
-            <View className="px-4 bg-black">
+            <View className="px-4 py-2 bg-zinc-900">
                 <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -426,6 +417,7 @@ const HomeScreen: React.FC = () => {
                 onEditProfile={handleEditProfile}
             />
         </SafeAreaView>
+    </LinearGradient>
     );
 };
 

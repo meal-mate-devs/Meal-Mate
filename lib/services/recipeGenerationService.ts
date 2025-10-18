@@ -80,7 +80,9 @@ class RecipeGenerationService {
     try {
       const response = await apiClient.post<RecipeGenerationResponse | RecipeGenerationError>(
         '/recipe-generation/generate',
-        request
+        request,
+        true,
+        60000 // 60 second timeout for recipe generation
       );
             
       if (!response.success) {
@@ -116,7 +118,9 @@ class RecipeGenerationService {
           mealType,
           excludedIngredients,
           maxAdditionalIngredients
-        }
+        },
+        true,
+        60000 // 60 second timeout
       );
       
       return response;
@@ -141,7 +145,9 @@ class RecipeGenerationService {
     try {
       const response = await apiClient.post<{ success: boolean; recipes: GeneratedRecipe[] }>(
         '/recipe-generation/preference-based',
-        preferences
+        preferences,
+        true,
+        60000 // 60 second timeout
       );
       
       return response;
@@ -164,7 +170,9 @@ class RecipeGenerationService {
         {
           ingredients,
           dietaryRestrictions
-        }
+        },
+        true,
+        60000 // 60 second timeout
       );
       
       return response;
@@ -189,7 +197,9 @@ class RecipeGenerationService {
           recipeId,
           originalServings,
           newServings
-        }
+        },
+        true,
+        60000 // 60 second timeout
       );
       
       return response;

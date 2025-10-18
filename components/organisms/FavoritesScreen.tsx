@@ -255,14 +255,18 @@ const FavoritesScreen: React.FC = () => {
   }
 
   return (
-    <View className="flex-1">
-      <LinearGradient colors={["#000000", "#121212"]} style={{ flex: 1 }}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* 🎨 Enhanced Header with Safe Area - Recipe Response Style */}
       <View
         style={{
-          paddingTop: insets.top + 12,
+          paddingTop: insets.top + 18,
           paddingBottom: 20,
           zIndex: 100,
           elevation: 20,
@@ -429,9 +433,8 @@ const FavoritesScreen: React.FC = () => {
               return (
                 <View 
                   key={`recipe-${recipeId}-${index}`} 
-                  className="mb-6 rounded-2xl overflow-hidden shadow-xl"
+                  className="mb-6 rounded-2xl overflow-hidden shadow-xl bg-zinc-800"
                   style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.04)",
                     borderWidth: 1,
                     borderColor: "rgba(255, 255, 255, 0.08)"
                   }}
@@ -578,9 +581,8 @@ const FavoritesScreen: React.FC = () => {
                           <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                         </View>
                         <View 
-                          className="rounded-xl p-4 shadow-lg"
+                          className="rounded-xl p-4 shadow-lg bg-zinc-800"
                           style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.04)",
                             borderWidth: 1,
                             borderColor: "rgba(255, 255, 255, 0.08)"
                           }}
@@ -621,9 +623,8 @@ const FavoritesScreen: React.FC = () => {
                           <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                         </View>
                         <View 
-                          className="rounded-2xl p-3 shadow-xl"
+                          className="rounded-2xl p-3 shadow-xl bg-zinc-800"
                           style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.04)",
                             borderWidth: 1,
                             borderColor: "rgba(255, 255, 255, 0.08)"
                           }}
@@ -632,7 +633,7 @@ const FavoritesScreen: React.FC = () => {
                             <View
                               key={`ingredient-${recipe.id}-${index}`}
                               className={`flex-row items-start py-2 ${
-                                index !== recipe.ingredients.length - 1 ? "border-b border-gray-500" : ""
+                                index !== recipe.ingredients.length - 1 ? "border-b border-zinc-600" : ""
                               }`}
                             >
                               <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
@@ -665,9 +666,8 @@ const FavoritesScreen: React.FC = () => {
                           {recipe.instructions.map((instruction, index) => (
                             <View
                               key={`instruction-${recipe.id}-${index}`}
-                              className="rounded-2xl p-6 shadow-xl"
+                              className="rounded-2xl p-6 shadow-xl bg-zinc-800"
                               style={{
-                                backgroundColor: "rgba(255, 255, 255, 0.04)",
                                 borderWidth: 1,
                                 borderColor: "rgba(255, 255, 255, 0.08)"
                               }}
@@ -846,8 +846,6 @@ const FavoritesScreen: React.FC = () => {
       {/* Bottom Safe Area - Recipe Response Style */}
       <View style={{ height: insets.bottom, backgroundColor: "#000000" }} />
 
-      </LinearGradient>
-
       {/* 🎨 Enhanced Dialog */}
       <Dialog
         visible={showRemoveDialog}
@@ -881,12 +879,11 @@ const FavoritesScreen: React.FC = () => {
 
       {/* Full Screen Expanded Recipe Modal */}
       {expandedRecipeId && (
-        <View className="absolute inset-0" style={{ zIndex: 1000 }}>
-          <LinearGradient colors={["#000000", "#121212"]} style={{ flex: 1 }}>
-            {/* Modal Header */}
+        <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
+          {/* Modal Header */}
             <View
               style={{
-                paddingTop: insets.top + 12,
+                paddingTop: insets.top + 24,
                 paddingBottom: 12,
                 borderBottomWidth: 1,
                 borderBottomColor: "rgba(255, 255, 255, 0.08)",
@@ -995,7 +992,7 @@ const FavoritesScreen: React.FC = () => {
                       <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
-                    <View className="bg-gray-800 border-2 border-gray-600 rounded-xl p-4 shadow-lg">
+                    <View className="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-4 shadow-lg">
                       <View className="flex-row items-center justify-between">
                         <View className="items-center flex-1">
                           <Text className="text-amber-400 text-xl font-bold mb-1">
@@ -1031,12 +1028,12 @@ const FavoritesScreen: React.FC = () => {
                       <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
-                    <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-3 shadow-xl">
+                    <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
                       {recipe.ingredients.map((ingredient, index) => (
                         <View
                           key={`modal-ingredient-${recipe.id}-${index}`}
                           className={`flex-row items-start py-2 ${
-                            index !== recipe.ingredients.length - 1 ? "border-b border-gray-500" : ""
+                            index !== recipe.ingredients.length - 1 ? "border-b border-zinc-600" : ""
                           }`}
                         >
                           <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
@@ -1069,7 +1066,7 @@ const FavoritesScreen: React.FC = () => {
                       {recipe.instructions.map((instruction, index) => (
                         <View
                           key={`modal-instruction-${recipe.id}-${index}`}
-                          className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-6 shadow-xl"
+                          className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-6 shadow-xl"
                         >
                           <View className="flex-row">
                             <View className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl items-center justify-center mr-4 shadow-xl border-2 border-amber-400/40">
@@ -1173,11 +1170,11 @@ const FavoritesScreen: React.FC = () => {
                           <Text className="text-blue-300 text-xs font-bold">{recipe.substitutions.length} options</Text>
                         </View>
                       </View>
-                      <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-5 space-y-5 shadow-xl">
+                      <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-5 space-y-5 shadow-xl">
                         {recipe.substitutions.map((sub, index) => (
                           <View
                             key={`modal-substitution-${recipe.id}-${index}`}
-                            className={`${index !== recipe.substitutions.length - 1 ? "pb-5 border-b border-gray-500" : ""}`}
+                            className={`${index !== recipe.substitutions.length - 1 ? "pb-5 border-b border-zinc-600" : ""}`}
                           >
                             <View className="flex-row items-center mb-3">
                               <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
@@ -1216,14 +1213,9 @@ const FavoritesScreen: React.FC = () => {
               )
             })()}
           </ScrollView>
+        </View>
+      )}
     </LinearGradient>
-  </View>
-)}
-
-      </View>
-
-)
-
-}
+  )}
 
 export default FavoritesScreen

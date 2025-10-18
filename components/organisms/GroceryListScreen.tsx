@@ -562,12 +562,7 @@ const GroceryListScreen: React.FC = () => {
 
       return (
         <View style={styles.groceryItem}>
-          <LinearGradient
-            colors={["rgba(255, 255, 255, 0.05)", "rgba(255, 255, 255, 0.02)"]}
-            style={styles.itemBlur}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+          <View className="bg-zinc-800" style={styles.itemBlur}>
             {/* Main content row with icon, details, and stacked buttons */}
             <View style={styles.itemContentRow}>
               {/* Icon on the left */}
@@ -648,7 +643,7 @@ const GroceryListScreen: React.FC = () => {
                 </TouchableOpacity>
               </View>
             </View>
-          </LinearGradient>
+          </View>
         </View>
       );
     },
@@ -669,7 +664,7 @@ const GroceryListScreen: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+        <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
 
         <View style={styles.modalHeader}>
           <TouchableOpacity
@@ -850,9 +845,15 @@ const GroceryListScreen: React.FC = () => {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.container}>
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }} edges={['top']}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.container}>
 
       {/* Error State */}
       {errorDetails && (
@@ -918,12 +919,7 @@ const GroceryListScreen: React.FC = () => {
       {/* Search Bar */}
       <View style={styles.searchRow}>
         <View style={styles.searchContainer}>
-          <LinearGradient
-            colors={["rgba(255, 255, 255, 0.06)", "rgba(255, 255, 255, 0.04)"]}
-            style={styles.searchBlur}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+          <View className="bg-zinc-800" style={styles.searchBlur}>
             <Ionicons name="search" size={20} color="#94A3B8" />
             <TextInput
               value={searchQuery}
@@ -941,7 +937,7 @@ const GroceryListScreen: React.FC = () => {
                 <Ionicons name="close-circle" size={20} color="#94A3B8" />
               </TouchableOpacity>
             )}
-          </LinearGradient>
+          </View>
         </View>
       </View>
 
@@ -991,7 +987,7 @@ const GroceryListScreen: React.FC = () => {
             keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
           >
             <StatusBar barStyle="light-content" />
-            <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+            <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
 
             <View style={styles.modalHeader}>
               <TouchableOpacity
@@ -1172,14 +1168,14 @@ const GroceryListScreen: React.FC = () => {
       />
       </View>
     </SafeAreaView>
+    </LinearGradient>
   );
-};
+}
 
 const styles = StyleSheet.create({
   // Main container and layout
   container: {
     flex: 1,
-    backgroundColor: "#000000",
   },
 
   // Header styles
@@ -1287,7 +1283,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 0,
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.12)",
     height: 56,
@@ -1369,7 +1364,6 @@ const styles = StyleSheet.create({
       alignSelf: 'stretch',
   },
   itemBlur: {
-      backgroundColor: "rgba(255, 255, 255, 0.05)",
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.08)",
       borderRadius: 16,

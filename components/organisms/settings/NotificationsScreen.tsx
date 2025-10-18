@@ -377,10 +377,10 @@ const NotificationsScreen: React.FC = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
       <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
+      <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => {
             // If accessed from sidebar, go back with smooth transition

@@ -206,9 +206,15 @@ const CookingScreen: React.FC = () => {
 
   if (isCookingComplete) {
     return (
-      <SafeAreaView className="flex-1 bg-black">
-        <StatusBar barStyle="light-content" />
-        <View className="flex-1 items-center justify-center px-6">
+      <LinearGradient
+        colors={["#09090b", "#18181b"]}
+        style={{ flex: 1 }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 0.5 }}
+      >
+        <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <StatusBar barStyle="light-content" />
+          <View className="flex-1 items-center justify-center px-6">
           <View className="bg-green-500 rounded-full p-6 mb-6">
             <Ionicons name="checkmark" size={48} color="white" />
           </View>
@@ -232,17 +238,24 @@ const CookingScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+    </LinearGradient>
     )
   }
 
   const progress = ((currentStep + 1) / recipe.instructions.length) * 100
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" />
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+        <StatusBar barStyle="light-content" />
 
-      {/* Header */}
-      <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
+        {/* Header */}
+        <View style={{ paddingTop: 38 }} className="px-4 pb-4">
         <View className="flex-row items-center justify-between mb-3">
           <TouchableOpacity onPress={exitCooking}>
             <Ionicons name="close" size={24} color="white" />
@@ -376,6 +389,7 @@ const CookingScreen: React.FC = () => {
         </ScrollView>
       )}
     </SafeAreaView>
+  </LinearGradient>
   )
 }
 

@@ -1059,7 +1059,6 @@ const PantryManagementScreen: React.FC = () => {
     // Main container and layout
     container: {
       flex: 1,
-      backgroundColor: "#000000",
     },
     gradient: {
       position: 'absolute',
@@ -1310,7 +1309,6 @@ const PantryManagementScreen: React.FC = () => {
     },
     itemBlur: {
       flex: 1,
-      backgroundColor: "rgba(255, 255, 255, 0.05)",
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.08)",
     },
@@ -1320,7 +1318,7 @@ const PantryManagementScreen: React.FC = () => {
       right: 0,
       top: 0,
       bottom: 0,
-      backgroundColor: "rgba(40, 40, 40, 0.3)",
+      backgroundColor: "rgb(39, 39, 42)", // zinc-800
       borderRadius: 16,
       borderWidth: 1,
       borderColor: "rgba(255, 255, 255, 0.08)",
@@ -2173,7 +2171,7 @@ const PantryManagementScreen: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+        <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
 
         <View style={styles.modalHeader}>
           <TouchableOpacity
@@ -2378,7 +2376,7 @@ const PantryManagementScreen: React.FC = () => {
         keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
       >
         <StatusBar barStyle="light-content" />
-        <LinearGradient colors={["#000000", "#121212"]} style={StyleSheet.absoluteFill} />
+        <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
 
         <View style={styles.modalHeader}>
           <TouchableOpacity
@@ -2678,18 +2676,14 @@ const PantryManagementScreen: React.FC = () => {
    * Main Component Render
    */
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
-      {/* Simplified gradient with fewer color stops for better performance */}
-      <LinearGradient
-        colors={["#0F0F0F", "#000000"]}
-        style={StyleSheet.absoluteFill}
-      />
-      <LinearGradient
-        colors={["#171717", "transparent"]}
-        style={styles.gradient}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 0.8 }}
-      />
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
+        {/* Main background - now handled by LinearGradient */}
 
       {/* Error State */}
       {errorDetails && (
@@ -2994,6 +2988,7 @@ const PantryManagementScreen: React.FC = () => {
         />
       </>
     </View>
+    </LinearGradient>
   )
 }
 

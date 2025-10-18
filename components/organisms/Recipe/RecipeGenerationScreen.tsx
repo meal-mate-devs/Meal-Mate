@@ -343,9 +343,15 @@ export default function RecipeGenerationScreen(): JSX.Element {
     }
 
     return (
-        <View className="flex-1 bg-zinc-900">
-            <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                <View className="pt-16 px-4 pb-4">
+        <LinearGradient
+            colors={["#09090b", "#18181b"]}
+            style={{ flex: 1 }}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 0.5 }}
+        >
+            <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+                <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+                <View className="pt-14 px-4 pb-4">
                     <Text className="text-center text-white text-2xl font-bold mb-2">AI Recipe Generator</Text>
                     <Text className="text-center text-zinc-400 text-sm">Create personalized recipes with AI magic ✨</Text>
                 </View>
@@ -654,6 +660,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 cancelText="Cancel"
                 showCancelButton={true}
             />
-        </View>
+            </View>
+        </LinearGradient>
     )
 }

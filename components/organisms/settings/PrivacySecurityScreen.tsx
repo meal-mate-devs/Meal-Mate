@@ -383,7 +383,7 @@ const PrivacySecurityScreen: React.FC = () => {
   return (
     <View style={{ flex: 1, backgroundColor: '#000000' }}>
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={false} />
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
       {/* Header */}
       <View style={styles.header}>

@@ -21,7 +21,8 @@ class ApiClient {
     async request<T>(
         endpoint: string,
         options: RequestInit = {},
-        requireAuth: boolean = true
+        requireAuth: boolean = true,
+        timeout: number = 50000
     ): Promise<T> {
         try {
             const headers: Record<string, string> = {
@@ -73,7 +74,7 @@ class ApiClient {
             
             // Create AbortController for timeout
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+            const timeoutId = setTimeout(() => controller.abort(), timeout); // Configurable timeout
             
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...fetchOptions,
@@ -133,18 +134,18 @@ class ApiClient {
         }
     }
 
-    async get<T>(endpoint: string, requireAuth: boolean = true): Promise<T> {
-        return this.request<T>(endpoint, { method: 'GET' }, requireAuth);
+    async get<T>(endpoint: string, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
+        return this.request<T>(endpoint, { method: 'GET' }, requireAuth, timeout);
     }
 
-    async post<T>(endpoint: string, data: any, requireAuth: boolean = true): Promise<T> {
+    async post<T>(endpoint: string, data: any, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'POST',
             body: data,
-        }, requireAuth);
+        }, requireAuth, timeout);
     }
 
-    async postForm<T>(endpoint: string, formData: FormData, requireAuth: boolean = true): Promise<T> {
+    async postForm<T>(endpoint: string, formData: FormData, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
         console.log(`postForm to ${endpoint}: Starting request`);
         try {
             // Note: We're explicitly NOT setting Content-Type header for FormData
@@ -152,7 +153,7 @@ class ApiClient {
             const result = await this.request<T>(endpoint, {
                 method: 'POST',
                 body: formData,
-            }, requireAuth);
+            }, requireAuth, timeout);
             console.log(`postForm to ${endpoint}: Success`);
             return result;
         } catch (error) {
@@ -161,15 +162,15 @@ class ApiClient {
         }
     }
 
-    async put<T>(endpoint: string, data: any, requireAuth: boolean = true): Promise<T> {
+    async put<T>(endpoint: string, data: any, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
         return this.request<T>(endpoint, {
             method: 'PUT',
             body: JSON.stringify(data),
-        }, requireAuth);
+        }, requireAuth, timeout);
     }
 
-    async delete<T>(endpoint: string, requireAuth: boolean = true): Promise<T> {
-        return this.request<T>(endpoint, { method: 'DELETE' }, requireAuth);
+    async delete<T>(endpoint: string, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
+        return this.request<T>(endpoint, { method: 'DELETE' }, requireAuth, timeout);
     }
 }
 

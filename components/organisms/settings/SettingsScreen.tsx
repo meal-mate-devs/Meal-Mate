@@ -126,17 +126,22 @@ const SettingsScreen: React.FC = () => {
   )
   
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
-      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
-        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
+    <LinearGradient
+      colors={["#09090b", "#18181b"]}
+      style={{ flex: 1 }}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 0.5 }}
+    >
+      <SafeAreaView style={{ flex: 1, backgroundColor: 'transparent' }}>
+        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent={true} />
 
       {/* Header with proper spacing */}
-      <View style={{ paddingTop: 42, backgroundColor: "#000000" }} className="px-4 pb-6">
+      <View style={{ paddingTop: 44 }} className="px-4 pb-6">
         <View className="flex-row items-center justify-between mb-2">
           <TouchableOpacity onPress={() => {
             // If accessed from sidebar, go back with smooth transition
             if (params.from === 'sidebar') {
-              router.back()
+              router.push('/home')
             } else {
               router.back()
             }
@@ -152,8 +157,6 @@ const SettingsScreen: React.FC = () => {
       <ScrollView 
         className="flex-1 px-4" 
         showsVerticalScrollIndicator={false}
-        // Prevent content flash during navigation
-        contentContainerStyle={{ backgroundColor: '#000000' }}
       >
         {/* Quick Actions */}
         <View className="mb-6">
@@ -223,7 +226,7 @@ const SettingsScreen: React.FC = () => {
         onClose={() => setShowDeleteModal(false)}
       />
     </SafeAreaView>
-    </View>
+    </LinearGradient>
   )
 }
 
