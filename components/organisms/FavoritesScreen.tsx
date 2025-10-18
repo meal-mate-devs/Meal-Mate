@@ -22,7 +22,7 @@ import Dialog from "../atoms/Dialog"
 const FavoritesScreen: React.FC = () => {
   const params = useLocalSearchParams()
   const insets = useSafeAreaInsets()
-  const { favorites, removeFromFavorites, getFavorites, refreshFavorites, isLoading, error } = useFavoritesStore()
+  const { favorites, removeFromFavorites, updateFavorite, getFavorites, refreshFavorites, isLoading, error } = useFavoritesStore()
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
@@ -34,6 +34,9 @@ const FavoritesScreen: React.FC = () => {
     title: '',
     message: '',
   })
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [editedRecipe, setEditedRecipe] = useState<any>(null)
+  const [showEditSuccessDialog, setShowEditSuccessDialog] = useState(false)
 
   useEffect(() => {
     const backAction = () => {
@@ -83,7 +86,7 @@ const FavoritesScreen: React.FC = () => {
         clearTimeout(timeoutId);
       }
     };
-  }, [isLoading, error]);
+  }, [isLoading, error])
 
   // Handle pull to refresh
   const handleRefresh = useCallback(async () => {
@@ -252,6 +255,62 @@ const FavoritesScreen: React.FC = () => {
         recipe: JSON.stringify(recipe),
       },
     });
+  }
+
+  const handleSaveEditedRecipe = async (): Promise<void> => {
+    if (!editedRecipe) {
+      setErrorDialogConfig({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'No recipe data to update.'
+      })
+      setShowErrorDialog(true)
+      return
+    }
+
+    try {
+      // Extract updatable fields from editedRecipe
+      const updateData = {
+        recipeId: editedRecipe.recipeId,
+        title: editedRecipe.title,
+        description: editedRecipe.description,
+        cookTime: editedRecipe.cookTime,
+        prepTime: editedRecipe.prepTime,
+        servings: editedRecipe.servings,
+        difficulty: editedRecipe.difficulty,
+        cuisine: editedRecipe.cuisine,
+        category: editedRecipe.category,
+        ingredients: editedRecipe.ingredients,
+        instructions: editedRecipe.instructions,
+        nutritionInfo: editedRecipe.nutritionInfo,
+        tips: editedRecipe.tips,
+        substitutions: editedRecipe.substitutions
+      }
+
+      const success = await updateFavorite(editedRecipe.recipeId, updateData)
+      if (success) {
+        setIsEditMode(false)
+        setEditedRecipe(null)
+        setShowEditSuccessDialog(true)
+        // Refresh favorites to show updated data
+        await refreshFavorites()
+      } else {
+        setErrorDialogConfig({
+          type: 'error',
+          title: 'Update Failed',
+          message: 'Failed to update the recipe. Please try again.'
+        })
+        setShowErrorDialog(true)
+      }
+    } catch (error) {
+      console.log('❌ Error updating recipe:', error)
+      setErrorDialogConfig({
+        type: 'error',
+        title: 'Update Error',
+        message: 'An error occurred while updating the recipe. Please check your connection and try again.'
+      })
+      setShowErrorDialog(true)
+    }
   }
 
   return (
@@ -877,6 +936,17 @@ const FavoritesScreen: React.FC = () => {
         onCancel={() => setShowErrorDialog(false)}
       />
 
+      {/* Edit Success Dialog */}
+      <Dialog
+        visible={showEditSuccessDialog}
+        type="success"
+        title="Recipe Updated"
+        message="Your recipe has been successfully updated!"
+        confirmText="OK"
+        onClose={() => setShowEditSuccessDialog(false)}
+        onConfirm={() => setShowEditSuccessDialog(false)}
+      />
+
       {/* Full Screen Expanded Recipe Modal */}
       {expandedRecipeId && (
         <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
@@ -892,15 +962,31 @@ const FavoritesScreen: React.FC = () => {
             >
             <View className="flex-row items-center justify-between">
               <TouchableOpacity
-                onPress={() => setExpandedRecipeId(null)}
-                className="w-10 h-10 rounded-full items-center justify-center"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+                onPress={() => {
+                  if (isEditMode) {
+                    // Cancel edit mode
+                    setIsEditMode(false)
+                    setEditedRecipe(null)
+                  } else {
+                    setExpandedRecipeId(null)
+                  }
+                }}
+                className={`${isEditMode ? 'bg-red-500/15 border border-red-500/40 rounded-xl px-4 py-2' : 'w-10 h-10 rounded-full'} items-center justify-center`}
+                style={isEditMode ? {} : { backgroundColor: "rgba(255, 255, 255, 0.06)" }}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={22} color="#FACC15" />
+                {isEditMode ? (
+                  <>
+                    <Text className="text-red-400 font-bold ml-2 text-base">Cancel</Text>
+                  </>
+                ) : (
+                  <Ionicons name="close" size={22} color="#FACC15" />
+                )}
               </TouchableOpacity>
               
-              <Text className="text-white text-lg font-bold flex-1 text-center">Recipe Details</Text>
+              <Text className="text-white text-lg font-bold flex-1 text-center">
+                {isEditMode ? "Edit Recipe" : "Recipe Details"}
+              </Text>
               
               <TouchableOpacity
                 onPress={() => {
@@ -908,7 +994,7 @@ const FavoritesScreen: React.FC = () => {
                     const rId = r.id || r._id || r.recipeId
                     return rId === expandedRecipeId
                   })
-                  if (recipe) {
+                  if (recipe && !isEditMode) {
                     // First collapse the recipe
                     setExpandedRecipeId(null)
                     // Then set up for removal
@@ -918,10 +1004,14 @@ const FavoritesScreen: React.FC = () => {
                   }
                 }}
                 className="w-10 h-10 rounded-full items-center justify-center"
-                style={{ backgroundColor: "rgba(239, 68, 68, 0.15)" }}
-                activeOpacity={0.7}
+                style={{ 
+                  backgroundColor: isEditMode ? "rgba(255, 255, 255, 0.03)" : "rgba(239, 68, 68, 0.15)",
+                  opacity: isEditMode ? 0.5 : 1
+                }}
+                activeOpacity={isEditMode ? 1 : 0.7}
+                disabled={isEditMode}
               >
-                <Ionicons name="heart" size={20} color="#EF4444" />
+                <Ionicons name="heart" size={20} color={isEditMode ? "#666" : "#EF4444"} />
               </TouchableOpacity>
             </View>
           </View>
@@ -943,10 +1033,35 @@ const FavoritesScreen: React.FC = () => {
                 <View className="p-6">
                   {/* Recipe Header */}
                   <View className="mb-6">
-                    <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">{recipe.title}</Text>
-                    <Text className="text-gray-300 text-base mb-4 leading-relaxed">
-                      {recipe.description || 'Delicious recipe from your favorites'}
-                    </Text>
+                    {isEditMode ? (
+                      <View className="mb-4">
+                        <TextInput
+                          className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight bg-zinc-800/50 rounded-lg px-3 py-2 border border-zinc-600"
+                          value={editedRecipe?.title || ''}
+                          onChangeText={(text) => setEditedRecipe((prev: any) => prev ? { ...prev, title: text } : null)}
+                          placeholder="Recipe title"
+                          placeholderTextColor="#9CA3AF"
+                          style={{ color: '#FFFFFF' }}
+                        />
+                        <TextInput
+                          className="text-gray-300 text-base mb-4 leading-relaxed bg-zinc-800/50 rounded-lg px-3 py-2 border border-zinc-600"
+                          value={editedRecipe?.description || ''}
+                          onChangeText={(text) => setEditedRecipe((prev: any) => prev ? { ...prev, description: text } : null)}
+                          placeholder="Recipe description"
+                          placeholderTextColor="#9CA3AF"
+                          multiline
+                          numberOfLines={3}
+                          style={{ color: '#FFFFFF' }}
+                        />
+                      </View>
+                    ) : (
+                      <>
+                        <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">{recipe.title}</Text>
+                        <Text className="text-gray-300 text-base mb-4 leading-relaxed">
+                          {recipe.description || 'Delicious recipe from your favorites'}
+                        </Text>
+                      </>
+                    )}
 
                     {/* Recipe Stats */}
                     <View className="flex-row flex-wrap">
@@ -975,15 +1090,39 @@ const FavoritesScreen: React.FC = () => {
                     </View>
                   </View>
 
-                  {/* Share Button */}
-                  <TouchableOpacity
-                    onPress={() => handleShareRecipe(recipe)}
-                    className="bg-amber-500/15 border border-amber-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm mb-6"
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="share-outline" size={20} color="#FBBF24" />
-                    <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">Share Recipe</Text>
-                  </TouchableOpacity>
+                  {/* Share and Edit/Save Buttons */}
+                  <View className="flex-row mb-6" style={{ gap: 16 }}>
+                    <TouchableOpacity
+                      onPress={() => handleShareRecipe(recipe)}
+                      className="bg-amber-500/15 border border-amber-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                      activeOpacity={0.7}
+                      disabled={isEditMode}
+                      style={{ opacity: isEditMode ? 0.5 : 1 }}
+                    >
+                      <Ionicons name="share-outline" size={20} color="#FBBF24" />
+                      <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">Share</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (isEditMode) {
+                          handleSaveEditedRecipe()
+                        } else {
+                          setIsEditMode(true)
+                          setEditedRecipe({ ...recipe })
+                        }
+                      }}
+                      className={`${isEditMode ? 'bg-gemerald-500/40 border-2 border-emerald-500/40' : 'bg-blue-500/15 border border-blue-500/40'} rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1`}
+                      
+                      activeOpacity={0.7}
+                      style={isEditMode ? {} : {}}
+                    >
+                      <Ionicons name={isEditMode ? "checkmark-circle" : "create-outline"} size={20} color={isEditMode ? "#10b981ff" : "#3B82F6"} />
+                      <Text className={`${isEditMode ? 'text-white' : 'text-blue-300'} font-bold ml-2 text-base tracking-wide`}>
+                        {isEditMode ? "Save Changes" : "Edit"}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
 
                   {/* 📊 Enhanced Nutrition Section */}
                   <View className="mb-6">
@@ -1029,27 +1168,85 @@ const FavoritesScreen: React.FC = () => {
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
                     <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
-                      {recipe.ingredients.map((ingredient, index) => (
+                      {(isEditMode ? editedRecipe?.ingredients : recipe.ingredients)?.map((ingredient: any, index: number) => (
                         <View
                           key={`modal-ingredient-${recipe.id}-${index}`}
-                          className={`flex-row items-start py-2 ${
-                            index !== recipe.ingredients.length - 1 ? "border-b border-zinc-600" : ""
+                          className={`py-2 ${
+                            index !== (isEditMode ? editedRecipe?.ingredients : recipe.ingredients).length - 1 ? "border-b border-zinc-600" : ""
                           }`}
                         >
-                          <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
-                            <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
-                          </View>
-                          <View className="flex-1">
-                            <Text className="text-white text-base leading-relaxed">
-                              <Text className="font-bold">
-                                {ingredient.amount} {ingredient.unit}
-                              </Text>
-                              <Text> {ingredient.name}</Text>
-                            </Text>
-                            {ingredient.notes && (
-                              <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
-                            )}
-                          </View>
+                          {isEditMode ? (
+                            <View className="space-y-2">
+                              <View className="flex-row items-center space-x-2">
+                                <TextInput
+                                  value={editedRecipe?.ingredients[index]?.amount?.toString() || ''}
+                                  onChangeText={(text) => {
+                                    const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                    newIngredients[index] = { ...newIngredients[index], amount: text };
+                                    setEditedRecipe((prev: any) => prev ? { ...prev, ingredients: newIngredients } : null);
+                                  }}
+                                  className="flex-1 text-sm bg-zinc-700/50 rounded px-2 py-1 border border-zinc-600"
+                                  placeholder="Amount"
+                                  placeholderTextColor="#94A3B8"
+                                  keyboardType="numeric"
+                                  style={{ color: '#FFFFFF' }}
+                                />
+                                <TextInput
+                                  value={editedRecipe?.ingredients[index]?.unit || ''}
+                                  onChangeText={(text) => {
+                                    const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                    newIngredients[index] = { ...newIngredients[index], unit: text };
+                                    setEditedRecipe((prev: any) => prev ? { ...prev, ingredients: newIngredients } : null);
+                                  }}
+                                  className="flex-1 text-sm bg-zinc-700/50 rounded px-2 py-1 border border-zinc-600"
+                                  placeholder="Unit"
+                                  placeholderTextColor="#94A3B8"
+                                  style={{ color: '#FFFFFF' }}
+                                />
+                              </View>
+                              <TextInput
+                                value={editedRecipe?.ingredients[index]?.name || ''}
+                                onChangeText={(text) => {
+                                  const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                  newIngredients[index] = { ...newIngredients[index], name: text };
+                                  setEditedRecipe((prev: any) => prev ? { ...prev, ingredients: newIngredients } : null);
+                                }}
+                                className="text-base bg-zinc-700/50 rounded px-2 py-1 border border-zinc-600"
+                                placeholder="Ingredient name"
+                                placeholderTextColor="#94A3B8"
+                                style={{ color: '#FFFFFF' }}
+                              />
+                              <TextInput
+                                value={editedRecipe?.ingredients[index]?.notes || ''}
+                                onChangeText={(text) => {
+                                  const newIngredients = [...(editedRecipe?.ingredients || [])];
+                                  newIngredients[index] = { ...newIngredients[index], notes: text };
+                                  setEditedRecipe((prev: any) => prev ? { ...prev, ingredients: newIngredients } : null);
+                                }}
+                                className="text-sm bg-zinc-700/50 rounded px-2 py-1 border border-zinc-600"
+                                placeholder="Notes (optional)"
+                                placeholderTextColor="#94A3B8"
+                                style={{ color: '#FFFFFF' }}
+                              />
+                            </View>
+                          ) : (
+                            <View className="flex-row items-start">
+                              <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
+                                <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
+                              </View>
+                              <View className="flex-1">
+                                <Text className="text-white text-base leading-relaxed">
+                                  <Text className="font-bold">
+                                    {ingredient.amount} {ingredient.unit}
+                                  </Text>
+                                  <Text> {ingredient.name}</Text>
+                                </Text>
+                                {ingredient.notes && (
+                                  <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
+                                )}
+                              </View>
+                            </View>
+                          )}
                         </View>
                       ))}
                     </View>
@@ -1063,7 +1260,7 @@ const FavoritesScreen: React.FC = () => {
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
                     <View className="space-y-4">
-                      {recipe.instructions.map((instruction, index) => (
+                      {(isEditMode ? editedRecipe?.instructions : recipe.instructions)?.map((instruction: any, index: number) => (
                         <View
                           key={`modal-instruction-${recipe.id}-${index}`}
                           className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-6 shadow-xl"
@@ -1073,16 +1270,49 @@ const FavoritesScreen: React.FC = () => {
                               <Text className="text-white font-bold text-xl">{instruction.step}</Text>
                             </View>
                             <View className="flex-1">
-                              <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
-                              {instruction.tips && (
-                                <View className="bg-amber-500/10 border-2 border-amber-500/20 rounded-xl p-4 mt-3">
-                                  <View className="flex-row items-start">
-                                    <View className="w-7 h-7 rounded-lg bg-amber-500/15 items-center justify-center mr-3">
-                                      <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
-                                    </View>
-                                    <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
-                                  </View>
+                              {isEditMode ? (
+                                <View className="space-y-3">
+                                  <TextInput
+                                    value={editedRecipe?.instructions[index]?.instruction || ''}
+                                    onChangeText={(text) => {
+                                      const newInstructions = [...(editedRecipe?.instructions || [])];
+                                      newInstructions[index] = { ...newInstructions[index], instruction: text };
+                                      setEditedRecipe((prev: any) => prev ? { ...prev, instructions: newInstructions } : null);
+                                    }}
+                                    multiline
+                                    className="text-base leading-7 bg-zinc-700/50 rounded-lg px-3 py-2 border border-zinc-600"
+                                    placeholder="Instruction text"
+                                    placeholderTextColor="#94A3B8"
+                                    style={{ color: '#FFFFFF' }}
+                                  />
+                                  <TextInput
+                                    value={editedRecipe?.instructions[index]?.tips || ''}
+                                    onChangeText={(text) => {
+                                      const newInstructions = [...(editedRecipe?.instructions || [])];
+                                      newInstructions[index] = { ...newInstructions[index], tips: text };
+                                      setEditedRecipe((prev: any) => prev ? { ...prev, instructions: newInstructions } : null);
+                                    }}
+                                    multiline
+                                    className="text-sm bg-zinc-700/50 rounded-lg px-3 py-2 border border-zinc-600"
+                                    placeholder="Tips (optional)"
+                                    placeholderTextColor="#94A3B8"
+                                    style={{ color: '#FFFFFF' }}
+                                  />
                                 </View>
+                              ) : (
+                                <>
+                                  <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
+                                  {instruction.tips && (
+                                    <View className="bg-amber-500/10 border-2 border-amber-500/20 rounded-xl p-4 mt-3">
+                                      <View className="flex-row items-start">
+                                        <View className="w-7 h-7 rounded-lg bg-amber-500/15 items-center justify-center mr-3">
+                                          <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
+                                        </View>
+                                        <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                </>
                               )}
                             </View>
                           </View>
@@ -1091,38 +1321,72 @@ const FavoritesScreen: React.FC = () => {
                     </View>
                   </View>
 
-                  {/* 🔥 Start Cooking Button */}
+                  {/* 🔥 Action Buttons */}
                   <View className="mb-6">
-                    <TouchableOpacity
-                      onPress={() => {
-                        const recipe = displayFilteredFavorites.find(r => {
-                          const rId = r.id || r._id || r.recipeId
-                          return rId === expandedRecipeId
-                        })
-                        if (recipe) {
-                          setExpandedRecipeId(null)
-                          handleStartCooking(recipe)
-                        }
-                      }}
-                      className="rounded-xl py-4 flex-row items-center justify-center shadow-lg"
-                      activeOpacity={0.7}
-                    >
-                      <LinearGradient
-                        colors={['#FACC15', '#F97316']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={{
-                          position: 'absolute',
-                          left: 0,
-                          right: 0,
-                          top: 0,
-                          bottom: 0,
-                          borderRadius: 12,
+                    {isEditMode ? (
+                      <View className="flex-row" style={{ gap: 20 }}>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setIsEditMode(false)
+                            setEditedRecipe(null)
+                          }}
+                          className="rounded-xl py-4 flex-row items-center justify-center shadow-lg flex-1"
+                          style={{
+                            backgroundColor: "rgba(239, 68, 68, 0.1)",
+                            borderWidth: 1,
+                            borderColor: "rgba(239, 68, 68, 0.3)"
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="close" size={24} color="#EF4444" />
+                          <Text style={{ color: "#EF4444", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Cancel</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          onPress={handleSaveEditedRecipe}
+                          className="bg-emerald-500/40 border-2 border-emerald-500/40 rounded-xl py-4 flex-row items-center justify-center shadow-lg flex-1"
+                          style={{
+                            borderWidth: 1,
+                            borderColor: "#10b981ff"
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="checkmark-circle" size={20} color="#10b981ff" />
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 6, fontSize: 16, letterSpacing: 0.5 }} >Save Changes</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={() => {
+                          const recipe = displayFilteredFavorites.find(r => {
+                            const rId = r.id || r._id || r.recipeId
+                            return rId === expandedRecipeId
+                          })
+                          if (recipe) {
+                            setExpandedRecipeId(null)
+                            handleStartCooking(recipe)
+                          }
                         }}
-                      />
-                      <Ionicons name="flame" size={24} color="#FFFFFF" />
-                      <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>Start Cooking</Text>
-                    </TouchableOpacity>
+                        className="rounded-xl py-4 flex-row items-center justify-center shadow-lg"
+                        activeOpacity={0.7}
+                      >
+                        <LinearGradient
+                          colors={['#FACC15', '#F97316']}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 0 }}
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            right: 0,
+                            top: 0,
+                            bottom: 0,
+                            borderRadius: 12,
+                          }}
+                        />
+                        <Ionicons name="flame" size={24} color="#FFFFFF" />
+                        <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>Start Cooking</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
 
                   {/* ⭐ Enhanced Chef's Tips */}
@@ -1141,17 +1405,33 @@ const FavoritesScreen: React.FC = () => {
                           borderColor: "rgba(250, 204, 21, 0.3)"
                         }}
                       >
-                        {recipe.tips.map((tip, index) => (
+                        {(isEditMode ? editedRecipe?.tips : recipe.tips)?.map((tip: string, index: number) => (
                           <View
                             key={`modal-tip-${recipe.id}-${index}`}
                             className={`flex-row items-start ${
-                              index !== recipe.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                              index !== (isEditMode ? editedRecipe?.tips : recipe.tips).length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
                             }`}
                           >
                             <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
                               <Ionicons name="star" size={14} color="#FCD34D" />
                             </View>
-                            <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                            {isEditMode ? (
+                              <TextInput
+                                value={editedRecipe?.tips[index] || ''}
+                                onChangeText={(text) => {
+                                  const newTips = [...(editedRecipe?.tips || [])];
+                                  newTips[index] = text;
+                                  setEditedRecipe((prev: any) => prev ? { ...prev, tips: newTips } : null);
+                                }}
+                                multiline
+                                className="text-amber-100 text-base leading-7 flex-1 bg-zinc-700/50 rounded-lg px-3 py-2 border border-zinc-600"
+                                placeholder="Chef's tip"
+                                placeholderTextColor="#94A3B8"
+                                style={{ color: '#FCD34D' }}
+                              />
+                            ) : (
+                              <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                            )}
                           </View>
                         ))}
                       </View>
@@ -1205,6 +1485,8 @@ const FavoritesScreen: React.FC = () => {
                       }}
                       className="bg-red-500/10 border border-red-400/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm"
                       activeOpacity={0.7}
+                      disabled={isEditMode}
+                      style={{ opacity: isEditMode ? 0.5 : 1 }}
                     >
                       <Text className="text-red-400 font-bold ml-3 mr-3 text-base tracking-wide">Remove from Favorites</Text>
                     </TouchableOpacity>

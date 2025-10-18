@@ -8,6 +8,7 @@ interface FavoritesStore {
   error: string | null;
   addToFavorites: (recipe: AddToFavoritesRequest) => Promise<boolean>;
   removeFromFavorites: (recipeId: string) => Promise<boolean>;
+  updateFavorite: (recipeId: string, updateData: Partial<AddToFavoritesRequest>) => Promise<boolean>;
   isFavorite: (recipeId: string) => boolean;
   getFavorites: () => Promise<void>;
   refreshFavorites: () => Promise<void>;
@@ -130,6 +131,29 @@ export const useFavoritesStore = (): FavoritesStore => {
     }
   }, []);
 
+  const updateFavorite = useCallback(async (recipeId: string, updateData: Partial<AddToFavoritesRequest>): Promise<boolean> => {
+    try {
+      updateGlobalState({ isLoading: true, error: null });
+      
+      const response = await favoritesService.updateFavorite(recipeId, updateData);
+      
+      if (response.success) {
+        const newFavorites = globalFavorites.map(fav => 
+          fav.recipeId === recipeId ? { ...fav, ...updateData } : fav
+        );
+        updateGlobalState({ favorites: newFavorites, isLoading: false });
+        return true;
+      }
+      
+      updateGlobalState({ isLoading: false, error: response.message || 'Failed to update favorite' });
+      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update favorite';
+      updateGlobalState({ isLoading: false, error: errorMessage });
+      return false;
+    }
+  }, []);
+
   const isFavorite = useCallback((recipeId: string): boolean => {
     return globalFavorites.some(fav => fav.recipeId === recipeId);
   }, []);
@@ -163,6 +187,7 @@ export const useFavoritesStore = (): FavoritesStore => {
     error,
     addToFavorites,
     removeFromFavorites,
+    updateFavorite,
     isFavorite,
     getFavorites,
     refreshFavorites

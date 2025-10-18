@@ -231,6 +231,41 @@ class FavoritesService {
     }
   }
 
+  async updateFavorite(recipeId: string, updateData: Partial<AddToFavoritesRequest>): Promise<FavoriteActionResponse> {
+    try {
+      const headers = await this.getAuthHeaders()
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const response = await fetch(`${API_BASE_URL}/favorites/${recipeId}`, {
+        method: 'PUT',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updateData),
+        signal: controller.signal
+      })
+
+      clearTimeout(timeoutId);
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update favorite recipe')
+      }
+
+      return data
+    } catch (error) {
+      console.log('Error updating favorite recipe:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Request timeout - please check your connection')
+      }
+      throw error
+    }
+  }
+
   async isFavorite(recipeId: string): Promise<IsFavoriteResponse> {
     try {
       const headers = await this.getAuthHeaders()

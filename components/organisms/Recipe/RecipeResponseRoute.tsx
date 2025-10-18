@@ -683,7 +683,8 @@ export default function RecipeResponseRoute(): JSX.Element {
         <View style={{ flex: 1, backgroundColor: 'transparent' }}>
         {isGenerating && !error && !generatedRecipe && (
         <View
-          className="flex-1 justify-center items-center bg-black"
+          className="flex-1 justify-center items-center"
+          style={{ backgroundColor: '#0c0c1563' }}
         >
           {/* Artistic background with refined glows */}
           <View className="absolute inset-0">
@@ -1477,21 +1478,6 @@ export default function RecipeResponseRoute(): JSX.Element {
                               placeholder="Instruction text"
                               placeholderTextColor="#94A3B8"
                             />
-                            <View className="flex-row items-center space-x-2">
-                              <TextInput
-                                value={editedRecipe?.instructions[index]?.duration?.toString() || ''}
-                                onChangeText={(text) => {
-                                  const newInstructions = [...(editedRecipe?.instructions || [])];
-                                  newInstructions[index] = { ...newInstructions[index], duration: parseInt(text) || undefined };
-                                  setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
-                                }}
-                                className="flex-1 text-sm"
-                                style={{ color: '#FACC15', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 4, padding: 4, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
-                                placeholder="Duration (minutes)"
-                                placeholderTextColor="#94A3B8"
-                                keyboardType="numeric"
-                              />
-                            </View>
                             <TextInput
                               value={editedRecipe?.instructions[index]?.tips || ''}
                               onChangeText={(text) => {
