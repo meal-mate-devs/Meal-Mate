@@ -13,6 +13,8 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Voice from '@react-native-voice/voice';
+import * as Speech from 'expo-speech';
 import Dialog from '../../atoms/Dialog';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -55,6 +57,46 @@ export default function CookingScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+
+  const [isMuted, setIsMuted] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceCommand, setVoiceCommand] = useState('');
+
+  const handleVoiceCommand = (command: string) => {
+    if (command.includes('next') || command.includes('forward')) {
+      handleNextStep();
+    } else if (command.includes('previous') || command.includes('back')) {
+      handlePreviousStep();
+    } else if (command.includes('pause')) {
+      setIsPaused(true);
+    } else if (command.includes('resume') || command.includes('play')) {
+      setIsPaused(false);
+    } else if (command.includes('mute')) {
+      setIsMuted(true);
+    } else if (command.includes('unmute')) {
+      setIsMuted(false);
+    } else if (command.includes('repeat')) {
+      if (!isMuted && instructionText) {
+        Speech.speak(instructionText);
+      }
+    }
+  };
+
+  const startVoiceRecognition = async () => {
+    try {
+      await Voice.start('en-US');
+    } catch (e) {
+      console.error('Voice start error:', e);
+    }
+  };
+
+  const stopVoiceRecognition = async () => {
+    try {
+      await Voice.stop();
+    } catch (e) {
+      console.error('Voice stop error:', e);
+    }
+  };
 
   const overallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -100,6 +142,26 @@ export default function CookingScreen() {
     // Reset step timer when step changes
     setStepTime(0);
   }, [currentStep]);
+
+  useEffect(() => {
+    Voice.onSpeechStart = () => setIsListening(true);
+    Voice.onSpeechEnd = () => setIsListening(false);
+    Voice.onSpeechResults = (e) => {
+      if (e.value && e.value.length > 0) {
+        const command = e.value[0].toLowerCase();
+        setVoiceCommand(command);
+        handleVoiceCommand(command);
+      }
+    };
+    Voice.onSpeechError = (e) => {
+      console.error('Voice error:', e.error);
+      setIsListening(false);
+    };
+
+    return () => {
+      Voice.destroy().then(Voice.removeAllListeners);
+    };
+  }, []);
 
   const formatTime = (seconds: number): string => {
     const hrs = Math.floor(seconds / 3600);
@@ -223,6 +285,17 @@ export default function CookingScreen() {
     }
     return 'No instruction available';
   }, [recipe, currentStep]);
+
+  useEffect(() => {
+    // Speak the current instruction when step changes, if not muted and not paused
+    if (!isMuted && !isPaused && instructionText && instructionText !== 'No instruction available') {
+      Speech.speak(instructionText, {
+        language: 'en',
+        pitch: 1,
+        rate: 0.8,
+      });
+    }
+  }, [currentStep, isMuted, isPaused, instructionText]);
 
   const instructionTipText = useMemo(() => {
     const tips = recipe?.instructions?.[currentStep]?.tips;
@@ -397,25 +470,43 @@ export default function CookingScreen() {
               <Text className="text-lg font-bold" style={{ color: '#FACC15' }}>
                 INSTRUCTION
               </Text>
-              <TouchableOpacity
-                onPress={handlePauseResume}
-                className="h-10 px-4 rounded-full items-center justify-center ml-3 flex-row"
-                style={{
-                  backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  borderWidth: 2,
-                  borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isPaused ? "play" : "pause"}
-                  size={16}
-                  color={isPaused ? "#22C55E" : "#EF4444"}
-                />
-                <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
-                  {isPaused ? "RESUME" : "PAUSE"}
-                </Text>
-              </TouchableOpacity>
+              <View className="flex-row ml-3">
+                <TouchableOpacity
+                  onPress={() => setIsMuted(!isMuted)}
+                  className="h-10 px-4 rounded-full items-center justify-center mr-2"
+                  style={{
+                    backgroundColor: isMuted ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                    borderWidth: 2,
+                    borderColor: isMuted ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isMuted ? "volume-mute" : "volume-high"}
+                    size={16}
+                    color={isMuted ? "#EF4444" : "#22C55E"}
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handlePauseResume}
+                  className="h-10 px-4 rounded-full items-center justify-center flex-row"
+                  style={{
+                    backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    borderWidth: 2,
+                    borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isPaused ? "play" : "pause"}
+                    size={16}
+                    color={isPaused ? "#22C55E" : "#EF4444"}
+                  />
+                  <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
+                    {isPaused ? "RESUME" : "PAUSE"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text className="text-white text-base leading-7">{instructionText}</Text>
@@ -498,6 +589,23 @@ export default function CookingScreen() {
           >
             <Ionicons name="chevron-back" size={20} color="#FFFFFF" />
             <Text className="text-white font-bold ml-2">Previous</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={isListening ? stopVoiceRecognition : startVoiceRecognition}
+            className="rounded-xl py-4 px-4 items-center justify-center mx-2"
+            style={{
+              backgroundColor: isListening ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.1)',
+              borderWidth: 2,
+              borderColor: isListening ? 'rgba(59, 130, 246, 0.5)' : 'rgba(59, 130, 246, 0.3)',
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isListening ? "mic-off" : "mic"}
+              size={24}
+              color={isListening ? "#3B82F6" : "#FFFFFF"}
+            />
           </TouchableOpacity>
 
           {isLastStep ? (
