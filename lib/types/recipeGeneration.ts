@@ -38,6 +38,7 @@ export interface RecipeFilters {
     cookingTime: number // in minutes
     ingredients: string[]
     difficulty: "Easy" | "Medium" | "Hard" | "Any"
+    recipeChoice?: string // 🆕 NEW: Optional recipe choice (e.g., "pizza", "pasta", "curry")
 }
 
 export interface GeneratedRecipe {

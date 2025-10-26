@@ -10,7 +10,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFocusEffect, useRouter } from "expo-router"
 import React, { JSX, useCallback, useEffect, useState } from "react"
-import { ScrollView, Text, TouchableOpacity, View } from "react-native"
+import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native"
 import Dialog from "../../atoms/Dialog"
 import IngredientSearchModal from "../../molecules/IngredientSearchModal"
 import FilterSection from "./FilterSection"
@@ -31,6 +31,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
         cookingTime: 20,
         ingredients: [],
         difficulty: "Any",
+        recipeChoice: "", // 🆕 NEW: Recipe choice state
     })
 
     const [generatedRecipes, setGeneratedRecipes] = useState<GeneratedRecipe[]>([])
@@ -303,6 +304,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             cookingTime: filters.cookingTime.toString(),
             ingredients: JSON.stringify(availableIngredients),
             difficulty: filters.difficulty,
+            recipeChoice: filters.recipeChoice || '', // 🆕 NEW: Pass recipe choice
         }
         
         router.push({
@@ -504,6 +506,34 @@ export default function RecipeGenerationScreen(): JSX.Element {
                     onSelectionChange={(selected) => handleFilterChange("mealTime", selected[0] || "")}
                     multiSelect={false}
                 />
+
+                {/* 🆕 NEW: Recipe Choice Input */}
+                <View className="px-4 mb-4">
+                    <View className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                        <View className="flex-row items-center mb-3">
+                            <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
+                            <Text className="text-white text-lg font-bold ml-3">What do you want to cook?</Text>
+                            <View className="bg-orange-500 rounded-full px-2 py-1 ml-2">
+                                <Text className="text-white text-xs font-bold">OPTIONAL</Text>
+                            </View>
+                        </View>
+                        <View className="bg-zinc-700 rounded-xl px-4 py-3 border border-zinc-600">
+                            <TextInput
+                                className="text-white text-base"
+                                placeholder="e.g., pizza, chicken curry, chocolate cake..."
+                                placeholderTextColor="#9CA3AF"
+                                value={filters.recipeChoice}
+                                onChangeText={(text) => handleFilterChange("recipeChoice", text)}
+                                autoCapitalize="words"
+                                autoCorrect={false}
+                                maxLength={50}
+                            />
+                        </View>
+                        <Text className="text-zinc-400 text-sm mt-2 leading-relaxed">
+                            Specify what you'd like to cook and we'll create that recipe using your available ingredients. Leave empty for ingredient-based suggestions.
+                        </Text>
+                    </View>
+                </View>
 
                 <View className="px-4 mb-6">
                     <Text className="text-white text-lg font-bold mb-4">Customize Your Recipe</Text>

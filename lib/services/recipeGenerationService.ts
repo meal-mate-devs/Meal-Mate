@@ -12,6 +12,7 @@ export interface RecipeGenerationRequest {
   recipeDifficulty: string;
   ingredientOverride?: string[];
   additionalRequirements?: string;
+  recipeChoice?: string; // 🆕 NEW: Optional recipe choice
 }
 
 export interface RecipeGenerationResponse {
@@ -225,7 +226,8 @@ class RecipeGenerationService {
       foodCategory: filters.categories[0] || 'main course',
       mealTime: filters.mealTime,
       recipeDifficulty: filters.difficulty.toLowerCase(),
-      ingredientOverride: filters.ingredients.length > 0 ? filters.ingredients : pantryIngredients
+      ingredientOverride: filters.ingredients.length > 0 ? filters.ingredients : pantryIngredients,
+      recipeChoice: filters.recipeChoice || '' // 🆕 NEW: Pass recipe choice
     };
   }
 

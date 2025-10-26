@@ -179,6 +179,7 @@ export default function RecipeResponseRoute(): JSX.Element {
         cookingTime: params.cookingTime ? Number.parseInt(params.cookingTime as string) : 0,
         ingredients: params.ingredients ? JSON.parse(params.ingredients as string) : [],
         difficulty: (params.difficulty as "Easy" | "Medium" | "Hard" | "Any") || "Any",
+        recipeChoice: (params.recipeChoice as string) || "", // 🆕 NEW: Parse recipe choice
       }
 
       if (!filters.servings || filters.servings <= 0) {
