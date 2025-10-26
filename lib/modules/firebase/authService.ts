@@ -68,24 +68,3 @@ export const sendEmailVerificationLink = async (user: User) => {
         throw new Error(error);
     }
 }
-
-// export const loginWithGoogle = async () => {
-//     try {
-//         await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-//         const signInResult = await GoogleSignin.signIn();
-
-//         const idToken = signInResult.data?.idToken;
-//         if (!idToken) {
-//             throw new Error('No ID token found');
-//         }
-//         if (!signInResult) {
-//             throw new Error('No signInResult found');
-//         }
-//         const googleCredential = GoogleAuthProvider.credential(signInResult.data?.idToken);
-
-//         return signInWithCredential(getAuth(), googleCredential);
-
-//     } catch (error: any) {
-//         throw new Error(error);
-//     }
-// }
