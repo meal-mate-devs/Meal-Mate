@@ -14,9 +14,10 @@ class SubscriptionService {
     async getPlans(): Promise<PlansResponse> {
         try {
             const response = await apiClient.get<PlansResponse>(
-                '/subscription/plans',
+                '/stripe/plans',
                 false // Public endpoint, no auth required
             );
+            console.log('Fetched subscription plans:', response);
             return response;
         } catch (error) {
             console.error('Failed to fetch subscription plans:', error);
@@ -27,7 +28,7 @@ class SubscriptionService {
     async createSubscription(planType: PlanType, paymentMethodId?: string): Promise<PaymentSheetResponse> {
         try {
             const response = await apiClient.post<PaymentSheetResponse>(
-                '/subscription/create-subscription',
+                '/stripe/create-subscription',
                 { planType, paymentMethodId },
                 true // Requires authentication
             );
@@ -40,7 +41,7 @@ class SubscriptionService {
     async getCurrentSubscription(): Promise<SubscriptionResponse> {
         try {
             const response = await apiClient.get<SubscriptionResponse>(
-                '/subscription/subscription',
+                '/stripe/subscription',
                 true // Requires authentication
             );
             return response;
@@ -53,7 +54,7 @@ class SubscriptionService {
     async cancelSubscription(subscriptionId: string): Promise<CancelSubscriptionResponse> {
         try {
             const response = await apiClient.delete<CancelSubscriptionResponse>(
-                `/subscription/cancel-subscription/${subscriptionId}`,
+                `/stripe/cancel-subscription/${subscriptionId}`,
                 true // Requires authentication
             );
             return response;

@@ -1,5 +1,6 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
+import { subscriptionService } from '@/lib/services/subscriptionService';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
   createUserWithEmailAndPassword,
@@ -182,6 +183,29 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Profile fetch successful:', data.user.userName);
+
+      // Fetch subscription details if user is Pro
+      if (data.user.isPro && data.user.subscriptionId) {
+        try {
+          console.log('Fetching subscription details for Pro user...');
+          const subscriptionData = await subscriptionService.getCurrentSubscription();
+
+          if (subscriptionData.subscription) {
+            // Merge subscription details into the profile
+            data.user.subscriptionStatus = subscriptionData.subscription.status;
+            data.user.subscriptionPlan = subscriptionData.subscription.planType;
+            data.user.subscriptionCurrentPeriodEnd = subscriptionData.subscription.currentPeriodEnd;
+            console.log('Subscription details fetched:', {
+              status: subscriptionData.subscription.status,
+              plan: subscriptionData.subscription.planType,
+              endDate: subscriptionData.subscription.currentPeriodEnd
+            });
+          }
+        } catch (subError) {
+          console.log('Failed to fetch subscription details:', subError);
+          // Continue with profile data even if subscription fetch fails
+        }
+      }
 
       // Only update the profile if there are actual changes
       if (JSON.stringify(data.user) !== JSON.stringify(profile)) {

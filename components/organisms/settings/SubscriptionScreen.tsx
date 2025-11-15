@@ -83,6 +83,7 @@ const SubscriptionScreen: React.FC = () => {
       const { error: presentError } = await presentPaymentSheet()
 
       if (presentError) {
+        console.log('Payment sheet error:', presentError)
         Alert.alert("Payment Canceled", presentError.message)
       } else {
         Alert.alert(
