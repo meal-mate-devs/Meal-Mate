@@ -1,55 +1,137 @@
 "use client"
 
+import { useAuthContext } from "@/context/authContext"
+import { subscriptionService } from "@/lib/services/subscriptionService"
+import type { PlanType, SubscriptionPlan } from "@/lib/types/subscription"
 import { Ionicons } from "@expo/vector-icons"
+import { useStripe } from "@stripe/stripe-react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import React from "react"
-import { Alert, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useState } from "react"
+import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 const SubscriptionScreen: React.FC = () => {
   const router = useRouter()
+  const { initPaymentSheet, presentPaymentSheet } = useStripe()
+  const { profile, refreshProfile } = useAuthContext()
 
-  const subscriptionData = {
-    plan: "Pro",
-    status: "active",
-    validUntil: "March 23, 2025",
-    duration: "3 months",
-    devicesUsed: 2,
-    maxDevices: 3,
-    price: "$9.99",
-    billingCycle: "monthly",
-    nextBilling: "February 23, 2024",
-  }
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('yearly')
+  const [loading, setLoading] = useState(false)
+  const [loadingPlans, setLoadingPlans] = useState(true)
+  const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([])
 
-  const features = [
-    { id: "1", name: "Unlimited Recipe Generation", included: true },
-    { id: "2", name: "Advanced Nutrition Tracking", included: true },
-    { id: "3", name: "Premium Chef Content", included: true },
-    { id: "5", name: "Priority Customer Support", included: true },
-    { id: "6", name: "Ad-Free Experience", included: true },
-    { id: "7", name: "Export Recipes & Data", included: true },
+  // Get subscription info from profile (comes from authContext)
+  const isPro = profile?.isPro || false
+  const subscriptionStatus = profile?.subscriptionStatus
+  const subscriptionPlan = profile?.subscriptionPlan
+  const subscriptionEndDate = profile?.subscriptionCurrentPeriodEnd
+
+  // Premium features that users get with subscription
+  const premiumFeatures = [
+    { id: "1", name: "Read Aloud Recipes", icon: "volume-high" as const },
+    { id: "2", name: "Ad-Free Experience", icon: "close-circle" as const },
+    { id: "3", name: "Recipe Export (PDF/Image)", icon: "download" as const },
+    { id: "4", name: "Unlimited Recipe Generation", icon: "infinite" as const },
+    { id: "5", name: "Custom Weekly Meal Plans", icon: "calendar" as const },
+    { id: "6", name: "Custom Monthly Meal Plans", icon: "calendar-outline" as const },
+    { id: "7", name: "Advanced Nutrition Tracking", icon: "nutrition" as const },
+    { id: "8", name: "Priority Customer Support", icon: "headset" as const },
   ]
 
-  const handleUpgrade = () => {
-    Alert.alert("Upgrade Subscription", "Choose your new plan:", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Annual Plan ($99.99)", onPress: () => console.log("Annual selected") },
-      { text: "Lifetime Plan ($199.99)", onPress: () => console.log("Lifetime selected") },
-    ])
+  // Load available plans
+  useEffect(() => {
+    loadPlans()
+  }, [])
+
+  const loadPlans = async () => {
+    try {
+      setLoadingPlans(true)
+      const plansResponse = await subscriptionService.getPlans()
+      setAvailablePlans(plansResponse.plans)
+    } catch (error) {
+      console.error('Failed to load plans:', error)
+      Alert.alert('Error', 'Failed to load subscription plans')
+    } finally {
+      setLoadingPlans(false)
+    }
   }
 
-  const handleCancel = () => {
-    Alert.alert(
-      "Cancel Subscription",
-      "Are you sure you want to cancel your Pro subscription? You'll lose access to premium features.",
-      [
-        { text: "Keep Subscription", style: "cancel" },
-        {
-          text: "Cancel",
-          style: "destructive",
-          onPress: () => console.log("Subscription cancelled"),
-        },
-      ],
+  const handleSubscribe = async (planType: PlanType) => {
+    if (loading) return
+
+    try {
+      setLoading(true)
+
+      // Create subscription and get client secret
+      const subscriptionData = await subscriptionService.createSubscription(planType)
+
+      // Initialize payment sheet with subscription payment intent
+      const { error: initError } = await initPaymentSheet({
+        merchantDisplayName: "MealMate",
+        paymentIntentClientSecret: subscriptionData.clientSecret,
+        allowsDelayedPaymentMethods: true,
+        returnURL: "mealmate://stripe-redirect",
+      })
+
+      if (initError) {
+        Alert.alert("Error", initError.message)
+        setLoading(false)
+        return
+      }
+
+      // Present payment sheet
+      const { error: presentError } = await presentPaymentSheet()
+
+      if (presentError) {
+        Alert.alert("Payment Canceled", presentError.message)
+      } else {
+        Alert.alert(
+          "Success! 🎉",
+          "Welcome to MealMate Premium! You now have access to all premium features.",
+          [
+            {
+              text: "Great!",
+              onPress: async () => {
+                await refreshProfile()
+                router.back()
+              },
+            },
+          ]
+        )
+      }
+    } catch (error: any) {
+      console.error('Subscription error:', error)
+      Alert.alert("Error", error?.message || "Failed to process subscription")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getPlanInfo = (planType: PlanType) => {
+    const plan = availablePlans.find(p => p.id === planType)
+    if (plan) {
+      return {
+        name: plan.name,
+        price: `$${plan.amount.toFixed(2)}`,
+        interval: plan.interval,
+      }
+    }
+    return {
+      name: planType === 'monthly' ? 'Monthly Plan' : 'Yearly Plan',
+      price: planType === 'monthly' ? '$9.99' : '$99.99',
+      interval: planType === 'monthly' ? 'month' : 'year',
+    }
+  }
+
+  const monthlyPlan = availablePlans.find(p => p.id === 'monthly')
+  const yearlyPlan = availablePlans.find(p => p.id === 'yearly')
+
+  if (loadingPlans) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#FACC15" />
+        <Text className="text-white mt-4">Loading plans...</Text>
+      </View>
     )
   }
 
@@ -58,161 +140,266 @@ const SubscriptionScreen: React.FC = () => {
       <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
         <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
-      {/* Header */}
-      <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4">
-        <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-bold">Subscription</Text>
-          <View className="w-6" />
-        </View>
-        <Text className="text-gray-400 text-center">Manage your premium membership</Text>
-      </View>
-
-      <ScrollView 
-        className="flex-1 px-4" 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ backgroundColor: '#000000' }}
-      >
-        {/* Current Subscription Card */}
-        <View className="mb-6">
-          <View className="overflow-hidden rounded-2xl">
-            <LinearGradient colors={["#8B5CF6", "#A855F7"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} className="p-6">
-              <View className="flex-row items-center justify-between mb-4">
-                <View>
-                  <Text className="text-white text-2xl font-bold">{subscriptionData.plan} Plan</Text>
-                  <Text className="text-white/80 text-lg">{subscriptionData.price}/month</Text>
-                </View>
-                <View className="bg-white/20 rounded-full px-3 py-1">
-                  <Text className="text-white font-semibold text-sm uppercase">{subscriptionData.status}</Text>
-                </View>
-              </View>
-
-              <View className="bg-white/10 rounded-xl p-4">
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text className="text-white/80">Valid Until</Text>
-                  <Text className="text-white font-semibold">{subscriptionData.validUntil}</Text>
-                </View>
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text className="text-white/80">Plan Duration</Text>
-                  <Text className="text-white font-semibold">{subscriptionData.duration}</Text>
-                </View>
-                <View className="flex-row justify-between items-center mb-3">
-                  <Text className="text-white/80">Devices Used</Text>
-                  <Text className="text-white font-semibold">
-                    {subscriptionData.devicesUsed} of {subscriptionData.maxDevices}
-                  </Text>
-                </View>
-                <View className="flex-row justify-between items-center">
-                  <Text className="text-white/80">Next Billing</Text>
-                  <Text className="text-white font-semibold">{subscriptionData.nextBilling}</Text>
-                </View>
-              </View>
-            </LinearGradient>
+        {/* Header */}
+        <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4">
+          <View className="flex-row items-center justify-between mb-2">
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text className="text-white text-xl font-bold">
+              {isPro ? "My Subscription" : "Premium Plans"}
+            </Text>
+            <View className="w-6" />
           </View>
+          <Text className="text-gray-400 text-center">
+            {isPro ? "Manage your premium membership" : "Unlock all premium features"}
+          </Text>
         </View>
 
-        {/* Subscription Benefits */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">Your Premium Benefits</Text>
-          <View className="bg-zinc-800 rounded-2xl overflow-hidden">
-            {features.map((feature, index) => (
-              <View key={feature.id}>
-                <View className="flex-row items-center p-4">
-                  <View className="w-10 h-10 rounded-full bg-green-500 items-center justify-center mr-4">
-                    <Ionicons name="checkmark" size={20} color="white" />
+        <ScrollView
+          className="flex-1 px-4"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ backgroundColor: '#000000', paddingBottom: 20 }}
+        >
+          {/* Current Subscription Status (for Pro users) */}
+          {isPro && subscriptionStatus && (
+            <View className="mb-6">
+              <View className="overflow-hidden rounded-2xl">
+                <LinearGradient
+                  colors={["#8B5CF6", "#A855F7"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  className="p-6"
+                >
+                  <View className="flex-row items-center justify-between mb-4">
+                    <View>
+                      <Text className="text-white text-2xl font-bold">
+                        {subscriptionPlan === 'yearly' ? 'Yearly' : 'Monthly'} Premium
+                      </Text>
+                      <Text className="text-white/80 text-sm mt-1">
+                        Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
+                      </Text>
+                    </View>
+                    <View className="bg-white/20 rounded-full px-3 py-1">
+                      <Text className="text-white font-semibold text-sm uppercase">Active</Text>
+                    </View>
                   </View>
-                  <Text className="text-white font-medium flex-1">{feature.name}</Text>
+                  {subscriptionEndDate && (
+                    <View className="bg-white/10 rounded-xl p-4">
+                      <View className="flex-row justify-between items-center">
+                        <Text className="text-white/80">Renews On</Text>
+                        <Text className="text-white font-semibold">
+                          {new Date(subscriptionEndDate).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </LinearGradient>
+              </View>
+            </View>
+          )}
+
+          {/* Hero Section (for non-Pro users) */}
+          {!isPro && (
+            <View className="mb-6">
+              <View className="overflow-hidden rounded-3xl">
+                <LinearGradient
+                  colors={["#FACC15", "#F97316"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  className="p-6 items-center"
+                >
+                  <Ionicons name="sparkles" size={48} color="white" />
+                  <Text className="text-white text-2xl font-bold mt-3 text-center">
+                    Upgrade to Premium
+                  </Text>
+                  <Text className="text-white/90 text-center mt-2">
+                    Get access to exclusive features and enhance your cooking experience
+                  </Text>
+                </LinearGradient>
+              </View>
+            </View>
+          )}
+
+          {/* Plan Selection */}
+          <View className="mb-6">
+            <Text className="text-white text-lg font-bold mb-4">Choose Your Plan</Text>
+
+            {/* Yearly Plan */}
+            {yearlyPlan && (
+              <TouchableOpacity
+                onPress={() => setSelectedPlan('yearly')}
+                className="mb-4"
+                disabled={loading}
+              >
+                <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'yearly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
+                  <View className="bg-yellow-500 py-1">
+                    <Text className="text-black text-xs font-bold text-center uppercase">
+                      Most Popular - Best Value
+                    </Text>
+                  </View>
+                  <View className="bg-zinc-900 p-5">
+                    <View className="flex-row items-center justify-between mb-3">
+                      <View className="flex-1">
+                        <View className="flex-row items-center">
+                          <Text className="text-white text-xl font-bold">{yearlyPlan.name}</Text>
+                          {selectedPlan === 'yearly' && (
+                            <View className="ml-2 bg-yellow-500 rounded-full p-1">
+                              <Ionicons name="checkmark" size={16} color="black" />
+                            </View>
+                          )}
+                        </View>
+                        <Text className="text-gray-400 text-sm mt-1">$8.33/month</Text>
+                      </View>
+                      <View className="items-end">
+                        <Text className="text-white text-3xl font-bold">${yearlyPlan.amount.toFixed(2)}</Text>
+                        <Text className="text-gray-400 text-sm">per year</Text>
+                      </View>
+                    </View>
+                    <View className="bg-green-500/20 rounded-lg px-3 py-2 mt-2">
+                      <Text className="text-green-400 font-semibold text-center">
+                        💰 Save $19.89 compared to monthly
+                      </Text>
+                    </View>
+                  </View>
                 </View>
-                {index < features.length - 1 && <View className="h-px bg-zinc-700 ml-14" />}
-              </View>
-            ))}
+              </TouchableOpacity>
+            )}
+
+            {/* Monthly Plan */}
+            {monthlyPlan && (
+              <TouchableOpacity
+                onPress={() => setSelectedPlan('monthly')}
+                disabled={loading}
+              >
+                <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'monthly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
+                  <View className="bg-zinc-900 p-5">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-1">
+                        <View className="flex-row items-center">
+                          <Text className="text-white text-xl font-bold">{monthlyPlan.name}</Text>
+                          {selectedPlan === 'monthly' && (
+                            <View className="ml-2 bg-yellow-500 rounded-full p-1">
+                              <Ionicons name="checkmark" size={16} color="black" />
+                            </View>
+                          )}
+                        </View>
+                        <Text className="text-gray-400 text-sm mt-1">Billed monthly</Text>
+                      </View>
+                      <View className="items-end">
+                        <Text className="text-white text-3xl font-bold">${monthlyPlan.amount.toFixed(2)}</Text>
+                        <Text className="text-gray-400 text-sm">per month</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
 
-        {/* Usage Statistics */}
-        <View className="mb-6">
-          <Text className="text-white text-xl font-bold mb-4">This Month's Usage</Text>
-          <View className="flex-row space-x-3">
-            <View className="flex-1 bg-zinc-800 rounded-2xl p-4">
-              <View className="flex-row items-center mb-2">
-                <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
-                <Text className="text-gray-400 text-sm ml-2">Recipes Generated</Text>
-              </View>
-              <Text className="text-white text-2xl font-bold">127</Text>
-              <Text className="text-green-400 text-sm">+23 from last month</Text>
-            </View>
-
-            <View className="flex-1 bg-zinc-800 rounded-2xl p-4">
-              <View className="flex-row items-center mb-2">
-                <Ionicons name="analytics-outline" size={20} color="#FACC15" />
-                <Text className="text-gray-400 text-sm ml-2">Nutrition Tracked</Text>
-              </View>
-              <Text className="text-white text-2xl font-bold">28</Text>
-              <Text className="text-green-400 text-sm">days this month</Text>
+          {/* Premium Features */}
+          <View className="mb-6">
+            <Text className="text-white text-lg font-bold mb-4">Premium Features Included</Text>
+            <View className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+              {premiumFeatures.map((feature, index) => (
+                <View key={feature.id}>
+                  <View className="flex-row items-center p-4">
+                    <View className="w-10 h-10 rounded-full bg-yellow-500/20 items-center justify-center mr-4">
+                      <Ionicons name={feature.icon} size={20} color="#FACC15" />
+                    </View>
+                    <Text className="text-white font-medium flex-1">{feature.name}</Text>
+                    <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                  </View>
+                  {index < premiumFeatures.length - 1 && (
+                    <View className="h-px bg-zinc-800 ml-14" />
+                  )}
+                </View>
+              ))}
             </View>
           </View>
-        </View>
 
-        {/* Action Buttons */}
-        <View className="mb-6 space-y-3">
-          <TouchableOpacity onPress={handleUpgrade} className="overflow-hidden rounded-2xl">
+          {/* Subscribe Button */}
+          <TouchableOpacity
+            onPress={() => handleSubscribe(selectedPlan)}
+            className="mb-6 overflow-hidden rounded-2xl"
+            disabled={loading || isPro}
+          >
             <LinearGradient
-              colors={["#FACC15", "#F97316"]}
+              colors={isPro ? ["#6B7280", "#4B5563"] : ["#FACC15", "#F97316"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              className="p-4 flex-row items-center justify-center"
+              className="p-5 items-center"
             >
-              <Ionicons name="arrow-up-circle-outline" size={24} color="white" />
-              <Text className="text-white font-bold text-lg ml-2">Upgrade Plan</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={isPro ? "#FFF" : "#000"} />
+              ) : (
+                <>
+                  <Text className={`${isPro ? 'text-white' : 'text-black'} font-bold text-xl`}>
+                    {isPro ? "Already Premium" : `Subscribe to ${getPlanInfo(selectedPlan).name}`}
+                  </Text>
+                  {!isPro && (
+                    <Text className="text-black/80 text-sm mt-1">
+                      {getPlanInfo(selectedPlan).price}/{getPlanInfo(selectedPlan).interval}
+                    </Text>
+                  )}
+                </>
+              )}
             </LinearGradient>
           </TouchableOpacity>
 
-          <TouchableOpacity className="bg-zinc-800 p-4 rounded-2xl flex-row items-center justify-center">
-            <Ionicons name="settings-outline" size={20} color="white" />
-            <Text className="text-white font-semibold ml-2">Manage Billing</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity className="bg-zinc-800 p-4 rounded-2xl flex-row items-center justify-center">
-            <Ionicons name="receipt-outline" size={20} color="white" />
-            <Text className="text-white font-semibold ml-2">View Invoices</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Danger Zone */}
-        <View className="mb-8">
-          <Text className="text-gray-400 text-sm font-medium mb-3 px-2 uppercase tracking-wide">Danger Zone</Text>
-          <View className="bg-zinc-800 rounded-2xl overflow-hidden">
-            <TouchableOpacity className="flex-row items-center py-4 px-4" onPress={handleCancel}>
-              <View className="w-10 h-10 rounded-full bg-red-900/30 items-center justify-center mr-4">
-                <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
+          {/* Benefits Comparison */}
+          <View className="bg-zinc-900 rounded-2xl p-5 mb-6 border border-zinc-800">
+            <Text className="text-white font-bold text-lg mb-4 text-center">
+              Why Go Premium?
+            </Text>
+            <View className="flex gap-4">
+              <View className="flex-row items-center">
+                <Ionicons name="trending-up" size={20} color="#10B981" />
+                <Text className="text-gray-300 ml-3 flex-1">
+                  Generate unlimited recipes tailored to your preferences
+                </Text>
               </View>
-              <View className="flex-1">
-                <Text className="text-red-400 font-medium">Cancel Subscription</Text>
-                <Text className="text-gray-500 text-sm">End your premium membership</Text>
+              <View className="flex-row items-center">
+                <Ionicons name="calendar" size={20} color="#10B981" />
+                <Text className="text-gray-300 ml-3 flex-1">
+                  Custom meal plans to stay organized and healthy
+                </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
+              <View className="flex-row items-center">
+                <Ionicons name="remove-circle" size={20} color="#10B981" />
+                <Text className="text-gray-300 ml-3 flex-1">
+                  Enjoy an ad-free, distraction-free cooking experience
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <Ionicons name="volume-high" size={20} color="#10B981" />
+                <Text className="text-gray-300 ml-3 flex-1">
+                  Hands-free cooking with read-aloud instructions
+                </Text>
+              </View>
+            </View>
           </View>
-        </View>
 
-        {/* Support */}
-        <View className="bg-zinc-800 rounded-2xl p-4 mb-8">
-          <View className="flex-row items-center mb-3">
-            <Ionicons name="help-circle" size={24} color="#3B82F6" />
-            <Text className="text-white font-bold text-lg ml-3">Need Help?</Text>
-          </View>
-          <Text className="text-gray-300 mb-4">
-            Have questions about your subscription? Our support team is here to help you get the most out of your
-            premium membership.
+          {/* Terms */}
+          <Text className="text-gray-500 text-xs text-center px-4 mb-4">
+            Cancel anytime. No commitments. Payment will be charged to your account. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period.
           </Text>
-          <TouchableOpacity className="bg-blue-600 py-3 rounded-xl" onPress={() => router.push("/settings/help")}>
-            <Text className="text-white font-semibold text-center">Contact Support</Text>
+
+          {/* Support Link */}
+          <TouchableOpacity
+            onPress={() => router.push("/settings/help")}
+            className="items-center mb-6"
+          >
+            <Text className="text-yellow-500 text-sm">
+              Need help? Contact Support
+            </Text>
           </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
     </View>
   )
 }

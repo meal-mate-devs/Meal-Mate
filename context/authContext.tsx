@@ -2,15 +2,15 @@
 import { auth } from '@/lib/config/clientApp';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signInWithCredential,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -20,6 +20,9 @@ type User = {
   displayName: string | null;
   emailVerified: boolean;
 };
+
+type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing' | null;
+type SubscriptionPlan = 'monthly' | 'yearly' | null;
 
 type Profile = {
   _id: string;
@@ -40,6 +43,12 @@ type Profile = {
   isProfileComplete: boolean;
   isChef: boolean;
   isPro: boolean;
+  // Subscription fields
+  stripeCustomerId?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: SubscriptionStatus;
+  subscriptionPlan?: SubscriptionPlan;
+  subscriptionCurrentPeriodEnd?: Date | string | null;
 };
 
 type AuthContextType = {
@@ -306,7 +315,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       // Handle DD-MM-YYYY format from frontend
       let dobDate;
       let formattedDOB;
-      
+
       try {
         // Check if dateOfBirth is in DD-MM-YYYY format
         if (typeof dateOfBirth === 'string' && dateOfBirth.includes('-') && dateOfBirth.length === 10) {
@@ -315,7 +324,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         } else {
           dobDate = new Date(dateOfBirth);
         }
-        
+
         formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
       } catch (error) {
         console.log('Date parsing error:', error);
@@ -399,7 +408,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async (idToken: string) => {
     try {
       console.log('Starting Google authentication with Firebase...');
-      
+
       // Create Google credential with the ID token
       const credential = GoogleAuthProvider.credential(idToken);
 
@@ -508,10 +517,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         console.log('Signing out from Google...');
         await signOutFromGoogle();
       }
-      
+
       // Sign out from Firebase
       await signOut(auth);
-      
+
       console.log('User signed out successfully');
     } catch (error) {
       console.log('Error signing out:', error);
@@ -636,7 +645,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       if (userData.dateOfBirth) {
         let dobDate;
         let formattedDOB;
-        
+
         try {
           // Check if dateOfBirth is in DD-MM-YYYY format
           if (typeof userData.dateOfBirth === 'string' && userData.dateOfBirth.includes('-') && userData.dateOfBirth.length === 10) {
@@ -645,13 +654,13 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           } else {
             dobDate = new Date(userData.dateOfBirth);
           }
-          
+
           formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
         } catch (error) {
           console.log('Date parsing error in updateUserProfile:', error);
           formattedDOB = userData.dateOfBirth;
         }
-        
+
         formData.append('dateOfBirth', formattedDOB);
       }
 
