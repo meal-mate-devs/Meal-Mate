@@ -1,5 +1,7 @@
 "use client"
 
+import { useAuthContext } from "@/context/authContext"
+import { apiClient } from "@/lib/api/client"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
@@ -21,6 +23,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Dialog from "../atoms/Dialog"
+import ChefRegistrationScreen, { ChefRegistrationData } from "./ChefRegistrationScreen"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
@@ -89,6 +92,8 @@ interface Feedback {
 const ChefDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<FlatList>(null)
+  const { profile, refreshProfile } = useAuthContext()
+  
   const [userType, setUserType] = useState<"user" | "chef">("user")
   const [selectedChef, setSelectedChef] = useState<string | null>(null)
   const [showRecipeModal, setShowRecipeModal] = useState(false)
@@ -96,8 +101,24 @@ const ChefDashboardScreen: React.FC = () => {
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<"recipes" | "courses">("recipes")
   
+  // Chef registration states
+  const [showChefRegistration, setShowChefRegistration] = useState(false)
+  const [isRegisteringChef, setIsRegisteringChef] = useState(false)
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [showRegErrorDialog, setShowRegErrorDialog] = useState(false)
+  const [regErrorMessage, setRegErrorMessage] = useState("")
+  
   // Chef dashboard toggle state
   const [chefDashboardTab, setChefDashboardTab] = useState<"feedback" | "content">("content")
+  
+  // Check if user should see chef registration
+  useEffect(() => {
+    if (userType === "chef" && profile && !profile.isChef) {
+      setShowChefRegistration(true)
+    } else {
+      setShowChefRegistration(false)
+    }
+  }, [userType, profile])
 
   // Dynamic state for user-created content
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([
@@ -1033,6 +1054,75 @@ const ChefDashboardScreen: React.FC = () => {
     // TODO: Add confirmation dialog
     setUserCourses(prev => prev.filter(c => c.id !== courseId))
     console.log(`Course deleted: ${course?.title}`)
+  }
+
+  // Chef registration handler
+  const handleChefRegistration = async (chefData: ChefRegistrationData) => {
+    setIsRegisteringChef(true)
+    
+    try {
+      // Call API to register as chef
+      const result = await apiClient.post<{ message: string; user: any }>(
+        '/auth/register-chef',
+        chefData,
+        true, // require auth
+        15000 // 15 second timeout
+      )
+
+      console.log('Chef registration successful:', result)
+
+      // Refresh profile to get updated isChef status
+      await refreshProfile()
+      
+      setShowChefRegistration(false)
+      setShowSuccessDialog(true)
+      setIsRegisteringChef(false)
+    } catch (error: any) {
+      console.error('Chef registration error:', error)
+      setRegErrorMessage(error.message || 'Failed to register as chef. Please try again.')
+      setShowRegErrorDialog(true)
+      setIsRegisteringChef(false)
+    }
+  }
+
+  const handleCancelChefRegistration = () => {
+    setShowChefRegistration(false)
+    setUserType("user") // Switch back to user view
+  }
+
+  // Show chef registration screen if user is not a chef
+  if (showChefRegistration && profile && !profile.isChef) {
+    return (
+      <>
+        <ChefRegistrationScreen
+          onComplete={handleChefRegistration}
+          onCancel={handleCancelChefRegistration}
+        />
+        
+        {/* Success Dialog */}
+        <Dialog
+          visible={showSuccessDialog}
+          type="success"
+          title="Welcome Chef!"
+          message="You've been successfully registered as a chef. You can now create courses and upload recipes!"
+          onClose={() => {
+            setShowSuccessDialog(false)
+          }}
+          confirmText="Get Started"
+          autoClose={false}
+        />
+
+        {/* Error Dialog */}
+        <Dialog
+          visible={showRegErrorDialog}
+          type="error"
+          title="Registration Failed"
+          message={regErrorMessage}
+          onClose={() => setShowRegErrorDialog(false)}
+          confirmText="OK"
+        />
+      </>
+    )
   }
 
   return (
