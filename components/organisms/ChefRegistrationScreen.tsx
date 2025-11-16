@@ -600,8 +600,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: '#d4af373b',
-    borderColor: '#d4af3779',
+    backgroundColor: '#d4af3727',
+    borderColor: '#d4af3782',
   },
   submitButtonGradient: {
     flexDirection: "row",

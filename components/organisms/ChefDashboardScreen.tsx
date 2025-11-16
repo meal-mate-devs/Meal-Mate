@@ -1,12 +1,14 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import * as chefService from "@/lib/api/chefService"
 import { apiClient } from "@/lib/api/client"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef, useState } from "react"
 import {
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -59,7 +61,7 @@ interface Course {
   duration: string
   skillLevel: "Beginner" | "Intermediate" | "Advanced"
   category: string
-  students: number
+  subscribers: number
   rating: number
   isPremium: boolean
   chefId: string
@@ -89,6 +91,15 @@ interface Feedback {
   recipeTitle?: string
 }
 
+// Helper function to safely get image URL as string
+const getImageUrl = (image: any): string => {
+  if (!image) return "https://via.placeholder.com/400x300";
+  if (typeof image === 'string') return image;
+  if (typeof image === 'object' && image.url) return image.url;
+  if (typeof image === 'object' && image.uri) return image.uri;
+  return "https://via.placeholder.com/400x300";
+}
+
 const ChefDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<FlatList>(null)
@@ -100,6 +111,10 @@ const ChefDashboardScreen: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<"recipes" | "courses">("recipes")
+  
+  // Edit mode states
+  const [editingRecipe, setEditingRecipe] = useState<any>(null)
+  const [editingCourse, setEditingCourse] = useState<any>(null)
   
   // Chef registration states
   const [showChefRegistration, setShowChefRegistration] = useState(false)
@@ -121,51 +136,89 @@ const ChefDashboardScreen: React.FC = () => {
   }, [userType, profile])
 
   // Dynamic state for user-created content
-  const [userRecipes, setUserRecipes] = useState<Recipe[]>([
-    {
-      id: "chef_recipe_1",
-      title: "Signature Truffle Pasta",
-      description: "My special truffle pasta with homemade sauce",
-      image: "https://images.unsplash.com/photo-1621996346565-e3dbc353d2e5",
-      difficulty: "Medium",
-      cookTime: "45 min",
-      rating: 4.9,
-      reviews: 89,
-      isPremium: true,
-      chefName: "You",
-    },
-    {
-      id: "chef_recipe_2", 
-      title: "Classic Beef Wellington",
-      description: "Traditional British beef wellington with mushroom duxelles",
-      image: "https://images.unsplash.com/photo-1544025162-d76694265947",
-      difficulty: "Hard",
-      cookTime: "2 hours",
-      rating: 4.8,
-      reviews: 156,
-      isPremium: true,
-      chefName: "You",
-    }
-  ])
-  const [userCourses, setUserCourses] = useState<Course[]>([
-    {
-      id: "chef_course_1",
-      title: "Advanced Culinary Techniques",
-      description: "Master professional cooking techniques used in top restaurants",
-      duration: "8 weeks",
-      skillLevel: "Advanced",
-      category: "Professional Skills",
-      students: 245,
-      rating: 4.9,
-      isPremium: true,
-      chefId: "current_chef",
-      chefName: "You",
-      image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136",
-    }
-  ])
+  const [userRecipes, setUserRecipes] = useState<Recipe[]>([])
+  const [userCourses, setUserCourses] = useState<Course[]>([])
+  const [isLoadingRecipes, setIsLoadingRecipes] = useState(false)
+  const [isLoadingCourses, setIsLoadingCourses] = useState(false)
   
   // Management tab state
   const [managementTab, setManagementTab] = useState<"recipes" | "courses">("recipes")
+
+  // Fetch chef's recipes and courses from backend
+  useEffect(() => {
+    if (userType === "chef" && profile?.isChef) {
+      fetchUserRecipes()
+      fetchUserCourses()
+    }
+  }, [userType, profile?.isChef])
+
+  const fetchUserRecipes = async () => {
+    setIsLoadingRecipes(true)
+    try {
+      console.log('📚 Fetching chef recipes from backend...')
+      const recipes = await chefService.getMyRecipes('all')
+      console.log(`✅ Fetched ${recipes.length} recipes`)
+      
+      // Convert backend recipes to local Recipe format
+      const localRecipes: Recipe[] = recipes.map(r => ({
+        id: r._id,
+        title: r.title,
+        description: r.description,
+        image: getImageUrl(r.image),
+        cookTime: `${r.prepTime + r.cookTime}m`,
+        difficulty: r.difficulty as "Easy" | "Medium" | "Hard",
+        rating: 5.0,
+        isPremium: r.isPremium,
+        chefName: "You"
+      }))
+      
+      setUserRecipes(localRecipes)
+    } catch (error) {
+      console.log('❌ Failed to fetch recipes:', error)
+    } finally {
+      setIsLoadingRecipes(false)
+    }
+  }
+
+  const fetchUserCourses = async () => {
+    setIsLoadingCourses(true)
+    try {
+      console.log('📚 Fetching chef courses from backend...')
+      const courses = await chefService.getMyCourses('all')
+      console.log(`✅ Fetched ${courses.length} courses`)
+      
+      // Convert backend courses to local Course format
+      const localCourses: Course[] = courses.map(c => ({
+        id: c._id,
+        title: c.title,
+        description: c.description,
+        duration: c.duration,
+        skillLevel: c.skillLevel as "Beginner" | "Intermediate" | "Advanced",
+        category: c.category,
+        subscribers: c.enrolledStudents || 0,
+        rating: c.averageRating || 0,
+        isPremium: c.isPremium,
+        chefId: c.authorId,
+        chefName: "You",
+        image: c.coverImage || "https://via.placeholder.com/400x300",
+        units: c.units.map(u => ({
+          id: u._id,
+          title: u.title,
+          objective: u.objective || '',
+          content: u.content,
+          steps: u.steps || [],
+          commonErrors: u.commonErrors || [],
+          bestPractices: u.bestPractices || []
+        }))
+      }))
+      
+      setUserCourses(localCourses)
+    } catch (error) {
+      console.log('❌ Failed to fetch courses:', error)
+    } finally {
+      setIsLoadingCourses(false)
+    }
+  }
 
   // Animation values
   const slideAnimation = useRef(new Animated.Value(0)).current
@@ -214,7 +267,7 @@ const ChefDashboardScreen: React.FC = () => {
           duration: "8 weeks",
           skillLevel: "Advanced",
           category: "Fine Dining",
-          students: 1250,
+          subscribers: 1250,
           rating: 4.9,
           isPremium: true,
           chefId: "1",
@@ -228,7 +281,7 @@ const ChefDashboardScreen: React.FC = () => {
           duration: "6 weeks",
           skillLevel: "Advanced",
           category: "Business",
-          students: 890,
+          subscribers: 890,
           rating: 4.7,
           isPremium: true,
           chefId: "1",
@@ -266,7 +319,7 @@ const ChefDashboardScreen: React.FC = () => {
           duration: "5 weeks",
           skillLevel: "Intermediate",
           category: "French Cuisine",
-          students: 670,
+          subscribers: 670,
           rating: 4.8,
           isPremium: true,
           chefId: "2",
@@ -315,7 +368,7 @@ const ChefDashboardScreen: React.FC = () => {
           duration: "4 weeks",
           skillLevel: "Beginner",
           category: "Healthy Cooking",
-          students: 1120,
+          subscribers: 1120,
           rating: 4.6,
           isPremium: false,
           chefId: "3",
@@ -329,7 +382,7 @@ const ChefDashboardScreen: React.FC = () => {
           duration: "3 weeks",
           skillLevel: "Beginner",
           category: "Plant-Based",
-          students: 890,
+          subscribers: 890,
           rating: 4.5,
           isPremium: true,
           chefId: "3",
@@ -371,7 +424,7 @@ const ChefDashboardScreen: React.FC = () => {
   const [chefStats] = useState({
     totalRecipes: 24,
     premiumRecipes: 8,
-    totalStudents: 1250,
+    totalsubscribers: 1250,
     averageRating: 4.8,
     monthlyEarnings: 3450,
   })
@@ -753,7 +806,7 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                   <View style={styles.coursePrice}>
                     <Text style={styles.priceText}>{item.skillLevel}</Text>
-                    <Text style={styles.studentsText}>{item.students} students</Text>
+                    <Text style={styles.subscribersText}>{item.subscribers} subscribers</Text>
                   </View>
                 </View>
               </TouchableOpacity>
@@ -792,8 +845,8 @@ const ChefDashboardScreen: React.FC = () => {
             <View style={[styles.overviewStatIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
               <Ionicons name="people-outline" size={16} color="#3B82F6" />
             </View>
-            <Text style={styles.overviewStatValue}>{chefStats.totalStudents}</Text>
-            <Text style={styles.overviewStatLabel}>Students</Text>
+            <Text style={styles.overviewStatValue}>{chefStats.totalsubscribers}</Text>
+            <Text style={styles.overviewStatLabel}>Subscriber</Text>
           </View>
 
           <View style={styles.overviewStatDivider} />
@@ -1003,7 +1056,7 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="people" size={14} color="#64748B" />
-            <Text style={styles.metaText}>{course.students} students</Text>
+            <Text style={styles.metaText}>{course.subscribers} subscribers</Text>
           </View>
         </View>
         
@@ -1032,28 +1085,102 @@ const ChefDashboardScreen: React.FC = () => {
   )
 
   // Handler functions for edit and delete
-  const handleEditRecipe = (recipe: Recipe) => {
-    // TODO: Open edit modal with pre-filled data
-    console.log(`Edit recipe: ${recipe.title}`)
+  const handleEditRecipe = async (recipe: Recipe) => {
+    try {
+      // Fetch full recipe details from backend
+      console.log('📝 Fetching recipe details for edit:', recipe.id)
+      console.log('📝 Recipe object:', recipe)
+      
+      const fullRecipe = await chefService.getRecipeById(recipe.id)
+      
+      console.log('✅ Full recipe fetched from backend:', fullRecipe)
+      console.log('📋 Recipe fields:', {
+        title: fullRecipe.title,
+        description: fullRecipe.description,
+        prepTime: fullRecipe.prepTime,
+        cookTime: fullRecipe.cookTime,
+        servings: fullRecipe.servings,
+        cuisine: fullRecipe.cuisine,
+        category: fullRecipe.category,
+        difficulty: fullRecipe.difficulty,
+        isPremium: fullRecipe.isPremium,
+        nutrition: fullRecipe.nutrition,
+        ingredientsCount: fullRecipe.ingredients?.length,
+        instructionsCount: fullRecipe.instructions?.length,
+      })
+      
+      // Use full recipe data with all fields for editing
+      setEditingRecipe(fullRecipe)
+      setShowRecipeModal(true)
+    } catch (error: any) {
+      console.log('❌ Failed to fetch recipe for editing:', error)
+      console.log('❌ Error details:', error.message)
+      
+      // Show error to user instead of opening incomplete form
+      Alert.alert(
+        'Unable to Edit Recipe',
+        'Failed to load recipe details. Please try again.',
+        [
+          { text: 'OK', style: 'cancel' }
+        ]
+      )
+      return
+      
+    }
   }
 
-  const handleDeleteRecipe = (recipeId: string) => {
+  const handleDeleteRecipe = async (recipeId: string) => {
     const recipe = userRecipes.find(r => r.id === recipeId)
+    if (!recipe) return
+    
     // TODO: Add confirmation dialog
-    setUserRecipes(prev => prev.filter(r => r.id !== recipeId))
-    console.log(`Recipe deleted: ${recipe?.title}`)
+    try {
+      console.log('🗑️ Deleting recipe:', recipe.title)
+      await chefService.deleteRecipe(recipeId)
+      setUserRecipes(prev => prev.filter(r => r.id !== recipeId))
+      console.log('✅ Recipe deleted successfully')
+    } catch (error) {
+      console.log('❌ Failed to delete recipe:', error)
+    }
   }
 
-  const handleEditCourse = (course: Course) => {
-    // TODO: Open edit modal with pre-filled data
-    console.log(`Edit course: ${course.title}`)
+  const handleEditCourse = async (course: Course) => {
+    try {
+      // Fetch full course details from backend
+      console.log('📝 Fetching course details for edit:', course.id)
+      const fullCourse = await chefService.getCourseById(course.id)
+      
+      // Use full course data with all fields for editing
+      setEditingCourse(fullCourse)
+      setShowCourseModal(true)
+    } catch (error) {
+      console.log('❌ Failed to fetch course for editing:', error)
+      // Still open modal with basic data
+      setEditingCourse(course)
+      setShowCourseModal(true)
+    }
   }
 
-  const handleDeleteCourse = (courseId: string) => {
+  const handleDeleteCourse = async (courseId: string) => {
     const course = userCourses.find(c => c.id === courseId)
+    if (!course) return
+    
     // TODO: Add confirmation dialog
-    setUserCourses(prev => prev.filter(c => c.id !== courseId))
-    console.log(`Course deleted: ${course?.title}`)
+    try {
+      console.log('🗑️ Deleting course:', course.title)
+      await chefService.deleteCourse(courseId)
+      setUserCourses(prev => prev.filter(c => c.id !== courseId))
+      console.log('✅ Course deleted successfully')
+    } catch (error) {
+      console.log('❌ Failed to delete course:', error)
+    }
+  }
+
+  const handleModalClose = () => {
+    setShowRecipeModal(false)
+    setShowCourseModal(false)
+    setEditingRecipe(null)
+    setEditingCourse(null)
   }
 
   // Chef registration handler
@@ -1163,13 +1290,15 @@ const ChefDashboardScreen: React.FC = () => {
           visible={showRecipeModal}
           animationType="slide"
           presentationStyle="pageSheet"
-          onRequestClose={() => setShowRecipeModal(false)}
+          onRequestClose={handleModalClose}
         >
           <RecipeUploadModal
-            onClose={() => setShowRecipeModal(false)}
+            onClose={handleModalClose}
             onSave={(recipe) => {
-              setUserRecipes(prev => [recipe, ...prev])
+              fetchUserRecipes()
+              handleModalClose()
             }}
+            editingRecipe={editingRecipe}
           />
         </Modal>
 
@@ -1178,13 +1307,15 @@ const ChefDashboardScreen: React.FC = () => {
           visible={showCourseModal}
           animationType="slide"
           presentationStyle="pageSheet"
-          onRequestClose={() => setShowCourseModal(false)}
+          onRequestClose={handleModalClose}
         >
           <CourseCreationModal
-            onClose={() => setShowCourseModal(false)}
+            onClose={handleModalClose}
             onSave={(course) => {
-              setUserCourses(prev => [course, ...prev])
+              fetchUserCourses()
+              handleModalClose()
             }}
+            editingCourse={editingCourse}
           />
         </Modal>
       </View>
@@ -1193,7 +1324,111 @@ const ChefDashboardScreen: React.FC = () => {
 }
 
 // Recipe Upload Modal Component
-const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe) => void }> = ({ onClose, onSave }) => {
+const RecipeUploadModal: React.FC<{ 
+  onClose: () => void; 
+  onSave: (recipe: Recipe) => void;
+  editingRecipe?: any;
+}> = ({ onClose, onSave, editingRecipe }) => {
+  const isEditMode = !!editingRecipe
+  
+  // Recipe categories
+  const RECIPE_CATEGORIES = [
+    "Appetizers", "Breakfast", "Lunch", "Dinner", "Desserts", 
+    "Snacks", "Beverages", "Salads", "Soups", "Main Course",
+    "Side Dishes", "Baking", "Seafood", "Vegetarian", "Vegan", "Other"
+  ]
+
+  // Common cooking units
+  const COOKING_UNITS = [
+    "gram", "kilogram", "milligram", "ounce", "pound",
+    "milliliter", "liter", "cup", "tablespoon", "teaspoon",
+    "piece", "slice", "whole", "pinch", "handful",
+    "can", "package", "bunch", "clove", "to taste"
+  ]
+
+  const formatErrorMessage = (error: any): string => {
+    // Handle premium upload restrictions with detailed counts
+    if (error.message?.includes('Cannot change to premium') || error.message?.includes('Premium recipe upload not allowed') || error.message?.includes('Premium course upload not allowed')) {
+      try {
+        // Try to parse the error message to get the counts
+        const errorMatch = error.message.match(/\{.*\}/);
+        if (errorMatch) {
+          const errorData = JSON.parse(errorMatch[0]);
+          
+          // Check for the new format with counts
+          if (errorData.counts) {
+            const { free, premium, required, remaining } = errorData.counts;
+            const contentType = error.message.includes('course') ? 'course' : 'recipe';
+            
+            if (remaining > 0) {
+              return `You need to create ${remaining} more free ${contentType}${remaining > 1 ? 's' : ''} before you can upload premium content.\n\nCurrent progress: ${free} free ${contentType}${free !== 1 ? 's' : ''} created (${required} required)`;
+            }
+          }
+          
+          // Check for custom message
+          if (errorData.message) {
+            return errorData.message;
+          }
+        }
+      } catch (parseError) {
+        console.log('Failed to parse premium restriction error:', parseError);
+      }
+      
+      // Fallback messages
+      if (error.message?.includes('course')) {
+        return 'Create 1 free course first to unlock premium course uploads!';
+      }
+      return 'Create 2 free recipes first to unlock premium recipe uploads!';
+    }
+
+    // Handle validation errors
+    if (error.message?.includes('Validation failed')) {
+      try {
+        // Try to parse the validation details from the error message
+        const errorMatch = error.message.match(/\{.*\}/);
+        if (errorMatch) {
+          const errorData = JSON.parse(errorMatch[0]);
+          if (errorData.details && Array.isArray(errorData.details)) {
+            // Format validation messages in a user-friendly way
+            const formattedMessages = errorData.details.map((detail: string) => {
+              // Convert technical messages to user-friendly ones
+              if (detail.includes('Description must be at least')) {
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '20';
+                return `Description must be at least ${minChars} characters long`;
+              }
+              if (detail.includes('Title must be at least')) {
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '3';
+                return `Title must be at least ${minChars} characters long`;
+              }
+              if (detail.includes('must be a valid email')) {
+                return 'Please enter a valid email address';
+              }
+              if (detail.includes('is required')) {
+                const field = detail.split(' ')[0].toLowerCase();
+                return `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+              }
+              if (detail.includes('must be at least')) {
+                return detail.replace(/must be at least/, 'must be at least');
+              }
+              if (detail.includes('must be a number')) {
+                return detail.replace(/must be a number/, 'must be a valid number');
+              }
+              // Return the original detail if no specific formatting applies
+              return detail;
+            });
+
+            return formattedMessages.join('\n• ');
+          }
+        }
+      } catch (parseError) {
+        // If parsing fails, fall back to original error
+        console.log('Failed to parse validation error:', parseError);
+      }
+    }
+
+    return error.message || 'An unexpected error occurred. Please try again.'
+  }
+
   const [recipeData, setRecipeData] = useState({
     title: "",
     description: "",
@@ -1203,25 +1438,130 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
     cookTime: "",
     servings: "",
     cuisine: "",
-    category: "",
+    category: "Other",
     calories: "",
     protein: "",
     carbs: "",
     fat: "",
   })
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [recipeImage, setRecipeImage] = useState<string | null>(null)
-  const [ingredients, setIngredients] = useState<Array<{id: string; name: string; amount: string; unit: string; notes?: string}>>([
-    { id: '1', name: '', amount: '', unit: '', notes: '' }
+  const [ingredients, setIngredients] = useState<Array<{id: string; name: string; amount: string; unit: string; notes?: string; showUnitDropdown?: boolean}>>([
+    { id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }
   ])
   const [instructions, setInstructions] = useState<Array<{id: string; step: number; instruction: string; duration?: string; tips?: string}>>([
     { id: '1', step: 1, instruction: '', duration: '', tips: '' }
   ])
   
   // Dialog states
-  const [showNoImageDialog, setShowNoImageDialog] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Pre-populate form when editing
+  useEffect(() => {
+    if (editingRecipe) {
+      console.log('📝 Pre-populating recipe form with:', editingRecipe)
+      console.log('📝 Raw data check:', {
+        prepTime: editingRecipe.prepTime,
+        cookTime: editingRecipe.cookTime,
+        servings: editingRecipe.servings,
+        cuisine: editingRecipe.cuisine,
+        category: editingRecipe.category,
+        difficulty: editingRecipe.difficulty,
+        nutrition: editingRecipe.nutrition,
+        nutritionInfo: editingRecipe.nutritionInfo,
+        ingredients: editingRecipe.ingredients,
+        instructions: editingRecipe.instructions,
+      })
+      
+      // Handle nutrition data (backend uses 'nutritionInfo', frontend uses 'nutrition')
+      const nutritionData = editingRecipe.nutritionInfo || editingRecipe.nutrition || {}
+      
+      // Set basic recipe data
+      setRecipeData({
+        title: editingRecipe.title || '',
+        description: editingRecipe.description || '',
+        isPremium: editingRecipe.isPremium || false,
+        difficulty: editingRecipe.difficulty || 'Easy',
+        prepTime: editingRecipe.prepTime?.toString() || '',
+        cookTime: editingRecipe.cookTime?.toString() || '',
+        servings: editingRecipe.servings?.toString() || '',
+        cuisine: editingRecipe.cuisine || '',
+        category: editingRecipe.category || 'Other',
+        calories: nutritionData.calories?.toString() || '',
+        protein: nutritionData.protein?.toString() || '',
+        carbs: nutritionData.carbs?.toString() || '',
+        fat: nutritionData.fat?.toString() || '',
+      })
+      
+      console.log('✅ Recipe data set:', {
+        prepTime: editingRecipe.prepTime?.toString(),
+        cookTime: editingRecipe.cookTime?.toString(),
+        servings: editingRecipe.servings?.toString(),
+        cuisine: editingRecipe.cuisine,
+        category: editingRecipe.category,
+      })
+      
+      // Set recipe image (handle both string and object formats)
+      const imageUrl = typeof editingRecipe.image === 'string' 
+        ? editingRecipe.image 
+        : editingRecipe.image?.url || null
+      setRecipeImage(imageUrl)
+      
+      // Set ingredients - ensure we always have at least one ingredient row
+      if (editingRecipe.ingredients && editingRecipe.ingredients.length > 0) {
+        const mappedIngredients = editingRecipe.ingredients.map((ing: any, index: number) => ({
+          id: (index + 1).toString(),
+          name: ing.name || '',
+          amount: ing.amount?.toString() || '',
+          unit: ing.unit || 'gram',
+          notes: ing.notes || '',
+          showUnitDropdown: false
+        }))
+        console.log('📝 Mapped ingredients:', mappedIngredients)
+        setIngredients(mappedIngredients)
+      } else {
+        setIngredients([{ id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }])
+      }
+      
+      // Set instructions - ensure we always have at least one instruction row
+      if (editingRecipe.instructions && editingRecipe.instructions.length > 0) {
+        const mappedInstructions = editingRecipe.instructions.map((inst: any, index: number) => ({
+          id: (index + 1).toString(),
+          step: inst.step || index + 1,
+          instruction: inst.instruction || '',
+          duration: inst.duration?.toString() || '',
+          tips: inst.tips || ''
+        }))
+        console.log('📝 Mapped instructions:', mappedInstructions)
+        setInstructions(mappedInstructions)
+      } else {
+        setInstructions([{ id: '1', step: 1, instruction: '', duration: '', tips: '' }])
+      }
+    } else {
+      // Reset form for new recipe
+      setRecipeData({
+        title: '',
+        description: '',
+        isPremium: false,
+        difficulty: 'Easy',
+        prepTime: '',
+        cookTime: '',
+        servings: '',
+        cuisine: '',
+        category: 'Other',
+        calories: '',
+        protein: '',
+        carbs: '',
+        fat: '',
+      })
+      setRecipeImage(null)
+      setIngredients([{ id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }])
+      setInstructions([{ id: '1', step: 1, instruction: '', duration: '', tips: '' }])
+    }
+  }, [editingRecipe])
 
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -1237,7 +1577,23 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
   }
 
   const handleAddIngredient = () => {
-    setIngredients([...ingredients, { id: Date.now().toString(), name: '', amount: '', unit: '', notes: '' }])
+    setIngredients([...ingredients, { id: Date.now().toString(), name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }])
+  }
+
+  const handleRemoveImage = () => {
+    setRecipeImage(null)
+  }
+
+  const toggleUnitDropdown = (id: string) => {
+    setIngredients(ingredients.map(ing => 
+      ing.id === id ? { ...ing, showUnitDropdown: !ing.showUnitDropdown } : { ...ing, showUnitDropdown: false }
+    ))
+  }
+
+  const selectUnit = (id: string, unit: string) => {
+    setIngredients(ingredients.map(ing => 
+      ing.id === id ? { ...ing, unit, showUnitDropdown: false } : ing
+    ))
   }
 
   const handleRemoveIngredient = (id: string) => {
@@ -1262,69 +1618,316 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
   }
 
   const handleSave = () => {
-    // Validation
+    // ==================== COMPREHENSIVE VALIDATION ====================
+    
+    // 1. Image validation
+    if (!recipeImage) {
+      setErrorMessage("Recipe image is required. Please upload an image before submitting.")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 2. Title validation (min 3 characters)
     if (!recipeData.title.trim()) {
-      setErrorMessage("Please enter a recipe title")
+      setErrorMessage("Recipe title is required")
       setShowErrorDialog(true)
       return
     }
+    if (recipeData.title.trim().length < 3) {
+      setErrorMessage("Recipe title must be at least 3 characters long")
+      setShowErrorDialog(true)
+      return
+    }
+    if (recipeData.title.trim().length > 100) {
+      setErrorMessage("Recipe title must not exceed 100 characters")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 3. Description validation (min 20 characters)
     if (!recipeData.description.trim()) {
-      setErrorMessage("Please enter a recipe description")
+      setErrorMessage("Recipe description is required")
       setShowErrorDialog(true)
       return
     }
-    if (!recipeData.servings || parseInt(recipeData.servings) <= 0) {
-      setErrorMessage("Please enter valid servings")
+    if (recipeData.description.trim().length < 20) {
+      setErrorMessage("Recipe description must be at least 20 characters long. Please provide more details about your recipe.")
       setShowErrorDialog(true)
       return
     }
-    if (!recipeData.prepTime || parseInt(recipeData.prepTime) <= 0) {
-      setErrorMessage("Please enter valid prep time")
+    if (recipeData.description.trim().length > 1000) {
+      setErrorMessage("Recipe description must not exceed 1000 characters")
       setShowErrorDialog(true)
       return
     }
-    if (!recipeData.cookTime || parseInt(recipeData.cookTime) <= 0) {
-      setErrorMessage("Please enter valid cook time")
+
+    // 4. Category validation
+    if (!recipeData.category || recipeData.category === 'Other') {
+      setErrorMessage("Please select a valid recipe category")
       setShowErrorDialog(true)
       return
     }
-    if (ingredients.filter(ing => ing.name.trim()).length === 0) {
+
+    // 5. Cuisine validation
+    if (!recipeData.cuisine.trim()) {
+      setErrorMessage("Cuisine type is required (e.g., Italian, Mexican, Chinese)")
+      setShowErrorDialog(true)
+      return
+    }
+    if (recipeData.cuisine.trim().length < 3) {
+      setErrorMessage("Cuisine type must be at least 3 characters long")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 6. Servings validation
+    if (!recipeData.servings || recipeData.servings.trim() === '') {
+      setErrorMessage("Number of servings is required")
+      setShowErrorDialog(true)
+      return
+    }
+    const servings = parseInt(recipeData.servings)
+    if (isNaN(servings) || servings <= 0) {
+      setErrorMessage("Servings must be a valid positive number")
+      setShowErrorDialog(true)
+      return
+    }
+    if (servings > 100) {
+      setErrorMessage("Servings must not exceed 100")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 7. Prep time validation
+    if (!recipeData.prepTime || recipeData.prepTime.trim() === '') {
+      setErrorMessage("Preparation time is required")
+      setShowErrorDialog(true)
+      return
+    }
+    const prepTime = parseInt(recipeData.prepTime)
+    if (isNaN(prepTime) || prepTime <= 0) {
+      setErrorMessage("Prep time must be a valid positive number (in minutes)")
+      setShowErrorDialog(true)
+      return
+    }
+    if (prepTime > 1440) {
+      setErrorMessage("Prep time must not exceed 24 hours (1440 minutes)")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 8. Cook time validation
+    if (!recipeData.cookTime || recipeData.cookTime.trim() === '') {
+      setErrorMessage("Cooking time is required")
+      setShowErrorDialog(true)
+      return
+    }
+    const cookTime = parseInt(recipeData.cookTime)
+    if (isNaN(cookTime) || cookTime <= 0) {
+      setErrorMessage("Cook time must be a valid positive number (in minutes)")
+      setShowErrorDialog(true)
+      return
+    }
+    if (cookTime > 1440) {
+      setErrorMessage("Cook time must not exceed 24 hours (1440 minutes)")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 9. Ingredients validation
+    const validIngredients = ingredients.filter(ing => ing.name.trim())
+    if (validIngredients.length === 0) {
       setErrorMessage("Please add at least one ingredient")
       setShowErrorDialog(true)
       return
     }
-    if (instructions.filter(inst => inst.instruction.trim()).length === 0) {
+    
+    // Check each ingredient has required fields
+    for (let i = 0; i < validIngredients.length; i++) {
+      const ing = validIngredients[i]
+      if (!ing.name.trim()) {
+        setErrorMessage(`Ingredient ${i + 1}: Name is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (ing.name.trim().length < 2) {
+        setErrorMessage(`Ingredient ${i + 1}: Name must be at least 2 characters`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (!ing.amount || ing.amount.trim() === '') {
+        setErrorMessage(`Ingredient ${i + 1} (${ing.name}): Amount is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (!ing.unit || ing.unit.trim() === '') {
+        setErrorMessage(`Ingredient ${i + 1} (${ing.name}): Unit is required`)
+        setShowErrorDialog(true)
+        return
+      }
+    }
+
+    // 10. Instructions validation
+    const validInstructions = instructions.filter(inst => inst.instruction.trim())
+    if (validInstructions.length === 0) {
       setErrorMessage("Please add at least one instruction")
       setShowErrorDialog(true)
       return
     }
 
-    // Check if image is missing
-    if (!recipeImage) {
-      setShowNoImageDialog(true)
-      return
+    // Check each instruction has meaningful content
+    for (let i = 0; i < validInstructions.length; i++) {
+      const inst = validInstructions[i]
+      if (!inst.instruction.trim()) {
+        setErrorMessage(`Step ${inst.step}: Instruction text is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (inst.instruction.trim().length < 10) {
+        setErrorMessage(`Step ${inst.step}: Instruction must be at least 10 characters long`)
+        setShowErrorDialog(true)
+        return
+      }
     }
 
-    // Proceed to save
+    // 11. Optional nutrition validation (if any field is filled)
+    if (recipeData.calories || recipeData.protein || recipeData.carbs || recipeData.fat) {
+      if (recipeData.calories && (isNaN(parseInt(recipeData.calories)) || parseInt(recipeData.calories) < 0)) {
+        setErrorMessage("Calories must be a valid positive number")
+        setShowErrorDialog(true)
+        return
+      }
+      if (recipeData.protein && (isNaN(parseInt(recipeData.protein)) || parseInt(recipeData.protein) < 0)) {
+        setErrorMessage("Protein must be a valid positive number")
+        setShowErrorDialog(true)
+        return
+      }
+      if (recipeData.carbs && (isNaN(parseInt(recipeData.carbs)) || parseInt(recipeData.carbs) < 0)) {
+        setErrorMessage("Carbs must be a valid positive number")
+        setShowErrorDialog(true)
+        return
+      }
+      if (recipeData.fat && (isNaN(parseInt(recipeData.fat)) || parseInt(recipeData.fat) < 0)) {
+        setErrorMessage("Fat must be a valid positive number")
+        setShowErrorDialog(true)
+        return
+      }
+    }
+
+    // All validations passed - proceed to save
     saveRecipe()
   }
 
-  const saveRecipe = () => {
-    // Create new recipe
-    const newRecipe: Recipe = {
-      id: `recipe_${Date.now()}`,
-      title: recipeData.title,
-      description: recipeData.description,
-      image: recipeImage || "https://via.placeholder.com/400x300",
-      cookTime: `${parseInt(recipeData.prepTime) + parseInt(recipeData.cookTime)}m`,
-      difficulty: recipeData.difficulty,
-      rating: 5.0,
-      isPremium: recipeData.isPremium,
-      chefName: "You",
+  const saveRecipe = async () => {
+    // Validate image is uploaded
+    if (!recipeImage) {
+      setErrorMessage('Please upload a recipe image before submitting.')
+      setShowErrorDialog(true)
+      return
     }
 
-    onSave(newRecipe)
-    setShowSuccessDialog(true)
+    setIsUploading(true)
+    
+    try {
+      console.log(isEditMode ? '📝 Starting recipe update process...' : '🍳 Starting recipe upload process...')
+      
+      // Step 1: Upload image to Cloudinary (only if new image)
+      let imageUrl: string | undefined = recipeImage
+      if (recipeImage && !recipeImage.startsWith('http')) {
+        // Only upload if it's a local URI (not already a cloud URL)
+        console.log('📸 Uploading image to Cloudinary...')
+        try {
+          imageUrl = await chefService.uploadImageToCloudinary(recipeImage)
+          console.log('✅ Image uploaded:', imageUrl)
+        } catch (error) {
+          console.log('❌ Image upload failed:', error)
+          setErrorMessage('Failed to upload image. Please try again.')
+          setShowErrorDialog(true)
+          setIsUploading(false)
+          return
+        }
+      }
+
+      // Step 2: Prepare recipe payload
+      const payload: chefService.CreateRecipePayload = {
+        title: recipeData.title,
+        description: recipeData.description,
+        image: imageUrl,
+        ingredients: ingredients
+          .filter(ing => ing.name.trim())
+          .map(ing => ({
+            name: ing.name,
+            amount: ing.amount,
+            unit: ing.unit,
+            notes: ing.notes
+          })),
+        instructions: instructions
+          .filter(inst => inst.instruction.trim())
+          .map(inst => ({
+            step: inst.step,
+            instruction: inst.instruction,
+            duration: inst.duration,
+            tips: inst.tips
+          })),
+        prepTime: parseInt(recipeData.prepTime),
+        cookTime: parseInt(recipeData.cookTime),
+        servings: parseInt(recipeData.servings),
+        difficulty: recipeData.difficulty,
+        cuisine: recipeData.cuisine?.trim() || 'General',
+        category: recipeData.category?.trim() || 'Other',
+        isPremium: recipeData.isPremium
+      }
+
+      // Add nutrition if any field is filled
+      if (recipeData.calories || recipeData.protein || recipeData.carbs || recipeData.fat) {
+        payload.nutrition = {
+          calories: recipeData.calories ? parseInt(recipeData.calories) : undefined,
+          protein: recipeData.protein ? parseInt(recipeData.protein) : undefined,
+          carbs: recipeData.carbs ? parseInt(recipeData.carbs) : undefined,
+          fat: recipeData.fat ? parseInt(recipeData.fat) : undefined
+        }
+      }
+
+      console.log(isEditMode ? '📤 Updating recipe on backend...' : '📤 Sending recipe to backend...')
+      
+      // Step 3: Create or Update recipe via API
+      let savedRecipe: any
+      if (isEditMode && editingRecipe) {
+        const recipeId = editingRecipe._id || editingRecipe.id
+        console.log('🔄 Updating recipe with ID:', recipeId)
+        if (!recipeId) {
+          throw new Error('Recipe ID is missing for update operation')
+        }
+        savedRecipe = await chefService.updateRecipe(recipeId, payload)
+        console.log('✅ Recipe updated successfully, ID:', savedRecipe._id)
+      } else {
+        savedRecipe = await chefService.createRecipe(payload)
+        console.log('✅ Recipe created successfully, ID:', savedRecipe._id)
+      }
+
+      // Step 4: Convert backend recipe to local Recipe format and notify parent
+      const localRecipe: Recipe = {
+        id: savedRecipe._id,
+        title: savedRecipe.title,
+        description: savedRecipe.description,
+        image: getImageUrl(savedRecipe.image),
+        cookTime: `${savedRecipe.prepTime + savedRecipe.cookTime}m`,
+        difficulty: savedRecipe.difficulty as "Easy" | "Medium" | "Hard",
+        rating: 5.0,
+        isPremium: savedRecipe.isPremium,
+        chefName: "You"
+      }
+
+      onSave(localRecipe)
+      setShowSuccessDialog(true)
+      setIsUploading(false)
+    } catch (error: any) {
+      const formattedError = formatErrorMessage(error)
+      console.log('❌ Recipe creation failed:', formattedError)
+      setErrorMessage(formattedError)
+      setShowErrorDialog(true)
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -1335,7 +1938,7 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
       <LinearGradient colors={["#09090b", "#18181b"]} style={StyleSheet.absoluteFill} />
 
       <View style={styles.modalHeader}>
-        <Text style={styles.modalTitle}>Upload New Recipe</Text>
+        <Text style={styles.modalTitle}>{isEditMode ? 'Edit Recipe' : 'Upload New Recipe'}</Text>
         <TouchableOpacity onPress={onClose} style={styles.modalCloseButton}>
           <Ionicons name="close" size={24} color="white" />
         </TouchableOpacity>
@@ -1355,11 +1958,20 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
             onPress={handleImagePicker}
           >
             {recipeImage ? (
-              <Image source={{ uri: recipeImage }} style={styles.uploadedImage} />
+              <>
+                <Image source={{ uri: recipeImage }} style={styles.uploadedImage} />
+                <TouchableOpacity 
+                  style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#eed52eff' }}
+                  onPress={handleRemoveImage}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  <Ionicons name="close" size={20} color="#f3d411ff" />
+                </TouchableOpacity>
+              </>
             ) : (
               <View style={styles.imageUploadContent}>
                 <Ionicons name="camera" size={40} color="#64748B" />
-                <Text style={styles.imageUploadText}>Tap to upload recipe image</Text>
+                <Text style={styles.imageUploadText}>Tap to upload recipe image *</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -1388,6 +2000,52 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={3}
+            />
+          </View>
+
+          {/* Category Selector */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Category *</Text>
+            <TouchableOpacity
+              style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
+              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+            >
+              <Text style={{ color: recipeData.category === 'Other' ? '#64748B' : 'white', fontSize: 16 }}>
+                {recipeData.category || 'Select category'}
+              </Text>
+              <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
+            </TouchableOpacity>
+            {showCategoryDropdown && (
+              <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {RECIPE_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                      onPress={() => {
+                        setRecipeData({ ...recipeData, category: cat })
+                        setShowCategoryDropdown(false)
+                      }}
+                    >
+                      <Text style={{ color: recipeData.category === cat ? '#FACC15' : 'white', fontSize: 15, fontWeight: recipeData.category === cat ? '600' : '400' }}>
+                        {cat}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+          </View>
+
+          {/* Cuisine Input */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Cuisine *</Text>
+            <TextInput
+              style={styles.textInput}
+              value={recipeData.cuisine}
+              onChangeText={(text) => setRecipeData({ ...recipeData, cuisine: text })}
+              placeholder="e.g., Italian, Mexican, Chinese"
+              placeholderTextColor="#64748B"
             />
           </View>
 
@@ -1425,15 +2083,6 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
                   placeholder="Cook (min)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  style={styles.textInput}
-                  value={recipeData.cuisine}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, cuisine: text })}
-                  placeholder="Cuisine"
-                  placeholderTextColor="#64748B"
                 />
               </View>
             </View>
@@ -1567,14 +2216,36 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
                     onChangeText={(text) => handleUpdateIngredient(ingredient.id, 'amount', text)}
                     placeholder="Amount"
                     placeholderTextColor="#64748B"
+                    keyboardType="numeric"
                   />
-                  <TextInput
-                    style={[styles.textInput, { flex: 1 }]}
-                    value={ingredient.unit}
-                    onChangeText={(text) => handleUpdateIngredient(ingredient.id, 'unit', text)}
-                    placeholder="Unit"
-                    placeholderTextColor="#64748B"
-                  />
+                  <View style={{ flex: 1 }}>
+                    <TouchableOpacity
+                      style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 }]}
+                      onPress={() => toggleUnitDropdown(ingredient.id)}
+                    >
+                      <Text style={{ color: ingredient.unit ? 'white' : '#64748B', fontSize: 15 }}>
+                        {ingredient.unit || 'Unit'}
+                      </Text>
+                      <Ionicons name={ingredient.showUnitDropdown ? "chevron-up" : "chevron-down"} size={18} color="#64748B" />
+                    </TouchableOpacity>
+                    {ingredient.showUnitDropdown && (
+                      <View style={{ position: 'absolute', top: 48, left: 0, right: 0, backgroundColor: 'rgba(30, 30, 30, 0.98)', borderRadius: 8, maxHeight: 180, zIndex: 1000, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.2)', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 }}>
+                        <ScrollView style={{ maxHeight: 180 }} nestedScrollEnabled>
+                          {COOKING_UNITS.map((unit) => (
+                            <TouchableOpacity
+                              key={unit}
+                              style={{ paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                              onPress={() => selectUnit(ingredient.id, unit)}
+                            >
+                              <Text style={{ color: ingredient.unit === unit ? '#FACC15' : 'white', fontSize: 14, fontWeight: ingredient.unit === unit ? '600' : '400' }}>
+                                {unit}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
                 </View>
                 <TextInput
                   style={[styles.textInput, { marginTop: 8 }]}
@@ -1655,36 +2326,29 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
 
         {/* Save Button */}
         <View style={{ paddingTop: 8, paddingBottom: 32, paddingHorizontal: 20 }}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <TouchableOpacity 
+            style={[styles.saveButton, isUploading && { opacity: 0.5 }]} 
+            onPress={handleSave}
+            disabled={isUploading}
+          >
             <View style={[styles.saveButtonGradient, { backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderRadius: 18, borderColor: 'rgba(250, 204, 21, 0.4)' }]}>
-              <Ionicons name="checkmark-circle" size={20} color="#FACC15" />
-              <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 18, fontWeight: '700' }]}>Upload Recipe</Text>
+              {isUploading ? (
+                <>
+                  <Ionicons name="hourglass-outline" size={20} color="#FACC15" />
+                  <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 18, fontWeight: '700' }]}>Uploading...</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="checkmark-circle" size={20} color="#FACC15" />
+                  <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 18, fontWeight: '700' }]}>{isEditMode ? 'Update Recipe' : 'Upload Recipe'}</Text>
+                </>
+              )}
             </View>
           </TouchableOpacity>
         </View>
       </ScrollView>
 
       {/* Dialogs */}
-      <Dialog
-        visible={showNoImageDialog}
-        type="warning"
-        title="No Image Uploaded"
-        message="You haven't uploaded a recipe image. Do you want to continue without an image?"
-        onClose={() => {
-          setShowNoImageDialog(false)
-          saveRecipe()
-        }}
-        onCloseButton={() => setShowNoImageDialog(false)}
-        onConfirm={() => {
-          setShowNoImageDialog(false)
-          saveRecipe()
-        }}
-        confirmText="Continue"
-        cancelText="Add Image"
-        showCancelButton={true}
-        showCloseButton={true}
-      />
-
       <Dialog
         visible={showErrorDialog}
         type="error"
@@ -1697,8 +2361,8 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
       <Dialog
         visible={showSuccessDialog}
         type="success"
-        title="Recipe Uploaded!"
-        message="Your recipe has been uploaded successfully"
+        title={isEditMode ? "Recipe Updated!" : "Recipe Uploaded!"}
+        message={isEditMode ? "Your recipe has been updated successfully" : "Your recipe has been uploaded successfully"}
         onClose={() => {
           setShowSuccessDialog(false)
           onClose()
@@ -1712,14 +2376,120 @@ const RecipeUploadModal: React.FC<{ onClose: () => void; onSave: (recipe: Recipe
 }
 
 // Course Creation Modal Component
-const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Course) => void }> = ({ onClose, onSave }) => {
+const CourseCreationModal: React.FC<{ 
+  onClose: () => void; 
+  onSave: (course: Course) => void;
+  editingCourse?: any;
+}> = ({ onClose, onSave, editingCourse }) => {
+  const isEditMode = !!editingCourse
+  
+  // Course categories - Must match backend enum values
+  const COURSE_CATEGORIES = [
+    "Baking",
+    "Desi Cooking",
+    "Knife Skills",
+    "Healthy Cooking",
+    "Continental",
+    "Beginner Fundamentals",
+    "Italian Cuisine",
+    "Asian Fusion",
+    "Desserts & Pastries",
+    "Grilling & BBQ",
+    "Vegan & Vegetarian",
+    "Other"
+  ]
+
+  const formatErrorMessage = (error: any): string => {
+    // Handle premium upload restrictions with detailed counts
+    if (error.message?.includes('Cannot change to premium') || error.message?.includes('Premium recipe upload not allowed') || error.message?.includes('Premium course upload not allowed')) {
+      try {
+        // Try to parse the error message to get the counts
+        const errorMatch = error.message.match(/\{.*\}/);
+        if (errorMatch) {
+          const errorData = JSON.parse(errorMatch[0]);
+          
+          // Check for the new format with counts
+          if (errorData.counts) {
+            const { free, premium, required, remaining } = errorData.counts;
+            const contentType = error.message.includes('course') ? 'course' : 'recipe';
+            
+            if (remaining > 0) {
+              return `You need to create ${remaining} more free ${contentType}${remaining > 1 ? 's' : ''} before you can upload premium content.\n\nCurrent progress: ${free} free ${contentType}${free !== 1 ? 's' : ''} created (${required} required)`;
+            }
+          }
+          
+          // Check for custom message
+          if (errorData.message) {
+            return errorData.message;
+          }
+        }
+      } catch (parseError) {
+        console.log('Failed to parse premium restriction error:', parseError);
+      }
+      
+      // Fallback messages
+      if (error.message?.includes('course')) {
+        return 'Create 1 free course first to unlock premium course uploads!';
+      }
+      return 'Create 2 free recipes first to unlock premium recipe uploads!';
+    }
+
+    // Handle validation errors
+    if (error.message?.includes('Validation failed')) {
+      try {
+        // Try to parse the validation details from the error message
+        const errorMatch = error.message.match(/\{.*\}/);
+        if (errorMatch) {
+          const errorData = JSON.parse(errorMatch[0]);
+          if (errorData.details && Array.isArray(errorData.details)) {
+            // Format validation messages in a user-friendly way
+            const formattedMessages = errorData.details.map((detail: string) => {
+              // Convert technical messages to user-friendly ones
+              if (detail.includes('Description must be at least')) {
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '20';
+                return `Description must be at least ${minChars} characters long`;
+              }
+              if (detail.includes('Title must be at least')) {
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '3';
+                return `Title must be at least ${minChars} characters long`;
+              }
+              if (detail.includes('must be a valid email')) {
+                return 'Please enter a valid email address';
+              }
+              if (detail.includes('is required')) {
+                const field = detail.split(' ')[0].toLowerCase();
+                return `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+              }
+              if (detail.includes('must be at least')) {
+                return detail.replace(/must be at least/, 'must be at least');
+              }
+              if (detail.includes('must be a number')) {
+                return detail.replace(/must be a number/, 'must be a valid number');
+              }
+              // Return the original detail if no specific formatting applies
+              return detail;
+            });
+
+            return formattedMessages.join('\n• ');
+          }
+        }
+      } catch (parseError) {
+        // If parsing fails, fall back to original error
+        console.log('Failed to parse validation error:', parseError);
+      }
+    }
+
+    return error.message || 'An unexpected error occurred. Please try again.'
+  }
+
   const [currentStep, setCurrentStep] = useState<'info' | 'units'>(('info'))
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
     duration: "",
     skillLevel: "Beginner" as "Beginner" | "Intermediate" | "Advanced",
-    category: "",
+    category: "Other",
     isPremium: false,
   })
   const [courseImage, setCourseImage] = useState<string | null>(null)
@@ -1742,10 +2512,80 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
   }])
   
   // Dialog states
-  const [showNoImageDialog, setShowNoImageDialog] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
+  const [isUploading, setIsUploading] = useState(false)
+
+  // Pre-populate form when editing
+  useEffect(() => {
+    if (editingCourse) {
+      console.log('📝 Pre-populating course form with:', editingCourse)
+      
+      // Set basic course data
+      setCourseData({
+        title: editingCourse.title || '',
+        description: editingCourse.description || '',
+        duration: editingCourse.duration || '',
+        skillLevel: editingCourse.skillLevel || 'Beginner',
+        category: editingCourse.category || 'Other',
+        isPremium: editingCourse.isPremium || false,
+      })
+      
+      // Set course image
+      setCourseImage(editingCourse.image || editingCourse.coverImage || null)
+      
+      // Set units
+      if (editingCourse.units && editingCourse.units.length > 0) {
+        setUnits(
+          editingCourse.units.map((unit: any, index: number) => ({
+            id: (index + 1).toString(),
+            title: unit.title || '',
+            objective: unit.objective || '',
+            content: unit.content || '',
+            steps: unit.steps && unit.steps.length > 0 
+              ? unit.steps.map((step: any, stepIndex: number) => ({
+                  id: (stepIndex + 1).toString(),
+                  text: typeof step === 'string' ? step : step.text || ''
+                }))
+              : [{id: '1', text: ''}],
+            commonErrors: unit.commonErrors && unit.commonErrors.length > 0
+              ? unit.commonErrors.map((error: any, errorIndex: number) => ({
+                  id: (errorIndex + 1).toString(),
+                  text: typeof error === 'string' ? error : error.text || ''
+                }))
+              : [{id: '1', text: ''}],
+            bestPractices: unit.bestPractices && unit.bestPractices.length > 0
+              ? unit.bestPractices.map((practice: any, practiceIndex: number) => ({
+                  id: (practiceIndex + 1).toString(),
+                  text: typeof practice === 'string' ? practice : practice.text || ''
+                }))
+              : [{id: '1', text: ''}]
+          }))
+        )
+      }
+    } else {
+      // Reset form for new course
+      setCourseData({
+        title: '',
+        description: '',
+        duration: '',
+        skillLevel: 'Beginner',
+        category: 'Other',
+        isPremium: false,
+      })
+      setCourseImage(null)
+      setUnits([{
+        id: '1',
+        title: '',
+        objective: '',
+        content: '',
+        steps: [{id: '1', text: ''}],
+        commonErrors: [{id: '1', text: ''}],
+        bestPractices: [{id: '1', text: ''}]
+      }])
+    }
+  }, [editingCourse])
 
   const handleImagePicker = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -1758,6 +2598,10 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
     if (!result.canceled && result.assets[0]) {
       setCourseImage(result.assets[0].uri)
     }
+  }
+
+  const handleRemoveCourseImage = () => {
+    setCourseImage(null)
   }
 
   // Unit management functions
@@ -1855,34 +2699,76 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
 
   // Navigation functions
   const handleNext = () => {
-    // Validate course info before moving to units
-    if (!courseData.title.trim()) {
-      setErrorMessage("Please enter a course title")
-      setShowErrorDialog(true)
-      return
-    }
-    if (!courseData.description.trim()) {
-      setErrorMessage("Please enter a course description")
-      setShowErrorDialog(true)
-      return
-    }
-    if (!courseData.duration.trim()) {
-      setErrorMessage("Please enter course duration")
-      setShowErrorDialog(true)
-      return
-    }
-    if (!courseData.category.trim()) {
-      setErrorMessage("Please enter a course category")
-      setShowErrorDialog(true)
-      return
-    }
-
-    // Check if image is missing
+    // ==================== COMPREHENSIVE COURSE INFO VALIDATION ====================
+    
+    // 1. Image validation
     if (!courseImage) {
-      setShowNoImageDialog(true)
+      setErrorMessage("Course cover image is required. Please upload an image before proceeding.")
+      setShowErrorDialog(true)
       return
     }
 
+    // 2. Title validation (min 3 characters)
+    if (!courseData.title.trim()) {
+      setErrorMessage("Course title is required")
+      setShowErrorDialog(true)
+      return
+    }
+    if (courseData.title.trim().length < 3) {
+      setErrorMessage("Course title must be at least 3 characters long")
+      setShowErrorDialog(true)
+      return
+    }
+    if (courseData.title.trim().length > 100) {
+      setErrorMessage("Course title must not exceed 100 characters")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 3. Description validation (min 50 characters)
+    if (!courseData.description.trim()) {
+      setErrorMessage("Course description is required")
+      setShowErrorDialog(true)
+      return
+    }
+    if (courseData.description.trim().length < 50) {
+      setErrorMessage("Course description must be at least 50 characters long. Please provide more details about your course.")
+      setShowErrorDialog(true)
+      return
+    }
+    if (courseData.description.trim().length > 2000) {
+      setErrorMessage("Course description must not exceed 2000 characters")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 4. Category validation
+    if (!courseData.category.trim() || courseData.category === 'Other') {
+      setErrorMessage("Please select a valid course category")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 5. Duration validation
+    if (!courseData.duration.trim()) {
+      setErrorMessage("Course duration is required (e.g., '4 weeks', '2 months')")
+      setShowErrorDialog(true)
+      return
+    }
+    if (courseData.duration.trim().length < 3) {
+      setErrorMessage("Course duration must be at least 3 characters long")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // 6. Skill level validation
+    if (!courseData.skillLevel || !['Beginner', 'Intermediate', 'Advanced'].includes(courseData.skillLevel)) {
+      setErrorMessage("Please select a valid skill level (Beginner, Intermediate, or Advanced)")
+      setShowErrorDialog(true)
+      return
+    }
+
+    // All validations passed - proceed to units step
     setCurrentStep('units')
   }
 
@@ -1891,45 +2777,230 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
   }
 
   const handleSave = () => {
-    // Validate units
-    if (units.filter(unit => unit.title.trim()).length === 0) {
-      setErrorMessage("Please add the unit title")
+    // ==================== COMPREHENSIVE UNITS VALIDATION ====================
+    
+    // 1. Check if at least one unit exists
+    const validUnits = units.filter(unit => unit.title.trim())
+    if (validUnits.length === 0) {
+      setErrorMessage("Please add at least one unit to your course")
       setShowErrorDialog(true)
       return
     }
 
-    // Proceed to save
+    // 2. Validate each unit
+    for (let i = 0; i < validUnits.length; i++) {
+      const unit = validUnits[i]
+      const unitNumber = i + 1
+
+      // Title validation
+      if (!unit.title.trim()) {
+        setErrorMessage(`Unit ${unitNumber}: Title is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (unit.title.trim().length < 3) {
+        setErrorMessage(`Unit ${unitNumber}: Title must be at least 3 characters long`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (unit.title.trim().length > 100) {
+        setErrorMessage(`Unit ${unitNumber}: Title must not exceed 100 characters`)
+        setShowErrorDialog(true)
+        return
+      }
+
+      // Objective validation
+      if (!unit.objective.trim()) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Objective is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (unit.objective.trim().length < 20) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Objective must be at least 20 characters long`)
+        setShowErrorDialog(true)
+        return
+      }
+
+      // Content validation
+      if (!unit.content.trim()) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Content is required`)
+        setShowErrorDialog(true)
+        return
+      }
+      if (unit.content.trim().length < 50) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Content must be at least 50 characters long`)
+        setShowErrorDialog(true)
+        return
+      }
+
+      // Steps validation
+      const validSteps = unit.steps.filter(step => step.text.trim())
+      if (validSteps.length === 0) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Please add at least one step`)
+        setShowErrorDialog(true)
+        return
+      }
+      
+      // Validate each step
+      for (let j = 0; j < validSteps.length; j++) {
+        const step = validSteps[j]
+        if (!step.text.trim()) {
+          setErrorMessage(`Unit ${unitNumber}, Step ${j + 1}: Step text is required`)
+          setShowErrorDialog(true)
+          return
+        }
+        if (step.text.trim().length < 5) {
+          setErrorMessage(`Unit ${unitNumber}, Step ${j + 1}: Step text must be at least 5 characters long`)
+          setShowErrorDialog(true)
+          return
+        }
+      }
+
+      // Common errors validation
+      const validErrors = unit.commonErrors.filter(err => err.text.trim())
+      if (validErrors.length === 0) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Please add at least one common error`)
+        setShowErrorDialog(true)
+        return
+      }
+
+      // Validate each error
+      for (let j = 0; j < validErrors.length; j++) {
+        const error = validErrors[j]
+        if (!error.text.trim()) {
+          setErrorMessage(`Unit ${unitNumber}, Common Error ${j + 1}: Error text is required`)
+          setShowErrorDialog(true)
+          return
+        }
+        if (error.text.trim().length < 5) {
+          setErrorMessage(`Unit ${unitNumber}, Common Error ${j + 1}: Error text must be at least 5 characters long`)
+          setShowErrorDialog(true)
+          return
+        }
+      }
+
+      // Best practices validation (optional but if added, must be valid)
+      const validPractices = unit.bestPractices.filter(bp => bp.text.trim())
+      if (validPractices.length > 0) {
+        for (let j = 0; j < validPractices.length; j++) {
+          const practice = validPractices[j]
+          if (practice.text.trim() && practice.text.trim().length < 5) {
+            setErrorMessage(`Unit ${unitNumber}, Best Practice ${j + 1}: Text must be at least 5 characters long`)
+            setShowErrorDialog(true)
+            return
+          }
+        }
+      }
+    }
+
+    // All validations passed - proceed to save
     saveCourse()
   }
 
-  const saveCourse = () => {
-    // Create new course
-    const newCourse: Course = {
-      id: `course_${Date.now()}`,
-      title: courseData.title,
-      description: courseData.description,
-      duration: courseData.duration,
-      skillLevel: courseData.skillLevel,
-      category: courseData.category,
-      students: 0,
-      rating: 5.0,
-      isPremium: courseData.isPremium,
-      chefId: "current_user",
-      chefName: "You",
-      image: courseImage || "https://via.placeholder.com/400x300",
-      units: units.map(unit => ({
-        id: unit.id,
-        title: unit.title,
-        objective: unit.objective,
-        content: unit.content,
-        steps: unit.steps.map(s => s.text).filter(t => t.trim()),
-        commonErrors: unit.commonErrors.map(e => e.text).filter(t => t.trim()),
-        bestPractices: unit.bestPractices.map(p => p.text).filter(t => t.trim())
-      }))
+  const saveCourse = async () => {
+    // Validate image is uploaded
+    if (!courseImage) {
+      setErrorMessage('Please upload a course cover image before submitting.')
+      setShowErrorDialog(true)
+      return
     }
 
-    onSave(newCourse)
-    setShowSuccessDialog(true)
+    setIsUploading(true)
+    
+    try {
+      console.log(isEditMode ? '📝 Starting course update process...' : '📚 Starting course upload process...')
+      
+      // Step 1: Upload image to Cloudinary (only if new image)
+      let imageUrl: string | undefined = courseImage
+      if (courseImage && !courseImage.startsWith('http')) {
+        // Only upload if it's a local URI (not already a cloud URL)
+        console.log('📸 Uploading course cover image to Cloudinary...')
+        try {
+          imageUrl = await chefService.uploadImageToCloudinary(courseImage)
+          console.log('✅ Image uploaded:', imageUrl)
+        } catch (error) {
+          console.log('❌ Image upload failed:', error)
+          setErrorMessage('Failed to upload image. Please try again.')
+          setShowErrorDialog(true)
+          setIsUploading(false)
+          return
+        }
+      }
+
+      // Step 2: Prepare course payload
+      const payload: chefService.CreateCoursePayload = {
+        title: courseData.title,
+        description: courseData.description,
+        coverImage: imageUrl,
+        category: courseData.category,
+        duration: courseData.duration,
+        skillLevel: courseData.skillLevel,
+        isPremium: courseData.isPremium,
+        units: units
+          .filter(unit => unit.title.trim())
+          .map((unit, index) => ({
+            unitNumber: index + 1,
+            title: unit.title,
+            objective: unit.objective || 'Learn the fundamentals and techniques covered in this unit.',
+            content: unit.content,
+            steps: unit.steps.map(s => s.text).filter(t => t.trim()),
+            commonErrors: unit.commonErrors.map(e => e.text).filter(t => t.trim()),
+            bestPractices: unit.bestPractices.map(p => p.text).filter(t => t.trim())
+          }))
+      }
+
+      console.log(isEditMode ? '📤 Updating course on backend...' : '📤 Sending course to backend...')
+      
+      // Step 3: Create or Update course via API
+      let savedCourse: any
+      if (isEditMode && editingCourse) {
+        const courseId = editingCourse._id || editingCourse.id
+        console.log('🔄 Updating course with ID:', courseId)
+        if (!courseId) {
+          throw new Error('Course ID is missing for update operation')
+        }
+        savedCourse = await chefService.updateCourse(courseId, payload)
+        console.log('✅ Course updated successfully:', savedCourse._id)
+      } else {
+        savedCourse = await chefService.createCourse(payload)
+        console.log('✅ Course created successfully:', savedCourse._id)
+      }
+
+      // Step 4: Convert backend course to local Course format and notify parent
+      const localCourse: Course = {
+        id: savedCourse._id,
+        title: savedCourse.title,
+        description: savedCourse.description,
+        duration: savedCourse.duration,
+        skillLevel: savedCourse.skillLevel as "Beginner" | "Intermediate" | "Advanced",
+        category: savedCourse.category,
+        subscribers: savedCourse.enrolledStudents || 0,
+        rating: savedCourse.averageRating || 0,
+        isPremium: savedCourse.isPremium,
+        chefId: savedCourse.authorId,
+        chefName: "You",
+        image: getImageUrl(savedCourse.coverImage),
+        units: savedCourse.units.map((u: any) => ({
+          id: u._id,
+          title: u.title,
+          objective: u.objective || '',
+          content: u.content,
+          steps: u.steps || [],
+          commonErrors: u.commonErrors || [],
+          bestPractices: u.bestPractices || []
+        }))
+      }
+
+      onSave(localCourse)
+      setShowSuccessDialog(true)
+      setIsUploading(false)
+    } catch (error: any) {
+      const formattedError = formatErrorMessage(error)
+      console.log(isEditMode ? '❌ Course update failed:' : '❌ Course creation failed:', formattedError)
+      setErrorMessage(formattedError)
+      setShowErrorDialog(true)
+      setIsUploading(false)
+    }
   }
 
   return (
@@ -1978,11 +3049,20 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
               onPress={handleImagePicker}
             >
               {courseImage ? (
-                <Image source={{ uri: courseImage }} style={styles.uploadedImage} />
+                <>
+                  <Image source={{ uri: courseImage }} style={styles.uploadedImage} />
+                  <TouchableOpacity 
+                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#EF4444' }}
+                    onPress={handleRemoveCourseImage}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close" size={20} color="#EF4444" />
+                  </TouchableOpacity>
+                </>
               ) : (
                 <View style={styles.imageUploadContent}>
                   <Ionicons name="image-outline" size={40} color="#64748B" />
-                  <Text style={styles.imageUploadText}>Tap to upload course image</Text>
+                  <Text style={styles.imageUploadText}>Tap to upload course image *</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -2014,13 +3094,35 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Category *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={courseData.category}
-              onChangeText={(text) => setCourseData({ ...courseData, category: text })}
-              placeholder="e.g., Kitchen Fundamentals"
-              placeholderTextColor="#64748B"
-            />
+            <TouchableOpacity
+              style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
+              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+            >
+              <Text style={{ color: courseData.category === 'Other' ? '#64748B' : 'white', fontSize: 16 }}>
+                {courseData.category || 'Select category'}
+              </Text>
+              <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
+            </TouchableOpacity>
+            {showCategoryDropdown && (
+              <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                  {COURSE_CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat}
+                      style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                      onPress={() => {
+                        setCourseData({ ...courseData, category: cat })
+                        setShowCategoryDropdown(false)
+                      }}
+                    >
+                      <Text style={{ color: courseData.category === cat ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.category === cat ? '600' : '400' }}>
+                        {cat}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -2272,13 +3374,23 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
                 </View>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.saveButton, { flex: 1, marginBottom: 0 }]} 
+                style={[styles.saveButton, { flex: 1, marginBottom: 0 }, isUploading && { opacity: 0.5 }]} 
                 onPress={handleSave}
                 activeOpacity={0.8}
+                disabled={isUploading}
               >
                 <View style={[styles.saveButtonGradient, { backgroundColor: 'rgba(34, 197, 94, 0.1)', borderWidth: 2, borderRadius: 16, borderColor: 'rgba(34, 197, 94, 0.4)', paddingVertical: 16 }]}>
-                  <Ionicons name="checkmark-circle" size={22} color="#22C55E" />
-                  <Text style={[styles.saveButtonText, { color: '#22C55E', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>Create Course</Text>
+                  {isUploading ? (
+                    <>
+                      <Ionicons name="hourglass-outline" size={22} color="#22C55E" />
+                      <Text style={[styles.saveButtonText, { color: '#22C55E', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>Uploading...</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle" size={22} color="#22C55E" />
+                      <Text style={[styles.saveButtonText, { color: '#22C55E', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>Create Course</Text>
+                    </>
+                  )}
                 </View>
               </TouchableOpacity>
             </View>
@@ -2287,26 +3399,6 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
       </ScrollView>
 
       {/* Dialogs */}
-      <Dialog
-        visible={showNoImageDialog}
-        type="warning"
-        title="No Image Uploaded"
-        message="You haven't uploaded a course image. Do you want to continue without an image?"
-        onClose={() => {
-          setShowNoImageDialog(false)
-          setCurrentStep('units')
-        }}
-        onCloseButton={() => setShowNoImageDialog(false)}
-        onConfirm={() => {
-          setShowNoImageDialog(false)
-          setCurrentStep('units')
-        }}
-        confirmText="Continue"
-        cancelText="Add Image"
-        showCancelButton={true}
-        showCloseButton={true}
-      />
-
       <Dialog
         visible={showErrorDialog}
         type="error"
@@ -2319,8 +3411,8 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
       <Dialog
         visible={showSuccessDialog}
         type="success"
-        title="Course Created!"
-        message="Your course has been created successfully"
+        title={isEditMode ? "Course Updated!" : "Course Created!"}
+        message={isEditMode ? "Your course has been updated successfully" : "Your course has been created successfully"}
         onClose={() => {
           setShowSuccessDialog(false)
           onClose()
@@ -2530,7 +3622,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
-  studentsText: {
+  subscribersText: {
     color: "#64748B",
     fontSize: 12,
   },
