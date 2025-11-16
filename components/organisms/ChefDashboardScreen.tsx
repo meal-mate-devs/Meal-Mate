@@ -1078,7 +1078,7 @@ const ChefDashboardScreen: React.FC = () => {
       setShowSuccessDialog(true)
       setIsRegisteringChef(false)
     } catch (error: any) {
-      console.error('Chef registration error:', error)
+      console.log('Chef registration error:', error)
       setRegErrorMessage(error.message || 'Failed to register as chef. Please try again.')
       setShowRegErrorDialog(true)
       setIsRegisteringChef(false)

@@ -149,10 +149,11 @@ const ChefRegistrationScreen: React.FC<ChefRegistrationScreenProps> = ({ onCompl
         >
           {/* Welcome Section */}
           <View style={styles.welcomeSection}>
-            <View style={styles.iconContainer}>
-              <Ionicons name="restaurant" size={48} color="#FACC15" />
+            <View style={styles.titleContainer}>
+              <Text style={styles.welcomeTitle}>
+                Join Our{'\n'}Chef Community
+              </Text>
             </View>
-            <Text style={styles.welcomeTitle}>Join Our Chef Community</Text>
           </View>
 
           {/* Form */}
@@ -303,12 +304,10 @@ const ChefRegistrationScreen: React.FC<ChefRegistrationScreenProps> = ({ onCompl
             <TouchableOpacity 
               style={styles.submitButton} 
               onPress={handleSubmit}
-              activeOpacity={0.8}
+              activeOpacity={0.7}
             >
-              <View style={styles.submitButtonGradient}>
-                <Ionicons name="checkmark-circle" size={22} color="#000000" />
-                <Text style={styles.submitButtonText}>Submit Application</Text>
-              </View>
+              <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
+              <Text style={styles.submitButtonText}>Submit Application</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -370,33 +369,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   welcomeSection: {
+    flexDirection: "row",
     alignItems: "center",
     paddingVertical: 32,
     paddingHorizontal: 20,
+    gap: 16,
   },
   iconContainer: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "rgba(250, 204, 21, 0.1)",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(250, 204, 21, 0.15)",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
     borderWidth: 2,
-    borderColor: "rgba(250, 204, 21, 0.3)",
+    borderColor: "rgba(250, 204, 21, 0.4)",
+  },
+  titleContainer: {
+    flex: 1,
   },
   welcomeTitle: {
-    color: "#FACC15",
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 12,
+    color: "#D4AF37",
+    fontSize: 24,
     textAlign: "center",
+    fontWeight: "700",
+    marginBottom: 8,
+    letterSpacing: 0.5,
   },
   welcomeDescription: {
     color: "#94A3B8",
-    fontSize: 16,
-    lineHeight: 24,
-    textAlign: "center",
+    fontSize: 14,
+    lineHeight: 20,
+    opacity: 0.8,
   },
   form: {
     marginBottom: 20,
@@ -416,13 +420,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   textInput: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 14,
     padding: 16,
     color: "white",
     fontSize: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   textArea: {
     height: 120,
@@ -435,14 +447,22 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   dropdownButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.06)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.08)",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   dropdownButtonText: {
     color: "#64748B",
@@ -450,18 +470,26 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownButtonTextSelected: {
-    color: "#FACC15",
+    color: "#D4AF37",
     fontSize: 16,
     fontWeight: "600",
     flex: 1,
   },
   dropdown: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderRadius: 14,
     marginTop: 8,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.08)",
     maxHeight: 240,
+    shadowColor: "rgba(0, 0, 0, 0.15)",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   dropdownScroll: {
     maxHeight: 240,
@@ -475,7 +503,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(255, 255, 255, 0.05)",
   },
   dropdownItemSelected: {
-    backgroundColor: "rgba(250, 204, 21, 0.1)",
+    backgroundColor: "rgba(212, 175, 55, 0.08)",
   },
   dropdownItemText: {
     color: "#FFFFFF",
@@ -483,23 +511,31 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   dropdownItemTextSelected: {
-    color: "#FACC15",
+    color: "#D4AF37",
     fontWeight: "600",
   },
   imageUploadBox: {
     height: 200,
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: 16,
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.1)",
+    borderColor: "rgba(255, 255, 255, 0.06)",
     borderStyle: "dashed",
     justifyContent: "center",
     alignItems: "center",
     overflow: "hidden",
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
   },
   imageUploadBoxFilled: {
     borderStyle: "solid",
-    borderColor: "#FACC15",
+    borderColor: "#D4AF37",
   },
   imageUploadContent: {
     alignItems: "center",
@@ -523,17 +559,25 @@ const styles = StyleSheet.create({
   checkbox: {
     width: 28,
     height: 28,
-    borderRadius: 6,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.2)",
+    borderColor: "rgba(255, 255, 255, 0.15)",
     marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    shadowColor: "rgba(0, 0, 0, 0.1)",
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
   },
   checkboxActive: {
-    backgroundColor: "#FACC15",
-    borderColor: "#FACC15",
+    backgroundColor: "#D4AF37",
+    borderColor: "#D4AF37",
   },
   checkboxLabel: {
     color: "#FFFFFF",
@@ -546,22 +590,32 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   submitButton: {
-    borderRadius: 16,
+    flex: 1,
+    borderRadius: 20,
     overflow: "hidden",
+    borderWidth: 1,
+    paddingVertical: 18,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: '#d4af373b',
+    borderColor: '#d4af3779',
   },
   submitButtonGradient: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     paddingVertical: 18,
-    backgroundColor: "#FACC15",
-    borderRadius: 16,
+    backgroundColor: '#d4af37ff',
+    borderRadius: 20,
     gap: 8,
   },
   submitButtonText: {
-    color: "#000000",
-    fontSize: 18,
-    fontWeight: "800",
+    color: "#D4AF37",
+    fontSize: 15,
+    fontWeight: "700",
   },
 })
 
