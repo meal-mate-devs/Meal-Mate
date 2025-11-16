@@ -1803,7 +1803,7 @@ const CourseCreationModal: React.FC<{ onClose: () => void; onSave: (course: Cour
   const handleSave = () => {
     // Validate units
     if (units.filter(unit => unit.title.trim()).length === 0) {
-      setErrorMessage("Please add at least one unit")
+      setErrorMessage("Please add the unit title")
       setShowErrorDialog(true)
       return
     }
