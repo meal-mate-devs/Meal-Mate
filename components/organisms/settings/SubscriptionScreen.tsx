@@ -94,7 +94,8 @@ const SubscriptionScreen: React.FC = () => {
               text: "Great!",
               onPress: async () => {
                 await refreshProfile()
-                router.back()
+                // Refresh the page to show updated subscription status
+                await loadPlans()
               },
             },
           ]
@@ -106,6 +107,53 @@ const SubscriptionScreen: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleCancelSubscription = async () => {
+    if (!profile?.subscriptionId) {
+      Alert.alert("Error", "No active subscription found")
+      return
+    }
+
+    Alert.alert(
+      "Cancel Subscription",
+      "Are you sure you want to cancel your premium subscription? You'll lose access to all premium features at the end of your billing period.",
+      [
+        {
+          text: "Keep Subscription",
+          style: "cancel",
+        },
+        {
+          text: "Cancel Subscription",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true)
+              await subscriptionService.cancelSubscription(profile.subscriptionId!)
+              
+              Alert.alert(
+                "Subscription Canceled",
+                "Your subscription has been canceled. You'll continue to have access to premium features until the end of your billing period.",
+                [
+                  {
+                    text: "OK",
+                    onPress: async () => {
+                      await refreshProfile()
+                      await loadPlans()
+                    },
+                  },
+                ]
+              )
+            } catch (error: any) {
+              console.error('Cancel subscription error:', error)
+              Alert.alert("Error", error?.message || "Failed to cancel subscription")
+            } finally {
+              setLoading(false)
+            }
+          },
+        },
+      ]
+    )
   }
 
   const getPlanInfo = (planType: PlanType) => {
@@ -186,11 +234,15 @@ const SubscriptionScreen: React.FC = () => {
                     </View>
                   </View>
                   {subscriptionEndDate && (
-                    <View className="bg-white/10 rounded-xl p-4">
+                    <View className="bg-white/10 rounded-xl p-4 mb-4">
                       <View className="flex-row justify-between items-center">
                         <Text className="text-white/80">Renews On</Text>
                         <Text className="text-white font-semibold">
-                          {new Date(subscriptionEndDate).toLocaleDateString('en-US', {
+                          {new Date(
+                            typeof subscriptionEndDate === 'number' 
+                              ? subscriptionEndDate * 1000 
+                              : subscriptionEndDate
+                          ).toLocaleDateString('en-US', {
                             year: 'numeric',
                             month: 'long',
                             day: 'numeric'
@@ -199,6 +251,19 @@ const SubscriptionScreen: React.FC = () => {
                       </View>
                     </View>
                   )}
+                  {/* Cancel Subscription Button */}
+                  <TouchableOpacity
+                    onPress={handleCancelSubscription}
+                    className="bg-white/10 rounded-xl p-4 border border-white/20"
+                    disabled={loading}
+                  >
+                    <View className="flex-row items-center justify-center">
+                      <Ionicons name="close-circle-outline" size={20} color="white" />
+                      <Text className="text-white font-semibold ml-2">
+                        {loading ? "Processing..." : "Cancel Subscription"}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
                 </LinearGradient>
               </View>
             </View>
@@ -226,81 +291,83 @@ const SubscriptionScreen: React.FC = () => {
             </View>
           )}
 
-          {/* Plan Selection */}
-          <View className="mb-6">
-            <Text className="text-white text-lg font-bold mb-4">Choose Your Plan</Text>
+          {/* Plan Selection (only for non-Pro users) */}
+          {!isPro && (
+            <View className="mb-6">
+              <Text className="text-white text-lg font-bold mb-4">Choose Your Plan</Text>
 
-            {/* Yearly Plan */}
-            {yearlyPlan && (
-              <TouchableOpacity
-                onPress={() => setSelectedPlan('yearly')}
-                className="mb-4"
-                disabled={loading}
-              >
-                <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'yearly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
-                  <View className="bg-yellow-500 py-1">
-                    <Text className="text-black text-xs font-bold text-center uppercase">
-                      Most Popular - Best Value
-                    </Text>
-                  </View>
-                  <View className="bg-zinc-900 p-5">
-                    <View className="flex-row items-center justify-between mb-3">
-                      <View className="flex-1">
-                        <View className="flex-row items-center">
-                          <Text className="text-white text-xl font-bold">{yearlyPlan.name}</Text>
-                          {selectedPlan === 'yearly' && (
-                            <View className="ml-2 bg-yellow-500 rounded-full p-1">
-                              <Ionicons name="checkmark" size={16} color="black" />
-                            </View>
-                          )}
-                        </View>
-                        <Text className="text-gray-400 text-sm mt-1">$8.33/month</Text>
-                      </View>
-                      <View className="items-end">
-                        <Text className="text-white text-3xl font-bold">${yearlyPlan.amount.toFixed(2)}</Text>
-                        <Text className="text-gray-400 text-sm">per year</Text>
-                      </View>
-                    </View>
-                    <View className="bg-green-500/20 rounded-lg px-3 py-2 mt-2">
-                      <Text className="text-green-400 font-semibold text-center">
-                        💰 Save $19.89 compared to monthly
+              {/* Yearly Plan */}
+              {yearlyPlan && (
+                <TouchableOpacity
+                  onPress={() => setSelectedPlan('yearly')}
+                  className="mb-4"
+                  disabled={loading}
+                >
+                  <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'yearly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
+                    <View className="bg-yellow-500 py-1">
+                      <Text className="text-black text-xs font-bold text-center uppercase">
+                        Most Popular - Best Value
                       </Text>
                     </View>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-
-            {/* Monthly Plan */}
-            {monthlyPlan && (
-              <TouchableOpacity
-                onPress={() => setSelectedPlan('monthly')}
-                disabled={loading}
-              >
-                <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'monthly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
-                  <View className="bg-zinc-900 p-5">
-                    <View className="flex-row items-center justify-between">
-                      <View className="flex-1">
-                        <View className="flex-row items-center">
-                          <Text className="text-white text-xl font-bold">{monthlyPlan.name}</Text>
-                          {selectedPlan === 'monthly' && (
-                            <View className="ml-2 bg-yellow-500 rounded-full p-1">
-                              <Ionicons name="checkmark" size={16} color="black" />
-                            </View>
-                          )}
+                    <View className="bg-zinc-900 p-5">
+                      <View className="flex-row items-center justify-between mb-3">
+                        <View className="flex-1">
+                          <View className="flex-row items-center">
+                            <Text className="text-white text-xl font-bold">{yearlyPlan.name}</Text>
+                            {selectedPlan === 'yearly' && (
+                              <View className="ml-2 bg-yellow-500 rounded-full p-1">
+                                <Ionicons name="checkmark" size={16} color="black" />
+                              </View>
+                            )}
+                          </View>
+                          <Text className="text-gray-400 text-sm mt-1">$8.33/month</Text>
                         </View>
-                        <Text className="text-gray-400 text-sm mt-1">Billed monthly</Text>
+                        <View className="items-end">
+                          <Text className="text-white text-3xl font-bold">${yearlyPlan.amount.toFixed(2)}</Text>
+                          <Text className="text-gray-400 text-sm">per year</Text>
+                        </View>
                       </View>
-                      <View className="items-end">
-                        <Text className="text-white text-3xl font-bold">${monthlyPlan.amount.toFixed(2)}</Text>
-                        <Text className="text-gray-400 text-sm">per month</Text>
+                      <View className="bg-green-500/20 rounded-lg px-3 py-2 mt-2">
+                        <Text className="text-green-400 font-semibold text-center">
+                          💰 Save $19.89 compared to monthly
+                        </Text>
                       </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
+                </TouchableOpacity>
+              )}
+
+              {/* Monthly Plan */}
+              {monthlyPlan && (
+                <TouchableOpacity
+                  onPress={() => setSelectedPlan('monthly')}
+                  disabled={loading}
+                >
+                  <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'monthly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
+                    <View className="bg-zinc-900 p-5">
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-1">
+                          <View className="flex-row items-center">
+                            <Text className="text-white text-xl font-bold">{monthlyPlan.name}</Text>
+                            {selectedPlan === 'monthly' && (
+                              <View className="ml-2 bg-yellow-500 rounded-full p-1">
+                                <Ionicons name="checkmark" size={16} color="black" />
+                              </View>
+                            )}
+                          </View>
+                          <Text className="text-gray-400 text-sm mt-1">Billed monthly</Text>
+                        </View>
+                        <View className="items-end">
+                          <Text className="text-white text-3xl font-bold">${monthlyPlan.amount.toFixed(2)}</Text>
+                          <Text className="text-gray-400 text-sm">per month</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           {/* Premium Features */}
           <View className="mb-6">
@@ -323,34 +390,34 @@ const SubscriptionScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* Subscribe Button */}
-          <TouchableOpacity
-            onPress={() => handleSubscribe(selectedPlan)}
-            className="mb-6 overflow-hidden rounded-2xl"
-            disabled={loading || isPro}
-          >
-            <LinearGradient
-              colors={isPro ? ["#6B7280", "#4B5563"] : ["#FACC15", "#F97316"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              className="p-5 items-center"
+          {/* Subscribe Button (only for non-Pro users) */}
+          {!isPro && (
+            <TouchableOpacity
+              onPress={() => handleSubscribe(selectedPlan)}
+              className="mb-6 overflow-hidden rounded-2xl"
+              disabled={loading}
             >
-              {loading ? (
-                <ActivityIndicator size="small" color={isPro ? "#FFF" : "#000"} />
-              ) : (
-                <>
-                  <Text className={`${isPro ? 'text-white' : 'text-black'} font-bold text-xl`}>
-                    {isPro ? "Already Premium" : `Subscribe to ${getPlanInfo(selectedPlan).name}`}
-                  </Text>
-                  {!isPro && (
+              <LinearGradient
+                colors={["#FACC15", "#F97316"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                className="p-5 items-center"
+              >
+                {loading ? (
+                  <ActivityIndicator size="small" color="#000" />
+                ) : (
+                  <>
+                    <Text className="text-black font-bold text-xl">
+                      Subscribe to {getPlanInfo(selectedPlan).name}
+                    </Text>
                     <Text className="text-black/80 text-sm mt-1">
                       {getPlanInfo(selectedPlan).price}/{getPlanInfo(selectedPlan).interval}
                     </Text>
-                  )}
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          )}
 
           {/* Benefits Comparison */}
           <View className="bg-zinc-900 rounded-2xl p-5 mb-6 border border-zinc-800">
