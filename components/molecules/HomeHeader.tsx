@@ -203,13 +203,13 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
               {/* Profile Container */}
               <View className="relative w-16 h-16 items-center justify-center">
                 {/* Profile Image/Avatar */}
-                <View 
+                <View
                   className="rounded-full overflow-hidden"
                   style={{
                     width: 60,
                     height: 60,
                     borderWidth: 1,
-                    borderColor: 'rgba(250, 204, 21, 0.4)',
+                    borderColor: profile?.isPro ? 'rgba(234, 179, 8, 0.6)' : 'rgba(250, 204, 21, 0.4)',
                   }}
                 >
                   {localProfileData.profileImage && localProfileData.profileImage.trim() !== "" ? (
@@ -238,6 +238,24 @@ const StandaloneHomeHeader: React.FC<StandaloneHomeHeaderProps> = ({
                     </LinearGradient>
                   )}
                 </View>
+
+                {/* Pro Crown Badge */}
+                {profile?.isPro && profile?.subscriptionStatus === 'active' && (
+                  <View
+                    className="absolute -top-1 -right-1 bg-yellow-500 rounded-full items-center justify-center"
+                    style={{
+                      width: 24,
+                      height: 24,
+                      shadowColor: "#EAB308",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.4,
+                      shadowRadius: 4,
+                      elevation: 5,
+                    }}
+                  >
+                    <Ionicons name="diamond-outline" size={14} color="#000000" />
+                  </View>
+                )}
               </View>
               {/* Subtle Shadow - Removed to prevent image edge coverage */}
               {/* <View

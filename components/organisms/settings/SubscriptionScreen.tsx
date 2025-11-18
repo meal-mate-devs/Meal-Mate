@@ -130,7 +130,7 @@ const SubscriptionScreen: React.FC = () => {
             try {
               setLoading(true)
               await subscriptionService.cancelSubscription(profile.subscriptionId!)
-              
+
               Alert.alert(
                 "Subscription Canceled",
                 "Your subscription has been canceled. You'll continue to have access to premium features until the end of your billing period.",
@@ -239,8 +239,8 @@ const SubscriptionScreen: React.FC = () => {
                         <Text className="text-white/80">Renews On</Text>
                         <Text className="text-white font-semibold">
                           {new Date(
-                            typeof subscriptionEndDate === 'number' 
-                              ? subscriptionEndDate * 1000 
+                            typeof subscriptionEndDate === 'number'
+                              ? subscriptionEndDate * 1000
                               : subscriptionEndDate
                           ).toLocaleDateString('en-US', {
                             year: 'numeric',
