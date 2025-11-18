@@ -3,7 +3,7 @@
 import { useAuthContext } from "@/context/authContext"
 import * as chefService from "@/lib/api/chefService"
 import { apiClient } from "@/lib/api/client"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { useEffect, useRef, useState } from "react"
@@ -17,6 +17,7 @@ import {
   Modal,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -115,6 +116,11 @@ const ChefDashboardScreen: React.FC = () => {
   // Edit mode states
   const [editingRecipe, setEditingRecipe] = useState<any>(null)
   const [editingCourse, setEditingCourse] = useState<any>(null)
+  
+  // Recipe detail modal state
+  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
+  const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
+  const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
   
   // Chef registration states
   const [showChefRegistration, setShowChefRegistration] = useState(false)
@@ -963,7 +969,12 @@ const ChefDashboardScreen: React.FC = () => {
   }
 
   const renderManagementRecipeCard = (recipe: Recipe, index: number) => (
-    <View key={recipe.id} style={styles.managementCard}>
+    <TouchableOpacity 
+      key={recipe.id} 
+      style={styles.managementCard}
+      onPress={() => handleViewRecipe(recipe)}
+      activeOpacity={0.7}
+    >
       <Image source={{ uri: recipe.image }} style={styles.managementCardImage} />
       <View style={styles.managementCardContent}>
         <View style={styles.managementCardHeader}>
@@ -1004,21 +1015,27 @@ const ChefDashboardScreen: React.FC = () => {
         <View style={styles.managementCardActions}>
           <TouchableOpacity 
             style={styles.managementActionButton}
-            onPress={() => handleEditRecipe(recipe)}
+            onPress={(e) => {
+              e.stopPropagation()
+              handleEditRecipe(recipe)
+            }}
           >
             <Ionicons name="create" size={16} color="#3B82F6" />
             <Text style={styles.managementActionText}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.managementActionButton, styles.deleteButton]}
-            onPress={() => handleDeleteRecipe(recipe.id)}
+            onPress={(e) => {
+              e.stopPropagation()
+              handleDeleteRecipe(recipe.id)
+            }}
           >
             <Ionicons name="trash" size={16} color="#EF4444" />
             <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 
   const renderManagementCourseCard = (course: Course, index: number) => (
@@ -1084,12 +1101,35 @@ const ChefDashboardScreen: React.FC = () => {
     </View>
   )
 
-  // Handler functions for edit and delete
+  // Handler functions for view, edit and delete
+  const handleViewRecipe = async (recipe: Recipe) => {
+    try {
+      setIsLoadingRecipeDetails(true)
+      setExpandedRecipeId(recipe.id)
+      
+      console.log('👁️ Fetching recipe details for view:', recipe.id)
+      const fullRecipe = await chefService.getRecipeById(recipe.id)
+      
+      console.log('✅ Full recipe fetched:', fullRecipe.title)
+      setExpandedRecipeData(fullRecipe)
+    } catch (error: any) {
+      console.log('❌ Failed to fetch recipe details:', error)
+      setExpandedRecipeId(null)
+      
+      Alert.alert(
+        'Unable to Load Recipe',
+        'Failed to load recipe details. Please try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      )
+    } finally {
+      setIsLoadingRecipeDetails(false)
+    }
+  }
+
   const handleEditRecipe = async (recipe: Recipe) => {
     try {
       // Fetch full recipe details from backend
       console.log('📝 Fetching recipe details for edit:', recipe.id)
-      console.log('📝 Recipe object:', recipe)
       
       const fullRecipe = await chefService.getRecipeById(recipe.id)
       
@@ -1112,14 +1152,16 @@ const ChefDashboardScreen: React.FC = () => {
       // Use full recipe data with all fields for editing
       setEditingRecipe(fullRecipe)
       setShowRecipeModal(true)
+      console.log('✏️ Opening recipe edit oooo modal for:', fullRecipe.title)
     } catch (error: any) {
       console.log('❌ Failed to fetch recipe for editing:', error)
       console.log('❌ Error details:', error.message)
+      console.log(recipe.id)
       
       // Show error to user instead of opening incomplete form
       Alert.alert(
         'Unable to Edit Recipe',
-        'Failed to load recipe details. Please try again.',
+        'Failed to load recipe details.',
         [
           { text: 'OK', style: 'cancel' }
         ]
@@ -1141,6 +1183,81 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('✅ Recipe deleted successfully')
     } catch (error) {
       console.log('❌ Failed to delete recipe:', error)
+    }
+  }
+
+  // Comprehensive share functionality matching FavoritesScreen pattern
+  const handleShareRecipe = async (recipe: any): Promise<void> => {
+    let recipeText = `🍽️ ${recipe.title}\n\n`
+    recipeText += `📝 ${recipe.description || 'Delicious recipe from Meal Mate'}\n\n`
+    
+    // Add timing information
+    recipeText += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
+    recipeText += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
+
+    // Add nutrition facts
+    recipeText += `📊 Nutrition (per serving):\n`
+    recipeText += `• Calories: ${recipe.nutrition?.calories || 0}\n`
+    recipeText += `• Protein: ${recipe.nutrition?.protein || 0}g\n`
+    recipeText += `• Carbs: ${recipe.nutrition?.carbs || 0}g\n`
+    recipeText += `• Fat: ${recipe.nutrition?.fat || 0}g\n\n`
+
+    // Add ingredients list
+    recipeText += `🛒 Ingredients:\n`
+    recipe.ingredients.forEach((ingredient: any, index: number) => {
+      recipeText += `${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
+      if (ingredient.notes) {
+        recipeText += ` (${ingredient.notes})`
+      }
+      recipeText += `\n`
+    })
+    recipeText += `\n`
+
+    // Add instructions
+    recipeText += `👨‍🍳 Instructions:\n`
+    recipe.instructions.forEach((instruction: any) => {
+      recipeText += `${instruction.step}. ${instruction.instruction}`
+      if (instruction.duration) {
+        recipeText += ` (${instruction.duration} min)`
+      }
+      recipeText += `\n`
+      if (instruction.tips) {
+        recipeText += `   💡 ${instruction.tips}\n`
+      }
+    })
+    recipeText += `\n`
+
+    // Add chef's tips
+    if (recipe.tips && recipe.tips.length > 0) {
+      recipeText += `💡 Chef's Tips:\n`
+      recipe.tips.forEach((tip: string) => {
+        const cleanTip = tip.indexOf('\n') !== -1 ? tip.substring(0, tip.indexOf('\n')).trim() : tip
+        recipeText += `• ${cleanTip}\n`
+      })
+      recipeText += `\n`
+    }
+
+    // Add substitutions
+    if (recipe.substitutions && recipe.substitutions.length > 0) {
+      recipeText += `🔄 Ingredient Substitutions:\n`
+      recipe.substitutions.forEach((sub: any) => {
+        recipeText += `• ${sub.original} → ${sub.substitute} (Ratio: ${sub.ratio})\n`
+        if (sub.notes) {
+          recipeText += `  ${sub.notes}\n`
+        }
+      })
+      recipeText += `\n`
+    }
+
+    recipeText += `---\nShared from Meal Mate App 🍳`
+
+    try {
+      await Share.share({
+        title: recipe.title,
+        message: recipeText,
+      })
+    } catch (error) {
+      console.log('❌ Error sharing recipe:', error)
     }
   }
 
@@ -1318,6 +1435,303 @@ const ChefDashboardScreen: React.FC = () => {
             editingCourse={editingCourse}
           />
         </Modal>
+
+        {/* Recipe Detail Modal */}
+        {expandedRecipeId && expandedRecipeData && (
+          <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
+            {/* Modal Header */}
+            <View
+              style={{
+                paddingTop: insets.top + 24,
+                paddingBottom: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "rgba(255, 255, 255, 0.08)",
+              }}
+              className="px-6"
+            >
+              <View className="flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={() => {
+                    setExpandedRecipeId(null)
+                    setExpandedRecipeData(null)
+                  }}
+                  className="w-10 h-10 rounded-full items-center justify-center"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={22} color="#FACC15" />
+                </TouchableOpacity>
+                
+                <Text className="text-white text-lg font-bold flex-1 text-center">
+                  Recipe Details
+                </Text>
+                
+                <View className="w-10" />
+              </View>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView 
+              className="flex-1" 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            >
+              <View className="p-6">
+                {/* Recipe Header */}
+                <View className="mb-6">
+                  <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
+                    {expandedRecipeData.title}
+                  </Text>
+                  <Text className="text-gray-300 text-base mb-4 leading-relaxed">
+                    {expandedRecipeData.description || 'Delicious recipe from your collection'}
+                  </Text>
+
+                  {/* Recipe Stats */}
+                  <View className="flex-row flex-wrap">
+                    <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="time-outline" size={14} color="#10B981" />
+                        <Text className="text-emerald-300 ml-1 text-xs font-semibold">
+                          {(expandedRecipeData.prepTime || 0) + (expandedRecipeData.cookTime || 0)} min
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="people-outline" size={14} color="#3B82F6" />
+                        <Text className="text-blue-300 ml-1 text-xs font-semibold">
+                          {expandedRecipeData.servings || 1} servings
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-purple-500/20 border border-purple-500/40 rounded-full px-3 py-1 mb-2">
+                      <View className="flex-row items-center">
+                        <MaterialIcons name="signal-cellular-alt" size={14} color="#8B5CF6" />
+                        <Text className="text-purple-300 ml-1 text-xs font-semibold">
+                          {expandedRecipeData.difficulty || 'Easy'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Share and Edit Buttons */}
+                <View className="flex-row mb-6" style={{ gap: 16 }}>
+                  <TouchableOpacity
+                    onPress={() => handleShareRecipe(expandedRecipeData)}
+                    className="bg-amber-500/15 border border-amber-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="share-outline" size={20} color="#FBBF24" />
+                    <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">Share</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setExpandedRecipeId(null)
+                      setExpandedRecipeData(null)
+                      // Directly set editing recipe since we already have full data
+                      setEditingRecipe(expandedRecipeData)
+                      setShowRecipeModal(true)
+                      console.log('✏️ Opening recipe edit modal for:', expandedRecipeData.title)
+                    }}
+                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="create-outline" size={20} color="#3B82F6" />
+                    <Text className="text-blue-300 font-bold ml-2 text-base tracking-wide">Edit</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 📊 Enhanced Nutrition Section */}
+                {(expandedRecipeData.nutrition?.calories || expandedRecipeData.nutrition?.protein || expandedRecipeData.nutrition?.carbs || expandedRecipeData.nutrition?.fat) && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center mb-4">
+                      <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                      <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
+                      <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                    </View>
+                    <View className="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-4 shadow-lg">
+                      <View className="flex-row items-center justify-between">
+                        <View className="items-center flex-1">
+                          <Text className="text-amber-400 text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.calories || 0}
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">CALORIES</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text className="text-emerald-400 text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.protein || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">PROTEIN</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text style={{ color: "#3B82F6" }} className="text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.carbs || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">CARBS</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text style={{ color: "#F59E0B" }} className="text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.fat || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">FAT</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* 🥕 Enhanced Ingredients Section */}
+                <View className="mb-6">
+                  <View className="flex-row items-center mb-4">
+                    <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                    <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
+                    <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                  </View>
+                  <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
+                    {expandedRecipeData.ingredients?.map((ingredient: any, index: number) => (
+                      <View
+                        key={`modal-ingredient-${expandedRecipeData.id}-${index}`}
+                        className={`py-2 ${
+                          index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
+                        }`}
+                      >
+                        <View className="flex-row items-start">
+                          <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
+                            <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-white text-base leading-relaxed">
+                              <Text className="font-bold">
+                                {ingredient.amount} {ingredient.unit}
+                              </Text>
+                              <Text> {ingredient.name}</Text>
+                            </Text>
+                            {ingredient.notes && (
+                              <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* 👨‍🍳 Enhanced Instructions Section */}
+                <View className="mb-6">
+                  <View className="flex-row items-center mb-5">
+                    <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                    <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                    <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                  </View>
+                  <View className="space-y-4">
+                    {expandedRecipeData.instructions?.map((instruction: any, index: number) => (
+                      <View
+                        key={`modal-instruction-${expandedRecipeData.id}-${index}`}
+                        className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-6 shadow-xl"
+                        style={{ marginBottom: 16 }}
+                      >
+                        <View className="flex-row">
+                          <View className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl items-center justify-center mr-4 shadow-xl border-2 border-amber-400/40">
+                            <Text className="text-white font-bold text-xl">{instruction.step}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
+                            {instruction.tips && (
+                              <View className="bg-amber-500/10 border-2 border-amber-500/20 rounded-xl p-4 mt-3">
+                                <View className="flex-row items-start">
+                                  <View className="w-7 h-7 rounded-lg bg-amber-500/15 items-center justify-center mr-3">
+                                    <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
+                                  </View>
+                                  <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* ⭐ Enhanced Chef's Tips */}
+                {expandedRecipeData.tips && expandedRecipeData.tips.length > 0 && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center mb-5">
+                      <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
+                      <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                      <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
+                    </View>
+                    <View 
+                      className="rounded-2xl p-6 shadow-xl"
+                      style={{
+                        backgroundColor: "rgba(250, 204, 21, 0.1)",
+                        borderWidth: 1,
+                        borderColor: "rgba(250, 204, 21, 0.3)"
+                      }}
+                    >
+                      {expandedRecipeData.tips.map((tip: string, index: number) => (
+                        <View
+                          key={`modal-tip-${expandedRecipeData.id}-${index}`}
+                          className={`flex-row items-start ${
+                            index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                          }`}
+                        >
+                          <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
+                            <Ionicons name="star" size={14} color="#FCD34D" />
+                          </View>
+                          <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* 🔄 Enhanced Substitutions */}
+                {expandedRecipeData.substitutions && expandedRecipeData.substitutions.length > 0 && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center justify-between mb-5">
+                      <View className="flex-row items-center">
+                        <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
+                        <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                      </View>
+                      <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
+                        <Text className="text-blue-300 text-xs font-bold">
+                          {expandedRecipeData.substitutions.length} options
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-5 shadow-xl">
+                      {expandedRecipeData.substitutions.map((sub: any, index: number) => (
+                        <View
+                          key={`modal-substitution-${expandedRecipeData.id}-${index}`}
+                          className={`${
+                            index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
+                          }`}
+                        >
+                          <View className="flex-row items-center mb-3">
+                            <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
+                              <Ionicons name="swap-horizontal" size={18} color="#3b82f6" />
+                            </View>
+                            <Text className="text-zinc-100 font-bold text-base flex-1">
+                              {sub.original} → {sub.substitute}
+                            </Text>
+                          </View>
+                          <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
+                          <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        )}
       </View>
     </LinearGradient>
   )
@@ -1893,7 +2307,7 @@ const RecipeUploadModal: React.FC<{
       // Step 3: Create or Update recipe via API
       let savedRecipe: any
       if (isEditMode && editingRecipe) {
-        const recipeId = editingRecipe._id || editingRecipe.id
+        const recipeId =  editingRecipe.id || editingRecipe._id
         console.log('🔄 Updating recipe with ID:', recipeId)
         if (!recipeId) {
           throw new Error('Recipe ID is missing for update operation')
