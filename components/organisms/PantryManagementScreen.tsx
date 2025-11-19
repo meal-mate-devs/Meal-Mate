@@ -4,6 +4,7 @@ import Dialog from "@/components/atoms/Dialog"
 import ErrorDisplay from "@/components/atoms/ErrorDisplay"
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
+import { useAuthContext } from "@/context/authContext"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
@@ -15,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
+  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -83,9 +85,11 @@ interface ImagePickerDialogProps {
   onClose: () => void
   onCamera: () => void
   onLibrary: () => void
+  isPro: boolean
+  router: any
 }
 
-const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
+const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary, isPro, router }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
 
@@ -111,11 +115,39 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
   }, [visible])
 
   const handleCamera = () => {
+    if (!isPro) {
+      onClose()
+      setTimeout(() => {
+        Alert.alert(
+          "Premium Feature",
+          "Camera access for ingredient scanning is a premium feature. Upgrade to Premium to unlock!",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/(protected)/(tabs)/(hidden)/settings/subscription") }
+          ]
+        )
+      }, 400)
+      return
+    }
     onClose()
     setTimeout(onCamera, 300)
   }
 
   const handleLibrary = () => {
+    if (!isPro) {
+      onClose()
+      setTimeout(() => {
+        Alert.alert(
+          "Premium Feature",
+          "Gallery access for ingredient scanning is a premium feature. Upgrade to Premium to unlock!",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Upgrade", onPress: () => router.push("/(protected)/(tabs)/(hidden)/settings/subscription") }
+          ]
+        )
+      }, 400)
+      return
+    }
     onClose()
     setTimeout(onLibrary, 300)
   }
@@ -166,42 +198,56 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
 
             <View style={imagePickerStyles.buttonContainer}>
               <TouchableOpacity
-                style={imagePickerStyles.optionButton}
+                style={[imagePickerStyles.optionButton, !isPro && { opacity: 0.6 }]}
                 onPress={handleCamera}
                 activeOpacity={0.8}
               >
                 <View style={imagePickerStyles.buttonContent}>
                   <View style={imagePickerStyles.iconCircle}>
                     <LinearGradient
-                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      colors={isPro ? ['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)'] : ['rgba(107, 114, 128, 0.2)', 'rgba(107, 114, 128, 0.2)']}
                       style={imagePickerStyles.iconGradient}
                     />
-                    <Ionicons name="camera" size={24} color="#FACC15" />
+                    <Ionicons name="camera" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Camera</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Capture a new photo</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[imagePickerStyles.optionTitle, !isPro && { color: '#9CA3AF' }]}>Camera</Text>
+                      {!isPro && (
+                        <View style={{ backgroundColor: '#FACC15', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ color: '#000', fontSize: 9, fontWeight: 'bold' }}>PRO</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[imagePickerStyles.optionSubtitle, !isPro && { color: '#64748B' }]}>{isPro ? 'Capture a new photo' : 'Premium feature'}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={imagePickerStyles.optionButton}
+                style={[imagePickerStyles.optionButton, !isPro && { opacity: 0.6 }]}
                 onPress={handleLibrary}
                 activeOpacity={0.8}
               >
                 <View style={imagePickerStyles.buttonContent}>
                   <View style={imagePickerStyles.iconCircle}>
                     <LinearGradient
-                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      colors={isPro ? ['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)'] : ['rgba(107, 114, 128, 0.2)', 'rgba(107, 114, 128, 0.2)']}
                       style={imagePickerStyles.iconGradient}
                     />
-                    <Ionicons name="images" size={24} color="#FACC15" />
+                    <Ionicons name="images" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Gallery</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Choose from library</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={[imagePickerStyles.optionTitle, !isPro && { color: '#9CA3AF' }]}>Gallery</Text>
+                      {!isPro && (
+                        <View style={{ backgroundColor: '#FACC15', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ color: '#000', fontSize: 9, fontWeight: 'bold' }}>PRO</Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={[imagePickerStyles.optionSubtitle, !isPro && { color: '#64748B' }]}>{isPro ? 'Choose from library' : 'Premium feature'}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
@@ -357,6 +403,8 @@ const PantryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const params = useLocalSearchParams()
+  const { profile } = useAuthContext()
+  const isPro = profile?.isPro || false
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
@@ -424,8 +472,8 @@ const PantryManagementScreen: React.FC = () => {
     confirmText: 'OK',
     cancelText: 'Cancel',
     showCancelButton: false,
-    onConfirm: () => {},
-    onCancel: () => {},
+    onConfirm: () => { },
+    onCancel: () => { },
   })
 
   // Ingredient scanner hook
@@ -550,7 +598,7 @@ const PantryManagementScreen: React.FC = () => {
           canRetry: true,
         };
       setErrorDetails(enhancedError);
-      
+
       // Show dialog for network/timeout errors
       if (error.message?.includes('timeout') || error.message?.includes('connection') || error.message?.includes('network')) {
         showCustomDialog(
@@ -565,7 +613,7 @@ const PantryManagementScreen: React.FC = () => {
           }
         );
       }
-      
+
       console.log('Error loading pantry items:', error);
     } finally {
       setIsLoading(false);
@@ -586,8 +634,8 @@ const PantryManagementScreen: React.FC = () => {
     confirmText = 'OK',
     cancelText = 'Cancel',
     showCancelButton = false,
-    onConfirm = () => {},
-    onCancel = () => {}
+    onConfirm = () => { },
+    onCancel = () => { }
   ) => {
     setDialogConfig({
       type,
@@ -794,12 +842,12 @@ const PantryManagementScreen: React.FC = () => {
   const handleRemoveItem = useCallback(async (itemId: string) => {
     // Show confirmation dialog
     showCustomDialog(
-      'confirm', 
-      'Remove Item', 
-      'Are you sure you want to remove this item?', 
-      'Remove', 
-      'Cancel', 
-      true, 
+      'confirm',
+      'Remove Item',
+      'Are you sure you want to remove this item?',
+      'Remove',
+      'Cancel',
+      true,
       async () => {
         hideDialog(); // Close dialog first
         try {
@@ -833,6 +881,19 @@ const PantryManagementScreen: React.FC = () => {
 
   // Unified image picker - offers both camera and gallery options
   const handleImagePicker = useCallback(async () => {
+    // Check for Pro status
+    if (!isPro) {
+      Alert.alert(
+        "Premium Feature",
+        "Image upload for pantry items is a premium feature. Upgrade to Premium to scan and upload ingredient images!",
+        [
+          { text: "Cancel", style: "cancel" },
+          { text: "Upgrade", onPress: () => router.push("/(protected)/(tabs)/(hidden)/settings/subscription") }
+        ]
+      )
+      return
+    }
+
     if (isImagePickerOpen) return
     setIsImagePickerOpen(true)
 
@@ -844,7 +905,7 @@ const PantryManagementScreen: React.FC = () => {
     } finally {
       setIsImagePickerOpen(false)
     }
-  }, [isImagePickerOpen])
+  }, [isImagePickerOpen, isPro, router])
 
   // Handle camera selection
   const handleCamera = useCallback(async () => {
@@ -2201,17 +2262,27 @@ const PantryManagementScreen: React.FC = () => {
             onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
           >
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Autodetect Ingredient</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.fieldLabel}>Autodetect Ingredient</Text>
+                {!isPro && (
+                  <View style={{ backgroundColor: '#FACC15', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 }}>
+                    <Text style={{ color: '#000', fontSize: 10, fontWeight: 'bold' }}>PRO</Text>
+                  </View>
+                )}
+              </View>
               <TouchableOpacity
-                style={[styles.inputContainer, { paddingRight: 50 }]}
+                style={[styles.inputContainer, { paddingRight: 50, opacity: isPro ? 1 : 0.6 }]}
                 onPress={handleImagePicker}
                 activeOpacity={0.7}
               >
-                <Ionicons name="camera-outline" size={20} color="#FACC15" />
-                <Text style={[styles.placeholderText, { marginLeft: 12, marginVertical: 0 }]}>
-                  {newItem.image ? "Image selected" : "Tap to take or select a photo"}
+                <Ionicons name="camera-outline" size={20} color={isPro ? "#FACC15" : "#6B7280"} />
+                <Text style={[styles.placeholderText, { marginLeft: 12, marginVertical: 0, color: isPro ? "#64748B" : "#4B5563" }]}>
+                  {isPro
+                    ? (newItem.image ? "Image selected" : "Tap to take or select a photo")
+                    : "Premium feature - Upgrade to unlock"
+                  }
                 </Text>
-                {newItem.image && (
+                {newItem.image && isPro && (
                   <View style={styles.previewContainer}>
                     <Image
                       source={{ uri: newItem.image }}
@@ -2685,309 +2756,311 @@ const PantryManagementScreen: React.FC = () => {
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
         {/* Main background - now handled by LinearGradient */}
 
-      {/* Error State */}
-      {errorDetails && (
-        <ErrorDisplay
-          errorDetails={errorDetails}
-          onRetry={errorDetails.canRetry ? () => {
-            loadPantryItems()
-          } : undefined}
-          secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
-          onSecondaryAction={() => {
-            setErrorDetails(null)
+        {/* Error State */}
+        {errorDetails && (
+          <ErrorDisplay
+            errorDetails={errorDetails}
+            onRetry={errorDetails.canRetry ? () => {
+              loadPantryItems()
+            } : undefined}
+            secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
+            onSecondaryAction={() => {
+              setErrorDetails(null)
 
-            if (cachedPantryItems.length > 0) {
-              setPantryItems(cachedPantryItems)
-            } else {
-              setPantryItems(LOCAL_FALLBACK_ITEMS)
-              setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
-            }
-          }}
-        />
-      )}
-
-      {/* Main Content */}
-      <>
-        {/* Header section */}
-        <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
-          <View style={styles.headerContent}>
-            {/* Back Button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                // If accessed from sidebar, go back with smooth transition
-                if (params.from === 'sidebar') {
-                  router.back()
-                } else {
-                  router.back()
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="chevron-back" size={24} color="#FACC15" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Title Section */}
-            <View style={styles.titleSection}>
-              <Text style={styles.headerTitle}>Pantry Manager</Text>
-              <Text style={styles.headerSubtitle}>
-                Organize, track & reduce food waste
-              </Text>
-            </View>
-
-            {/* Add Button */}
-            <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
-              <TouchableOpacity
-                style={styles.headerAddButton}
-                onPress={() => {
-                  setShowAddModal(true)
-                }}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={["#FACC15", "#F97316"]}
-                  style={styles.headerAddButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name="add" size={24} color="white" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </Animated.View>
-
-        {/* Search bar */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchContainer}>
-            {/* Replace BlurView with a simple background color for better performance */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
-            <View style={styles.searchBlur}>
-              <Ionicons name="search-outline" size={22} color="#FACC15" />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search pantry items..."
-                placeholderTextColor="#64748B"
-                autoCorrect={false}
-                returnKeyType="search"
-                maxLength={50}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery("")
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="close-circle" size={22} color="#64748B" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Tab bar for filtering */}
-        {renderTabBar()}
-
-        {/* Category filters */}
-        {renderCategoryFilter()}
-
-        {/* Items list */}
-        <Animated.View
-          style={[
-            styles.itemsList,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
-        >
-          <FlatList
-            data={filteredItems()}
-            renderItem={renderPantryItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              isLoading ? (
-                <View style={styles.inlineLoaderContainer}>
-                  <PantryLoadingAnimation message="Loading your pantry..." />
-                </View>
-              ) : (
-                <View style={styles.emptyState}>
-                  <Animated.View
-                    style={[
-                      styles.emptyStateIcon,
-                      {
-                        transform: [
-                          {
-                            rotate: rotateAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: ["0deg", "0deg"],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={["#FACC15", "#F97316"]}
-                      style={{ borderRadius: 35, padding: 16 }}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Ionicons
-                        name={
-                          activeTab === STATUS.ACTIVE
-                            ? "nutrition-outline"
-                            : activeTab === STATUS.EXPIRING
-                              ? "time-outline"
-                              : "alert-circle-outline"
-                        }
-                        size={56}
-                        color="white"
-                      />
-                    </LinearGradient>
-                  </Animated.View>
-                  <Text style={styles.emptyStateTitle}>
-                    {(() => {
-                      const { active, expiringSoon, expired } = getItemsByStatus()
-                      const totalItems = active.length + expiringSoon.length + expired.length
-
-                      if (totalItems === 0) {
-                        return "No items in your pantry"
-                      }
-
-                      if (activeTab === STATUS.ALL && totalItems === 0) {
-                        return "No items in your pantry"
-                      }
-
-                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                        if (expiringSoon.length > 0) {
-                          return "Check your expiring items"
-                        } else if (expired.length > 0) {
-                          return "Check your expired items"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                        if (active.length > 0) {
-                          return "All items are fresh!"
-                        } else if (expired.length > 0) {
-                          return "Check your expired items"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                        if (active.length > 0) {
-                          return "All items are still good!"
-                        } else if (expiringSoon.length > 0) {
-                          return "Check your expiring items"
-                        }
-                      }
-
-                      return "No items found"
-                    })()}
-                  </Text>
-                  <Text style={styles.emptyStateSubtitle}>
-                    {(() => {
-                      const { active, expiringSoon, expired } = getItemsByStatus()
-                      const totalItems = active.length + expiringSoon.length + expired.length
-
-                      if (totalItems === 0) {
-                        return "Tap the + button to add some ingredients to your pantry"
-                      }
-
-                      if (activeTab === STATUS.ALL && totalItems === 0) {
-                        return "Tap the + button to add some ingredients to your pantry"
-                      }
-
-                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                        if (expiringSoon.length > 0) {
-                          return "Some items are about to expire soon"
-                        } else if (expired.length > 0) {
-                          return "Some items have already expired"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                        if (active.length > 0) {
-                          return "Your pantry is well-stocked with fresh items"
-                        } else if (expired.length > 0) {
-                          return "Focus on your expired items first"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                        if (active.length > 0) {
-                          return "Great job keeping your pantry fresh!"
-                        } else if (expiringSoon.length > 0) {
-                          return "Some items are expiring soon - check them out"
-                        }
-                      }
-
-                      return "Try adjusting your search or filters"
-                    })()}
-                  </Text>
-                </View>
-              )
-            }
+              if (cachedPantryItems.length > 0) {
+                setPantryItems(cachedPantryItems)
+              } else {
+                setPantryItems(LOCAL_FALLBACK_ITEMS)
+                setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
+              }
+            }}
           />
-        </Animated.View>
+        )}
 
-        {/* Modals */}
-        {renderAddItemModal()}
-        {renderItemDetailsModal()}
-        {renderEditModal()}
+        {/* Main Content */}
+        <>
+          {/* Header section */}
+          <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
+            <View style={styles.headerContent}>
+              {/* Back Button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  // If accessed from sidebar, go back with smooth transition
+                  if (params.from === 'sidebar') {
+                    router.back()
+                  } else {
+                    router.back()
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="chevron-back" size={24} color="#FACC15" />
+                </View>
+              </TouchableOpacity>
 
-        {/* Custom Image Picker Dialog */}
-        <ImagePickerDialog
-          visible={showImagePickerDialog}
-          onClose={() => setShowImagePickerDialog(false)}
-          onCamera={handleCamera}
-          onLibrary={handleGallery}
-        />
+              {/* Title Section */}
+              <View style={styles.titleSection}>
+                <Text style={styles.headerTitle}>Pantry Manager</Text>
+                <Text style={styles.headerSubtitle}>
+                  Organize, track & reduce food waste
+                </Text>
+              </View>
 
-        {/* Ingredient Detection Modal */}
-        <IngredientSelectionModal
-          visible={showIngredientDetectionModal}
-          onClose={() => setShowIngredientDetectionModal(false)}
-          ingredients={detectedIngredients}
-          onSelectIngredient={handleSelectIngredient}
-          isLoading={isDetecting}
-        />
+              {/* Add Button */}
+              <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
+                <TouchableOpacity
+                  style={styles.headerAddButton}
+                  onPress={() => {
+                    setShowAddModal(true)
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={["#FACC15", "#F97316"]}
+                    style={styles.headerAddButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="add" size={24} color="white" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </Animated.View>
 
-        {/* Custom Dialog */}
-        <Dialog
-          visible={showDialog}
-          type={dialogConfig.type}
-          title={dialogConfig.title}
-          message={dialogConfig.message}
-          onConfirm={dialogConfig.onConfirm}
-          onCancel={dialogConfig.onCancel}
-          confirmText={dialogConfig.confirmText}
-          cancelText={dialogConfig.cancelText}
-          showCancelButton={dialogConfig.showCancelButton}
-          onClose={hideDialog}
-        />
+          {/* Search bar */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchContainer}>
+              {/* Replace BlurView with a simple background color for better performance */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
+              <View style={styles.searchBlur}>
+                <Ionicons name="search-outline" size={22} color="#FACC15" />
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder="Search pantry items..."
+                  placeholderTextColor="#64748B"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  maxLength={50}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery("")
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
 
-        {/* Scanner Dialog */}
-        <Dialog
-          visible={scannerShowDialog}
-          type={scannerDialogConfig.type}
-          title={scannerDialogConfig.title}
-          message={scannerDialogConfig.message}
-          confirmText="OK"
-          showCancelButton={false}
-          onClose={scannerCloseDialog}
-          onConfirm={scannerCloseDialog}
-        />
-      </>
-    </View>
+          {/* Tab bar for filtering */}
+          {renderTabBar()}
+
+          {/* Category filters */}
+          {renderCategoryFilter()}
+
+          {/* Items list */}
+          <Animated.View
+            style={[
+              styles.itemsList,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <FlatList
+              data={filteredItems()}
+              renderItem={renderPantryItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                isLoading ? (
+                  <View style={styles.inlineLoaderContainer}>
+                    <PantryLoadingAnimation message="Loading your pantry..." />
+                  </View>
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Animated.View
+                      style={[
+                        styles.emptyStateIcon,
+                        {
+                          transform: [
+                            {
+                              rotate: rotateAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0deg", "0deg"],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={["#FACC15", "#F97316"]}
+                        style={{ borderRadius: 35, padding: 16 }}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Ionicons
+                          name={
+                            activeTab === STATUS.ACTIVE
+                              ? "nutrition-outline"
+                              : activeTab === STATUS.EXPIRING
+                                ? "time-outline"
+                                : "alert-circle-outline"
+                          }
+                          size={56}
+                          color="white"
+                        />
+                      </LinearGradient>
+                    </Animated.View>
+                    <Text style={styles.emptyStateTitle}>
+                      {(() => {
+                        const { active, expiringSoon, expired } = getItemsByStatus()
+                        const totalItems = active.length + expiringSoon.length + expired.length
+
+                        if (totalItems === 0) {
+                          return "No items in your pantry"
+                        }
+
+                        if (activeTab === STATUS.ALL && totalItems === 0) {
+                          return "No items in your pantry"
+                        }
+
+                        if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                          if (expiringSoon.length > 0) {
+                            return "Check your expiring items"
+                          } else if (expired.length > 0) {
+                            return "Check your expired items"
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                          if (active.length > 0) {
+                            return "All items are fresh!"
+                          } else if (expired.length > 0) {
+                            return "Check your expired items"
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                          if (active.length > 0) {
+                            return "All items are still good!"
+                          } else if (expiringSoon.length > 0) {
+                            return "Check your expiring items"
+                          }
+                        }
+
+                        return "No items found"
+                      })()}
+                    </Text>
+                    <Text style={styles.emptyStateSubtitle}>
+                      {(() => {
+                        const { active, expiringSoon, expired } = getItemsByStatus()
+                        const totalItems = active.length + expiringSoon.length + expired.length
+
+                        if (totalItems === 0) {
+                          return "Tap the + button to add some ingredients to your pantry"
+                        }
+
+                        if (activeTab === STATUS.ALL && totalItems === 0) {
+                          return "Tap the + button to add some ingredients to your pantry"
+                        }
+
+                        if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                          if (expiringSoon.length > 0) {
+                            return "Some items are about to expire soon"
+                          } else if (expired.length > 0) {
+                            return "Some items have already expired"
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                          if (active.length > 0) {
+                            return "Your pantry is well-stocked with fresh items"
+                          } else if (expired.length > 0) {
+                            return "Focus on your expired items first"
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                          if (active.length > 0) {
+                            return "Great job keeping your pantry fresh!"
+                          } else if (expiringSoon.length > 0) {
+                            return "Some items are expiring soon - check them out"
+                          }
+                        }
+
+                        return "Try adjusting your search or filters"
+                      })()}
+                    </Text>
+                  </View>
+                )
+              }
+            />
+          </Animated.View>
+
+          {/* Modals */}
+          {renderAddItemModal()}
+          {renderItemDetailsModal()}
+          {renderEditModal()}
+
+          {/* Custom Image Picker Dialog */}
+          <ImagePickerDialog
+            visible={showImagePickerDialog}
+            onClose={() => setShowImagePickerDialog(false)}
+            onCamera={handleCamera}
+            onLibrary={handleGallery}
+            isPro={isPro}
+            router={router}
+          />
+
+          {/* Ingredient Detection Modal */}
+          <IngredientSelectionModal
+            visible={showIngredientDetectionModal}
+            onClose={() => setShowIngredientDetectionModal(false)}
+            ingredients={detectedIngredients}
+            onSelectIngredient={handleSelectIngredient}
+            isLoading={isDetecting}
+          />
+
+          {/* Custom Dialog */}
+          <Dialog
+            visible={showDialog}
+            type={dialogConfig.type}
+            title={dialogConfig.title}
+            message={dialogConfig.message}
+            onConfirm={dialogConfig.onConfirm}
+            onCancel={dialogConfig.onCancel}
+            confirmText={dialogConfig.confirmText}
+            cancelText={dialogConfig.cancelText}
+            showCancelButton={dialogConfig.showCancelButton}
+            onClose={hideDialog}
+          />
+
+          {/* Scanner Dialog */}
+          <Dialog
+            visible={scannerShowDialog}
+            type={scannerDialogConfig.type}
+            title={scannerDialogConfig.title}
+            message={scannerDialogConfig.message}
+            confirmText="OK"
+            showCancelButton={false}
+            onClose={scannerCloseDialog}
+            onConfirm={scannerCloseDialog}
+          />
+        </>
+      </View>
     </LinearGradient>
   )
 }

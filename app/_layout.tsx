@@ -1,6 +1,7 @@
 import CustomSplashScreen from "@/components/molecules/CustomSplashScreen";
 import { AuthContextProvider, useAuthContext } from "@/context/authContext";
 import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
@@ -30,7 +31,7 @@ export default function RootLayout() {
   React.useEffect(() => {
     // Prevent the splash screen from auto-hiding
     SplashScreen.preventAutoHideAsync();
-    
+
     // Show our custom splash screen immediately with dark background
     // The splash screen will be hidden when fonts are loaded
   }, []);
@@ -46,7 +47,7 @@ export default function RootLayout() {
   React.useEffect(() => {
     // Prevent the splash screen from auto-hiding
     SplashScreen.preventAutoHideAsync();
-    
+
     // Show our custom splash screen immediately with dark background
     // The splash screen will be hidden when fonts are loaded
   }, []);
@@ -60,15 +61,21 @@ export default function RootLayout() {
 
   // Always show custom splash screen first, regardless of font loading
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
-      {!fontsLoaded ? (
-        <CustomSplashScreen />
-      ) : (
-        <AuthContextProvider>
-          <RootLayoutContent />
-        </AuthContextProvider>
-      )}
-    </View>
+    <StripeProvider
+      publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || "pk_test_51Q48oZ03fZ7TDeQPataxTjV2kzVEaDkb6wWKdig5kJ2LPJnOcAw6zkNmxZxcrBJNJ9KKnX6qVSSsBmIvF6cp1jyw00sd0JFUrx"}
+      urlScheme="mealmate"
+      merchantIdentifier="merchant.com.mealmate"
+    >
+      <View style={{ flex: 1, backgroundColor: '#000000' }}>
+        {!fontsLoaded ? (
+          <CustomSplashScreen />
+        ) : (
+          <AuthContextProvider>
+            <RootLayoutContent />
+          </AuthContextProvider>
+        )}
+      </View>
+    </StripeProvider>
   );
 }
 
@@ -78,7 +85,7 @@ function RootLayoutContent() {
   // Use useAuthContext (from AuthContextProvider) instead of direct useAuth
   const { user, isLoading } = useAuthContext();
   const [navigationHistory, setNavigationHistory] = React.useState<string[]>([]);
-  
+
   // Track navigation history
   useEffect(() => {
     setNavigationHistory(prev => [...prev, pathname]);
@@ -96,21 +103,21 @@ function RootLayoutContent() {
           <View style={styles.container}>
             {/* Status bar background for edge-to-edge support */}
             <View style={styles.statusBarBackground} />
-            
-            <ExpoStatusBar 
-              style="light" 
+
+            <ExpoStatusBar
+              style="light"
               backgroundColor="#000000"
               translucent={true}
             />
-            
-            <Stack 
+
+            <Stack
               screenOptions={{
                 headerShown: false,  // Hide header by default
                 contentStyle: { backgroundColor: '#000000' },
                 animation: 'fade',  // Use fade instead of default slide
                 animationDuration: 200,
                 presentation: 'transparentModal',  // Prevent white flash
-              }} 
+              }}
             />
           </View>
         </GestureHandlerRootView>

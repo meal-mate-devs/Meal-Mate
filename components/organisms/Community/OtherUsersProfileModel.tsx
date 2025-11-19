@@ -92,10 +92,10 @@ export default function OtherUsersProfileModel({
                 console.log('userIdToFetch:', userIdToFetch);
                 console.log('currentUserId:', currentUserId);
                 console.log('========================');
-                
+
                 const resp = await communityService.getUserPosts(userIdToFetch, 1, 20)
                 console.log('getUserPosts response:', resp);
-                
+
                 if (resp && resp.posts) {
                     setUserPosts(resp.posts.map((p: any) => ({
                         ...p,
@@ -130,8 +130,8 @@ export default function OtherUsersProfileModel({
     }
 
 
-    console.log("Rendering profile for user:", 
-        userPosts && userPosts.length > 0 && userPosts[0].images && userPosts[0].images.length > 0 
+    console.log("Rendering profile for user:",
+        userPosts && userPosts.length > 0 && userPosts[0].images && userPosts[0].images.length > 0
             ? userPosts[0].images[0].url || userPosts[0].images[0]
             : "No posts available"
     )
@@ -194,6 +194,11 @@ export default function OtherUsersProfileModel({
                                         <View className="ml-4">
                                             <View className="flex-row items-center">
                                                 <Text className="text-white text-xl font-bold">{user.name}</Text>
+                                                {user.isPro && user.subscriptionStatus === 'active' && (
+                                                    <View className="ml-2">
+                                                        <Ionicons name="shield-checkmark" size={20} color="#FBBF24" />
+                                                    </View>
+                                                )}
                                                 {user.rank && user.rank <= 3 && (
                                                     <View className="ml-2 px-2 py-1 bg-yellow-400 rounded-full">
                                                         <Text className="text-black text-xs font-bold">#{user.rank}</Text>
@@ -332,10 +337,10 @@ export default function OtherUsersProfileModel({
                                             <View className="p-4">
                                                 <Text className="text-white mb-2">{post.content}</Text>
                                                 {post.images && post.images.length > 0 && (
-                                                    <Image 
-                                                        source={{ uri: post.images[0]?.url || post.images[0] }} 
-                                                        className="w-full h-48 rounded-lg" 
-                                                        resizeMode="cover" 
+                                                    <Image
+                                                        source={{ uri: post.images[0]?.url || post.images[0] }}
+                                                        className="w-full h-48 rounded-lg"
+                                                        resizeMode="cover"
                                                     />
                                                 )}
                                                 <View className="flex-row justify-between mt-3">

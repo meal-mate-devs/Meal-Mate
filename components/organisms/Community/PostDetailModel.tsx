@@ -116,7 +116,14 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                         <View className="flex-row items-center mb-4">
                             <Image source={{ uri: post.author.avatar }} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
                             <View className="ml-3 flex-1">
-                                <Text className="text-white font-bold text-lg">{toSafeString(post.author.name)}</Text>
+                                <View className="flex-row items-center">
+                                    <Text className="text-white font-bold text-lg">{toSafeString(post.author.name)}</Text>
+                                    {post.author.isPro && post.author.subscriptionStatus === 'active' && (
+                                        <View className="ml-2">
+                                            <Ionicons name="shield-checkmark" size={18} color="#FBBF24" />
+                                        </View>
+                                    )}
+                                </View>
                                 <Text className="text-zinc-400">@{toSafeString(post.author.username)}</Text>
                             </View>
                             <Text className="text-zinc-400 text-sm">{post.timeAgo}</Text>

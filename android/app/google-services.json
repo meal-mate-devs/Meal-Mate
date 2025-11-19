@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "230655221183-i39vo2gpnh6hi3e2ovfe1ndg2i8t7nuk.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mealmate.app",
+            "certificate_hash": "e927f3f5fc2d439a3067bf8187ee9599bf681596"
+          }
+        },
+        {
           "client_id": "230655221183-5n78pgvp7ubplngladbmmhepebqrlqgf.apps.googleusercontent.com",
           "client_type": 3
         }
