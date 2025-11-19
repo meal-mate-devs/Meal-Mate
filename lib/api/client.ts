@@ -169,6 +169,13 @@ class ApiClient {
         }, requireAuth, timeout);
     }
 
+    async patch<T>(endpoint: string, data: any = {}, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
+        return this.request<T>(endpoint, {
+            method: 'PATCH',
+            body: data,
+        }, requireAuth, timeout);
+    }
+
     async delete<T>(endpoint: string, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
         return this.request<T>(endpoint, { method: 'DELETE' }, requireAuth, timeout);
     }

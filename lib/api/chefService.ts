@@ -38,6 +38,7 @@ export interface CreateRecipePayload {
     fat?: number;
   };
   isPremium?: boolean;
+  isPublished?: boolean;
 }
 
 export interface UpdateRecipePayload extends Partial<CreateRecipePayload> {}
@@ -60,11 +61,13 @@ export interface CreateCoursePayload {
   skillLevel: 'Beginner' | 'Intermediate' | 'Advanced';
   units: CourseUnit[];
   isPremium?: boolean;
+  isPublished?: boolean;
 }
 
 export interface UpdateCoursePayload extends Partial<Omit<CreateCoursePayload, 'units'>> {}
 
 export interface Recipe {
+  averageRating: number;
   _id: string;
   title: string;
   description: string;
@@ -321,12 +324,12 @@ export async function deleteRecipe(id: string): Promise<{ message: string }> {
 
 /**
  * Publish a recipe
- * POST /api/recipes/chef/:id/publish
+ * PATCH /api/recipes/chef/:id/publish
  */
 export async function publishRecipe(id: string): Promise<Recipe> {
   try {
     console.log(`📢 Publishing recipe: ${id}`);
-    const response = await apiClient.post<{ recipe: Recipe }>(
+    const response = await apiClient.patch<{ recipe: Recipe }>(
       `/recipes/chef/${id}/publish`,
       {},
       true,
@@ -342,12 +345,12 @@ export async function publishRecipe(id: string): Promise<Recipe> {
 
 /**
  * Unpublish a recipe
- * POST /api/recipes/chef/:id/unpublish
+ * PATCH /api/recipes/chef/:id/unpublish
  */
 export async function unpublishRecipe(id: string): Promise<Recipe> {
   try {
     console.log(`📥 Unpublishing recipe: ${id}`);
-    const response = await apiClient.post<{ recipe: Recipe }>(
+    const response = await apiClient.patch<{ recipe: Recipe }>(
       `/recipes/chef/${id}/unpublish`,
       {},
       true,
@@ -363,12 +366,12 @@ export async function unpublishRecipe(id: string): Promise<Recipe> {
 
 /**
  * Toggle recipe premium status
- * POST /api/recipes/chef/:id/premium
+ * PATCH /api/recipes/chef/:id/premium
  */
 export async function toggleRecipePremium(id: string, isPremium: boolean): Promise<Recipe> {
   try {
     console.log(`💎 Setting recipe premium status: ${id} -> ${isPremium}`);
-    const response = await apiClient.post<{ recipe: Recipe }>(
+    const response = await apiClient.patch<{ recipe: Recipe }>(
       `/recipes/chef/${id}/premium`,
       { isPremium },
       true,

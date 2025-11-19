@@ -6,6 +6,7 @@ import { apiClient } from "@/lib/api/client"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
+import { router } from "expo-router"
 import React, { useEffect, useRef, useState } from "react"
 import {
   Alert,
@@ -36,6 +37,7 @@ interface Recipe {
   description: string
   image: string
   isPremium: boolean
+  isPublished?: boolean
   difficulty: "Easy" | "Medium" | "Hard"
   cookTime: string
   rating: number
@@ -65,6 +67,7 @@ interface Course {
   subscribers: number
   rating: number
   isPremium: boolean
+  isPublished?: boolean
   chefId: string
   chefName: string
   image: string
@@ -122,6 +125,13 @@ const ChefDashboardScreen: React.FC = () => {
   const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
   const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
   
+  // Publish/Unpublish state
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [showPublishSuccessDialog, setShowPublishSuccessDialog] = useState(false)
+  const [showPublishErrorDialog, setShowPublishErrorDialog] = useState(false)
+  const [publishSuccessMessage, setPublishSuccessMessage] = useState('')
+  const [publishErrorMessage, setPublishErrorMessage] = useState('')
+  
   // Chef registration states
   const [showChefRegistration, setShowChefRegistration] = useState(false)
   const [isRegisteringChef, setIsRegisteringChef] = useState(false)
@@ -173,8 +183,9 @@ const ChefDashboardScreen: React.FC = () => {
         image: getImageUrl(r.image),
         cookTime: `${r.prepTime + r.cookTime}m`,
         difficulty: r.difficulty as "Easy" | "Medium" | "Hard",
-        rating: 5.0,
+        rating: r.averageRating || 0,
         isPremium: r.isPremium,
+        isPublished: r.isPublished,
         chefName: "You"
       }))
       
@@ -204,6 +215,7 @@ const ChefDashboardScreen: React.FC = () => {
         subscribers: c.enrolledStudents || 0,
         rating: c.averageRating || 0,
         isPremium: c.isPremium,
+        isPublished: c.isPublished,
         chefId: c.authorId,
         chefName: "You",
         image: c.coverImage || "https://via.placeholder.com/400x300",
@@ -986,9 +998,15 @@ const ChefDashboardScreen: React.FC = () => {
                 <Text style={styles.managementPremiumBadgeText}>Premium</Text>
               </View>
             )}
-            <View style={styles.statusBadge}>
-              <Ionicons name="checkmark-circle" size={12} color="#10B981" />
-              <Text style={styles.statusBadgeText}>Published</Text>
+            <View style={[styles.statusBadge, !recipe.isPublished && styles.statusBadgeDraft]}>
+              <Ionicons 
+                name={recipe.isPublished ? "checkmark-circle" : "time-outline"} 
+                size={12} 
+                color={recipe.isPublished ? "#10B981" : "#F59E0B"} 
+              />
+              <Text style={[styles.statusBadgeText, !recipe.isPublished && styles.statusBadgeTextDraft]}>
+                {recipe.isPublished ? 'Published' : 'Not Published'}
+              </Text>
             </View>
           </View>
         </View>
@@ -1051,9 +1069,15 @@ const ChefDashboardScreen: React.FC = () => {
                 <Text style={styles.managementPremiumBadgeText}>Premium</Text>
               </View>
             )}
-            <View style={styles.statusBadge}>
-              <Ionicons name="checkmark-circle" size={12} color="#10B981" />
-              <Text style={styles.statusBadgeText}>Published</Text>
+            <View style={[styles.statusBadge, !course.isPublished && styles.statusBadgeDraft]}>
+              <Ionicons 
+                name={course.isPublished ? "checkmark-circle" : "time-outline"} 
+                size={12} 
+                color={course.isPublished ? "#10B981" : "#F59E0B"} 
+              />
+              <Text style={[styles.statusBadgeText, !course.isPublished && styles.statusBadgeTextDraft]}>
+                {course.isPublished ? 'Published' : 'Not Published'}
+              </Text>
             </View>
           </View>
         </View>
@@ -1184,6 +1208,84 @@ const ChefDashboardScreen: React.FC = () => {
     } catch (error) {
       console.log('❌ Failed to delete recipe:', error)
     }
+  }
+
+  const handleTogglePublish = async () => {
+    console.log('🔄 handleTogglePublish called')
+    console.log('📊 Recipe data:', {
+      hasData: !!expandedRecipeData,
+      id: expandedRecipeData?._id || expandedRecipeData?.id,
+      title: expandedRecipeData?.title,
+      currentStatus: expandedRecipeData?.isPublished
+    })
+    
+    if (!expandedRecipeData) {
+      console.log('⚠️ No recipe data available')
+      return
+    }
+    
+    setIsPublishing(true)
+    try {
+      const recipeId = expandedRecipeData._id || expandedRecipeData.id
+      
+      if (expandedRecipeData.isPublished) {
+        console.log('📥 Unpublishing recipe:', expandedRecipeData.title)
+        await chefService.unpublishRecipe(recipeId)
+        console.log('✅ Recipe unpublished successfully')
+        
+        // Update local state
+        setExpandedRecipeData({ ...expandedRecipeData, isPublished: false })
+        setUserRecipes(prev => prev.map(r => 
+          (r.id === recipeId || r.id === expandedRecipeData.id) 
+            ? { ...r, isPublished: false } 
+            : r
+        ))
+        
+        // Show success dialog
+        setPublishSuccessMessage('Your recipe is now offline and only visible to you.')
+        setShowPublishSuccessDialog(true)
+      } else {
+        console.log('📢 Publishing recipe:', expandedRecipeData.title)
+        await chefService.publishRecipe(recipeId)
+        console.log('✅ Recipe published successfully')
+        
+        // Update local state
+        setExpandedRecipeData({ ...expandedRecipeData, isPublished: true })
+        setUserRecipes(prev => prev.map(r => 
+          (r.id === recipeId || r.id === expandedRecipeData.id) 
+            ? { ...r, isPublished: true } 
+            : r
+        ))
+        
+        // Show success dialog
+        setPublishSuccessMessage('Your recipe is now live and visible to food explorers!')
+        setShowPublishSuccessDialog(true)
+      }
+    } catch (error: any) {
+      console.log('❌ Failed to toggle publish status:', error)
+      setPublishErrorMessage(error.message || 'Failed to update recipe status. Please try again.')
+      setShowPublishErrorDialog(true)
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
+  const handleStartCooking = (recipe: any) => {
+    if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
+      Alert.alert('No Instructions', 'This recipe has no cooking instructions available.')
+      return
+    }
+    
+    setExpandedRecipeId(null)
+    setExpandedRecipeData(null)
+    
+    // Navigate to cooking screen with recipe data
+    router.push({
+      pathname: '/recipe/cooking' as any,
+      params: {
+        recipe: JSON.stringify(recipe)
+      }
+    })
   }
 
   // Comprehensive share functionality matching FavoritesScreen pattern
@@ -1516,14 +1618,14 @@ const ChefDashboardScreen: React.FC = () => {
                 </View>
 
                 {/* Share and Edit Buttons */}
-                <View className="flex-row mb-6" style={{ gap: 16 }}>
+                <View className="flex-row mb-6" style={{ gap: 12 }}>
                   <TouchableOpacity
                     onPress={() => handleShareRecipe(expandedRecipeData)}
-                    className="bg-amber-500/15 border border-amber-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                    className="bg-amber-500/15 border border-amber-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="share-outline" size={20} color="#FBBF24" />
-                    <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">Share</Text>
+                    <Ionicons name="share-outline" size={18} color="#FBBF24" />
+                    <Text className="text-amber-300 font-bold ml-2 text-sm tracking-wide">Share</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -1535,11 +1637,35 @@ const ChefDashboardScreen: React.FC = () => {
                       setShowRecipeModal(true)
                       console.log('✏️ Opening recipe edit modal for:', expandedRecipeData.title)
                     }}
-                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="create-outline" size={20} color="#3B82F6" />
-                    <Text className="text-blue-300 font-bold ml-2 text-base tracking-wide">Edit</Text>
+                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                    <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log('🔘 Publish/Hide button pressed')
+                      console.log('📊 Current recipe state:', {
+                        id: expandedRecipeData._id || expandedRecipeData.id,
+                        title: expandedRecipeData.title,
+                        isPublished: expandedRecipeData.isPublished
+                      })
+                      handleTogglePublish()
+                    }}
+                    disabled={isPublishing}
+                    className={`${expandedRecipeData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name={isPublishing ? "hourglass-outline" : (expandedRecipeData.isPublished ? "eye-off-outline" : "eye-outline")} 
+                      size={18} 
+                      color={expandedRecipeData.isPublished ? "#FB923C" : "#10B981"} 
+                    />
+                    <Text className={`${expandedRecipeData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
+                      {isPublishing ? 'Processing...' : (expandedRecipeData.isPublished ? 'Hide' : 'Publish')}
+                    </Text>
                   </TouchableOpacity>
                 </View>
 
@@ -1658,6 +1784,31 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                 </View>
 
+                {/* Start Cooking Button */}
+                <TouchableOpacity
+                  onPress={() => handleStartCooking(expandedRecipeData)}
+                  className="rounded-xl py-4 flex-row items-center justify-center shadow-lg mb-6"
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient
+                    colors={['#FACC15', '#F97316']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Ionicons name="flame" size={24} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>
+                    Start Cooking
+                  </Text>
+                </TouchableOpacity>
+
                 {/* ⭐ Enhanced Chef's Tips */}
                 {expandedRecipeData.tips && expandedRecipeData.tips.length > 0 && (
                   <View className="mb-6">
@@ -1733,6 +1884,28 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
         )}
       </View>
+      
+      {/* Publish/Unpublish Success Dialog */}
+      <Dialog
+        visible={showPublishSuccessDialog}
+        type="success"
+        title="Success!"
+        message={publishSuccessMessage}
+        onClose={() => setShowPublishSuccessDialog(false)}
+        confirmText="OK"
+        autoClose={true}
+        autoCloseTime={5500}
+      />
+      
+      {/* Publish/Unpublish Error Dialog */}
+      <Dialog
+        visible={showPublishErrorDialog}
+        type="error"
+        title="Error"
+        message={publishErrorMessage}
+        onClose={() => setShowPublishErrorDialog(false)}
+        confirmText="OK"
+      />
     </LinearGradient>
   )
 }
@@ -1811,7 +1984,7 @@ const RecipeUploadModal: React.FC<{
                 return `Description must be at least ${minChars} characters long`;
               }
               if (detail.includes('Title must be at least')) {
-                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '3';
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '5';
                 return `Title must be at least ${minChars} characters long`;
               }
               if (detail.includes('must be a valid email')) {
@@ -1859,6 +2032,7 @@ const RecipeUploadModal: React.FC<{
     fat: "",
   })
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [publishNow, setPublishNow] = useState(true)
   const [recipeImage, setRecipeImage] = useState<string | null>(null)
   const [ingredients, setIngredients] = useState<Array<{id: string; name: string; amount: string; unit: string; notes?: string; showUnitDropdown?: boolean}>>([
     { id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }
@@ -1888,6 +2062,7 @@ const RecipeUploadModal: React.FC<{
         nutritionInfo: editingRecipe.nutritionInfo,
         ingredients: editingRecipe.ingredients,
         instructions: editingRecipe.instructions,
+        isPublished: editingRecipe.isPublished,
       })
       
       // Handle nutrition data (backend uses 'nutritionInfo', frontend uses 'nutrition')
@@ -1909,6 +2084,9 @@ const RecipeUploadModal: React.FC<{
         carbs: nutritionData.carbs?.toString() || '',
         fat: nutritionData.fat?.toString() || '',
       })
+      
+      // Set publish status
+      setPublishNow(editingRecipe.isPublished !== undefined ? editingRecipe.isPublished : true)
       
       console.log('✅ Recipe data set:', {
         prepTime: editingRecipe.prepTime?.toString(),
@@ -1971,6 +2149,7 @@ const RecipeUploadModal: React.FC<{
         carbs: '',
         fat: '',
       })
+      setPublishNow(true)
       setRecipeImage(null)
       setIngredients([{ id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }])
       setInstructions([{ id: '1', step: 1, instruction: '', duration: '', tips: '' }])
@@ -2058,19 +2237,19 @@ const RecipeUploadModal: React.FC<{
       return
     }
 
-    // 3. Description validation (min 20 characters)
+    // 3. Description validation (min 15 characters, max 50)
     if (!recipeData.description.trim()) {
       setErrorMessage("Recipe description is required")
       setShowErrorDialog(true)
       return
     }
-    if (recipeData.description.trim().length < 20) {
-      setErrorMessage("Recipe description must be at least 20 characters long. Please provide more details about your recipe.")
+    if (recipeData.description.trim().length < 15) {
+      setErrorMessage("Recipe description must be at least 15 characters long. Please provide more details about your recipe.")
       setShowErrorDialog(true)
       return
     }
-    if (recipeData.description.trim().length > 1000) {
-      setErrorMessage("Recipe description must not exceed 1000 characters")
+    if (recipeData.description.trim().length > 70) {
+      setErrorMessage("Recipe description must not exceed 70 characters")
       setShowErrorDialog(true)
       return
     }
@@ -2164,8 +2343,8 @@ const RecipeUploadModal: React.FC<{
         setShowErrorDialog(true)
         return
       }
-      if (ing.name.trim().length < 2) {
-        setErrorMessage(`Ingredient ${i + 1}: Name must be at least 2 characters`)
+      if (ing.name.trim().length < 3) {
+        setErrorMessage(`Ingredient ${i + 1}: Name must be at least 3 characters`)
         setShowErrorDialog(true)
         return
       }
@@ -2289,7 +2468,8 @@ const RecipeUploadModal: React.FC<{
         difficulty: recipeData.difficulty,
         cuisine: recipeData.cuisine?.trim() || 'General',
         category: recipeData.category?.trim() || 'Other',
-        isPremium: recipeData.isPremium
+        isPremium: recipeData.isPremium,
+        isPublished: publishNow
       }
 
       // Add nutrition if any field is filled
@@ -2502,7 +2682,7 @@ const RecipeUploadModal: React.FC<{
             </View>
           </View>
 
-          {/* Premium Toggle */}
+          {/* Premium & Publish Options */}
           <View style={styles.inputGroup}>
             <TouchableOpacity
               style={styles.checkboxRow}
@@ -2516,6 +2696,22 @@ const RecipeUploadModal: React.FC<{
                 )}
               </View>
               <Text style={styles.checkboxLabel}>Premium Recipe</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.checkboxRow, { marginTop: 12 }]}
+              onPress={() => setPublishNow(!publishNow)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View style={[styles.checkbox, !publishNow && styles.checkboxActive]}>
+                {!publishNow && (
+                  <Ionicons name="checkmark" size={20} color="white" />
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Text style={styles.checkboxLabel}>Don't Publish Now</Text>
+              </View>
             </TouchableOpacity>
           </View>
 
@@ -2864,7 +3060,7 @@ const CourseCreationModal: React.FC<{
                 return `Description must be at least ${minChars} characters long`;
               }
               if (detail.includes('Title must be at least')) {
-                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '3';
+                const minChars = detail.match(/at least (\d+) characters/)?.[1] || '5';
                 return `Title must be at least ${minChars} characters long`;
               }
               if (detail.includes('must be a valid email')) {
@@ -2898,6 +3094,7 @@ const CourseCreationModal: React.FC<{
 
   const [currentStep, setCurrentStep] = useState<'info' | 'units'>(('info'))
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [publishNow, setPublishNow] = useState(true)
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
@@ -2946,8 +3143,14 @@ const CourseCreationModal: React.FC<{
         isPremium: editingCourse.isPremium || false,
       })
       
-      // Set course image
-      setCourseImage(editingCourse.image || editingCourse.coverImage || null)
+      // Set publish status
+      setPublishNow(editingCourse.isPublished !== undefined ? editingCourse.isPublished : true)
+      
+      // Set course image - handle both string and object formats
+      const imageUrl = editingCourse.image || 
+        (editingCourse.coverImage && typeof editingCourse.coverImage === 'object' ? editingCourse.coverImage.url : editingCourse.coverImage) || 
+        null
+      setCourseImage(imageUrl)
       
       // Set units
       if (editingCourse.units && editingCourse.units.length > 0) {
@@ -2988,6 +3191,7 @@ const CourseCreationModal: React.FC<{
         category: 'Other',
         isPremium: false,
       })
+      setPublishNow(true)
       setCourseImage(null)
       setUnits([{
         id: '1',
@@ -3139,19 +3343,19 @@ const CourseCreationModal: React.FC<{
       return
     }
 
-    // 3. Description validation (min 50 characters)
+    // 3. Description validation (min 15 characters, max 50)
     if (!courseData.description.trim()) {
       setErrorMessage("Course description is required")
       setShowErrorDialog(true)
       return
     }
-    if (courseData.description.trim().length < 50) {
-      setErrorMessage("Course description must be at least 50 characters long. Please provide more details about your course.")
+    if (courseData.description.trim().length < 15) {
+      setErrorMessage("Course description must be at least 15 characters long. Please provide more details about your course.")
       setShowErrorDialog(true)
       return
     }
-    if (courseData.description.trim().length > 2000) {
-      setErrorMessage("Course description must not exceed 2000 characters")
+    if (courseData.description.trim().length > 500) {
+      setErrorMessage("Course description must not exceed 500 characters")
       setShowErrorDialog(true)
       return
     }
@@ -3169,8 +3373,8 @@ const CourseCreationModal: React.FC<{
       setShowErrorDialog(true)
       return
     }
-    if (courseData.duration.trim().length < 3) {
-      setErrorMessage("Course duration must be at least 3 characters long")
+    if (courseData.duration.trim().length < 5) {
+      setErrorMessage("Course duration must be at least 5 characters long")
       setShowErrorDialog(true)
       return
     }
@@ -3208,17 +3412,17 @@ const CourseCreationModal: React.FC<{
 
       // Title validation
       if (!unit.title.trim()) {
-        setErrorMessage(`Unit ${unitNumber}: Title is required`)
+        setErrorMessage(`Unit ${unitNumber}: Unit title is required`)
         setShowErrorDialog(true)
         return
       }
-      if (unit.title.trim().length < 3) {
-        setErrorMessage(`Unit ${unitNumber}: Title must be at least 3 characters long`)
+      if (unit.title.trim().length < 5) {
+        setErrorMessage(`Unit ${unitNumber}: Unit title must be at least 5 characters long`)
         setShowErrorDialog(true)
         return
       }
       if (unit.title.trim().length > 100) {
-        setErrorMessage(`Unit ${unitNumber}: Title must not exceed 100 characters`)
+        setErrorMessage(`Unit ${unitNumber}: Unit title must not exceed 100 characters`)
         setShowErrorDialog(true)
         return
       }
@@ -3241,8 +3445,8 @@ const CourseCreationModal: React.FC<{
         setShowErrorDialog(true)
         return
       }
-      if (unit.content.trim().length < 50) {
-        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Content must be at least 50 characters long`)
+      if (unit.content.trim().length < 20) {
+        setErrorMessage(`Unit ${unitNumber} (${unit.title}): Content must be at least 20 characters long`)
         setShowErrorDialog(true)
         return
       }
@@ -3286,8 +3490,8 @@ const CourseCreationModal: React.FC<{
           setShowErrorDialog(true)
           return
         }
-        if (error.text.trim().length < 5) {
-          setErrorMessage(`Unit ${unitNumber}, Common Error ${j + 1}: Error text must be at least 5 characters long`)
+        if (error.text.trim().length < 3) {
+          setErrorMessage(`Unit ${unitNumber}, Common Error ${j + 1}: Error text must be at least 3 characters long`)
           setShowErrorDialog(true)
           return
         }
@@ -3298,8 +3502,8 @@ const CourseCreationModal: React.FC<{
       if (validPractices.length > 0) {
         for (let j = 0; j < validPractices.length; j++) {
           const practice = validPractices[j]
-          if (practice.text.trim() && practice.text.trim().length < 5) {
-            setErrorMessage(`Unit ${unitNumber}, Best Practice ${j + 1}: Text must be at least 5 characters long`)
+          if (practice.text.trim() && practice.text.trim().length < 3) {
+            setErrorMessage(`Unit ${unitNumber}, Best Practice ${j + 1}: Text must be at least 3 characters long`)
             setShowErrorDialog(true)
             return
           }
@@ -3350,6 +3554,7 @@ const CourseCreationModal: React.FC<{
         duration: courseData.duration,
         skillLevel: courseData.skillLevel,
         isPremium: courseData.isPremium,
+        isPublished: publishNow,
         units: units
           .filter(unit => unit.title.trim())
           .map((unit, index) => ({
@@ -3466,11 +3671,11 @@ const CourseCreationModal: React.FC<{
                 <>
                   <Image source={{ uri: courseImage }} style={styles.uploadedImage} />
                   <TouchableOpacity 
-                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#EF4444' }}
+                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(10, 10, 10, 0.55)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#efd044ff' }}
                     onPress={handleRemoveCourseImage}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="close" size={20} color="#EF4444" />
+                    <Ionicons name="close" size={20} color="#efdb44ff" />
                   </TouchableOpacity>
                 </>
               ) : (
@@ -3568,7 +3773,7 @@ const CourseCreationModal: React.FC<{
             </View>
           </View>
 
-          {/* Premium Toggle */}
+          {/* Premium & Publish Options */}
           <View style={styles.inputGroup}>
             <TouchableOpacity
               style={styles.checkboxRow}
@@ -3582,6 +3787,22 @@ const CourseCreationModal: React.FC<{
                 )}
               </View>
               <Text style={styles.checkboxLabel}>Premium Course</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.checkboxRow, { marginTop: 12 }]}
+              onPress={() => setPublishNow(!publishNow)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <View style={[styles.checkbox, !publishNow && styles.checkboxActive]}>
+                {!publishNow && (
+                  <Ionicons name="checkmark" size={20} color="white" />
+                )}
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={styles.checkboxLabel}>Don't Publish Now</Text>
+              </View>
             </TouchableOpacity>
           </View>
         </View>
@@ -4541,7 +4762,16 @@ const styles = StyleSheet.create({
   checkboxLabel: {
     color: "#FFFFFF",
     fontSize: 16,
-    flex: 1,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
   },
   
   // Content Management Styles
@@ -4644,11 +4874,17 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 6,
   },
+  statusBadgeDraft: {
+    backgroundColor: "rgba(245, 158, 11, 0.1)",
+  },
   statusBadgeText: {
     color: "#10B981",
     fontSize: 10,
     fontWeight: "600",
     marginLeft: 3,
+  },
+  statusBadgeTextDraft: {
+    color: "#F59E0B",
   },
   managementCardDescription: {
     color: "#94A3B8",
