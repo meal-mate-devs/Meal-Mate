@@ -27,6 +27,7 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import Dialog from "../atoms/Dialog"
+import ChefProfileViewScreen from "./ChefProfileViewScreen"
 import ChefRegistrationScreen, { ChefRegistrationData } from "./ChefRegistrationScreen"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
@@ -56,6 +57,8 @@ interface Chef {
   rating: number
   subscribers: number
   isSubscribed: boolean
+  bio?: string
+  experience?: string
   recipes: Recipe[]
   courses: Course[]
 }
@@ -125,6 +128,10 @@ const ChefDashboardScreen: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<"recipes" | "courses">("recipes")
+  const [foodExplorerSection, setFoodExplorerSection] = useState<"all" | "subscribed">("all")
+  const [chefSearchVisible, setChefSearchVisible] = useState(false)
+  const [chefSearchQuery, setChefSearchQuery] = useState("")
+  const [viewingChefProfile, setViewingChefProfile] = useState<Chef | null>(null)
   const [editMode, setEditMode] = useState(false)
   
   // Chef profile editing states (separate from user profile)
@@ -153,7 +160,13 @@ const ChefDashboardScreen: React.FC = () => {
       setEditedExpertiseCategory(profile.chefProfile.expertiseCategory || '')
       setEditedProfessionalSummary(profile.chefProfile.professionalSummary || '')
       setEditedYearsOfExperience(profile.chefProfile.yearsOfExperience || 0)
-      setEditedPortfolioImage(profile.chefProfile.portfolioImage || '')
+      // Handle portfolioImage - it could be a string or an object with url property
+      const portfolioImageUrl = typeof profile.chefProfile.portfolioImage === 'string' 
+        ? profile.chefProfile.portfolioImage 
+        : (profile.chefProfile.portfolioImage && typeof profile.chefProfile.portfolioImage === 'object' && 'url' in profile.chefProfile.portfolioImage)
+          ? (profile.chefProfile.portfolioImage as any).url 
+          : ''
+      setEditedPortfolioImage(portfolioImageUrl)
     }
   }, [profile])
   
@@ -329,11 +342,13 @@ const ChefDashboardScreen: React.FC = () => {
       rating: 4.9,
       subscribers: 125000,
       isSubscribed: true,
+      bio: "World-renowned chef with 17 Michelin stars throughout his career. Known for his fiery personality and exceptional culinary skills.",
+      experience: "30+ Years",
       recipes: [
         {
           id: "r1",
           title: "Beef Wellington",
-          description: "Classic British dish with tender beef",
+          description: "Classic British dish with tender beef fillet wrapped in mushroom duxelles and puff pastry. A signature Gordon Ramsay masterpiece.",
           image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300&h=200&fit=crop",
           isPremium: true,
           difficulty: "Hard",
@@ -344,7 +359,7 @@ const ChefDashboardScreen: React.FC = () => {
         {
           id: "r2",
           title: "Hell's Kitchen Pasta",
-          description: "Signature pasta dish from the show",
+          description: "Signature pasta dish from the famous TV show. Fresh lobster tail with angel hair pasta in a light tomato cream sauce.",
           image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=300&h=200&fit=crop",
           isPremium: false,
           difficulty: "Medium",
@@ -392,6 +407,8 @@ const ChefDashboardScreen: React.FC = () => {
       rating: 4.7,
       subscribers: 89000,
       isSubscribed: true,
+      bio: "Legendary cooking teacher who introduced French cuisine to American households. Pioneer of cooking shows and culinary education.",
+      experience: "40+ Years",
       recipes: [
         {
           id: "r3",
@@ -430,6 +447,8 @@ const ChefDashboardScreen: React.FC = () => {
       rating: 4.6,
       subscribers: 156000,
       isSubscribed: false,
+      bio: "British chef and food activist passionate about healthy eating and simple, fresh ingredients. Author of multiple bestselling cookbooks.",
+      experience: "25+ Years",
       recipes: [
         {
           id: "r4",
@@ -593,33 +612,180 @@ const ChefDashboardScreen: React.FC = () => {
     </View>
   )
 
-  const renderChefRibbon = () => (
-    <View style={styles.chefRibbonContainer}>
-      <Text style={styles.sectionTitle}>Your Subscribed Chefs</Text>
-      <FlatList
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        data={chefs.filter((chef) => chef.isSubscribed)}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.chefRibbonContent}
-        renderItem={({ item }) => (
+  const renderChefSection = () => {
+    // Filter by subscription status
+    let displayedChefs = foodExplorerSection === "subscribed" 
+      ? chefs.filter((chef) => chef.isSubscribed)
+      : chefs
+
+    // Apply search filter
+    if (chefSearchQuery.trim()) {
+      const query = chefSearchQuery.toLowerCase()
+      displayedChefs = displayedChefs.filter((chef) => 
+        chef.name.toLowerCase().includes(query) || 
+        chef.specialty.toLowerCase().includes(query)
+      )
+    }
+
+    return (
+      <View style={styles.chefSectionContainer}>
+        {/* Search Bar or Section Tabs */}
+        {chefSearchVisible ? (
+          <View style={styles.chefSearchContainer}>
+            <View style={styles.chefSearchInputWrapper}>
+              <Ionicons name="search" size={20} color="#94A3B8" style={styles.chefSearchIcon} />
+              <TextInput
+                style={styles.chefSearchInput}
+                placeholder="Search by chef name or expertise..."
+                placeholderTextColor="#64748B"
+                value={chefSearchQuery}
+                onChangeText={setChefSearchQuery}
+                autoFocus
+              />
+              {chefSearchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setChefSearchQuery("")}
+                  style={styles.chefSearchClearButton}
+                >
+                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+              )}
+            </View>
+            <TouchableOpacity 
+              onPress={() => {
+                setChefSearchVisible(false)
+                setChefSearchQuery("")
+              }}
+              style={styles.chefSearchCloseButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="close" size={22} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.chefSearchContainer}>
+            <View style={styles.chefSectionTabs}>
           <TouchableOpacity
-            style={[styles.chefCard, selectedChef === item.id && styles.selectedChefCard]}
-            onPress={() => setSelectedChef(selectedChef === item.id ? null : item.id)}
-            activeOpacity={0.8}
+            style={[
+              styles.chefSectionTab,
+              foodExplorerSection === "all" && styles.activeChefSectionTab
+            ]}
+            onPress={() => setFoodExplorerSection("all")}
+            activeOpacity={0.7}
           >
-            <Image source={{ uri: item.avatar }} style={styles.chefAvatar} />
-            <Text style={styles.chefName}>{item.name}</Text>
-            <Text style={styles.chefSpecialty}>{item.specialty}</Text>
-            <View style={styles.chefRating}>
-              <Ionicons name="star" size={12} color="#FACC15" />
-              <Text style={styles.ratingText}>{item.rating}</Text>
+            <Ionicons 
+              name="people-outline" 
+              size={18} 
+              color={foodExplorerSection === "all" ? "#FACC15" : "#94A3B8"} 
+            />
+            <Text style={[
+              styles.chefSectionTabText,
+              foodExplorerSection === "all" && styles.activeChefSectionTabText
+            ]}>
+              All Chefs
+            </Text>
+            <View style={[
+              styles.chefCountBadge,
+              foodExplorerSection === "all" && styles.activeChefCountBadge
+            ]}>
+              <Text style={[
+                styles.chefCountText,
+                foodExplorerSection === "all" && styles.activeChefCountText
+              ]}>
+                {chefs.length}
+              </Text>
             </View>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.chefSectionTab,
+              foodExplorerSection === "subscribed" && styles.activeChefSectionTab
+            ]}
+            onPress={() => setFoodExplorerSection("subscribed")}
+            activeOpacity={0.7}
+          >
+            <Ionicons 
+              name="star" 
+              size={18} 
+              color={foodExplorerSection === "subscribed" ? "#FACC15" : "#94A3B8"} 
+            />
+            <Text style={[
+              styles.chefSectionTabText,
+              foodExplorerSection === "subscribed" && styles.activeChefSectionTabText
+            ]}>
+              Subscribed
+            </Text>
+            <View style={[
+              styles.chefCountBadge,
+              foodExplorerSection === "subscribed" && styles.activeChefCountBadge
+            ]}>
+              <Text style={[
+                styles.chefCountText,
+                foodExplorerSection === "subscribed" && styles.activeChefCountText
+              ]}>
+                {chefs.filter(c => c.isSubscribed).length}
+              </Text>
+            </View>
+          </TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              onPress={() => setChefSearchVisible(true)}
+              style={styles.chefSearchButton}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="search" size={20} color="#94A3B8" />
+            </TouchableOpacity>
+          </View>
         )}
-      />
-    </View>
-  )
+
+        {/* Chefs List */}
+        {displayedChefs.length > 0 ? (
+          <FlatList
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            data={displayedChefs}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.chefRibbonContent}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[styles.chefCard, selectedChef === item.id && styles.selectedChefCard]}
+                onPress={() => setViewingChefProfile(item)}
+                activeOpacity={0.8}
+              >
+                <Image source={{ uri: item.avatar }} style={styles.chefAvatar} />
+                {item.isSubscribed && (
+                  <View style={styles.subscribedBadge}>
+                    <Ionicons name="star" size={10} color="#FACC15" />
+                  </View>
+                )}
+                <Text style={styles.chefName}>{item.name}</Text>
+                <Text style={styles.chefSpecialty}>{item.specialty}</Text>
+                <View style={styles.chefRating}>
+                  <Ionicons name="star" size={12} color="#FACC15" />
+                  <Text style={styles.ratingText}>{item.rating}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        ) : (
+          <View style={styles.emptyChefSection}>
+            <Ionicons name="people-outline" size={48} color="#475569" />
+            <Text style={styles.emptyChefText}>
+              {foodExplorerSection === "subscribed" 
+                ? "No subscribed chefs yet"
+                : "No chefs available"}
+            </Text>
+            <Text style={styles.emptyChefSubtext}>
+              {foodExplorerSection === "subscribed"
+                ? "Subscribe to chefs to see them here"
+                : "Check back later for new chefs"}
+            </Text>
+          </View>
+        )}
+      </View>
+    )
+  }
 
   const renderFoodExplorerTabs = () => (
     <View style={styles.tabContainer}>
@@ -734,9 +900,11 @@ const ChefDashboardScreen: React.FC = () => {
       case 'userTypeSelector':
         return renderUserTypeSelector();
       case 'chefRibbon':
-        return renderChefRibbon();
+        return renderChefSection();
       case 'foodExplorerTabs':
         return renderFoodExplorerTabs();
+      case 'latestRecipes':
+        return renderLatestRecipes();
       case 'latestCourses':
         return renderLatestCourses();
       case 'profileButton':
@@ -792,10 +960,28 @@ const ChefDashboardScreen: React.FC = () => {
                 onPress={() => {
                   if (!hasAccess) {
                     // Premium recipe - subscription required
-                    console.log(`Premium Recipe: Subscribe to ${ownerChef?.name} to access`)
+                    Alert.alert(
+                      'Premium Content',
+                      `Subscribe to ${ownerChef?.name} to access this recipe`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { 
+                          text: 'View Chef', 
+                          onPress: () => {
+                            if (ownerChef) {
+                              setSelectedChefProfile(ownerChef)
+                              setChefProfileModalVisible(true)
+                            }
+                          }
+                        }
+                      ]
+                    )
                   } else {
-                    // Open recipe
-                    console.log(`Opening recipe: ${item.title}`)
+                    // Navigate to recipe detail screen
+                    router.push({
+                      pathname: '/recipe/[id]' as any,
+                      params: { id: item.id }
+                    })
                   }
                 }}
                 activeOpacity={0.8}
@@ -876,9 +1062,27 @@ const ChefDashboardScreen: React.FC = () => {
                 style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
                 onPress={() => {
                   if (!hasAccess) {
-                    console.log(`Premium Course: Subscribe to ${item.chefName} to access`)
+                    // Premium course - subscription required
+                    const ownerChef = chefs.find(c => c.id === item.chefId)
+                    Alert.alert(
+                      'Premium Content',
+                      `Subscribe to ${item.chefName} to access this course`,
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { 
+                          text: 'View Chef', 
+                          onPress: () => {
+                            if (ownerChef) {
+                              setSelectedChef(ownerChef)
+                              setChefProfileModalVisible(true)
+                            }
+                          }
+                        }
+                      ]
+                    )
                   } else {
-                    console.log(`Opening course: ${item.title}`)
+                    // Navigate to course detail screen (to be implemented)
+                    Alert.alert('Course', `Opening: ${item.title}\n\nCourse detail screen coming soon!`)
                   }
                 }}
                 activeOpacity={0.8}
@@ -930,7 +1134,7 @@ const ChefDashboardScreen: React.FC = () => {
   const handlePortfolioImagePicker = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -967,7 +1171,11 @@ const ChefDashboardScreen: React.FC = () => {
                   setEditedExpertiseCategory(chefProfileData?.expertiseCategory || '')
                   setEditedProfessionalSummary(chefProfileData?.professionalSummary || '')
                   setEditedYearsOfExperience(chefProfileData?.yearsOfExperience || 0)
-                  setEditedPortfolioImage(chefProfileData?.portfolioImage || '')
+                  // Handle portfolioImage - it could be a string or an object with url property
+                  const portfolioImageUrl = typeof chefProfileData?.portfolioImage === 'string'
+                    ? chefProfileData?.portfolioImage
+                    : chefProfileData?.portfolioImage?.url || ''
+                  setEditedPortfolioImage(portfolioImageUrl)
                   setShowExpertiseDropdown(false)
                   setEditMode(false)
                 }}
@@ -978,6 +1186,8 @@ const ChefDashboardScreen: React.FC = () => {
                 style={styles.editProfileButton}
                 onPress={async () => {
                   try {
+                    console.log('🚀 Updating chef profile...')
+                    
                     // Validate professional summary length
                     if (editedProfessionalSummary.trim().length < 50) {
                       Alert.alert('Validation Error', 'Professional summary must be at least 50 characters')
@@ -988,27 +1198,41 @@ const ChefDashboardScreen: React.FC = () => {
                       return
                     }
                     
-                    // Call backend to update chef profile only
-                    await apiClient.put(
-                      '/chef/profile',
-                      {
-                        chefName: editedChefName.trim(),
-                        expertiseCategory: editedExpertiseCategory,
-                        professionalSummary: editedProfessionalSummary.trim(),
-                        yearsOfExperience: editedYearsOfExperience
-                      },
-                      true
-                    )
+                    const formData = new FormData()
+                    formData.append('chefName', editedChefName.trim())
+                    formData.append('expertiseCategory', editedExpertiseCategory)
+                    formData.append('professionalSummary', editedProfessionalSummary.trim())
+                    formData.append('yearsOfExperience', editedYearsOfExperience.toString())
                     
-                    // Refresh profile to get updated data
+                    // Get current portfolio image URL
+                    const currentPortfolioImage = typeof chefProfileData?.portfolioImage === 'string'
+                      ? chefProfileData?.portfolioImage
+                      : chefProfileData?.portfolioImage?.url
+                    
+                    // Always append portfolio image if it exists and has changed
+                    if (editedPortfolioImage && editedPortfolioImage !== currentPortfolioImage) {
+                      console.log('📸 Uploading new portfolio image...')
+                      const imageUri = editedPortfolioImage
+                      const filename = imageUri.split('/').pop() || 'portfolio.jpg'
+                      const match = /\.(\w+)$/.exec(filename)
+                      const type = match ? `image/${match[1]}` : 'image/jpeg'
+                      
+                      formData.append('portfolioImage', {
+                        uri: imageUri,
+                        name: filename,
+                        type: type,
+                      } as any)
+                    }
+                    
+                    await apiClient.put('/chef/profile', formData, true)
                     await refreshProfile()
                     setShowExpertiseDropdown(false)
                     setEditMode(false)
                     
-                    // Show success message
                     Alert.alert('Success', 'Chef profile updated successfully')
+                    console.log('✅ Chef profile updated successfully')
                   } catch (error: any) {
-                    console.error('Error updating chef profile:', error)
+                    console.error('❌ Error updating chef profile:', error.message)
                     Alert.alert('Error', error.message || 'Failed to update chef profile')
                   }
                 }}
@@ -1029,7 +1253,7 @@ const ChefDashboardScreen: React.FC = () => {
           
           <View style={styles.profileImageContainer}>
             <Image 
-              source={{ uri: editedPortfolioImage || chefProfileData?.portfolioImage || profile?.profileImage?.url || 'https://via.placeholder.com/150' }} 
+              source={{ uri: editedPortfolioImage || (typeof chefProfileData?.portfolioImage === 'string' ? chefProfileData?.portfolioImage : chefProfileData?.portfolioImage?.url) || profile?.profileImage?.url || 'https://via.placeholder.com/150' }} 
               style={styles.profileImage}
             />
             {editMode && (
@@ -2875,6 +3099,27 @@ const ChefDashboardScreen: React.FC = () => {
         onClose={() => setShowPublishErrorDialog(false)}
         confirmText="OK"
       />
+
+      {/* Chef Profile View Modal */}
+      {viewingChefProfile && (
+        <ChefProfileViewScreen
+          visible={!!viewingChefProfile}
+          onClose={() => setViewingChefProfile(null)}
+          chef={viewingChefProfile}
+          onSubscribeToggle={(chefId) => {
+            // TODO: Implement subscribe/unsubscribe logic
+            console.log("Toggle subscription for chef:", chefId)
+          }}
+          onReport={(chefId, reason, description) => {
+            // TODO: Implement report logic
+            console.log("Report chef:", chefId, reason, description)
+          }}
+          onRate={(chefId, rating, feedback) => {
+            // TODO: Implement rating logic
+            console.log("Rate chef:", chefId, rating, feedback)
+          }}
+        />
+      )}
     </LinearGradient>
   )
 }
@@ -3217,8 +3462,8 @@ const RecipeUploadModal: React.FC<{
       setShowErrorDialog(true)
       return
     }
-    if (recipeData.description.trim().length > 70) {
-      setErrorMessage("Recipe description must not exceed 70 characters")
+    if (recipeData.description.trim().length > 150) {
+      setErrorMessage("Recipe description must not exceed 150 characters")
       setShowErrorDialog(true)
       return
     }
@@ -5143,6 +5388,141 @@ const styles = StyleSheet.create({
   },
   chefRibbonContent: {
     paddingRight: 20,
+  },
+  chefSectionContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  chefSectionTabs: {
+    flex: 1,
+    flexDirection: "row",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 16,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  chefSearchButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chefSearchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 20,
+  },
+  chefSearchInputWrapper: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 12,
+    height: 52,
+  },
+  chefSearchIcon: {
+    marginRight: 8,
+  },
+  chefSearchInput: {
+    flex: 1,
+    color: "white",
+    fontSize: 15,
+    fontWeight: "500",
+  },
+  chefSearchClearButton: {
+    padding: 4,
+  },
+  chefSearchCloseButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 12,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chefSectionTab: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+    borderRadius: 12,
+    flex: 1,
+    gap: 6,
+  },
+  activeChefSectionTab: {
+    backgroundColor: "rgba(250, 204, 21, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(250, 204, 21, 0.3)",
+  },
+  chefSectionTabText: {
+    color: "#94A3B8",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  activeChefSectionTabText: {
+    color: "#FACC15",
+    fontWeight: "700",
+  },
+  chefCountBadge: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    minWidth: 24,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  activeChefCountBadge: {
+    backgroundColor: "rgba(250, 204, 21, 0.2)",
+  },
+  chefCountText: {
+    color: "#94A3B8",
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  activeChefCountText: {
+    color: "#FACC15",
+  },
+  subscribedBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(34, 197, 94, 0.9)",
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  emptyChefSection: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  emptyChefText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
+    textAlign: "center",
+  },
+  emptyChefSubtext: {
+    color: "#64748B",
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: "center",
   },
   chefCard: {
     width: 120,

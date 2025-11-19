@@ -1,13 +1,13 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { ReactNode, useEffect, useRef } from "react";
 import {
-    Animated,
-    Dimensions,
-    Modal,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Animated,
+  Dimensions,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 interface CustomDialogProps {

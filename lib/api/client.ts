@@ -163,9 +163,12 @@ class ApiClient {
     }
 
     async put<T>(endpoint: string, data: any, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
+        // Check if data is FormData and handle accordingly
+        const isFormData = typeof FormData !== 'undefined' && data instanceof FormData;
+        
         return this.request<T>(endpoint, {
             method: 'PUT',
-            body: JSON.stringify(data),
+            body: isFormData ? data : JSON.stringify(data),
         }, requireAuth, timeout);
     }
 

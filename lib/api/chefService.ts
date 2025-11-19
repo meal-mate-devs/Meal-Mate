@@ -788,3 +788,264 @@ export async function getChefPublishedCourses(chefId: string): Promise<Course[]>
     throw error;
   }
 }
+
+// ==================== FOOD EXPLORER ENDPOINTS ====================
+
+/**
+ * Get all chefs with filters
+ * GET /api/chef/all
+ */
+export async function getAllChefs(params?: {
+  page?: number;
+  limit?: number;
+  expertise?: string;
+  minRating?: number;
+  sortBy?: 'rating' | 'students' | 'newest';
+}): Promise<{ chefs: any[]; pagination: any }> {
+  try {
+    console.log('👨‍🍳 Fetching all chefs');
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.expertise) queryParams.append('expertise', params.expertise);
+    if (params?.minRating) queryParams.append('minRating', params.minRating.toString());
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
+
+    const response = await apiClient.get<{ chefs: any[]; pagination: any }>(
+      `/chef/all?${queryParams.toString()}`,
+      false,
+      15000
+    );
+    console.log(`✅ Fetched ${response.chefs.length} chefs`);
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to fetch chefs:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get top rated chefs
+ * GET /api/chef/top
+ */
+export async function getTopChefs(limit = 10): Promise<any[]> {
+  try {
+    console.log('⭐ Fetching top chefs');
+    const response = await apiClient.get<{ chefs: any[] }>(
+      `/chef/top?limit=${limit}`,
+      false,
+      15000
+    );
+    console.log(`✅ Fetched ${response.chefs.length} top chefs`);
+    return response.chefs;
+  } catch (error) {
+    console.log('❌ Failed to fetch top chefs:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get chef profile by ID
+ * GET /api/chef/:id
+ */
+export async function getChefById(chefId: string): Promise<any> {
+  try {
+    console.log(`👨‍🍳 Fetching chef profile: ${chefId}`);
+    const response = await apiClient.get<{ chef: any }>(
+      `/chef/${chefId}`,
+      false,
+      15000
+    );
+    console.log('✅ Chef profile fetched');
+    return response.chef;
+  } catch (error) {
+    console.log('❌ Failed to fetch chef profile:', error);
+    throw error;
+  }
+}
+
+/**
+ * Subscribe to a chef
+ * POST /api/chef/:chefId/subscribe
+ */
+export async function subscribeToChef(chefId: string): Promise<{ success: boolean; message: string; subscription: any }> {
+  try {
+    console.log(`💳 Subscribing to chef: ${chefId}`);
+    const response = await apiClient.post<{ success: boolean; message: string; subscription: any }>(
+      `/chef/${chefId}/subscribe`,
+      {},
+      true,
+      15000
+    );
+    console.log('✅ Subscribed successfully');
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to subscribe to chef:', error);
+    throw error;
+  }
+}
+
+/**
+ * Unsubscribe from a chef
+ * POST /api/chef/:chefId/unsubscribe
+ */
+export async function unsubscribeFromChef(chefId: string, reason?: string): Promise<{ success: boolean; message: string }> {
+  try {
+    console.log(`🚫 Unsubscribing from chef: ${chefId}`);
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/chef/${chefId}/unsubscribe`,
+      { reason },
+      true,
+      15000
+    );
+    console.log('✅ Unsubscribed successfully');
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to unsubscribe from chef:', error);
+    throw error;
+  }
+}
+
+/**
+ * Check subscription status
+ * GET /api/chef/:chefId/subscription-status
+ */
+export async function checkSubscriptionStatus(chefId: string): Promise<{ success: boolean; isSubscribed: boolean }> {
+  try {
+    console.log(`🔍 Checking subscription status for chef: ${chefId}`);
+    const response = await apiClient.get<{ success: boolean; isSubscribed: boolean }>(
+      `/chef/${chefId}/subscription-status`,
+      true,
+      15000
+    );
+    console.log(`✅ Subscription status: ${response.isSubscribed ? 'Subscribed' : 'Not subscribed'}`);
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to check subscription status:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get user's subscribed chefs
+ * GET /api/chef/subscriptions/my-subscriptions
+ */
+export async function getMySubscriptions(): Promise<any[]> {
+  try {
+    console.log('📋 Fetching my subscriptions');
+    const response = await apiClient.get<{ subscriptions: any[] }>(
+      '/chef/subscriptions/my-subscriptions',
+      true,
+      15000
+    );
+    console.log(`✅ Fetched ${response.subscriptions.length} subscriptions`);
+    return response.subscriptions;
+  } catch (error) {
+    console.log('❌ Failed to fetch subscriptions:', error);
+    throw error;
+  }
+}
+
+/**
+ * Report chef profile
+ * POST /api/chef/:chefId/report
+ */
+export async function reportChef(
+  chefId: string,
+  reason: string,
+  description?: string
+): Promise<{ success: boolean; message: string }> {
+  try {
+    console.log(`🚨 Reporting chef: ${chefId}`);
+    const response = await apiClient.post<{ success: boolean; message: string }>(
+      `/chef/${chefId}/report`,
+      { reason, description },
+      true,
+      15000
+    );
+    console.log('✅ Report submitted successfully');
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to report chef:', error);
+    throw error;
+  }
+}
+
+/**
+ * Rate chef profile
+ * POST /api/chef/:chefId/rate
+ */
+export async function rateChef(
+  chefId: string,
+  rating: number,
+  feedback?: string
+): Promise<{ success: boolean; message: string; averageRating: number; totalRatings: number }> {
+  try {
+    console.log(`⭐ Rating chef: ${chefId} - ${rating} stars`);
+    const response = await apiClient.post<{ success: boolean; message: string; averageRating: number; totalRatings: number }>(
+      `/chef/${chefId}/rate`,
+      { rating, feedback },
+      true,
+      15000
+    );
+    console.log('✅ Rating submitted successfully');
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to rate chef:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get chef's recipes (with subscription check for premium content)
+ * GET /api/chef/:chefId/recipes
+ */
+export async function getChefRecipes(chefId: string, params?: {
+  page?: number;
+  limit?: number;
+}): Promise<{ recipes: Recipe[]; pagination: any; isSubscribed: boolean }> {
+  try {
+    console.log(`📖 Fetching recipes from chef: ${chefId}`);
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await apiClient.get<{ recipes: Recipe[]; pagination: any; isSubscribed: boolean }>(
+      `/chef/${chefId}/recipes?${queryParams.toString()}`,
+      false,
+      15000
+    );
+    console.log(`✅ Fetched ${response.recipes.length} recipes`);
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to fetch chef recipes:', error);
+    throw error;
+  }
+}
+
+/**
+ * Get chef's courses (with subscription check for premium content)
+ * GET /api/chef/:chefId/courses
+ */
+export async function getChefCourses(chefId: string, params?: {
+  page?: number;
+  limit?: number;
+}): Promise<{ courses: Course[]; pagination: any; isSubscribed: boolean }> {
+  try {
+    console.log(`📚 Fetching courses from chef: ${chefId}`);
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await apiClient.get<{ courses: Course[]; pagination: any; isSubscribed: boolean }>(
+      `/chef/${chefId}/courses?${queryParams.toString()}`,
+      false,
+      15000
+    );
+    console.log(`✅ Fetched ${response.courses.length} courses`);
+    return response;
+  } catch (error) {
+    console.log('❌ Failed to fetch chef courses:', error);
+    throw error;
+  }
+}
