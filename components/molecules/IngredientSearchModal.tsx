@@ -1,12 +1,11 @@
-import { useAuthContext } from "@/context/authContext";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { Alert, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { ingredientDetectionService } from "../../lib/services/ingredientDetectionService";
 import { IngredientWithConfidence } from "../../lib/types/ingredientDetection";
+import Dialog from "../atoms/Dialog";
 
 interface IngredientSearchModalProps {
   visible: boolean;
@@ -26,9 +25,6 @@ export default function IngredientSearchModal({
   onClose,
   onIngredientsSelected
 }: IngredientSearchModalProps) {
-  const { profile } = useAuthContext();
-  const router = useRouter();
-  const isPro = profile?.isPro || false;
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
@@ -118,23 +114,6 @@ export default function IngredientSearchModal({
   };
 
   const handleCamera = async () => {
-    if (!isPro) {
-      Alert.alert(
-        "Premium Feature",
-        "Camera scanning is a premium feature. Upgrade to Premium to scan ingredients from photos!",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Upgrade", onPress: () => {
-              onClose();
-              router.push("/(protected)/(tabs)/(hidden)/settings/subscription");
-            }
-          }
-        ]
-      );
-      return;
-    }
-
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
@@ -160,23 +139,6 @@ export default function IngredientSearchModal({
   };
 
   const handleGallery = async () => {
-    if (!isPro) {
-      Alert.alert(
-        "Premium Feature",
-        "Gallery access is a premium feature. Upgrade to Premium to scan ingredients from photos!",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Upgrade", onPress: () => {
-              onClose();
-              router.push("/(protected)/(tabs)/(hidden)/settings/subscription");
-            }
-          }
-        ]
-      );
-      return;
-    }
-
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -249,12 +211,12 @@ export default function IngredientSearchModal({
       }
     } catch (error) {
       console.log("Error processing image:", error);
-
+      
       // Check for timeout/network errors
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : "Failed to process image.";
-
+      
       if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout')) {
         showCustomDialog('error', 'Request Failed', 'Unable to analyze the image. Please check your connection and try again.');
       } else {
@@ -375,39 +337,25 @@ export default function IngredientSearchModal({
                 </Text>
                 <View style={styles.optionButtonsContainer}>
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton, !isPro && { opacity: 0.6 }]}
+                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
                     onPress={handleCamera}
                     disabled={showManualInput}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(250, 204, 21, 0.2)" : "rgba(107, 114, 128, 0.2)" }]}>
-                      <Ionicons name="camera" size={22} color={isPro ? "#FACC15" : "#6B7280"} />
+                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(250, 204, 21, 0.2)" }]}>
+                      <Ionicons name="camera" size={22} color="#FACC15" />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={[styles.optionText, showManualInput && styles.disabledText, !isPro && { color: '#9CA3AF' }]}>Camera</Text>
-                      {!isPro && (
-                        <View style={{ backgroundColor: '#FACC15', borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1 }}>
-                          <Text style={{ color: '#000', fontSize: 8, fontWeight: 'bold' }}>PRO</Text>
-                        </View>
-                      )}
-                    </View>
+                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Camera</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton, !isPro && { opacity: 0.6 }]}
+                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
                     onPress={handleGallery}
                     disabled={showManualInput}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(59, 130, 246, 0.2)" : "rgba(107, 114, 128, 0.2)" }]}>
-                      <Ionicons name="images" size={22} color={isPro ? "#3B82F6" : "#6B7280"} />
+                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(59, 130, 246, 0.2)" }]}>
+                      <Ionicons name="images" size={22} color="#3B82F6" />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <Text style={[styles.optionText, showManualInput && styles.disabledText, !isPro && { color: '#9CA3AF' }]}>Gallery</Text>
-                      {!isPro && (
-                        <View style={{ backgroundColor: '#FACC15', borderRadius: 6, paddingHorizontal: 4, paddingVertical: 1 }}>
-                          <Text style={{ color: '#000', fontSize: 8, fontWeight: 'bold' }}>PRO</Text>
-                        </View>
-                      )}
-                    </View>
+                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Gallery</Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -462,7 +410,15 @@ export default function IngredientSearchModal({
       </View>
     </Modal>
   )
-  {/* Custom Dialog */ }
+    {/* Custom Dialog */}
+    <Dialog
+      visible={showDialog}
+      type={dialogType}
+      title={dialogTitle}
+      message={dialogMessage}
+      onClose={() => setShowDialog(false)}
+      confirmText="OK"
+    />
 }
 
 const styles = StyleSheet.create({
