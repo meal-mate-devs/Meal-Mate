@@ -40,6 +40,17 @@ type Profile = {
   isProfileComplete: boolean;
   isChef: boolean;
   isPro: boolean;
+  bio?: string;
+  chefProfile?: {
+    chefName: string;
+    expertiseCategory: string;
+    professionalSummary: string;
+    yearsOfExperience: number;
+    portfolioImage?: string;
+    registeredAt?: Date;
+    freeRecipesCount?: number;
+    premiumRecipesCount?: number;
+  };
 };
 
 type AuthContextType = {

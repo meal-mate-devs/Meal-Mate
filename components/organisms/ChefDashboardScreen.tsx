@@ -38,6 +38,9 @@ interface Recipe {
   image: string
   isPremium: boolean
   isPublished?: boolean
+  isRestricted?: boolean
+  isBanned?: boolean
+  totalReports?: number
   difficulty: "Easy" | "Medium" | "Hard"
   cookTime: string
   rating: number
@@ -61,13 +64,20 @@ interface Course {
   id: string
   title: string
   description: string
-  duration: string
+  durationValue?: number
+  durationUnit?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months'
+  duration?: string // Legacy/computed field for display
+  totalDuration?: number // Total duration in minutes
   skillLevel: "Beginner" | "Intermediate" | "Advanced"
   category: string
-  subscribers: number
-  rating: number
+  subscribers?: number // Legacy field
+  totalReports?: number
+  rating?: number
+  averageRating?: number // Current field for average rating
   isPremium: boolean
   isPublished?: boolean
+  isRestricted?: boolean
+  isBanned?: boolean
   chefId: string
   chefName: string
   image: string
@@ -115,6 +125,37 @@ const ChefDashboardScreen: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<"recipes" | "courses">("recipes")
+  const [editMode, setEditMode] = useState(false)
+  
+  // Chef profile editing states (separate from user profile)
+  const [editedChefName, setEditedChefName] = useState('')
+  const [editedExpertiseCategory, setEditedExpertiseCategory] = useState('')
+  const [editedProfessionalSummary, setEditedProfessionalSummary] = useState('')
+  const [editedYearsOfExperience, setEditedYearsOfExperience] = useState(0)
+  const [editedPortfolioImage, setEditedPortfolioImage] = useState('')
+  const [showExpertiseDropdown, setShowExpertiseDropdown] = useState(false)
+  
+  // Chef profile data from backend
+  const [chefProfileData, setChefProfileData] = useState<any>(null)
+  
+  const EXPERTISE_CATEGORIES = [
+    "Baking", "Desi Cooking", "Knife Skills", "Healthy Cooking",
+    "Continental", "Beginner Fundamentals", "Italian Cuisine",
+    "Asian Fusion", "Desserts & Pastries", "Grilling & BBQ",
+    "Vegan & Vegetarian", "Other"
+  ]
+  
+  // Update chef editing values when profile changes
+  React.useEffect(() => {
+    if (profile?.chefProfile) {
+      setChefProfileData(profile.chefProfile)
+      setEditedChefName(profile.chefProfile.chefName || '')
+      setEditedExpertiseCategory(profile.chefProfile.expertiseCategory || '')
+      setEditedProfessionalSummary(profile.chefProfile.professionalSummary || '')
+      setEditedYearsOfExperience(profile.chefProfile.yearsOfExperience || 0)
+      setEditedPortfolioImage(profile.chefProfile.portfolioImage || '')
+    }
+  }, [profile])
   
   // Edit mode states
   const [editingRecipe, setEditingRecipe] = useState<any>(null)
@@ -124,6 +165,13 @@ const ChefDashboardScreen: React.FC = () => {
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
   const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
+  
+  // Course detail modal state
+  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
+  const [expandedCourseData, setExpandedCourseData] = useState<any>(null)
+  const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(false)
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
+  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
   
   // Publish/Unpublish state
   const [isPublishing, setIsPublishing] = useState(false)
@@ -140,7 +188,8 @@ const ChefDashboardScreen: React.FC = () => {
   const [regErrorMessage, setRegErrorMessage] = useState("")
   
   // Chef dashboard toggle state
-  const [chefDashboardTab, setChefDashboardTab] = useState<"feedback" | "content">("content")
+  const [showProfileModal, setShowProfileModal] = useState(false)
+  const [managementTab, setManagementTab] = useState<"recipes" | "courses">("recipes")
   
   // Check if user should see chef registration
   useEffect(() => {
@@ -156,9 +205,32 @@ const ChefDashboardScreen: React.FC = () => {
   const [userCourses, setUserCourses] = useState<Course[]>([])
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(false)
   const [isLoadingCourses, setIsLoadingCourses] = useState(false)
-  
-  // Management tab state
-  const [managementTab, setManagementTab] = useState<"recipes" | "courses">("recipes")
+
+  // Toggle expanded description
+  const toggleDescription = (unitId: string) => {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(unitId)) {
+        newSet.delete(unitId)
+      } else {
+        newSet.add(unitId)
+      }
+      return newSet
+    })
+  }
+
+  // Toggle expanded unit
+  const toggleUnit = (unitId: string) => {
+    setExpandedUnits(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(unitId)) {
+        newSet.delete(unitId)
+      } else {
+        newSet.add(unitId)
+      }
+      return newSet
+    })
+  }
 
   // Fetch chef's recipes and courses from backend
   useEffect(() => {
@@ -209,16 +281,20 @@ const ChefDashboardScreen: React.FC = () => {
         id: c._id,
         title: c.title,
         description: c.description,
+        durationValue: c.durationValue,
+        durationUnit: c.durationUnit,
         duration: c.duration,
+        totalDuration: c.totalDuration,
         skillLevel: c.skillLevel as "Beginner" | "Intermediate" | "Advanced",
         category: c.category,
-        subscribers: c.enrolledStudents || 0,
         rating: c.averageRating || 0,
+        averageRating: c.averageRating,
         isPremium: c.isPremium,
         isPublished: c.isPublished,
         chefId: c.authorId,
         chefName: "You",
         image: c.coverImage || "https://via.placeholder.com/400x300",
+        totalReports: c.totalReports,
         units: c.units.map(u => ({
           id: u._id,
           title: u.title,
@@ -439,13 +515,31 @@ const ChefDashboardScreen: React.FC = () => {
     },
   ])
 
-  const [chefStats] = useState({
-    totalRecipes: 24,
-    premiumRecipes: 8,
-    totalsubscribers: 1250,
-    averageRating: 4.8,
-    monthlyEarnings: 3450,
-  })
+  // Compute real chef stats from fetched data
+  const chefStats = React.useMemo(() => {
+    const totalRecipes = userRecipes.length;
+    const totalCourses = userCourses.length;
+    
+    // Calculate cumulative average rating from both recipes and courses
+    const allRatings = [
+      ...userRecipes.map(r => r.rating || 0),
+      ...userCourses.map(c => c.rating || c.averageRating || 0)
+    ].filter(rating => rating > 0);
+    
+    const averageRating = allRatings.length > 0 
+      ? (allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length).toFixed(1)
+      : '0.0';
+    
+    // Placeholder for subscribers - backend doesn't provide this yet
+    const totalSubscribers = 0;
+    
+    return {
+      totalRecipes,
+      totalCourses,
+      totalSubscribers,
+      averageRating,
+    };
+  }, [userRecipes, userCourses]);
 
   // Animation effects
   useEffect(() => {
@@ -561,36 +655,50 @@ const ChefDashboardScreen: React.FC = () => {
     </View>
   )
 
-  const renderChefDashboardTabs = () => (
+  const renderContentSwitch = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[styles.tabButton, chefDashboardTab === "content" && styles.activeTab]}
-        onPress={() => setChefDashboardTab("content")}
+        style={[styles.tabButton, activeTab === "recipes" && styles.activeTab]}
+        onPress={() => setActiveTab("recipes")}
         activeOpacity={0.8}
       >
-        <Ionicons
-          name="create-outline"
-          size={20}
-          color={chefDashboardTab === "content" ? "#22C55E" : "#94A3B8"}
+        <Ionicons 
+          name="restaurant-outline" 
+          size={20} 
+          color={activeTab === "recipes" ? "#22C55E" : "#94A3B8"} 
         />
-        <Text style={[styles.tabText, chefDashboardTab === "content" && { color: "#22C55E", fontWeight: "700" }]}>
-          My Content
+        <Text style={[styles.tabText, activeTab === "recipes" && styles.activeTabText]}>
+          Recipes
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, chefDashboardTab === "feedback" && styles.activeTab]}
-        onPress={() => setChefDashboardTab("feedback")}
+        style={[styles.tabButton, activeTab === "courses" && styles.activeTab ]}
+        onPress={() => setActiveTab("courses")}
         activeOpacity={0.8}
       >
-        <Ionicons
-          name="chatbubble-outline"
-          size={20}
-          color={chefDashboardTab === "feedback" ? "#22C55E" : "#94A3B8"}
+        <Ionicons 
+          name="school-outline" 
+          size={20} 
+          color={activeTab === "courses" ? "#22C55E" : "#94A3B8"} 
         />
-        <Text style={[styles.tabText, chefDashboardTab === "feedback" && { color: "#22C55E", fontWeight: "700" }]}>
-          User Feedback
+        <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText ]}>
+          Courses
         </Text>
+      </TouchableOpacity>
+    </View>
+  )
+
+  const renderProfileButton = () => (
+    <View style={styles.profileButtonContainer}>
+      <TouchableOpacity
+        style={styles.profileButton}
+        onPress={() => setShowProfileModal(true)}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="person-circle-outline" size={22} color="#06B6D4" />
+        <Text style={styles.profileButtonText}>View My Profile</Text>
+        <Ionicons name="chevron-forward" size={20} color="#06B6D4" />
       </TouchableOpacity>
     </View>
   )
@@ -609,21 +717,11 @@ const ChefDashboardScreen: React.FC = () => {
       );
     } else {
       sections.push(
-        { type: 'chefStats', data: [{}] },
+        { type: 'profileButton', data: [{}] },
         { type: 'chefActions', data: [{}] },
-        { type: 'chefDashboardTabs', data: [{}] },
+        { type: 'contentSwitch', data: [{}] },
+        { type: 'contentManagement', data: [{}] }
       );
-      
-      // Conditionally add content based on selected chef dashboard tab
-      if (chefDashboardTab === "feedback") {
-        sections.push(
-          { type: 'feedbackDropdown', data: [{}] }
-        );
-      } else {
-        sections.push(
-          { type: 'contentManagement', data: [{}] }
-        );
-      }
     }
 
     return sections;
@@ -639,16 +737,10 @@ const ChefDashboardScreen: React.FC = () => {
         return renderChefRibbon();
       case 'foodExplorerTabs':
         return renderFoodExplorerTabs();
-      case 'latestRecipes':
-        return renderLatestRecipes();
       case 'latestCourses':
         return renderLatestCourses();
-      case 'chefStats':
-        return renderChefStats();
-      case 'chefDashboardTabs':
-        return renderChefDashboardTabs();
-      case 'feedbackDropdown':
-        return renderFeedbackDropdown();
+      case 'profileButton':
+        return renderProfileButton();
       case 'chefActions':
         return renderChefActions();
       case 'contentManagement':
@@ -835,51 +927,440 @@ const ChefDashboardScreen: React.FC = () => {
     )
   }
 
-  const renderChefStats = () => (
-    <View style={styles.statsContainer}>
-      <View style={styles.statsOverviewCard}>
-        <View style={styles.statsOverviewRow}>
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewStatIconContainer, { backgroundColor: 'rgba(34, 197, 94, 0.1)' }]}>
-              <Ionicons name="restaurant-outline" size={16} color="#22C55E" />
+  const handlePortfolioImagePicker = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      })
+
+      if (!result.canceled && result.assets[0]) {
+        setEditedPortfolioImage(result.assets[0].uri)
+      }
+    } catch (error) {
+      console.error('Error picking image:', error)
+      Alert.alert('Error', 'Failed to pick image')
+    }
+  }
+
+  const renderChefProfile = () => {
+    // Filter restricted, and banned content
+    const restrictedRecipes = userRecipes.filter(r => r.isRestricted);
+    const restrictedCourses = userCourses.filter(c => c.isRestricted);
+    const bannedRecipes = userRecipes.filter(r => r.isBanned);
+    const bannedCourses = userCourses.filter(c => c.isBanned);
+
+    return (
+      <View style={styles.profileContainer}>
+        {/* Chef Header Card */}
+        <View style={[styles.profileHeaderCard, editMode && { paddingTop: 50 }]}>
+          {/* Edit/Save/Cancel Buttons */}
+          {editMode ? (
+            <View style={styles.editButtonsContainer}>
+              <TouchableOpacity 
+                style={[styles.editProfileButton, styles.cancelButton]}
+                onPress={() => {
+                  // Cancel - restore original chef profile values
+                  setEditedChefName(chefProfileData?.chefName || '')
+                  setEditedExpertiseCategory(chefProfileData?.expertiseCategory || '')
+                  setEditedProfessionalSummary(chefProfileData?.professionalSummary || '')
+                  setEditedYearsOfExperience(chefProfileData?.yearsOfExperience || 0)
+                  setEditedPortfolioImage(chefProfileData?.portfolioImage || '')
+                  setShowExpertiseDropdown(false)
+                  setEditMode(false)
+                }}
+              >
+                <Text style={[styles.editProfileButtonText, styles.cancelButtonText]}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.editProfileButton}
+                onPress={async () => {
+                  try {
+                    // Validate professional summary length
+                    if (editedProfessionalSummary.trim().length < 50) {
+                      Alert.alert('Validation Error', 'Professional summary must be at least 50 characters')
+                      return
+                    }
+                    if (editedProfessionalSummary.trim().length > 500) {
+                      Alert.alert('Validation Error', 'Professional summary must not exceed 500 characters')
+                      return
+                    }
+                    
+                    // Call backend to update chef profile only
+                    await apiClient.put(
+                      '/chef/profile',
+                      {
+                        chefName: editedChefName.trim(),
+                        expertiseCategory: editedExpertiseCategory,
+                        professionalSummary: editedProfessionalSummary.trim(),
+                        yearsOfExperience: editedYearsOfExperience
+                      },
+                      true
+                    )
+                    
+                    // Refresh profile to get updated data
+                    await refreshProfile()
+                    setShowExpertiseDropdown(false)
+                    setEditMode(false)
+                    
+                    // Show success message
+                    Alert.alert('Success', 'Chef profile updated successfully')
+                  } catch (error: any) {
+                    console.error('Error updating chef profile:', error)
+                    Alert.alert('Error', error.message || 'Failed to update chef profile')
+                  }
+                }}
+              >
+                <Text style={styles.editProfileButtonText}>Save</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={styles.overviewStatValue}>{chefStats.totalRecipes}</Text>
-            <Text style={styles.overviewStatLabel}>Recipes</Text>
+          ) : (
+            <View style={styles.editButtonsContainer}>
+              <TouchableOpacity 
+                style={styles.editProfileButton}
+                onPress={() => setEditMode(true)}
+              >
+                <Text style={styles.editProfileButtonText}>Edit</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
+          <View style={styles.profileImageContainer}>
+            <Image 
+              source={{ uri: editedPortfolioImage || chefProfileData?.portfolioImage || profile?.profileImage?.url || 'https://via.placeholder.com/150' }} 
+              style={styles.profileImage}
+            />
+            {editMode && (
+              <TouchableOpacity 
+                style={styles.editProfileImageButton}
+                onPress={handlePortfolioImagePicker}
+              >
+                <Ionicons name="camera" size={18} color="white" />
+              </TouchableOpacity>
+            )}
           </View>
-
-          <View style={styles.overviewStatDivider} />
-
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewStatIconContainer, { backgroundColor: 'rgba(250, 204, 21, 0.1)' }]}>
-              <Ionicons name="diamond" size={16} color="#FACC15" />
+          
+          <View style={styles.profileHeaderInfo}>
+            {editMode ? (
+              <TextInput
+                style={styles.profileChefName}
+                value={editedChefName}
+                onChangeText={setEditedChefName}
+                placeholder="Chef Name"
+                placeholderTextColor="#94A3B8"
+              />
+            ) : (
+              <Text style={styles.profileChefName}>
+                {chefProfileData?.chefName || profile?.userName || 'Chef Name'}
+              </Text>
+            )}
+            
+            <View style={styles.profileBadgesRow}>
+              {editMode ? (
+                <View style={{ width: '100%', marginTop: 8 }}>
+                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>Expertise Category</Text>
+                  <TouchableOpacity
+                    style={[styles.profileBadge, { 
+                      backgroundColor: 'rgba(139, 92, 246, 0.15)', 
+                      borderColor: 'rgba(139, 92, 246, 0.3)',
+                      paddingHorizontal: 12,
+                      paddingVertical: 8
+                    }]}
+                    onPress={() => setShowExpertiseDropdown(!showExpertiseDropdown)}
+                  >
+                    <Ionicons name="school" size={14} color="#8B5CF6" />
+                    <Text style={[styles.profileBadgeText, { color: '#8B5CF6', flex: 1 }]}>
+                      {editedExpertiseCategory || 'Select expertise'}
+                    </Text>
+                    <Ionicons name={showExpertiseDropdown ? "chevron-up" : "chevron-down"} size={16} color="#8B5CF6" />
+                  </TouchableOpacity>
+                  {showExpertiseDropdown && (
+                    <View style={[styles.dropdown, { marginTop: 4 }]}>
+                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                        {EXPERTISE_CATEGORIES.map((category) => (
+                          <TouchableOpacity
+                            key={category}
+                            style={styles.dropdownItem}
+                            onPress={() => {
+                              setEditedExpertiseCategory(category)
+                              setShowExpertiseDropdown(false)
+                            }}
+                          >
+                            <Text style={styles.dropdownItemText}>{category}</Text>
+                            {editedExpertiseCategory === category && (
+                              <Ionicons name="checkmark-circle" size={20} color="#8B5CF6" />
+                            )}
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <>
+                  {chefProfileData?.expertiseCategory && (
+                    <View style={[styles.profileBadge, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}>
+                      <Ionicons name="school" size={14} color="#8B5CF6" />
+                      <Text style={[styles.profileBadgeText, { color: '#8B5CF6' }]}>{chefProfileData.expertiseCategory}</Text>
+                    </View>
+                  )}
+                </>
+              )}
+              
+              {editMode ? (
+                <View style={{ width: '100%', marginTop: 8 }}>
+                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>Years of Experience</Text>
+                  <View style={[styles.profileBadge, { 
+                    backgroundColor: 'rgba(59, 130, 246, 0.15)', 
+                    borderColor: 'rgba(59, 130, 246, 0.3)',
+                    paddingHorizontal: 12,
+                    paddingVertical: 8
+                  }]}>
+                    <Ionicons name="time" size={14} color="#3B82F6" />
+                    <TextInput
+                      style={[styles.profileBadgeText, { color: '#3B82F6', flex: 1, padding: 0 }]}
+                      value={editedYearsOfExperience > 0 ? editedYearsOfExperience.toString() : ''}
+                      onChangeText={(text) => {
+                        const num = parseInt(text) || 0
+                        setEditedYearsOfExperience(Math.max(0, Math.min(100, num)))
+                      }}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="#94A3B8"
+                    />
+                    <Text style={[styles.profileBadgeText, { color: '#3B82F6' }]}>years</Text>
+                  </View>
+                </View>
+              ) : (
+                <>
+                  {chefProfileData?.yearsOfExperience !== undefined && (
+                    <View style={[styles.profileBadge, { backgroundColor: 'rgba(59, 130, 246, 0.15)', borderColor: 'rgba(59, 130, 246, 0.3)' }]}>
+                      <Ionicons name="time" size={14} color="#3B82F6" />
+                      <Text style={[styles.profileBadgeText, { color: '#3B82F6' }]}>{chefProfileData.yearsOfExperience}+ years</Text>
+                    </View>
+                  )}
+                </>
+              )}
+              
+              {!editMode && profile?.isPro && (
+                <View style={[styles.profileBadge, { backgroundColor: 'rgba(250, 204, 21, 0.15)', borderColor: 'rgba(250, 204, 21, 0.3)' }]}>
+                  <Ionicons name="diamond" size={14} color="#FACC15" />
+                  <Text style={[styles.profileBadgeText, { color: '#FACC15' }]}>PRO</Text>
+                </View>
+              )}
             </View>
-            <Text style={styles.overviewStatValue}>{chefStats.premiumRecipes}</Text>
-            <Text style={styles.overviewStatLabel}>Premium</Text>
-          </View>
-
-          <View style={styles.overviewStatDivider} />
-
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewStatIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.1)' }]}>
-              <Ionicons name="people-outline" size={16} color="#3B82F6" />
-            </View>
-            <Text style={styles.overviewStatValue}>{chefStats.totalsubscribers}</Text>
-            <Text style={styles.overviewStatLabel}>Subscriber</Text>
-          </View>
-
-          <View style={styles.overviewStatDivider} />
-
-          <View style={styles.overviewStatItem}>
-            <View style={[styles.overviewStatIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.1)' }]}>
-              <Ionicons name="star" size={16} color="#F59E0B" />
-            </View>
-            <Text style={styles.overviewStatValue}>{chefStats.averageRating}</Text>
-            <Text style={styles.overviewStatLabel}>Rating</Text>
           </View>
         </View>
+
+        {/* Chef Professional Summary */}
+        <View style={styles.chefBioCard}>
+          {editMode ? (
+            <>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={[styles.profileSectionTitle, { fontSize: 14, marginBottom: 0 }]}>Professional Summary</Text>
+                <Text style={[styles.profileBadgeText, { color: '#94A3B8' }]}>
+                  {editedProfessionalSummary.length}/500
+                </Text>
+              </View>
+              <TextInput
+                style={[styles.chefBioText, { minHeight: 100 }]}
+                value={editedProfessionalSummary}
+                onChangeText={(text) => {
+                  if (text.length <= 500) {
+                    setEditedProfessionalSummary(text)
+                  }
+                }}
+                placeholder="Describe your teaching style and what makes you unique (50-500 characters)"
+                placeholderTextColor="#94A3B8"
+                multiline
+                textAlignVertical="top"
+              />
+            </>
+          ) : (
+            <Text style={styles.chefBioText}>
+              {chefProfileData?.professionalSummary || 'No professional summary available'}
+            </Text>
+          )}
+        </View>
+
+        {/* Detailed Stats Grid */}
+        <View style={styles.detailedStatsCard}>
+          <Text style={styles.profileSectionTitle}>Performance Statistics</Text>
+          
+          <View style={styles.profileStatsGrid}>
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+                <Ionicons name="restaurant-outline" size={15} color="#22C55E" />
+              </View>
+              <Text style={styles.statGridValue}>{chefStats.totalRecipes}</Text>
+              <Text style={styles.statGridLabel}>Total Recipes</Text>
+            </View>
+
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(139, 92, 246, 0.15)' }]}>
+                <Ionicons name="book-outline" size={15} color="#8B5CF6" />
+              </View>
+              <Text style={styles.statGridValue}>{chefStats.totalCourses}</Text>
+              <Text style={styles.statGridLabel}>Total Courses</Text>
+            </View>
+
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                <Ionicons name="people-outline" size={15} color="#3B82F6" />
+              </View>
+              <Text style={styles.statGridValue}>{chefStats.totalSubscribers}</Text>
+              <Text style={styles.statGridLabel}>Subscribers</Text>
+            </View>
+
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(245, 158, 11, 0.15)' }]}>
+                <Ionicons name="star" size={15} color="#F59E0B" />
+              </View>
+              <Text style={styles.statGridValue}>{chefStats.averageRating}</Text>
+              <Text style={styles.statGridLabel}>Avg Rating</Text>
+            </View>
+
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                <Ionicons name="flag-outline" size={15} color="#EF4444" />
+              </View>
+              <Text style={styles.statGridValue}>
+                {(userRecipes.reduce((sum, r) => sum + (r.totalReports || 0), 0) + 
+                  userCourses.reduce((sum, c) => sum + (c.totalReports || 0), 0))}
+              </Text>
+              <Text style={styles.statGridLabel}>Total Reports</Text>
+            </View>
+
+            <View style={styles.statGridItem}>
+              <View style={[styles.statIconCircle, { backgroundColor: 'rgba(236, 72, 153, 0.15)' }]}>
+                <Ionicons name="heart-outline" size={15} color="#EC4899" />
+              </View>
+              <Text style={styles.statGridValue}>
+                {userRecipes.filter(r => r.isPremium).length + userCourses.filter(c => c.isPremium).length}
+              </Text>
+              <Text style={styles.statGridLabel}>Premium Items</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Restricted Content Section */}
+        <View style={styles.contentSectionCard}>
+          <View style={styles.sectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="warning-outline" size={20} color="#F97316" />
+              <Text style={[styles.profileSectionTitle, { marginBottom: 0 }]}>Restricted Content</Text>
+            </View>
+            <View style={[styles.countBadge, { backgroundColor: 'rgba(249, 115, 22, 0.15)' }]}>
+              <Text style={[styles.countBadgeText, { color: '#F97316' }]}>
+                {restrictedRecipes.length + restrictedCourses.length}
+              </Text>
+            </View>
+          </View>
+
+          {restrictedRecipes.length === 0 && restrictedCourses.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-circle-outline" size={48} color="#22C55E" />
+              <Text style={styles.emptyStateText}>No restricted content</Text>
+              <Text style={styles.emptyStateSubtext}>Keep up the great work!</Text>
+            </View>
+          ) : (
+            <>
+              {restrictedRecipes.length > 0 && (
+                <View style={styles.contentSubSection}>
+                  <Text style={styles.subSectionTitle}>Recipes ({restrictedRecipes.length})</Text>
+                  {restrictedRecipes.map(recipe => (
+                    <View key={recipe.id} style={styles.contentItem}>
+                      <Image source={{ uri: recipe.image }} style={styles.contentItemImage} />
+                      <View style={styles.contentItemInfo}>
+                        <Text style={styles.contentItemTitle} numberOfLines={1}>{recipe.title}</Text>
+                        <Text style={[styles.contentItemMeta, { color: '#F97316' }]}>Under Review</Text>
+                      </View>
+                      <Ionicons name="alert-circle" size={20} color="#F97316" />
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {restrictedCourses.length > 0 && (
+                <View style={[styles.contentSubSection, restrictedRecipes.length > 0 && { marginTop: 16 }]}>
+                  <Text style={styles.subSectionTitle}>Courses ({restrictedCourses.length})</Text>
+                  {restrictedCourses.map(course => (
+                    <View key={course.id} style={styles.contentItem}>
+                      <Image source={{ uri: course.image }} style={styles.contentItemImage} />
+                      <View style={styles.contentItemInfo}>
+                        <Text style={styles.contentItemTitle} numberOfLines={1}>{course.title}</Text>
+                        <Text style={[styles.contentItemMeta, { color: '#F97316' }]}>Under Review</Text>
+                      </View>
+                      <Ionicons name="alert-circle" size={20} color="#F97316" />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
+
+        {/* Banned Content Section */}
+        <View style={[styles.contentSectionCard, { marginBottom: 24 }]}>
+          <View style={styles.sectionHeader}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="ban-outline" size={20} color="#EF4444" />
+              <Text style={[styles.profileSectionTitle, { marginBottom: 0 }]}>Banned Content</Text>
+            </View>
+            <View style={[styles.countBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+              <Text style={[styles.countBadgeText, { color: '#EF4444' }]}>
+                {bannedRecipes.length + bannedCourses.length}
+              </Text>
+            </View>
+          </View>
+
+          {bannedRecipes.length === 0 && bannedCourses.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="checkmark-circle-outline" size={48} color="#22C55E" />
+              <Text style={styles.emptyStateText}>No banned content</Text>
+              <Text style={styles.emptyStateSubtext}>All your content is in good standing</Text>
+            </View>
+          ) : (
+            <>
+              {bannedRecipes.length > 0 && (
+                <View style={styles.contentSubSection}>
+                  <Text style={styles.subSectionTitle}>Recipes ({bannedRecipes.length})</Text>
+                  {bannedRecipes.map(recipe => (
+                    <View key={recipe.id} style={styles.contentItem}>
+                      <Image source={{ uri: recipe.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
+                      <View style={styles.contentItemInfo}>
+                        <Text style={[styles.contentItemTitle, { color: '#94A3B8' }]} numberOfLines={1}>{recipe.title}</Text>
+                        <Text style={[styles.contentItemMeta, { color: '#EF4444' }]}>Permanently Banned</Text>
+                      </View>
+                      <Ionicons name="close-circle" size={20} color="#EF4444" />
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {bannedCourses.length > 0 && (
+                <View style={[styles.contentSubSection, bannedRecipes.length > 0 && { marginTop: 16 }]}>
+                  <Text style={styles.subSectionTitle}>Courses ({bannedCourses.length})</Text>
+                  {bannedCourses.map(course => (
+                    <View key={course.id} style={styles.contentItem}>
+                      <Image source={{ uri: course.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
+                      <View style={styles.contentItemInfo}>
+                        <Text style={[styles.contentItemTitle, { color: '#94A3B8' }]} numberOfLines={1}>{course.title}</Text>
+                        <Text style={[styles.contentItemMeta, { color: '#EF4444' }]}>Permanently Banned</Text>
+                      </View>
+                      <Ionicons name="close-circle" size={20} color="#EF4444" />
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+        </View>
       </View>
-    </View>
-  )
+    );
+  };
 
   const renderFeedbackDropdown = () => (
     <View style={styles.feedbackContainer}>
@@ -1057,7 +1538,12 @@ const ChefDashboardScreen: React.FC = () => {
   )
 
   const renderManagementCourseCard = (course: Course, index: number) => (
-    <View key={course.id} style={styles.managementCard}>
+    <TouchableOpacity 
+      key={course.id} 
+      style={styles.managementCard}
+      onPress={() => handleViewCourse(course)}
+      activeOpacity={0.7}
+    >
       <Image source={{ uri: course.image }} style={styles.managementCardImage} />
       <View style={styles.managementCardContent}>
         <View style={styles.managementCardHeader}>
@@ -1089,15 +1575,19 @@ const ChefDashboardScreen: React.FC = () => {
         <View style={styles.managementCardMeta}>
           <View style={styles.metaItem}>
             <Ionicons name="time" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{course.duration}</Text>
+            <Text style={styles.metaText}>
+              {course.durationValue && course.durationUnit 
+                ? `${course.durationValue} ${course.durationUnit}` 
+                : course.totalDuration || course.duration || 'N/A'}
+            </Text>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{course.rating}</Text>
+            <Text style={styles.metaText}>{course.rating || course.averageRating || '0'}</Text>
           </View>
           <View style={styles.metaItem}>
-            <Ionicons name="people" size={14} color="#64748B" />
-            <Text style={styles.metaText}>{course.subscribers} subscribers</Text>
+            <Ionicons name="book-outline" size={14} color="#64748B" />
+            <Text style={styles.metaText}>{course.units?.length || 0} units</Text>
           </View>
         </View>
         
@@ -1108,21 +1598,27 @@ const ChefDashboardScreen: React.FC = () => {
         <View style={styles.managementCardActions}>
           <TouchableOpacity 
             style={styles.managementActionButton}
-            onPress={() => handleEditCourse(course)}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleEditCourse(course);
+            }}
           >
             <Ionicons name="create" size={16} color="#3B82F6" />
             <Text style={styles.managementActionText}>Edit</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.managementActionButton, styles.deleteButton]}
-            onPress={() => handleDeleteCourse(course.id)}
+            onPress={(e) => {
+              e.stopPropagation();
+              handleDeleteCourse(course.id);
+            }}
           >
             <Ionicons name="trash" size={16} color="#EF4444" />
             <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   )
 
   // Handler functions for view, edit and delete
@@ -1270,6 +1766,66 @@ const ChefDashboardScreen: React.FC = () => {
     }
   }
 
+  const handleToggleCoursePublish = async () => {
+    console.log('🔄 handleToggleCoursePublish called')
+    console.log('📊 Course data:', {
+      hasData: !!expandedCourseData,
+      id: expandedCourseData?._id || expandedCourseData?.id,
+      title: expandedCourseData?.title,
+      currentStatus: expandedCourseData?.isPublished
+    })
+    
+    if (!expandedCourseData) {
+      console.log('⚠️ No course data available')
+      return
+    }
+    
+    setIsPublishing(true)
+    try {
+      const courseId = expandedCourseData._id || expandedCourseData.id
+      
+      if (expandedCourseData.isPublished) {
+        console.log('📥 Unpublishing course:', expandedCourseData.title)
+        await chefService.unpublishCourse(courseId)
+        console.log('✅ Course unpublished successfully')
+        
+        // Update local state
+        setExpandedCourseData({ ...expandedCourseData, isPublished: false })
+        setUserCourses(prev => prev.map(c => 
+          (c.id === courseId || c.id === expandedCourseData.id) 
+            ? { ...c, isPublished: false } 
+            : c
+        ))
+        
+        // Show success dialog
+        setPublishSuccessMessage('Your course is now offline and only visible to you.')
+        setShowPublishSuccessDialog(true)
+      } else {
+        console.log('📢 Publishing course:', expandedCourseData.title)
+        await chefService.publishCourse(courseId)
+        console.log('✅ Course published successfully')
+        
+        // Update local state
+        setExpandedCourseData({ ...expandedCourseData, isPublished: true })
+        setUserCourses(prev => prev.map(c => 
+          (c.id === courseId || c.id === expandedCourseData.id) 
+            ? { ...c, isPublished: true } 
+            : c
+        ))
+        
+        // Show success dialog
+        setPublishSuccessMessage('Your course is now live and visible to learners!')
+        setShowPublishSuccessDialog(true)
+      }
+    } catch (error: any) {
+      console.log('❌ Failed to toggle course publish status:', error)
+      setPublishErrorMessage(error.message || 'Failed to update course status. Please try again.')
+      setShowPublishErrorDialog(true)
+    } finally {
+      setIsPublishing(false)
+    }
+  }
+
   const handleStartCooking = (recipe: any) => {
     if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
       Alert.alert('No Instructions', 'This recipe has no cooking instructions available.')
@@ -1360,6 +1916,30 @@ const ChefDashboardScreen: React.FC = () => {
       })
     } catch (error) {
       console.log('❌ Error sharing recipe:', error)
+    }
+  }
+
+  const handleViewCourse = async (course: Course) => {
+    try {
+      setIsLoadingCourseDetails(true)
+      setExpandedCourseId(course.id)
+      
+      console.log('👁️ Fetching course details for view:', course.id)
+      const fullCourse = await chefService.getCourseById(course.id)
+      
+      console.log('✅ Full course fetched:', fullCourse.title)
+      setExpandedCourseData(fullCourse)
+    } catch (error: any) {
+      console.log('❌ Failed to fetch course details:', error)
+      setExpandedCourseId(null)
+      
+      Alert.alert(
+        'Unable to Load Course',
+        'Failed to load course details. Please try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      )
+    } finally {
+      setIsLoadingCourseDetails(false)
     }
   }
 
@@ -1883,7 +2463,396 @@ const ChefDashboardScreen: React.FC = () => {
             </ScrollView>
           </View>
         )}
+
+        {/* Course Detail Modal */}
+        {expandedCourseId && expandedCourseData && (
+          <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
+            {/* Modal Header */}
+            <View
+              style={{
+                paddingTop: insets.top + 24,
+                paddingBottom: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "rgba(255, 255, 255, 0.08)",
+              }}
+              className="px-6"
+            >
+              <View className="flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={() => {
+                    setExpandedCourseId(null)
+                    setExpandedCourseData(null)
+                  }}
+                  className="w-10 h-10 rounded-full items-center justify-center"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={22} color="#FACC15" />
+                </TouchableOpacity>
+                
+                <Text className="text-white text-lg font-bold flex-1 text-center">
+                  Course Details
+                </Text>
+                
+                <View className="w-10" />
+              </View>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView 
+              className="flex-1" 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            >
+              <View className="p-6">
+                {/* Course Header */}
+                <View className="mb-6">
+                  <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
+                    {expandedCourseData.title}
+                  </Text>
+                  <Text className="text-gray-300 text-base mb-4 leading-relaxed">
+                    {expandedCourseData.description || 'Comprehensive course from your collection'}
+                  </Text>
+
+                  {/* Course Stats */}
+                  <View className="flex-row flex-wrap">
+                    <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="time-outline" size={14} color="#10B981" />
+                        <Text className="text-emerald-300 ml-1 text-xs font-semibold">
+                          {expandedCourseData.durationValue && expandedCourseData.durationUnit 
+                            ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}` 
+                            : expandedCourseData.totalDuration 
+                              ? `${expandedCourseData.totalDuration} min` 
+                              : 'Self-paced'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="book-outline" size={14} color="#3B82F6" />
+                        <Text className="text-blue-300 ml-1 text-xs font-semibold">
+                          {expandedCourseData.units?.length || 0} units
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-purple-500/20 border border-purple-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <MaterialIcons name="signal-cellular-alt" size={14} color="#8B5CF6" />
+                        <Text className="text-purple-300 ml-1 text-xs font-semibold">
+                          {expandedCourseData.skillLevel || 'Beginner'}
+                        </Text>
+                      </View>
+                    </View>
+                    {expandedCourseData.category && (
+                      <View className="bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                        <View className="flex-row items-center">
+                          <Ionicons name="pricetag-outline" size={14} color="#FBBF24" />
+                          <Text className="text-amber-300 ml-1 text-xs font-semibold">
+                            {expandedCourseData.category}
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                    {expandedCourseData.enrolledStudents > 0 && (
+                      <View className="bg-indigo-500/20 border border-indigo-500/40 rounded-full px-3 py-1 mb-2">
+                        <View className="flex-row items-center">
+                          <Ionicons name="people-outline" size={14} color="#6366F1" />
+                          <Text className="text-indigo-300 ml-1 text-xs font-semibold">
+                            {expandedCourseData.enrolledStudents} enrolled
+                          </Text>
+                        </View>
+                      </View>
+                    )}
+                  </View>
+                </View>
+
+                {/* Edit and Publish Buttons */}
+                <View className="flex-row mb-6" style={{ gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setExpandedCourseId(null)
+                      setExpandedCourseData(null)
+                      setEditingCourse(expandedCourseData)
+                      setShowCourseModal(true)
+                      console.log('✏️ Opening course edit modal for:', expandedCourseData.title)
+                    }}
+                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                    <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      console.log('🔘 Publish/Hide button pressed')
+                      console.log('📊 Current course state:', {
+                        id: expandedCourseData._id || expandedCourseData.id,
+                        title: expandedCourseData.title,
+                        isPublished: expandedCourseData.isPublished
+                      })
+                      handleToggleCoursePublish()
+                    }}
+                    disabled={isPublishing}
+                    className={`${expandedCourseData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons 
+                      name={isPublishing ? "hourglass-outline" : (expandedCourseData.isPublished ? "eye-off-outline" : "eye-outline")} 
+                      size={18} 
+                      color={expandedCourseData.isPublished ? "#FB923C" : "#10B981"} 
+                    />
+                    <Text className={`${expandedCourseData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
+                      {isPublishing ? 'Processing...' : (expandedCourseData.isPublished ? 'Hide' : 'Publish')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 📚 Course Units Section */}
+                {expandedCourseData.units && expandedCourseData.units.length > 0 && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center justify-between mb-5">
+                      <View className="flex-row items-center">
+                        <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                        <Text className="text-white text-xl font-bold tracking-tight">Course Units</Text>
+                      </View>
+                      <View className="bg-amber-500/20 border-2 border-amber-500/40 px-4 py-2 rounded-full shadow-md">
+                        <Text className="text-amber-300 text-xs font-bold">
+                          {expandedCourseData.units.length} units
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="space-y-4">
+                      {expandedCourseData.units.map((unit: any, unitIndex: number) => {
+                        const unitId = `${expandedCourseData.id}-${unitIndex}`
+                        const isExpanded = expandedUnits.has(unitId)
+                        
+                        return (
+                          <View
+                            key={`modal-unit-${expandedCourseData.id}-${unitIndex}`}
+                            className="bg-zinc-800/80 border-2 border-zinc-700 rounded-2xl overflow-hidden shadow-xl mb-4"
+                          >
+                            {/* Unit Header with Gradient Background - Always Visible and Touchable */}
+                            <TouchableOpacity
+                              onPress={() => toggleUnit(unitId)}
+                              activeOpacity={0.8}
+                            >
+                              <View className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-b-2 border-amber-500/30 px-5 pt-5 pb-3">
+                                <View className="flex-row items-center justify-between">
+                                  <View className="flex-1">
+                                    <Text className="text-white font-bold text-xl mb-2">
+                                      Unit {(unitIndex + 1).toString().padStart(2, '0')}: {unit.title}
+                                    </Text>
+                                    <Text className="text-amber-200 text-base mb-0">
+                                      Objective: {unit.objective}
+                                    </Text>
+                                    {unit.duration > 0 && (
+                                      <View className="flex-row items-center">
+                                        <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1.5">
+                                          <View className="flex-row items-center">
+                                            <Ionicons name="time-outline" size={12} color="#10B981" />
+                                            <Text className="text-emerald-300 text-sm ml-1.5 font-semibold">{unit.duration} min</Text>
+                                          </View>
+                                        </View>
+                                      </View>
+                                    )}
+                                  </View>
+                                  <View className="ml-3">
+                                    <Ionicons 
+                                      name={isExpanded ? "chevron-up" : "chevron-down"} 
+                                      size={24} 
+                                      color="#F59E0B" 
+                                    />
+                                  </View>
+                                </View>
+                              </View>
+                            </TouchableOpacity>
+
+                            {/* Unit Content Area - Only Visible When Expanded */}
+                            {isExpanded && (
+                                <View className="p-5">
+                                  {unit.content && (
+                                    <View className="mb-4">
+                                      <Text className="text-zinc-200 text-base leading-6 mb-1">
+                                        {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) 
+                                          ? unit.content 
+                                          : unit.content.length > 100 
+                                            ? `${unit.content.substring(0, 100)}...` 
+                                            : unit.content}
+                                      </Text>
+                                      {unit.content.length > 100 && (
+                                        <TouchableOpacity 
+                                          onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
+                                          className="self-start"
+                                        >
+                                          <Text className="text-amber-400 text-sm font-semibold">
+                                            {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
+                                          </Text>
+                                        </TouchableOpacity>
+                                      )}
+                                    </View>
+                                  )}
+
+                                  {/* Learning Steps Section */}
+                                  {unit.steps && unit.steps.length > 0 && (
+                                    <View className="mb-4">
+                                      <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
+                                      <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
+                                        {unit.steps.map((step: string, stepIndex: number) => (
+                                          <Text 
+                                            key={`step-${unitIndex}-${stepIndex}`}
+                                            className="text-zinc-200 text-base leading-6 mb-1"
+                                          >
+                                            {stepIndex + 1}. {step}
+                                          </Text>
+                                        ))}
+                                      </View>
+                                    </View>
+                                  )}
+
+                                  {/* Common Errors Section */}
+                                  {unit.commonErrors && unit.commonErrors.length > 0 && (
+                                    <View className="mb-4">
+                                      <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
+                                      {unit.commonErrors.map((error: string, errorIndex: number) => (
+                                        <Text 
+                                          key={`error-${unitIndex}-${errorIndex}`}
+                                          className="text-zinc-200 text-base leading-6"
+                                        >
+                                          • {error}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  )}
+
+                                  {/* Tips Section */}
+                                  {unit.tips && unit.tips.length > 0 && (
+                                    <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
+                                      <View className="flex-row items-center mb-3">
+                                        <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
+                                          <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
+                                        </View>
+                                        <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
+                                      </View>
+                                      <View className="ml-11">
+                                        {unit.tips.map((tip: string, tipIndex: number) => (
+                                          <Text 
+                                            key={`tip-${unitIndex}-${tipIndex}`}
+                                            className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
+                                          >
+                                            💡 {tip}
+                                          </Text>
+                                        ))}
+                                      </View>
+                                    </View>
+                                  )}
+
+                                  {/* Video Section */}
+                                  {unit.videoUrl && (
+                                    <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
+                                      <View className="flex-row items-center">
+                                        <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
+                                          <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
+                                        </View>
+                                        <View className="flex-1">
+                                          <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
+                                          <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
+                                        </View>
+                                        <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                                      </View>
+                                    </View>
+                                  )}
+                                </View>
+                              )}
+                          </View>
+                        )
+                      })}
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        )}
       </View>
+      
+      {/* Chef Profile Modal */}
+      <Modal
+        visible={showProfileModal}
+        animationType="slide"
+        presentationStyle="fullScreen"
+        onRequestClose={() => setShowProfileModal(false)}
+      >
+        <LinearGradient
+          colors={["#09090b", "#18181b"]}
+          style={{ flex: 1 }}
+        >
+          <View style={[styles.container, { paddingTop: Math.max(insets.top - 30, 0), backgroundColor: 'transparent' }]}> 
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chef Profile</Text>
+              <TouchableOpacity
+                onPress={() => setShowProfileModal(false)}
+                style={styles.modalCloseButton}
+              >
+                <Ionicons name="close" size={28} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            >
+              {renderChefProfile()}
+              
+              {/* User Feedback Section */}
+              <View style={[styles.contentSectionCard, { marginHorizontal: 24 }]}>
+                <View style={styles.sectionHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="chatbubble-outline" size={20} color="#3B82F6" />
+                    <Text style={[styles.profileSectionTitle, { marginBottom: 0 }]}>User Feedback</Text>
+                  </View>
+                  <View style={[styles.countBadge, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+                    <Text style={[styles.countBadgeText, { color: '#3B82F6' }]}>
+                      {feedbacks.length}
+                    </Text>
+                  </View>
+                </View>
+
+                {feedbacks.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="chatbubbles-outline" size={48} color="#64748B" />
+                    <Text style={styles.emptyStateText}>No feedback yet</Text>
+                    <Text style={styles.emptyStateSubtext}>Users will see their feedback here</Text>
+                  </View>
+                ) : (
+                  <View style={{ gap: 12 }}>
+                    {feedbacks.map((feedback) => (
+                      <View key={feedback.id} style={styles.feedbackItem}>
+                        <Image source={{ uri: feedback.userAvatar }} style={styles.feedbackAvatar} />
+                        <View style={styles.feedbackContent}>
+                          <View style={styles.feedbackHeader}>
+                            <Text style={styles.feedbackUserName}>{feedback.userName}</Text>
+                            <View style={styles.feedbackRating}>
+                              {[...Array(5)].map((_, i) => (
+                                <Ionicons key={i} name="star" size={12} color={i < feedback.rating ? "#FACC15" : "#374151"} />
+                              ))}
+                            </View>
+                          </View>
+                          <Text style={styles.feedbackComment}>{feedback.comment}</Text>
+                          {feedback.recipeTitle && <Text style={styles.feedbackRecipe}>Recipe: {feedback.recipeTitle}</Text>}
+                          <Text style={styles.feedbackDate}>{feedback.date}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </LinearGradient>
+      </Modal>
       
       {/* Publish/Unpublish Success Dialog */}
       <Dialog
@@ -3094,11 +4063,13 @@ const CourseCreationModal: React.FC<{
 
   const [currentStep, setCurrentStep] = useState<'info' | 'units'>(('info'))
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [showDurationUnitDropdown, setShowDurationUnitDropdown] = useState(false)
   const [publishNow, setPublishNow] = useState(true)
   const [courseData, setCourseData] = useState({
     title: "",
     description: "",
-    duration: "",
+    durationValue: "",
+    durationUnit: "weeks" as "minutes" | "hours" | "days" | "weeks" | "months",
     skillLevel: "Beginner" as "Beginner" | "Intermediate" | "Advanced",
     category: "Other",
     isPremium: false,
@@ -3137,7 +4108,8 @@ const CourseCreationModal: React.FC<{
       setCourseData({
         title: editingCourse.title || '',
         description: editingCourse.description || '',
-        duration: editingCourse.duration || '',
+        durationValue: editingCourse.durationValue?.toString() || '',
+        durationUnit: editingCourse.durationUnit || 'weeks',
         skillLevel: editingCourse.skillLevel || 'Beginner',
         category: editingCourse.category || 'Other',
         isPremium: editingCourse.isPremium || false,
@@ -3186,7 +4158,8 @@ const CourseCreationModal: React.FC<{
       setCourseData({
         title: '',
         description: '',
-        duration: '',
+        durationValue: '',
+        durationUnit: 'weeks',
         skillLevel: 'Beginner',
         category: 'Other',
         isPremium: false,
@@ -3368,13 +4341,27 @@ const CourseCreationModal: React.FC<{
     }
 
     // 5. Duration validation
-    if (!courseData.duration.trim()) {
-      setErrorMessage("Course duration is required (e.g., '4 weeks', '2 months')")
+    if (!courseData.durationValue || courseData.durationValue.trim() === '') {
+      setErrorMessage("Course duration value is required")
       setShowErrorDialog(true)
       return
     }
-    if (courseData.duration.trim().length < 5) {
-      setErrorMessage("Course duration must be at least 5 characters long")
+    
+    const durationNum = parseInt(courseData.durationValue)
+    if (isNaN(durationNum) || durationNum <= 0) {
+      setErrorMessage("Duration must be a positive number")
+      setShowErrorDialog(true)
+      return
+    }
+    
+    if (durationNum > 1000) {
+      setErrorMessage("Duration value seems too high. Please enter a reasonable duration.")
+      setShowErrorDialog(true)
+      return
+    }
+
+    if (!courseData.durationUnit) {
+      setErrorMessage("Please select a duration unit")
       setShowErrorDialog(true)
       return
     }
@@ -3551,7 +4538,8 @@ const CourseCreationModal: React.FC<{
         description: courseData.description,
         coverImage: imageUrl,
         category: courseData.category,
-        duration: courseData.duration,
+        durationValue: parseInt(courseData.durationValue),
+        durationUnit: courseData.durationUnit,
         skillLevel: courseData.skillLevel,
         isPremium: courseData.isPremium,
         isPublished: publishNow,
@@ -3590,10 +4578,14 @@ const CourseCreationModal: React.FC<{
         id: savedCourse._id,
         title: savedCourse.title,
         description: savedCourse.description,
-        duration: savedCourse.duration,
+        durationValue: savedCourse.durationValue,
+        durationUnit: savedCourse.durationUnit,
+        duration: savedCourse.durationValue && savedCourse.durationUnit 
+          ? `${savedCourse.durationValue} ${savedCourse.durationUnit}` 
+          : undefined,
         skillLevel: savedCourse.skillLevel as "Beginner" | "Intermediate" | "Advanced",
         category: savedCourse.category,
-        subscribers: savedCourse.enrolledStudents || 0,
+        subscribers: 0,
         rating: savedCourse.averageRating || 0,
         isPremium: savedCourse.isPremium,
         chefId: savedCourse.authorId,
@@ -3746,13 +4738,49 @@ const CourseCreationModal: React.FC<{
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Duration *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={courseData.duration}
-              onChangeText={(text) => setCourseData({ ...courseData, duration: text })}
-              placeholder="e.g., 1 hour, 4 weeks"
-              placeholderTextColor="#64748B"
-            />
+            <View style={{ flexDirection: 'row', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <TextInput
+                  style={styles.textInput}
+                  value={courseData.durationValue}
+                  onChangeText={(text) => setCourseData({ ...courseData, durationValue: text })}
+                  placeholder="Enter number"
+                  placeholderTextColor="#64748B"
+                  keyboardType="numeric"
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <TouchableOpacity
+                  style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
+                  onPress={() => setShowDurationUnitDropdown(!showDurationUnitDropdown)}
+                >
+                  <Text style={{ color: courseData.durationUnit ? 'white' : '#64748B', fontSize: 16 }}>
+                    {courseData.durationUnit || 'Select unit'}
+                  </Text>
+                  <Ionicons name={showDurationUnitDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
+                </TouchableOpacity>
+                {showDurationUnitDropdown && (
+                  <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 1000 }}>
+                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                      {(['minutes', 'hours', 'days', 'weeks', 'months'] as const).map((unit) => (
+                        <TouchableOpacity
+                          key={unit}
+                          style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                          onPress={() => {
+                            setCourseData({ ...courseData, durationUnit: unit })
+                            setShowDurationUnitDropdown(false)
+                          }}
+                        >
+                          <Text style={{ color: courseData.durationUnit === unit ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.durationUnit === unit ? '600' : '400' }}>
+                            {unit}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+              </View>
+            </View>
           </View>
 
           {/* Skill Level Selector */}
@@ -3848,7 +4876,7 @@ const CourseCreationModal: React.FC<{
                   style={[styles.textInput, { marginBottom: 8 }]}
                   value={unit.title}
                   onChangeText={(text) => handleUpdateUnit(unit.id, 'title', text)}
-                  placeholder="Unit title (e.g., Sharpening Fundamentals)"
+                  placeholder="Unit title"
                   placeholderTextColor="#64748B"
                 />
 
@@ -4341,96 +5369,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginLeft: 4,
   },
-  statsContainer: {
-    paddingHorizontal: 24,
-    marginBottom: 20,
-  },
-  statsOverviewCard: {
-    backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-  },
-  statsOverviewRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  overviewStatItem: {
-    alignItems: "center",
-    flex: 1,
-  },
-  overviewStatIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  overviewStatValue: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 2,
-  },
-  overviewStatLabel: {
-    color: "#94A3B8",
-    fontSize: 12,
-    fontWeight: "500",
-  },
-  overviewStatDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    marginHorizontal: 8,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  statCard: {
-    width: (SCREEN_WIDTH - 72) / 2,
-    borderRadius: 20,
-    overflow: "hidden",
-    shadowColor: "#000000",
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  statGradient: {
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 110,
-  },
-  statNumber: {
-    color: "white",
-    fontSize: 28,
-    fontWeight: "800",
-    marginTop: 8,
-  },
-  statLabel: {
-    color: "rgba(255, 255, 255, 0.9)",
-    fontSize: 13,
-    marginTop: 4,
-    fontWeight: "600",
-  },
   feedbackContainer: {
     paddingHorizontal: 24,
     marginBottom: 20,
@@ -4584,7 +5522,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
@@ -5076,6 +6014,310 @@ const styles = StyleSheet.create({
     height: 2,
     backgroundColor: "#3B82F6",
     borderRadius: 1,
+  },
+  // Chef Profile Styles
+  profileContainer: {
+    paddingHorizontal: 24,
+    paddingBottom: 24,
+    paddingTop: 24,
+  },
+  profileHeaderCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    flexDirection: "row",
+    alignItems: "center",
+    position: "relative",
+  },
+  editButtonsContainer: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    flexDirection: "row",
+    gap: 8,
+    zIndex: 10,
+    marginBottom: 20,
+  },
+  editProfileButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    backgroundColor: "rgba(6, 182, 212, 0.1)",
+    zIndex: 10,
+  },
+  cancelButton: {
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+  },
+  editProfileButtonText: {
+    color: "#06B6D4",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  cancelButtonText: {
+    color: "#EF4444",
+  },
+  profileImageContainer: {
+    position: "relative",
+    marginRight: 16,
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: "rgba(34, 197, 94, 0.3)",
+  },
+  editProfileImageButton: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    backgroundColor: "#22C55E",
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#000000",
+  },
+  profileHeaderInfo: {
+    flex: 1,
+  },
+  profileChefName: {
+    color: "#FFFFFF",
+    fontSize: 22,
+    fontWeight: "800",
+    marginTop: 4,
+  },
+  profileDescription: {
+    color: "#94A3B8",
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  profileBio: {
+    color: "#CBD5E1",
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  chefBioCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  chefBioText: {
+    color: "#E2E8F0",
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: "center",
+  },
+  profileBadgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 4,
+  },
+  profileBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 4,
+  },
+  profileBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  detailedStatsCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  profileSectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  profileStatsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
+    paddingHorizontal: 10,
+  },
+  statGridItem: {
+    width: '30%',
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    padding: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    marginBottom: 12,
+  },
+  statIconCircle: {
+    width: 26,
+    height: 26,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  statGridValue: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "800",
+    marginBottom: 2,
+  },
+  statGridLabel: {
+    color: "#94A3B8",
+    fontSize: 10,
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  contentSectionCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  countBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  countBadgeText: {
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  contentSubSection: {
+    marginTop: 8,
+  },
+  subSectionTitle: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 12,
+    opacity: 0.8,
+  },
+  contentItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.05)",
+  },
+  contentItemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 12,
+  },
+  contentItemInfo: {
+    flex: 1,
+  },
+  contentItemTitle: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  contentItemMeta: {
+    color: "#64748B",
+    fontSize: 12,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 32,
+  },
+  emptyStateText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+    marginTop: 12,
+  },
+  emptyStateSubtext: {
+    color: "#94A3B8",
+    fontSize: 14,
+    marginTop: 4,
+  },
+  // Profile Button Styles
+  profileButtonContainer: {
+    paddingHorizontal: 24,
+    marginBottom: 20,
+  },
+  profileButton: {
+    backgroundColor: "rgba(6, 182, 212, 0.12)",
+    borderRadius: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    borderWidth: 2,
+    borderColor: "rgba(6, 182, 212, 0.3)",
+  },
+  profileButtonText: {
+    color: "#06B6D4",
+    fontSize: 16,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+    letterSpacing: 0.5,
+  },
+  dropdown: {
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+    borderRadius: 14,
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    maxHeight: 240,
+    shadowColor: "rgba(0, 0, 0, 0.15)",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  dropdownItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
+  },
+  dropdownItemText: {
+    color: "#FFFFFF",
+    fontSize: 15,
+    flex: 1,
   },
 })
 

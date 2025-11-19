@@ -306,8 +306,8 @@ const ChefRegistrationScreen: React.FC<ChefRegistrationScreenProps> = ({ onCompl
               onPress={handleSubmit}
               activeOpacity={0.7}
             >
-              <Ionicons name="checkmark-circle" size={20} color="#D4AF37" />
-              <Text style={styles.submitButtonText}>Submit Application</Text>
+              <Ionicons name="checkmark-circle" size={20} color="#e7bb2dff" />
+              <Text style={styles.submitButtonText}>Register as Chef</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -613,7 +613,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   submitButtonText: {
-    color: "#D4AF37",
+    color: "#e7bb2dff",
     fontSize: 15,
     fontWeight: "700",
   },

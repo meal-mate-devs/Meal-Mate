@@ -57,7 +57,8 @@ export interface CreateCoursePayload {
   description: string;
   coverImage?: string; // Cloudinary URL (optional)
   category: string;
-  duration: string;
+  durationValue: number;
+  durationUnit: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
   skillLevel: 'Beginner' | 'Intermediate' | 'Advanced';
   units: CourseUnit[];
   isPremium?: boolean;
@@ -112,7 +113,10 @@ export interface Course {
   description: string;
   coverImage?: string;
   category: string;
-  duration: string;
+  durationValue?: number;
+  durationUnit?: 'minutes' | 'hours' | 'days' | 'weeks' | 'months';
+  duration?: string; // Legacy field for display (computed from durationValue + durationUnit)
+  totalDuration?: number; // Total duration in minutes
   skillLevel: string;
   units: Array<{
     _id: string;
@@ -127,11 +131,16 @@ export interface Course {
   userId: string;
   isPublished: boolean;
   isPremium: boolean;
-  enrolledStudents?: number;
-  completedStudents?: number;
+  totalReports?: number;
+  reportReasons?: Array<{
+    reason: string;
+    count: number;
+  }>;
   averageRating?: number;
+  rating?: number; // Legacy field for compatibility
   totalReviews?: number;
   views?: number;
+  subscribers?: number; // Legacy field for compatibility
   createdAt: string;
   updatedAt: string;
 }
@@ -597,12 +606,12 @@ export async function deleteCourseUnit(courseId: string, unitId: string): Promis
 
 /**
  * Publish a course
- * POST /api/courses/chef/:id/publish
+ * PATCH /api/courses/chef/:id/publish
  */
 export async function publishCourse(id: string): Promise<Course> {
   try {
     console.log(`📢 Publishing course: ${id}`);
-    const response = await apiClient.post<{ course: Course }>(
+    const response = await apiClient.patch<{ course: Course }>(
       `/courses/chef/${id}/publish`,
       {},
       true,
@@ -618,12 +627,12 @@ export async function publishCourse(id: string): Promise<Course> {
 
 /**
  * Unpublish a course
- * POST /api/courses/chef/:id/unpublish
+ * PATCH /api/courses/chef/:id/unpublish
  */
 export async function unpublishCourse(id: string): Promise<Course> {
   try {
     console.log(`📥 Unpublishing course: ${id}`);
-    const response = await apiClient.post<{ course: Course }>(
+    const response = await apiClient.patch<{ course: Course }>(
       `/courses/chef/${id}/unpublish`,
       {},
       true,
