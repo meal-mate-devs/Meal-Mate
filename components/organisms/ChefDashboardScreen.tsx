@@ -1103,7 +1103,7 @@ const ChefDashboardScreen: React.FC = () => {
                   {chefProfileData?.expertiseCategory && (
                     <View style={[styles.profileBadge, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}>
                       <Ionicons name="school" size={14} color="#8B5CF6" />
-                      <Text style={[styles.profileBadgeText, { color: '#8B5CF6' }]}>{chefProfileData.expertiseCategory}</Text>
+                      <Text style={[styles.profileBadgeText, { color: '#FFFFFF' }]}>{chefProfileData.expertiseCategory}</Text>
                     </View>
                   )}
                 </>
