@@ -3389,7 +3389,7 @@ const ChefDashboardScreen: React.FC = () => {
           setRecipeReportDescription("")
         }}
         title="Report Recipe"
-        height={550}
+        height={450}
       >
         <>
           <View style={{ marginBottom: 16 }}>
@@ -3403,7 +3403,7 @@ const ChefDashboardScreen: React.FC = () => {
                 padding: 12,
                 color: "#FFFFFF",
                 fontSize: 14,
-                height: 100,
+                height: 60,
                 textAlignVertical: "top"
               }}
               placeholder="Type your reason for reporting this recipe..."
@@ -3416,7 +3416,7 @@ const ChefDashboardScreen: React.FC = () => {
             <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
           </View>
           
-          <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+          <ScrollView style={{ maxHeight: 100 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
             {reportReasons.map((reason) => (
               <TouchableOpacity
                 key={reason}
@@ -3596,7 +3596,7 @@ const ChefDashboardScreen: React.FC = () => {
           setCourseReportDescription("")
         }}
         title="Report Course"
-        height={550}
+        height={450}
       >
         <>
           <View style={{ marginBottom: 16 }}>
@@ -3610,7 +3610,7 @@ const ChefDashboardScreen: React.FC = () => {
                 padding: 12,
                 color: "#FFFFFF",
                 fontSize: 14,
-                height: 100,
+                height: 60,
                 textAlignVertical: "top"
               }}
               placeholder="Type your reason for reporting this course..."
@@ -3623,7 +3623,7 @@ const ChefDashboardScreen: React.FC = () => {
             <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
           </View>
           
-          <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+          <ScrollView style={{ maxHeight: 100 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
             {reportReasons.map((reason) => (
               <TouchableOpacity
                 key={reason}
@@ -6181,7 +6181,7 @@ const styles = StyleSheet.create({
   emptyChefSection: {
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 40,
+    paddingVertical: 24,
     paddingHorizontal: 24,
   },
   emptyChefText: {
@@ -7373,7 +7373,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingChefsContainer: {
-    paddingVertical: 60,
+    paddingVertical: 24,
     alignItems: "center",
     justifyContent: "center",
   },

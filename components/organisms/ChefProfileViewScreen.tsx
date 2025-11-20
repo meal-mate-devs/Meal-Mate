@@ -1,13 +1,14 @@
 "use client"
 
 import * as chefService from "@/lib/api/chefService"
-import { Ionicons } from "@expo/vector-icons"
+import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
 import {
     ActivityIndicator,
     Alert,
+    BackHandler,
     Dimensions,
     Image,
     Modal,
@@ -31,6 +32,7 @@ interface Recipe {
   image: string
   isPremium: boolean
   isRestricted?: boolean
+  isBanned?: boolean
   difficulty: "Easy" | "Medium" | "Hard"
   cookTime: string
   rating: number
@@ -46,6 +48,7 @@ interface Course {
   category: string
   isPremium: boolean
   isRestricted?: boolean
+  isBanned?: boolean
   image: string
   rating?: number
 }
@@ -127,6 +130,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [courseReportDescription, setCourseReportDescription] = useState("")
   const [courseRating, setCourseRating] = useState(0)
   const [courseRatingFeedback, setCourseRatingFeedback] = useState("")
+  
+  // Expandable units and descriptions state
+  const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
 
   // Load recipes and courses from backend
   useEffect(() => {
@@ -135,6 +142,28 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       checkSubscription()
     }
   }, [visible, chef.id])
+
+  // Handle hardware back button on Android
+  useEffect(() => {
+    if (!visible) return
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (expandedRecipeId || expandedCourseId) {
+        // Close expanded view first
+        setExpandedRecipeId(null)
+        setExpandedRecipeData(null)
+        setExpandedCourseId(null)
+        setExpandedCourseData(null)
+        return true
+      } else {
+        // Close the chef profile modal
+        onClose()
+        return true
+      }
+    })
+
+    return () => backHandler.remove()
+  }, [visible, expandedRecipeId, expandedCourseId, onClose])
 
   const checkSubscription = async () => {
     try {
@@ -207,12 +236,17 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 try {
                   await chefService.unsubscribeFromChef(chef.id)
                   setIsSubscribed(false)
+                  // Update parent's chef object
+                  chef.isSubscribed = false
+                  chef.subscribers = Math.max(0, chef.subscribers - 1)
                   Alert.alert("Success", "Unsubscribed successfully")
                   onSubscribeToggle?.(chef.id)
                   // Reload content to update access
                   loadChefContent()
                 } catch (error: any) {
                   Alert.alert("Error", error.message || "Failed to unsubscribe")
+                } finally {
+                  setIsSubscribing(false)
                 }
               }
             }
@@ -222,6 +256,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         // Subscribe
         await chefService.subscribeToChef(chef.id)
         setIsSubscribed(true)
+        // Update parent's chef object
+        chef.isSubscribed = true
+        chef.subscribers = chef.subscribers + 1
         Alert.alert("Success", `You are now subscribed to ${chef.name}!`)
         onSubscribeToggle?.(chef.id)
         // Reload content to update access
@@ -442,16 +479,41 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     }
   }
 
+  // Toggle functions for expandable units
+  const toggleUnit = (unitId: string) => {
+    setExpandedUnits((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(unitId)) {
+        newSet.delete(unitId)
+      } else {
+        newSet.add(unitId)
+      }
+      return newSet
+    })
+  }
+
+  const toggleDescription = (descId: string) => {
+    setExpandedDescriptions((prev) => {
+      const newSet = new Set(prev)
+      if (newSet.has(descId)) {
+        newSet.delete(descId)
+      } else {
+        newSet.add(descId)
+      }
+      return newSet
+    })
+  }
+
   const getFilteredContent = () => {
     if (activeTab === "recipes") {
       return recipes.filter((r) => !r.isRestricted)
     } else if (activeTab === "courses") {
       return courses.filter((c) => !c.isRestricted)
     } else {
-      // Restricted content
+      // Restricted content - only show restricted, not banned
       return [
-        ...recipes.filter((r) => r.isRestricted),
-        ...courses.filter((c) => c.isRestricted),
+        ...recipes.filter((r) => r.isRestricted && !r.isBanned),
+        ...courses.filter((c) => c.isRestricted && !c.isBanned),
       ]
     }
   }
@@ -525,7 +587,18 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   }
 
   const renderCourseCard = (course: Course) => {
-    const imageUri = typeof course.image === 'string' ? course.image : (course.image as any)?.url || ''
+    const courseData = course as any
+    const imageUri = typeof courseData.coverImage === 'string' 
+      ? courseData.coverImage 
+      : courseData.coverImage?.url || courseData.image || ''
+    
+    // Calculate duration display
+    const durationDisplay = courseData.durationValue && courseData.durationUnit
+      ? `${courseData.durationValue} ${courseData.durationUnit}`
+      : courseData.totalDuration
+        ? `${courseData.totalDuration} min`
+        : courseData.duration || 'Self-paced'
+    
     return (
     <TouchableOpacity 
       style={styles.contentCard} 
@@ -553,7 +626,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         <View style={styles.contentMeta}>
           <View style={styles.metaBadge}>
             <Ionicons name="time-outline" size={14} color="#94A3B8" />
-            <Text style={styles.metaText}>{course.duration || "N/A"}</Text>
+            <Text style={styles.metaText}>{durationDisplay}</Text>
           </View>
           {course.rating && (
             <View style={styles.metaBadge}>
@@ -595,7 +668,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   }
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+    <Modal 
+      visible={visible} 
+      animationType="slide" 
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
       <View style={[styles.container]}>
         <LinearGradient colors={["#1a1a1a", "#0a0a0a"]} style={styles.gradient}>
           {/* Header */}
@@ -869,18 +947,57 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               )}
               {activeTab === "restricted" && (
                 <>
-                  {recipes.filter((r) => r.isRestricted).map((recipe) => <View key={`recipe-${recipe.id}`}>{renderRecipeCard(recipe)}</View>)}
-                  {courses.filter((c) => c.isRestricted).map((course) => <View key={`course-${course.id}`}>{renderCourseCard(course)}</View>)}
-                  {recipes.filter((r) => r.isRestricted).length === 0 &&
-                    courses.filter((c) => c.isRestricted).length === 0 && (
-                      <View style={styles.emptyState}>
-                        <Ionicons name="lock-closed-outline" size={48} color="#475569" />
-                        <Text style={styles.emptyStateText}>No Restricted Content</Text>
-                        <Text style={styles.emptyStateSubtext}>
-                          This chef has no restricted content available
+                  {/* Restricted Section */}
+                  <View style={styles.sectionContainer}>
+                    <View style={styles.sectionHeaderBar}>
+                      <Ionicons name="lock-closed" size={20} color="#F59E0B" />
+                      <Text style={styles.sectionHeaderText}>Restricted Content</Text>
+                      <View style={styles.sectionBadge}>
+                        <Text style={styles.sectionBadgeText}>
+                          {recipes.filter((r) => r.isRestricted && !r.isBanned).length + 
+                           courses.filter((c) => c.isRestricted && !c.isBanned).length}
                         </Text>
                       </View>
-                    )}
+                    </View>
+                    {recipes.filter((r) => r.isRestricted && !r.isBanned).map((recipe) => <View key={`recipe-${recipe.id}`}>{renderRecipeCard(recipe)}</View>)}
+                    {courses.filter((c) => c.isRestricted && !c.isBanned).map((course) => <View key={`course-${course.id}`}>{renderCourseCard(course)}</View>)}
+                    {recipes.filter((r) => r.isRestricted && !r.isBanned).length === 0 &&
+                      courses.filter((c) => c.isRestricted && !c.isBanned).length === 0 && (
+                        <View style={styles.emptyState}>
+                          <Ionicons name="lock-closed-outline" size={48} color="#475569" />
+                          <Text style={styles.emptyStateText}>No Restricted Content</Text>
+                          <Text style={styles.emptyStateSubtext}>
+                            No restricted recipes or courses
+                          </Text>
+                        </View>
+                      )}
+                  </View>
+
+                  {/* Banned Section */}
+                  <View style={[styles.sectionContainer, { marginTop: 20 }]}>
+                    <View style={styles.sectionHeaderBar}>
+                      <Ionicons name="ban" size={20} color="#EF4444" />
+                      <Text style={styles.sectionHeaderText}>Banned Content</Text>
+                      <View style={[styles.sectionBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
+                        <Text style={[styles.sectionBadgeText, { color: '#EF4444' }]}>
+                          {recipes.filter((r) => r.isBanned).length + 
+                           courses.filter((c) => c.isBanned).length}
+                        </Text>
+                      </View>
+                    </View>
+                    {recipes.filter((r) => r.isBanned).map((recipe) => <View key={`banned-recipe-${recipe.id}`}>{renderRecipeCard(recipe)}</View>)}
+                    {courses.filter((c) => c.isBanned).map((course) => <View key={`banned-course-${course.id}`}>{renderCourseCard(course)}</View>)}
+                    {recipes.filter((r) => r.isBanned).length === 0 &&
+                      courses.filter((c) => c.isBanned).length === 0 && (
+                        <View style={styles.emptyState}>
+                          <Ionicons name="checkmark-circle-outline" size={48} color="#22C55E" />
+                          <Text style={styles.emptyStateText}>No Banned Content</Text>
+                          <Text style={styles.emptyStateSubtext}>
+                            No banned recipes or courses
+                          </Text>
+                        </View>
+                      )}
+                  </View>
                 </>
               )}
             </View>
@@ -1697,137 +1814,293 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
       {/* Expanded Course View Modal */}
       {expandedCourseId && expandedCourseData && (
-        <Modal visible={true} animationType="slide" transparent={false}>
-          <View style={styles.expandedModalContainer}>
-            {/* Modal Header */}
-            <View style={[styles.expandedModalHeader, { paddingTop: insets.top + 14 }]}>
-              <View style={styles.expandedModalHeaderContent}>
+        <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
+          {/* Modal Header */}
+          <View
+            style={{
+              paddingTop: insets.top - 8,
+              paddingBottom: 12,
+              borderBottomWidth: 1,
+              borderBottomColor: "rgba(255, 255, 255, 0.08)",
+            }}
+            className="px-6"
+          >
+            <View className="flex-row items-center justify-between">
+              <TouchableOpacity
+                onPress={() => {
+                  setExpandedCourseId(null)
+                  setExpandedCourseData(null)
+                }}
+                className="w-10 h-10 rounded-full items-center justify-center"
+                style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="close" size={22} color="#FACC15" />
+              </TouchableOpacity>
+              
+              <Text className="text-white text-lg font-bold flex-1 text-center">
+                Course Details
+              </Text>
+              
+              <View className="w-10" />
+            </View>
+          </View>
+
+          {/* Modal Content */}
+          <ScrollView 
+            className="flex-1" 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+          >
+            <View className="p-6">
+              {/* Course Header */}
+              <View className="mb-6">
+                <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
+                  {expandedCourseData.title}
+                </Text>
+                <Text className="text-gray-300 text-base mb-4 leading-relaxed">
+                  {expandedCourseData.description || 'Comprehensive course from your collection'}
+                </Text>
+
+                {/* Course Stats */}
+                <View className="flex-row flex-wrap">
+                  <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                    <View className="flex-row items-center">
+                      <Ionicons name="time-outline" size={14} color="#10B981" />
+                      <Text className="text-emerald-300 ml-1 text-xs font-semibold">
+                        {expandedCourseData.durationValue && expandedCourseData.durationUnit 
+                          ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}` 
+                          : expandedCourseData.totalDuration 
+                            ? `${expandedCourseData.totalDuration} min` 
+                            : 'Self-paced'}
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                    <View className="flex-row items-center">
+                      <Ionicons name="book-outline" size={14} color="#3B82F6" />
+                      <Text className="text-blue-300 ml-1 text-xs font-semibold">
+                        {expandedCourseData.units?.length || 0} units
+                      </Text>
+                    </View>
+                  </View>
+                  <View className="bg-purple-500/20 border border-purple-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                    <View className="flex-row items-center">
+                      <MaterialIcons name="signal-cellular-alt" size={14} color="#8B5CF6" />
+                      <Text className="text-purple-300 ml-1 text-xs font-semibold">
+                        {expandedCourseData.skillLevel || 'Beginner'}
+                      </Text>
+                    </View>
+                  </View>
+                  {expandedCourseData.category && (
+                    <View className="bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="pricetag-outline" size={14} color="#FBBF24" />
+                        <Text className="text-amber-300 ml-1 text-xs font-semibold">
+                          {expandedCourseData.category}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                  {expandedCourseData.enrolledStudents > 0 && (
+                    <View className="bg-indigo-500/20 border border-indigo-500/40 rounded-full px-3 py-1 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="people-outline" size={14} color="#6366F1" />
+                        <Text className="text-indigo-300 ml-1 text-xs font-semibold">
+                          {expandedCourseData.enrolledStudents} enrolled
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+
+              {/* Action Buttons - Report and Rate */}
+              <View className="flex-row mb-6" style={{ gap: 12 }}>
                 <TouchableOpacity
-                  onPress={() => {
-                    setExpandedCourseId(null)
-                    setExpandedCourseData(null)
-                  }}
-                  style={styles.expandedCloseButton}
+                  onPress={() => setShowCourseReportDialog(true)}
+                  className="bg-red-500/15 border border-red-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
                   activeOpacity={0.7}
                 >
-                  <Ionicons name="close" size={22} color="#FACC15" />
+                  <Ionicons name="flag-outline" size={18} color="#EF4444" />
+                  <Text className="text-red-300 font-bold ml-2 text-sm tracking-wide">Report</Text>
                 </TouchableOpacity>
-                
-                <Text style={styles.expandedModalTitle}>Course Details</Text>
-                
-                <View style={styles.expandedModalSpacer} />
+
+                <TouchableOpacity
+                  onPress={() => setShowCourseRatingDialog(true)}
+                  className="bg-yellow-500/15 border border-yellow-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="star-outline" size={18} color="#FACC15" />
+                  <Text className="text-yellow-300 font-bold ml-2 text-sm tracking-wide">Rate</Text>
+                </TouchableOpacity>
               </View>
-            </View>
 
-            {/* Modal Content */}
-            <ScrollView 
-              style={styles.expandedModalScroll}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
-            >
-              <View style={styles.expandedModalContent}>
-                {/* Course Header */}
-                <View style={styles.expandedRecipeHeader}>
-                  <Text style={styles.expandedRecipeTitle}>
-                    {expandedCourseData.title}
-                  </Text>
-                  <Text style={styles.expandedRecipeDescription}>
-                    {expandedCourseData.description || 'Comprehensive cooking course'}
-                  </Text>
-
-                  {/* Course Stats */}
-                  <View style={styles.expandedRecipeStats}>
-                    <View style={styles.statBadge}>
-                      <View style={styles.statBadgeInner}>
-                        <Ionicons name="time-outline" size={14} color="#10B981" />
-                        <Text style={styles.statBadgeText}>
-                          {expandedCourseData.duration || 'N/A'}
-                        </Text>
-                      </View>
+              {/* 📚 Course Units Section */}
+              {expandedCourseData.units && expandedCourseData.units.length > 0 && (
+                <View className="mb-6">
+                  <View className="flex-row items-center justify-between mb-5">
+                    <View className="flex-row items-center">
+                      <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                      <Text className="text-white text-xl font-bold tracking-tight">Course Units</Text>
                     </View>
-                    <View style={[styles.statBadge, styles.statBadgePurple]}>
-                      <View style={styles.statBadgeInner}>
-                        <Ionicons name="school-outline" size={14} color="#8B5CF6" />
-                        <Text style={[styles.statBadgeText, styles.statBadgeTextPurple]}>
-                          {expandedCourseData.skillLevel || 'Beginner'}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={[styles.statBadge, styles.statBadgeBlue]}>
-                      <View style={styles.statBadgeInner}>
-                        <Ionicons name="folder-outline" size={14} color="#3B82F6" />
-                        <Text style={[styles.statBadgeText, styles.statBadgeTextBlue]}>
-                          {expandedCourseData.category || 'Cooking'}
-                        </Text>
-                      </View>
+                    <View className="bg-amber-500/20 border-2 border-amber-500/40 px-4 py-2 rounded-full shadow-md">
+                      <Text className="text-amber-300 text-xs font-bold">
+                        {expandedCourseData.units.length} units
+                      </Text>
                     </View>
                   </View>
-                </View>
+                  <View className="space-y-4">
+                    {expandedCourseData.units.map((unit: any, unitIndex: number) => {
+                      const unitId = `${expandedCourseData.id}-${unitIndex}`
+                      const isExpanded = expandedUnits.has(unitId)
+                      
+                      return (
+                        <View
+                          key={`modal-unit-${expandedCourseData.id}-${unitIndex}`}
+                          className="bg-zinc-800/80 border-2 border-zinc-700 rounded-2xl overflow-hidden shadow-xl mb-4"
+                        >
+                          {/* Unit Header with Gradient Background - Always Visible and Touchable */}
+                          <TouchableOpacity
+                            onPress={() => toggleUnit(unitId)}
+                            activeOpacity={0.8}
+                          >
+                            <View className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-b-2 border-amber-500/30 px-5 pt-5 pb-3">
+                              <View className="flex-row items-center justify-between">
+                                <View className="flex-1">
+                                  <Text className="text-white font-bold text-xl mb-2">
+                                    Unit {(unitIndex + 1).toString().padStart(2, '0')}: {unit.title}
+                                  </Text>
+                                  <Text className="text-amber-200 text-base mb-0">
+                                    Objective: {unit.objective}
+                                  </Text>
+                                  {unit.duration > 0 && (
+                                    <View className="flex-row items-center">
+                                      <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1.5">
+                                        <View className="flex-row items-center">
+                                          <Ionicons name="time-outline" size={12} color="#10B981" />
+                                          <Text className="text-emerald-300 text-sm ml-1.5 font-semibold">{unit.duration} min</Text>
+                                        </View>
+                                      </View>
+                                    </View>
+                                  )}
+                                </View>
+                                <View className="ml-3">
+                                  <Ionicons 
+                                    name={isExpanded ? "chevron-up" : "chevron-down"} 
+                                    size={24} 
+                                    color="#F59E0B" 
+                                  />
+                                </View>
+                              </View>
+                            </View>
+                          </TouchableOpacity>
 
-                {/* Action Buttons - Share, Report, and Rate */}
-                <View style={styles.expandedActionButtons}>
-                  <TouchableOpacity
-                    onPress={() => Alert.alert('Share', 'Share functionality coming soon!')}
-                    style={[styles.expandedActionButton, styles.expandedShareButton]}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="share-social-outline" size={18} color="#3B82F6" />
-                    <Text style={[styles.expandedActionText, styles.expandedShareText]}>Share</Text>
-                  </TouchableOpacity>
+                          {/* Unit Content Area - Only Visible When Expanded */}
+                          {isExpanded && (
+                              <View className="p-5">
+                                {unit.content && (
+                                  <View className="mb-4">
+                                    <Text className="text-zinc-200 text-base leading-6 mb-1">
+                                      {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) 
+                                        ? unit.content 
+                                        : unit.content.length > 100 
+                                          ? `${unit.content.substring(0, 100)}...` 
+                                          : unit.content}
+                                    </Text>
+                                    {unit.content.length > 100 && (
+                                      <TouchableOpacity 
+                                        onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
+                                        className="self-start"
+                                      >
+                                        <Text className="text-amber-400 text-sm font-semibold">
+                                          {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
+                                )}
 
-                  <TouchableOpacity
-                    onPress={() => setShowCourseReportDialog(true)}
-                    style={[styles.expandedActionButton, styles.expandedReportButton]}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="flag-outline" size={18} color="#EF4444" />
-                    <Text style={[styles.expandedActionText, styles.expandedReportText]}>Report</Text>
-                  </TouchableOpacity>
+                                {/* Learning Steps Section */}
+                                {unit.steps && unit.steps.length > 0 && (
+                                  <View className="mb-4">
+                                    <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
+                                    <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
+                                      {unit.steps.map((step: string, stepIndex: number) => (
+                                        <Text 
+                                          key={`step-${unitIndex}-${stepIndex}`}
+                                          className="text-zinc-200 text-base leading-6 mb-1"
+                                        >
+                                          {stepIndex + 1}. {step}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  </View>
+                                )}
 
-                  <TouchableOpacity
-                    onPress={() => setShowCourseRatingDialog(true)}
-                    style={[styles.expandedActionButton, styles.expandedRateButton]}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="star-outline" size={18} color="#FBBF24" />
-                    <Text style={[styles.expandedActionText, styles.expandedRateText]}>Rate</Text>
-                  </TouchableOpacity>
-                </View>
+                                {/* Common Errors Section */}
+                                {unit.commonErrors && unit.commonErrors.length > 0 && (
+                                  <View className="mb-4">
+                                    <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
+                                    {unit.commonErrors.map((error: string, errorIndex: number) => (
+                                      <Text 
+                                        key={`error-${unitIndex}-${errorIndex}`}
+                                        className="text-zinc-200 text-base leading-6"
+                                      >
+                                        • {error}
+                                      </Text>
+                                    ))}
+                                  </View>
+                                )}
 
-                {/* Course Content/Modules */}
-                {expandedCourseData.modules && expandedCourseData.modules.length > 0 && (
-                  <View style={styles.expandedSection}>
-                    <View style={styles.sectionTitleRow}>
-                      <View style={styles.sectionTitleBar} />
-                      <Text style={styles.expandedSectionTitle}>Course Modules</Text>
-                      <View style={styles.sectionTitleLine} />
-                    </View>
-                    {expandedCourseData.modules.map((module: any, index: number) => (
-                      <View key={index} style={styles.courseModuleItem}>
-                        <View style={styles.moduleHeader}>
-                          <Text style={styles.moduleTitle}>Module {index + 1}: {module.title}</Text>
+                                {/* Tips Section */}
+                                {unit.tips && unit.tips.length > 0 && (
+                                  <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
+                                    <View className="flex-row items-center mb-3">
+                                      <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
+                                        <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
+                                      </View>
+                                      <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
+                                    </View>
+                                    <View className="ml-11">
+                                      {unit.tips.map((tip: string, tipIndex: number) => (
+                                        <Text 
+                                          key={`tip-${unitIndex}-${tipIndex}`}
+                                          className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
+                                        >
+                                          💡 {tip}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  </View>
+                                )}
+
+                                {/* Video Section */}
+                                {unit.videoUrl && (
+                                  <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
+                                    <View className="flex-row items-center">
+                                      <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
+                                        <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
+                                      </View>
+                                      <View className="flex-1">
+                                        <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
+                                        <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
+                                      </View>
+                                      <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                                    </View>
+                                  </View>
+                                )}
+                              </View>
+                            )}
                         </View>
-                        <Text style={styles.moduleDescription}>{module.description}</Text>
-                      </View>
-                    ))}
+                      )
+                    })}
                   </View>
-                )}
-
-                {/* Course Description */}
-                {expandedCourseData.content && (
-                  <View style={styles.expandedSection}>
-                    <View style={styles.sectionTitleRow}>
-                      <View style={styles.sectionTitleBar} />
-                      <Text style={styles.expandedSectionTitle}>Course Content</Text>
-                      <View style={styles.sectionTitleLine} />
-                    </View>
-                    <Text style={styles.courseContentText}>{expandedCourseData.content}</Text>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
-          </View>
-        </Modal>
+                </View>
+              )}
+            </View>
+          </ScrollView>
+        </View>
       )}
     </Modal>
   )
@@ -2684,6 +2957,38 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontSize: 18,
     letterSpacing: 0.5,
+  },
+  sectionContainer: {
+    marginBottom: 16,
+  },
+  sectionHeaderBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    gap: 12,
+  },
+  sectionHeaderText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+    flex: 1,
+  },
+  sectionBadge: {
+    backgroundColor: "rgba(250, 204, 21, 0.15)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  sectionBadgeText: {
+    color: "#FACC15",
+    fontSize: 14,
+    fontWeight: "700",
   },
 })
 
