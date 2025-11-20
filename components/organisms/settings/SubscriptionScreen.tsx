@@ -8,7 +8,8 @@ import { useStripe } from "@stripe/stripe-react-native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { useEffect, useState } from "react"
-import { ActivityIndicator, Alert, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import { ActivityIndicator, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import Dialog from "../../atoms/Dialog"
 
 const SubscriptionScreen: React.FC = () => {
   const router = useRouter()
@@ -19,6 +20,11 @@ const SubscriptionScreen: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [loadingPlans, setLoadingPlans] = useState(true)
   const [availablePlans, setAvailablePlans] = useState<SubscriptionPlan[]>([])
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [showCancelConfirmDialog, setShowCancelConfirmDialog] = useState(false)
+  const [showCancelSuccessDialog, setShowCancelSuccessDialog] = useState(false)
 
   // Get subscription info from profile (comes from authContext)
   const isPro = profile?.isPro || false
@@ -50,7 +56,8 @@ const SubscriptionScreen: React.FC = () => {
       setAvailablePlans(plansResponse.plans)
     } catch (error) {
       console.error('Failed to load plans:', error)
-      Alert.alert('Error', 'Failed to load subscription plans')
+      setErrorMessage('Failed to load subscription plans')
+      setShowErrorDialog(true)
     } finally {
       setLoadingPlans(false)
     }
@@ -74,7 +81,8 @@ const SubscriptionScreen: React.FC = () => {
       })
 
       if (initError) {
-        Alert.alert("Error", initError.message)
+        setErrorMessage(initError.message)
+        setShowErrorDialog(true)
         setLoading(false)
         return
       }
@@ -84,26 +92,15 @@ const SubscriptionScreen: React.FC = () => {
 
       if (presentError) {
         console.log('Payment sheet error:', presentError)
-        Alert.alert("Payment Canceled", presentError.message)
+        setErrorMessage(presentError.message)
+        setShowErrorDialog(true)
       } else {
-        Alert.alert(
-          "Success! 🎉",
-          "Welcome to MealMate Premium! You now have access to all premium features.",
-          [
-            {
-              text: "Great!",
-              onPress: async () => {
-                await refreshProfile()
-                // Refresh the page to show updated subscription status
-                await loadPlans()
-              },
-            },
-          ]
-        )
+        setShowSuccessDialog(true)
       }
     } catch (error: any) {
       console.error('Subscription error:', error)
-      Alert.alert("Error", error?.message || "Failed to process subscription")
+      setErrorMessage(error?.message || "Failed to process subscription")
+      setShowErrorDialog(true)
     } finally {
       setLoading(false)
     }
@@ -111,49 +108,27 @@ const SubscriptionScreen: React.FC = () => {
 
   const handleCancelSubscription = async () => {
     if (!profile?.subscriptionId) {
-      Alert.alert("Error", "No active subscription found")
+      setErrorMessage("No active subscription found")
+      setShowErrorDialog(true)
       return
     }
 
-    Alert.alert(
-      "Cancel Subscription",
-      "Are you sure you want to cancel your premium subscription? You'll lose access to all premium features at the end of your billing period.",
-      [
-        {
-          text: "Keep Subscription",
-          style: "cancel",
-        },
-        {
-          text: "Cancel Subscription",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              setLoading(true)
-              await subscriptionService.cancelSubscription(profile.subscriptionId!)
+    setShowCancelConfirmDialog(true)
+  }
 
-              Alert.alert(
-                "Subscription Canceled",
-                "Your subscription has been canceled. You'll continue to have access to premium features until the end of your billing period.",
-                [
-                  {
-                    text: "OK",
-                    onPress: async () => {
-                      await refreshProfile()
-                      await loadPlans()
-                    },
-                  },
-                ]
-              )
-            } catch (error: any) {
-              console.error('Cancel subscription error:', error)
-              Alert.alert("Error", error?.message || "Failed to cancel subscription")
-            } finally {
-              setLoading(false)
-            }
-          },
-        },
-      ]
-    )
+  const confirmCancelSubscription = async () => {
+    setShowCancelConfirmDialog(false)
+    try {
+      setLoading(true)
+      await subscriptionService.cancelSubscription(profile!.subscriptionId!)
+      setShowCancelSuccessDialog(true)
+    } catch (error: any) {
+      console.error('Cancel subscription error:', error)
+      setErrorMessage(error?.message || "Failed to cancel subscription")
+      setShowErrorDialog(true)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const getPlanInfo = (planType: PlanType) => {
@@ -175,13 +150,123 @@ const SubscriptionScreen: React.FC = () => {
   const monthlyPlan = availablePlans.find(p => p.id === 'monthly')
   const yearlyPlan = availablePlans.find(p => p.id === 'yearly')
 
+  // Skeleton Loader Component
+  const SkeletonLoader = () => (
+    <View style={{ flex: 1, backgroundColor: '#000000' }}>
+      <SafeAreaView className="flex-1 bg-black">
+        <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
+
+        {/* Header Skeleton */}
+        <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4">
+          <View className="flex-row items-center justify-between mb-2">
+            <View className="w-6 h-6 bg-zinc-800 rounded-full opacity-50" />
+            <View className="w-32 h-6 bg-zinc-800 rounded opacity-50" />
+            <View className="w-6" />
+          </View>
+          <View className="w-48 h-4 bg-zinc-800 rounded mx-auto mt-2 opacity-50" />
+        </View>
+
+        <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
+          {/* Hero Skeleton */}
+          <View className="mb-6">
+            <View className="rounded-3xl bg-zinc-800 p-6 items-center opacity-50">
+              <View className="w-12 h-12 bg-zinc-700 rounded-full mb-3" />
+              <View className="w-48 h-6 bg-zinc-700 rounded mb-2" />
+              <View className="w-64 h-4 bg-zinc-700 rounded" />
+            </View>
+          </View>
+
+          {/* Plan Selection Skeleton */}
+          <View className="mb-6">
+            <View className="w-32 h-5 bg-zinc-800 rounded mb-4 opacity-50" />
+            
+            {/* Yearly Plan Skeleton */}
+            <View className="mb-4">
+              <View className="rounded-2xl overflow-hidden border border-zinc-700">
+                <View className="bg-zinc-800 py-2 opacity-50">
+                  <View className="w-48 h-3 bg-zinc-700 rounded mx-auto" />
+                </View>
+                <View className="bg-zinc-900 p-5">
+                  <View className="flex-row items-center justify-between mb-3">
+                    <View className="flex-1">
+                      <View className="w-32 h-6 bg-zinc-800 rounded mb-2 opacity-50" />
+                      <View className="w-24 h-4 bg-zinc-800 rounded opacity-50" />
+                    </View>
+                    <View className="items-end">
+                      <View className="w-20 h-8 bg-zinc-800 rounded mb-1 opacity-50" />
+                      <View className="w-16 h-4 bg-zinc-800 rounded opacity-50" />
+                    </View>
+                  </View>
+                  <View className="bg-zinc-800 rounded-lg px-3 py-3 mt-2 opacity-50">
+                    <View className="w-48 h-4 bg-zinc-700 rounded mx-auto" />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {/* Monthly Plan Skeleton */}
+            <View className="rounded-2xl overflow-hidden border border-zinc-700">
+              <View className="bg-zinc-900 p-5">
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <View className="w-32 h-6 bg-zinc-800 rounded mb-2 opacity-50" />
+                    <View className="w-24 h-4 bg-zinc-800 rounded opacity-50" />
+                  </View>
+                  <View className="items-end">
+                    <View className="w-20 h-8 bg-zinc-800 rounded mb-1 opacity-50" />
+                    <View className="w-16 h-4 bg-zinc-800 rounded opacity-50" />
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Premium Features Skeleton */}
+          <View className="mb-6">
+            <View className="w-48 h-5 bg-zinc-800 rounded mb-4 opacity-50" />
+            <View className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((item, index) => (
+                <View key={item}>
+                  <View className="flex-row items-center p-4">
+                    <View className="w-10 h-10 rounded-full bg-zinc-800 mr-4 opacity-50" />
+                    <View className="flex-1">
+                      <View className="w-40 h-4 bg-zinc-800 rounded opacity-50" />
+                    </View>
+                    <View className="w-6 h-6 rounded-full bg-zinc-800 opacity-50" />
+                  </View>
+                  {index < 7 && <View className="h-px bg-zinc-800 ml-14" />}
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Subscribe Button Skeleton */}
+          <View className="mb-6 rounded-2xl bg-zinc-800 p-5 items-center opacity-50">
+            <View className="w-48 h-6 bg-zinc-700 rounded mb-1" />
+            <View className="w-24 h-4 bg-zinc-700 rounded" />
+          </View>
+
+          {/* Benefits Skeleton */}
+          <View className="bg-zinc-900 rounded-2xl p-5 mb-6 border border-zinc-800">
+            <View className="w-32 h-5 bg-zinc-800 rounded mb-4 mx-auto opacity-50" />
+            <View className="flex gap-4">
+              {[1, 2, 3, 4].map((item) => (
+                <View key={item} className="flex-row items-center">
+                  <View className="w-5 h-5 rounded-full bg-zinc-800 opacity-50" />
+                  <View className="ml-3 flex-1">
+                    <View className="w-full h-4 bg-zinc-800 rounded opacity-50" />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  )
+
   if (loadingPlans) {
-    return (
-      <View style={{ flex: 1, backgroundColor: '#000000', justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#FACC15" />
-        <Text className="text-white mt-4">Loading plans...</Text>
-      </View>
-    )
+    return <SkeletonLoader />
   }
 
   return (
@@ -467,6 +552,69 @@ const SubscriptionScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {/* Error Dialog */}
+        <Dialog
+          visible={showErrorDialog}
+          type="error"
+          title="Error"
+          message={errorMessage}
+          confirmText="OK"
+          onConfirm={() => setShowErrorDialog(false)}
+          onClose={() => setShowErrorDialog(false)}
+        />
+
+        {/* Success Dialog */}
+        <Dialog
+          visible={showSuccessDialog}
+          type="success"
+          title="Success! 🎉"
+          message="Welcome to MealMate Premium! You now have access to all premium features."
+          confirmText="Great!"
+          onConfirm={async () => {
+            setShowSuccessDialog(false)
+            await refreshProfile()
+            await loadPlans()
+          }}
+          onClose={async () => {
+            setShowSuccessDialog(false)
+            await refreshProfile()
+            await loadPlans()
+          }}
+        />
+
+        {/* Cancel Confirmation Dialog */}
+        <Dialog
+          visible={showCancelConfirmDialog}
+          type="warning"
+          title="Cancel Subscription"
+          message="Are you sure you want to cancel your premium subscription? You'll lose access to all premium features at the end of your billing period."
+          confirmText="Cancel Subscription"
+          cancelText="Keep Subscription"
+          showCancelButton={true}
+          onConfirm={confirmCancelSubscription}
+          onCancel={() => setShowCancelConfirmDialog(false)}
+          onClose={() => setShowCancelConfirmDialog(false)}
+        />
+
+        {/* Cancel Success Dialog */}
+        <Dialog
+          visible={showCancelSuccessDialog}
+          type="info"
+          title="Subscription Canceled"
+          message="Your subscription has been canceled. You'll continue to have access to premium features until the end of your billing period."
+          confirmText="OK"
+          onConfirm={async () => {
+            setShowCancelSuccessDialog(false)
+            await refreshProfile()
+            await loadPlans()
+          }}
+          onClose={async () => {
+            setShowCancelSuccessDialog(false)
+            await refreshProfile()
+            await loadPlans()
+          }}
+        />
       </SafeAreaView>
     </View>
   )

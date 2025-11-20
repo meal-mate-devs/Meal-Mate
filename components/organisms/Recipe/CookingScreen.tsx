@@ -5,7 +5,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Animated,
   Dimensions,
   ScrollView,
@@ -63,6 +62,8 @@ export default function CookingScreen() {
   const [isPaused, setIsPaused] = useState(false);
   const [isSpeakingInstruction, setIsSpeakingInstruction] = useState(false);
   const [isSpeakingIngredients, setIsSpeakingIngredients] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [upgradeDialogType, setUpgradeDialogType] = useState<'instruction' | 'ingredients'>('instruction');
 
   const overallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -179,14 +180,8 @@ export default function CookingScreen() {
 
   const handleSpeakInstruction = async () => {
     if (!isPro) {
-      Alert.alert(
-        '🎙️ Premium Feature',
-        'Text-to-speech for cooking instructions is a premium feature. Upgrade to Pro to listen to your recipes hands-free!',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade to Pro', onPress: () => router.push('/(protected)/(tabs)/(hidden)/settings/subscription') }
-        ]
-      );
+      setUpgradeDialogType('instruction');
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -222,14 +217,8 @@ export default function CookingScreen() {
 
   const handleSpeakIngredients = async () => {
     if (!isPro) {
-      Alert.alert(
-        '🎙️ Premium Feature',
-        'Text-to-speech for ingredients is a premium feature. Upgrade to Pro to listen to your recipes hands-free!',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Upgrade to Pro', onPress: () => router.push('/(protected)/(tabs)/(hidden)/settings/subscription') }
-        ]
-      );
+      setUpgradeDialogType('ingredients');
+      setShowUpgradeDialog(true);
       return;
     }
 
@@ -786,6 +775,23 @@ export default function CookingScreen() {
         confirmText="Done"
         onConfirm={handleCloseCompletionDialog}
         onClose={handleCloseCompletionDialog}
+      />
+
+      {/* Upgrade to Pro Dialog */}
+      <Dialog
+        visible={showUpgradeDialog}
+        type="warning"
+        title="🎙️ Premium Feature"
+        message={`Text-to-speech for ${upgradeDialogType === 'instruction' ? 'cooking instructions' : 'ingredients'} is a premium feature. Upgrade to Pro to listen to your recipes hands-free!`}
+        confirmText="Upgrade to Pro"
+        cancelText="Cancel"
+        showCancelButton={true}
+        onConfirm={() => {
+          setShowUpgradeDialog(false);
+          router.push('/(protected)/(tabs)/(hidden)/settings/subscription');
+        }}
+        onCancel={() => setShowUpgradeDialog(false)}
+        onClose={() => setShowUpgradeDialog(false)}
       />
     </View>
   );
