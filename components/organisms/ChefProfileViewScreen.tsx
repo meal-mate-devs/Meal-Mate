@@ -3,6 +3,7 @@
 import * as chefService from "@/lib/api/chefService"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
 import {
     ActivityIndicator,
@@ -11,6 +12,7 @@ import {
     Image,
     Modal,
     ScrollView,
+    Share,
     StyleSheet,
     Text,
     TextInput,
@@ -105,6 +107,26 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [courses, setCourses] = useState<Course[]>(chef.courses || [])
   const [isSubscribed, setIsSubscribed] = useState(chef.isSubscribed)
   const [subscriptionChecked, setSubscriptionChecked] = useState(false)
+  const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
+  const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
+  const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
+  const [expandedCourseData, setExpandedCourseData] = useState<any>(null)
+  const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
+  const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(false)
+  
+  // Recipe/Course specific report and rate dialogs
+  const [showRecipeReportDialog, setShowRecipeReportDialog] = useState(false)
+  const [showRecipeRatingDialog, setShowRecipeRatingDialog] = useState(false)
+  const [showCourseReportDialog, setShowCourseReportDialog] = useState(false)
+  const [showCourseRatingDialog, setShowCourseRatingDialog] = useState(false)
+  const [recipeReportReason, setRecipeReportReason] = useState("")
+  const [recipeReportDescription, setRecipeReportDescription] = useState("")
+  const [recipeRating, setRecipeRating] = useState(0)
+  const [recipeRatingFeedback, setRecipeRatingFeedback] = useState("")
+  const [courseReportReason, setCourseReportReason] = useState("")
+  const [courseReportDescription, setCourseReportDescription] = useState("")
+  const [courseRating, setCourseRating] = useState(0)
+  const [courseRatingFeedback, setCourseRatingFeedback] = useState("")
 
   // Load recipes and courses from backend
   useEffect(() => {
@@ -130,7 +152,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     setIsLoadingRecipes(true)
     try {
       const { recipes: fetchedRecipes } = await chefService.getChefRecipes(chef.id, { limit: 50 })
-      setRecipes(fetchedRecipes as any)
+      // Map _id to id if needed
+      const mappedRecipes = fetchedRecipes.map((r: any) => ({
+        ...r,
+        id: r.id || r._id,
+      }))
+      setRecipes(mappedRecipes as any)
     } catch (error) {
       console.log("Failed to load recipes:", error)
     } finally {
@@ -141,7 +168,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     setIsLoadingCourses(true)
     try {
       const { courses: fetchedCourses } = await chefService.getChefCourses(chef.id, { limit: 50 })
-      setCourses(fetchedCourses as any)
+      // Map _id to id if needed
+      const mappedCourses = fetchedCourses.map((c: any) => ({
+        ...c,
+        id: c.id || c._id,
+      }))
+      setCourses(mappedCourses as any)
     } catch (error) {
       console.log("Failed to load courses:", error)
     } finally {
@@ -161,57 +193,278 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const handleSubscribe = async () => {
     setIsSubscribing(true)
     try {
-      await onSubscribeToggle?.(chef.id)
+      if (isSubscribed) {
+        // Unsubscribe
+        Alert.alert(
+          "Unsubscribe",
+          `Are you sure you want to unsubscribe from ${chef.name}?`,
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Unsubscribe",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await chefService.unsubscribeFromChef(chef.id)
+                  setIsSubscribed(false)
+                  Alert.alert("Success", "Unsubscribed successfully")
+                  onSubscribeToggle?.(chef.id)
+                  // Reload content to update access
+                  loadChefContent()
+                } catch (error: any) {
+                  Alert.alert("Error", error.message || "Failed to unsubscribe")
+                }
+              }
+            }
+          ]
+        )
+      } else {
+        // Subscribe
+        await chefService.subscribeToChef(chef.id)
+        setIsSubscribed(true)
+        Alert.alert("Success", `You are now subscribed to ${chef.name}!`)
+        onSubscribeToggle?.(chef.id)
+        // Reload content to update access
+        loadChefContent()
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update subscription")
     } finally {
       setIsSubscribing(false)
     }
   }
 
-  const handleSubmitReport = () => {
+  const handleSubmitReport = async () => {
     const finalReason = customReason.trim() || reportReason
     if (!finalReason) {
-      alert("Please describe your concern or select a reason")
+      Alert.alert("Error", "Please describe your concern or select a reason")
       return
     }
-    onReport?.(chef.id, finalReason, reportDescription)
-    setShowReportDialog(false)
-    setReportReason("")
-    setReportDescription("")
-    setCustomReason("")
+    
+    setIsReporting(true)
+    try {
+      await chefService.reportChef(chef.id, finalReason, reportDescription)
+      Alert.alert("Success", "Report submitted successfully. We'll review it shortly.")
+      setShowReportDialog(false)
+      setReportReason("")
+      setReportDescription("")
+      setCustomReason("")
+      onReport?.(chef.id, finalReason, reportDescription)
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit report")
+    } finally {
+      setIsReporting(false)
+    }
   }
 
-  const handleSubmitRating = () => {
+  const handleSubmitRating = async () => {
     if (userRating === 0) {
-      alert("Please select a rating")
+      Alert.alert("Error", "Please select a rating")
       return
     }
-    onRate?.(chef.id, userRating, userFeedback)
-    setShowRatingDialog(false)
-    setUserRating(0)
-    setUserFeedback("")
+    
+    setIsRating(true)
+    try {
+      const result = await chefService.rateChef(chef.id, userRating, userFeedback)
+      Alert.alert(
+        "Success", 
+        `Rating submitted! Chef's average rating: ${result.averageRating.toFixed(1)} ⭐`
+      )
+      setShowRatingDialog(false)
+      setUserRating(0)
+      setUserFeedback("")
+      onRate?.(chef.id, userRating, userFeedback)
+      // Update chef stats if available
+      if (chef.stats) {
+        chef.stats.averageRating = result.averageRating
+        chef.stats.totalRatings = result.totalRatings
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit rating")
+    } finally {
+      setIsRating(false)
+    }
+  }
+
+  // Handler to view recipe details and track view count
+  const handleViewRecipe = async (recipe: Recipe) => {
+    try {
+      setIsLoadingRecipeDetails(true)
+      setExpandedRecipeId(recipe.id)
+      
+      console.log('👁️ Fetching recipe details for view:', recipe.id)
+      const fullRecipe = await chefService.getRecipeById(recipe.id)
+      
+      console.log('✅ Full recipe fetched:', fullRecipe.title)
+      setExpandedRecipeData(fullRecipe)
+      
+      // Track view count (only for other users viewing, not chef's own content)
+      if (fullRecipe.authorId && fullRecipe.authorId !== chef.id) {
+        console.log('📊 Tracking recipe view for:', recipe.id)
+        // TODO: Call API to increment view count
+      }
+    } catch (error: any) {
+      console.log('❌ Failed to fetch recipe details:', error)
+      setExpandedRecipeId(null)
+      
+      Alert.alert(
+        'Unable to Load Recipe',
+        'Failed to load recipe details. Please try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      )
+    } finally {
+      setIsLoadingRecipeDetails(false)
+    }
+  }
+
+  // Handler to view course details and track view count
+  const handleViewCourse = async (course: Course) => {
+    try {
+      setIsLoadingCourseDetails(true)
+      setExpandedCourseId(course.id)
+      
+      console.log('👁️ Fetching course details for view:', course.id)
+      const fullCourse = await chefService.getCourseById(course.id)
+      
+      console.log('✅ Full course fetched:', fullCourse.title)
+      setExpandedCourseData(fullCourse)
+      
+      // Track view count (only for other users viewing, not chef's own content)
+      const courseChefId = (fullCourse as any).chefId || (fullCourse as any).authorId
+      if (courseChefId && courseChefId !== chef.id) {
+        console.log('📊 Tracking course view for:', course.id)
+        // TODO: Call API to increment view count
+      }
+    } catch (error: any) {
+      console.log('❌ Failed to fetch course details:', error)
+      setExpandedCourseId(null)
+      
+      Alert.alert(
+        'Unable to Load Course',
+        'Failed to load course details. Please try again.',
+        [{ text: 'OK', style: 'cancel' }]
+      )
+    } finally {
+      setIsLoadingCourseDetails(false)
+    }
+  }
+
+  const handleStartCooking = (recipe: any) => {
+    if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
+      Alert.alert('No Instructions', 'This recipe has no cooking instructions available.')
+      return
+    }
+    
+    setExpandedRecipeId(null)
+    setExpandedRecipeData(null)
+    
+    // Navigate to cooking screen with recipe data
+    router.push({
+      pathname: '/recipe/cooking' as any,
+      params: {
+        recipe: JSON.stringify(recipe)
+      }
+    })
+  }
+
+  // Comprehensive share functionality matching FavoritesScreen pattern
+  const handleShareRecipe = async (recipe: any): Promise<void> => {
+    let recipeText = `🍽️ ${recipe.title}\n\n`
+    recipeText += `📝 ${recipe.description || 'Delicious recipe from Meal Mate'}\n\n`
+    
+    // Add timing information
+    recipeText += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
+    recipeText += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
+
+    // Add nutrition facts
+    recipeText += `📊 Nutrition (per serving):\n`
+    recipeText += `• Calories: ${recipe.nutrition?.calories || 0}\n`
+    recipeText += `• Protein: ${recipe.nutrition?.protein || 0}g\n`
+    recipeText += `• Carbs: ${recipe.nutrition?.carbs || 0}g\n`
+    recipeText += `• Fat: ${recipe.nutrition?.fat || 0}g\n\n`
+
+    // Add ingredients list
+    recipeText += `🛒 Ingredients:\n`
+    recipe.ingredients.forEach((ingredient: any, index: number) => {
+      recipeText += `${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
+      if (ingredient.notes) {
+        recipeText += ` (${ingredient.notes})`
+      }
+      recipeText += `\n`
+    })
+    recipeText += `\n`
+
+    // Add instructions
+    recipeText += `👨‍🍳 Instructions:\n`
+    recipe.instructions.forEach((instruction: any) => {
+      recipeText += `${instruction.step}. ${instruction.instruction}`
+      if (instruction.duration) {
+        recipeText += ` (${instruction.duration} min)`
+      }
+      recipeText += `\n`
+      if (instruction.tips) {
+        recipeText += `   💡 ${instruction.tips}\n`
+      }
+    })
+    recipeText += `\n`
+
+    // Add chef's tips
+    if (recipe.tips && recipe.tips.length > 0) {
+      recipeText += `💡 Chef's Tips:\n`
+      recipe.tips.forEach((tip: string) => {
+        const cleanTip = tip.indexOf('\n') !== -1 ? tip.substring(0, tip.indexOf('\n')).trim() : tip
+        recipeText += `• ${cleanTip}\n`
+      })
+      recipeText += `\n`
+    }
+
+    // Add substitutions
+    if (recipe.substitutions && recipe.substitutions.length > 0) {
+      recipeText += `🔄 Ingredient Substitutions:\n`
+      recipe.substitutions.forEach((sub: any) => {
+        recipeText += `• ${sub.original} → ${sub.substitute} (Ratio: ${sub.ratio})\n`
+        if (sub.notes) {
+          recipeText += `  ${sub.notes}\n`
+        }
+      })
+      recipeText += `\n`
+    }
+
+    recipeText += `---\nShared from Meal Mate App 🍳`
+
+    try {
+      await Share.share({
+        title: recipe.title,
+        message: recipeText,
+      })
+    } catch (error) {
+      console.log('❌ Error sharing recipe:', error)
+    }
   }
 
   const getFilteredContent = () => {
     if (activeTab === "recipes") {
-      return chef.recipes.filter((r) => !r.isRestricted)
+      return recipes.filter((r) => !r.isRestricted)
     } else if (activeTab === "courses") {
-      return chef.courses.filter((c) => !c.isRestricted)
+      return courses.filter((c) => !c.isRestricted)
     } else {
       // Restricted content
       return [
-        ...chef.recipes.filter((r) => r.isRestricted),
-        ...chef.courses.filter((c) => c.isRestricted),
+        ...recipes.filter((r) => r.isRestricted),
+        ...courses.filter((c) => c.isRestricted),
       ]
     }
   }
 
-  const renderRecipeCard = (recipe: Recipe) => (
+  const renderRecipeCard = (recipe: Recipe) => {
+    const imageUri = typeof recipe.image === 'string' ? recipe.image : (recipe.image as any)?.url || ''
+    return (
     <TouchableOpacity 
       style={styles.contentCard} 
-      key={recipe.id}
       activeOpacity={0.7}
+      onPress={() => handleViewRecipe(recipe)}
     >
-      <Image source={{ uri: recipe.image }} style={styles.contentImage} />
+      <Image source={{ uri: imageUri }} style={styles.contentImage} />
       <View style={styles.contentInfo}>
         <View style={styles.contentHeader}>
           <Text style={styles.contentTitle} numberOfLines={2}>
@@ -249,8 +502,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             style={styles.contentActionButton}
             onPress={(e) => {
               e.stopPropagation()
-              // TODO: Implement report recipe
-              console.log("Report recipe:", recipe.id)
+              setShowRecipeReportDialog(true)
             }}
           >
             <Ionicons name="flag-outline" size={16} color="#EF4444" />
@@ -260,8 +512,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             style={[styles.contentActionButton, styles.rateActionButton]}
             onPress={(e) => {
               e.stopPropagation()
-              // TODO: Implement rate recipe
-              console.log("Rate recipe:", recipe.id)
+              setShowRecipeRatingDialog(true)
             }}
           >
             <Ionicons name="star-outline" size={16} color="#FACC15" />
@@ -270,15 +521,18 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         </View>
       </View>
     </TouchableOpacity>
-  )
+    )
+  }
 
-  const renderCourseCard = (course: Course) => (
+  const renderCourseCard = (course: Course) => {
+    const imageUri = typeof course.image === 'string' ? course.image : (course.image as any)?.url || ''
+    return (
     <TouchableOpacity 
       style={styles.contentCard} 
-      key={course.id}
       activeOpacity={0.7}
+      onPress={() => handleViewCourse(course)}
     >
-      <Image source={{ uri: course.image }} style={styles.contentImage} />
+      <Image source={{ uri: imageUri }} style={styles.contentImage} />
       <View style={styles.contentInfo}>
         <View style={styles.contentHeader}>
           <Text style={styles.contentTitle} numberOfLines={2}>
@@ -318,8 +572,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             style={styles.contentActionButton}
             onPress={(e) => {
               e.stopPropagation()
-              // TODO: Implement report course
-              console.log("Report course:", course.id)
+              setShowCourseReportDialog(true)
             }}
           >
             <Ionicons name="flag-outline" size={16} color="#EF4444" />
@@ -329,8 +582,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             style={[styles.contentActionButton, styles.rateActionButton]}
             onPress={(e) => {
               e.stopPropagation()
-              // TODO: Implement rate course
-              console.log("Rate course:", course.id)
+              setShowCourseRatingDialog(true)
             }}
           >
             <Ionicons name="star-outline" size={16} color="#FACC15" />
@@ -339,11 +591,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         </View>
       </View>
     </TouchableOpacity>
-  )
+    )
+  }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container]}>
         <LinearGradient colors={["#1a1a1a", "#0a0a0a"]} style={styles.gradient}>
           {/* Header */}
           <View style={styles.header}>
@@ -359,7 +612,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <View style={styles.profileHeader}>
               <View style={styles.profileTopSection}>
                 {/* Avatar on left */}
-                <Image source={{ uri: chef.avatar }} style={styles.chefAvatar} />
+                <Image source={{ uri: typeof chef.avatar === 'string' ? chef.avatar : (chef.avatar as any)?.url || '' }} style={styles.chefAvatar} />
 
                 {/* Info on right */}
                 <View style={styles.chefInfo}>
@@ -383,29 +636,31 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   <TouchableOpacity
                     style={[
                       styles.subscribeButton,
-                      chef.isSubscribed && styles.subscribedButton,
+                      isSubscribed && styles.subscribedButton,
                     ]}
                     onPress={handleSubscribe}
                     disabled={isSubscribing}
                     activeOpacity={0.7}
                   >
-                    <Ionicons
-                      name={chef.isSubscribed ? "checkmark-circle" : "add-circle-outline"}
-                      size={18}
-                      color={chef.isSubscribed ? "#22C55E" : "white"}
-                    />
-                    <Text
-                      style={[
-                        styles.subscribeButtonText,
-                        chef.isSubscribed && styles.subscribedButtonText,
-                      ]}
-                    >
-                      {isSubscribing
-                        ? "Loading..."
-                        : chef.isSubscribed
-                        ? "Subscribed"
-                        : "Subscribe"}
-                    </Text>
+                    {isSubscribing ? (
+                      <ActivityIndicator size="small" color={isSubscribed ? "#22C55E" : "white"} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={isSubscribed ? "checkmark-circle" : "add-circle-outline"}
+                          size={18}
+                          color={isSubscribed ? "#22C55E" : "white"}
+                        />
+                        <Text
+                          style={[
+                            styles.subscribeButtonText,
+                            isSubscribed && styles.subscribedButtonText,
+                          ]}
+                        >
+                          {isSubscribed ? "Subscribed" : "Subscribe"}
+                        </Text>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </View>
               </View>
@@ -570,10 +825,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <View style={styles.contentList}>
               {activeTab === "recipes" && (
                 <>
-                  {chef.recipes.filter((r) => !r.isRestricted).length > 0 ? (
-                    chef.recipes
+                  {isLoadingRecipes ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#FACC15" />
+                      <Text style={styles.loadingText}>Loading recipes...</Text>
+                    </View>
+                  ) : recipes.filter((r) => !r.isRestricted).length > 0 ? (
+                    recipes
                       .filter((r) => !r.isRestricted)
-                      .map((recipe) => renderRecipeCard(recipe))
+                      .map((recipe) => <View key={recipe.id}>{renderRecipeCard(recipe)}</View>)
                   ) : (
                     <View style={styles.emptyState}>
                       <Ionicons name="restaurant-outline" size={48} color="#475569" />
@@ -587,10 +847,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               )}
               {activeTab === "courses" && (
                 <>
-                  {chef.courses.filter((c) => !c.isRestricted).length > 0 ? (
-                    chef.courses
+                  {isLoadingCourses ? (
+                    <View style={styles.loadingContainer}>
+                      <ActivityIndicator size="large" color="#FACC15" />
+                      <Text style={styles.loadingText}>Loading courses...</Text>
+                    </View>
+                  ) : courses.filter((c) => !c.isRestricted).length > 0 ? (
+                    courses
                       .filter((c) => !c.isRestricted)
-                      .map((course) => renderCourseCard(course))
+                      .map((course) => <View key={course.id}>{renderCourseCard(course)}</View>)
                   ) : (
                     <View style={styles.emptyState}>
                       <Ionicons name="book-outline" size={48} color="#475569" />
@@ -604,10 +869,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               )}
               {activeTab === "restricted" && (
                 <>
-                  {chef.recipes.filter((r) => r.isRestricted).map((recipe) => renderRecipeCard(recipe))}
-                  {chef.courses.filter((c) => c.isRestricted).map((course) => renderCourseCard(course))}
-                  {chef.recipes.filter((r) => r.isRestricted).length === 0 &&
-                    chef.courses.filter((c) => c.isRestricted).length === 0 && (
+                  {recipes.filter((r) => r.isRestricted).map((recipe) => <View key={`recipe-${recipe.id}`}>{renderRecipeCard(recipe)}</View>)}
+                  {courses.filter((c) => c.isRestricted).map((course) => <View key={`course-${course.id}`}>{renderCourseCard(course)}</View>)}
+                  {recipes.filter((r) => r.isRestricted).length === 0 &&
+                    courses.filter((c) => c.isRestricted).length === 0 && (
                       <View style={styles.emptyState}>
                         <Ionicons name="lock-closed-outline" size={48} color="#475569" />
                         <Text style={styles.emptyStateText}>No Restricted Content</Text>
@@ -708,8 +973,13 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
               onPress={handleSubmitReport}
+              disabled={isReporting}
             >
-              <Text style={styles.submitButtonText}>Submit Report</Text>
+              {isReporting ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit Report</Text>
+              )}
             </TouchableOpacity>
           </View>
         </>
@@ -769,13 +1039,796 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSubmitRating}
-            disabled={userRating === 0}
+            disabled={userRating === 0 || isRating}
             style={[styles.dialogButton, styles.submitButton, userRating === 0 && styles.disabledButton]}
           >
-            <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            {isRating ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            )}
           </TouchableOpacity>
         </View>
       </CustomDialog>
+
+      {/* Recipe Report Dialog */}
+      <CustomDialog
+        visible={showRecipeReportDialog}
+        onClose={() => {
+          setShowRecipeReportDialog(false)
+          setRecipeReportReason("")
+          setRecipeReportDescription("")
+        }}
+        title="Report Recipe"
+        height={550}
+      >
+        <>
+          <View style={styles.reportTopSection}>
+            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <TextInput
+              style={[styles.textInput, styles.reportTextBox]}
+              placeholder="Type your reason for reporting this recipe..."
+              placeholderTextColor="#64748B"
+              multiline
+              numberOfLines={4}
+              value={recipeReportDescription}
+              onChangeText={setRecipeReportDescription}
+            />
+
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+          </View>
+          
+          <ScrollView 
+            style={styles.reasonScrollView} 
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {reportReasons.filter(r => r !== "Custom").map((reason) => (
+              <TouchableOpacity
+                key={reason}
+                style={[
+                  styles.reasonOption,
+                  recipeReportReason === reason && styles.reasonOptionSelected,
+                ]}
+                onPress={() => {
+                  if (recipeReportReason === reason) {
+                    setRecipeReportReason("")
+                  } else {
+                    setRecipeReportReason(reason)
+                    setRecipeReportDescription("")
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.radioButton,
+                    recipeReportReason === reason && styles.radioButtonSelected,
+                  ]}
+                >
+                  {recipeReportReason === reason && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <Text style={styles.reasonText}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={styles.dialogButtons}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => {
+                setShowRecipeReportDialog(false)
+                setRecipeReportReason("")
+                setRecipeReportDescription("")
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.submitButton]}
+              onPress={() => {
+                // TODO: Implement recipe report submission
+                Alert.alert('Success', 'Recipe report submitted successfully')
+                setShowRecipeReportDialog(false)
+                setRecipeReportReason("")
+                setRecipeReportDescription("")
+              }}
+            >
+              <Text style={styles.submitButtonText}>Submit Report</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      </CustomDialog>
+
+      {/* Recipe Rating Dialog */}
+      <CustomDialog
+        visible={showRecipeRatingDialog}
+        onClose={() => {
+          setShowRecipeRatingDialog(false)
+          setRecipeRating(0)
+          setRecipeRatingFeedback("")
+        }}
+        title="Rate This Recipe"
+        height={400}
+      >
+        <View style={styles.dialogContent}>
+          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <View style={styles.ratingStars}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setRecipeRating(star)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={star <= recipeRating ? "star" : "star-outline"}
+                  size={48}
+                  color={star <= recipeRating ? "#FACC15" : "#475569"}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Share your thoughts about this recipe..."
+            placeholderTextColor="#64748B"
+            multiline
+            numberOfLines={4}
+            value={recipeRatingFeedback}
+            onChangeText={setRecipeRatingFeedback}
+          />
+        </View>
+
+        <View style={styles.dialogButtons}>
+          <TouchableOpacity
+            style={[styles.dialogButton, styles.cancelButton]}
+            onPress={() => {
+              setShowRecipeRatingDialog(false)
+              setRecipeRating(0)
+              setRecipeRatingFeedback("")
+            }}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              // TODO: Implement recipe rating submission
+              Alert.alert('Success', 'Recipe rating submitted successfully')
+              setShowRecipeRatingDialog(false)
+              setRecipeRating(0)
+              setRecipeRatingFeedback("")
+            }}
+            disabled={recipeRating === 0}
+            style={[styles.dialogButton, styles.submitButton, recipeRating === 0 && styles.disabledButton]}
+          >
+            <Text style={[styles.submitButtonText, recipeRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* Course Report Dialog */}
+      <CustomDialog
+        visible={showCourseReportDialog}
+        onClose={() => {
+          setShowCourseReportDialog(false)
+          setCourseReportReason("")
+          setCourseReportDescription("")
+        }}
+        title="Report Course"
+        height={550}
+      >
+        <>
+          <View style={styles.reportTopSection}>
+            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <TextInput
+              style={[styles.textInput, styles.reportTextBox]}
+              placeholder="Type your reason for reporting this course..."
+              placeholderTextColor="#64748B"
+              multiline
+              numberOfLines={4}
+              value={courseReportDescription}
+              onChangeText={setCourseReportDescription}
+            />
+
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+          </View>
+          
+          <ScrollView 
+            style={styles.reasonScrollView} 
+            showsVerticalScrollIndicator={true}
+            nestedScrollEnabled={true}
+          >
+            {reportReasons.filter(r => r !== "Custom").map((reason) => (
+              <TouchableOpacity
+                key={reason}
+                style={[
+                  styles.reasonOption,
+                  courseReportReason === reason && styles.reasonOptionSelected,
+                ]}
+                onPress={() => {
+                  if (courseReportReason === reason) {
+                    setCourseReportReason("")
+                  } else {
+                    setCourseReportReason(reason)
+                    setCourseReportDescription("")
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={[
+                    styles.radioButton,
+                    courseReportReason === reason && styles.radioButtonSelected,
+                  ]}
+                >
+                  {courseReportReason === reason && (
+                    <View style={styles.radioButtonInner} />
+                  )}
+                </View>
+                <Text style={styles.reasonText}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={styles.dialogButtons}>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.cancelButton]}
+              onPress={() => {
+                setShowCourseReportDialog(false)
+                setCourseReportReason("")
+                setCourseReportDescription("")
+              }}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.dialogButton, styles.submitButton]}
+              onPress={() => {
+                // TODO: Implement course report submission
+                Alert.alert('Success', 'Course report submitted successfully')
+                setShowCourseReportDialog(false)
+                setCourseReportReason("")
+                setCourseReportDescription("")
+              }}
+            >
+              <Text style={styles.submitButtonText}>Submit Report</Text>
+            </TouchableOpacity>
+          </View>
+        </>
+      </CustomDialog>
+
+      {/* Course Rating Dialog */}
+      <CustomDialog
+        visible={showCourseRatingDialog}
+        onClose={() => {
+          setShowCourseRatingDialog(false)
+          setCourseRating(0)
+          setCourseRatingFeedback("")
+        }}
+        title="Rate This Course"
+        height={400}
+      >
+        <View style={styles.dialogContent}>
+          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <View style={styles.ratingStars}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setCourseRating(star)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={star <= courseRating ? "star" : "star-outline"}
+                  size={48}
+                  color={star <= courseRating ? "#FACC15" : "#475569"}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <TextInput
+            style={styles.textInput}
+            placeholder="Share your thoughts about this course..."
+            placeholderTextColor="#64748B"
+            multiline
+            numberOfLines={4}
+            value={courseRatingFeedback}
+            onChangeText={setCourseRatingFeedback}
+          />
+        </View>
+
+        <View style={styles.dialogButtons}>
+          <TouchableOpacity
+            style={[styles.dialogButton, styles.cancelButton]}
+            onPress={() => {
+              setShowCourseRatingDialog(false)
+              setCourseRating(0)
+              setCourseRatingFeedback("")
+            }}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => {
+              // TODO: Implement course rating submission
+              Alert.alert('Success', 'Course rating submitted successfully')
+              setShowCourseRatingDialog(false)
+              setCourseRating(0)
+              setCourseRatingFeedback("")
+            }}
+            disabled={courseRating === 0}
+            style={[styles.dialogButton, styles.submitButton, courseRating === 0 && styles.disabledButton]}
+          >
+            <Text style={[styles.submitButtonText, courseRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* Expanded Recipe View Modal */}
+      {expandedRecipeId && expandedRecipeData && (
+        <Modal visible={true} animationType="slide" transparent={false}>
+          <View className="absolute inset-0 bg-zinc-900" style={{ zIndex: 1000 }}>
+            {/* Modal Header */}
+            <View
+              style={{
+                paddingTop: insets.top-8,
+                paddingBottom: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: "rgba(255, 255, 255, 0.08)",
+              }}
+              className="px-6"
+            >
+              <View className="flex-row items-center justify-between">
+                <TouchableOpacity
+                  onPress={() => {
+                    setExpandedRecipeId(null)
+                    setExpandedRecipeData(null)
+                  }}
+                  className="w-10 h-10 rounded-full items-center justify-center"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.06)" }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={22} color="#FACC15" />
+                </TouchableOpacity>
+                
+                <Text className="text-white text-lg font-bold flex-1 text-center">
+                  Recipe Details
+                </Text>
+                
+                <View className="w-10" />
+              </View>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView 
+              className="flex-1" 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            >
+              <View className="p-6">
+                {/* Recipe Header */}
+                <View className="mb-6">
+                  <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
+                    {expandedRecipeData.title}
+                  </Text>
+                  <Text className="text-gray-300 text-base mb-4 leading-relaxed">
+                    {expandedRecipeData.description || 'Delicious recipe from your collection'}
+                  </Text>
+
+                  {/* Recipe Stats */}
+                  <View className="flex-row flex-wrap">
+                    <View className="bg-emerald-500/20 border border-emerald-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="time-outline" size={14} color="#10B981" />
+                        <Text className="text-emerald-300 ml-1 text-xs font-semibold">
+                          {(expandedRecipeData.prepTime || 0) + (expandedRecipeData.cookTime || 0)} min
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-blue-500/20 border border-blue-500/40 rounded-full px-3 py-1 mr-2 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="people-outline" size={14} color="#3B82F6" />
+                        <Text className="text-blue-300 ml-1 text-xs font-semibold">
+                          {expandedRecipeData.servings || 1} servings
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-purple-500/20 border border-purple-500/40 rounded-full px-3 py-1 mb-2">
+                      <View className="flex-row items-center">
+                        <Ionicons name="bar-chart-outline" size={14} color="#8B5CF6" />
+                        <Text className="text-purple-300 ml-1 text-xs font-semibold">
+                          {expandedRecipeData.difficulty || 'Easy'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Share, Report and Rate Buttons */}
+                <View className="flex-row mb-6" style={{ gap: 12 }}>
+                  <TouchableOpacity
+                    onPress={() => handleShareRecipe(expandedRecipeData)}
+                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="share-social-outline" size={18} color="#3B82F6" />
+                    <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Share</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setShowRecipeReportDialog(true)}
+                    className="bg-red-500/15 border border-red-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="flag-outline" size={18} color="#EF4444" />
+                    <Text className="text-red-300 font-bold ml-2 text-sm tracking-wide">Report</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setShowRecipeRatingDialog(true)}
+                    className="bg-yellow-500/15 border border-yellow-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="star-outline" size={18} color="#FACC15" />
+                    <Text className="text-yellow-300 font-bold ml-2 text-sm tracking-wide">Rate</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* 📊 Enhanced Nutrition Section */}
+                {(expandedRecipeData.nutrition?.calories || expandedRecipeData.nutrition?.protein || expandedRecipeData.nutrition?.carbs || expandedRecipeData.nutrition?.fat) && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center mb-4">
+                      <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                      <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
+                      <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                    </View>
+                    <View className="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-4 shadow-lg">
+                      <View className="flex-row items-center justify-between">
+                        <View className="items-center flex-1">
+                          <Text className="text-amber-400 text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.calories || 0}
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">CALORIES</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text className="text-emerald-400 text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.protein || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">PROTEIN</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text style={{ color: "#3B82F6" }} className="text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.carbs || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">CARBS</Text>
+                        </View>
+                        <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
+                        <View className="items-center flex-1">
+                          <Text style={{ color: "#F59E0B" }} className="text-xl font-bold mb-1">
+                            {expandedRecipeData.nutrition?.fat || 0}g
+                          </Text>
+                          <Text className="text-gray-300 text-xs tracking-wide font-semibold">FAT</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                {/* 🥕 Enhanced Ingredients Section */}
+                <View className="mb-6">
+                  <View className="flex-row items-center mb-4">
+                    <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                    <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
+                    <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                  </View>
+                  <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
+                    {expandedRecipeData.ingredients?.map((ingredient: any, index: number) => (
+                      <View
+                        key={`modal-ingredient-${expandedRecipeData.id}-${index}`}
+                        className={`py-2 ${
+                          index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
+                        }`}
+                      >
+                        <View className="flex-row items-start">
+                          <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
+                            <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-white text-base leading-relaxed">
+                              <Text className="font-bold">
+                                {ingredient.amount} {ingredient.unit}
+                              </Text>
+                              <Text> {ingredient.name}</Text>
+                            </Text>
+                            {ingredient.notes && (
+                              <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* 👨‍🍳 Enhanced Instructions Section */}
+                <View className="mb-6">
+                  <View className="flex-row items-center mb-5">
+                    <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
+                    <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                    <View className="flex-1 h-px bg-amber-500/20 ml-4" />
+                  </View>
+                  <View className="space-y-4">
+                    {expandedRecipeData.instructions?.map((instruction: any, index: number) => (
+                      <View
+                        key={`modal-instruction-${expandedRecipeData.id}-${index}`}
+                        className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-6 shadow-xl"
+                        style={{ marginBottom: 16 }}
+                      >
+                        <View className="flex-row">
+                          <View className="w-14 h-14 bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl items-center justify-center mr-4 shadow-xl border-2 border-amber-400/40">
+                            <Text className="text-white font-bold text-xl">{instruction.step}</Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
+                            {instruction.tips && (
+                              <View className="bg-amber-500/10 border-2 border-amber-500/20 rounded-xl p-4 mt-3">
+                                <View className="flex-row items-start">
+                                  <View className="w-7 h-7 rounded-lg bg-amber-500/15 items-center justify-center mr-3">
+                                    <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
+                                  </View>
+                                  <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Start Cooking Button */}
+                <TouchableOpacity
+                  onPress={() => handleStartCooking(expandedRecipeData)}
+                  className="rounded-xl py-4 flex-row items-center justify-center shadow-lg mb-6"
+                  activeOpacity={0.7}
+                >
+                  <LinearGradient
+                    colors={['#FACC15', '#F97316']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={{
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: 0,
+                      bottom: 0,
+                      borderRadius: 12,
+                    }}
+                  />
+                  <Ionicons name="flame" size={24} color="#FFFFFF" />
+                  <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>
+                    Start Cooking
+                  </Text>
+                </TouchableOpacity>
+
+                {/* ⭐ Enhanced Chef's Tips */}
+                {expandedRecipeData.tips && expandedRecipeData.tips.length > 0 && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center mb-5">
+                      <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
+                      <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                      <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
+                    </View>
+                    <View 
+                      className="rounded-2xl p-6 shadow-xl"
+                      style={{
+                        backgroundColor: "rgba(250, 204, 21, 0.1)",
+                        borderWidth: 1,
+                        borderColor: "rgba(250, 204, 21, 0.3)"
+                      }}
+                    >
+                      {expandedRecipeData.tips.map((tip: string, index: number) => (
+                        <View
+                          key={`modal-tip-${expandedRecipeData.id}-${index}`}
+                          className={`flex-row items-start ${
+                            index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                          }`}
+                        >
+                          <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
+                            <Ionicons name="star" size={14} color="#FCD34D" />
+                          </View>
+                          <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* 🔄 Enhanced Substitutions */}
+                {expandedRecipeData.substitutions && expandedRecipeData.substitutions.length > 0 && (
+                  <View className="mb-6">
+                    <View className="flex-row items-center justify-between mb-5">
+                      <View className="flex-row items-center">
+                        <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
+                        <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                      </View>
+                      <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
+                        <Text className="text-blue-300 text-xs font-bold">
+                          {expandedRecipeData.substitutions.length} options
+                        </Text>
+                      </View>
+                    </View>
+                    <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-5 shadow-xl">
+                      {expandedRecipeData.substitutions.map((sub: any, index: number) => (
+                        <View
+                          key={`modal-substitution-${expandedRecipeData.id}-${index}`}
+                          className={`${
+                            index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
+                          }`}
+                        >
+                          <View className="flex-row items-center mb-3">
+                            <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
+                              <Ionicons name="swap-horizontal" size={18} color="#3b82f6" />
+                            </View>
+                            <Text className="text-zinc-100 font-bold text-base flex-1">
+                              {sub.original} → {sub.substitute}
+                            </Text>
+                          </View>
+                          <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
+                          <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
+
+      {/* Expanded Course View Modal */}
+      {expandedCourseId && expandedCourseData && (
+        <Modal visible={true} animationType="slide" transparent={false}>
+          <View style={styles.expandedModalContainer}>
+            {/* Modal Header */}
+            <View style={[styles.expandedModalHeader, { paddingTop: insets.top + 14 }]}>
+              <View style={styles.expandedModalHeaderContent}>
+                <TouchableOpacity
+                  onPress={() => {
+                    setExpandedCourseId(null)
+                    setExpandedCourseData(null)
+                  }}
+                  style={styles.expandedCloseButton}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close" size={22} color="#FACC15" />
+                </TouchableOpacity>
+                
+                <Text style={styles.expandedModalTitle}>Course Details</Text>
+                
+                <View style={styles.expandedModalSpacer} />
+              </View>
+            </View>
+
+            {/* Modal Content */}
+            <ScrollView 
+              style={styles.expandedModalScroll}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            >
+              <View style={styles.expandedModalContent}>
+                {/* Course Header */}
+                <View style={styles.expandedRecipeHeader}>
+                  <Text style={styles.expandedRecipeTitle}>
+                    {expandedCourseData.title}
+                  </Text>
+                  <Text style={styles.expandedRecipeDescription}>
+                    {expandedCourseData.description || 'Comprehensive cooking course'}
+                  </Text>
+
+                  {/* Course Stats */}
+                  <View style={styles.expandedRecipeStats}>
+                    <View style={styles.statBadge}>
+                      <View style={styles.statBadgeInner}>
+                        <Ionicons name="time-outline" size={14} color="#10B981" />
+                        <Text style={styles.statBadgeText}>
+                          {expandedCourseData.duration || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.statBadge, styles.statBadgePurple]}>
+                      <View style={styles.statBadgeInner}>
+                        <Ionicons name="school-outline" size={14} color="#8B5CF6" />
+                        <Text style={[styles.statBadgeText, styles.statBadgeTextPurple]}>
+                          {expandedCourseData.skillLevel || 'Beginner'}
+                        </Text>
+                      </View>
+                    </View>
+                    <View style={[styles.statBadge, styles.statBadgeBlue]}>
+                      <View style={styles.statBadgeInner}>
+                        <Ionicons name="folder-outline" size={14} color="#3B82F6" />
+                        <Text style={[styles.statBadgeText, styles.statBadgeTextBlue]}>
+                          {expandedCourseData.category || 'Cooking'}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Action Buttons - Share, Report, and Rate */}
+                <View style={styles.expandedActionButtons}>
+                  <TouchableOpacity
+                    onPress={() => Alert.alert('Share', 'Share functionality coming soon!')}
+                    style={[styles.expandedActionButton, styles.expandedShareButton]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="share-social-outline" size={18} color="#3B82F6" />
+                    <Text style={[styles.expandedActionText, styles.expandedShareText]}>Share</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setShowCourseReportDialog(true)}
+                    style={[styles.expandedActionButton, styles.expandedReportButton]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="flag-outline" size={18} color="#EF4444" />
+                    <Text style={[styles.expandedActionText, styles.expandedReportText]}>Report</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => setShowCourseRatingDialog(true)}
+                    style={[styles.expandedActionButton, styles.expandedRateButton]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="star-outline" size={18} color="#FBBF24" />
+                    <Text style={[styles.expandedActionText, styles.expandedRateText]}>Rate</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Course Content/Modules */}
+                {expandedCourseData.modules && expandedCourseData.modules.length > 0 && (
+                  <View style={styles.expandedSection}>
+                    <View style={styles.sectionTitleRow}>
+                      <View style={styles.sectionTitleBar} />
+                      <Text style={styles.expandedSectionTitle}>Course Modules</Text>
+                      <View style={styles.sectionTitleLine} />
+                    </View>
+                    {expandedCourseData.modules.map((module: any, index: number) => (
+                      <View key={index} style={styles.courseModuleItem}>
+                        <View style={styles.moduleHeader}>
+                          <Text style={styles.moduleTitle}>Module {index + 1}: {module.title}</Text>
+                        </View>
+                        <Text style={styles.moduleDescription}>{module.description}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Course Description */}
+                {expandedCourseData.content && (
+                  <View style={styles.expandedSection}>
+                    <View style={styles.sectionTitleRow}>
+                      <View style={styles.sectionTitleBar} />
+                      <Text style={styles.expandedSectionTitle}>Course Content</Text>
+                      <View style={styles.sectionTitleLine} />
+                    </View>
+                    <Text style={styles.courseContentText}>{expandedCourseData.content}</Text>
+                  </View>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        </Modal>
+      )}
     </Modal>
   )
 }
@@ -1250,6 +2303,387 @@ const styles = StyleSheet.create({
     gap: 12,
     marginBottom: 24,
     paddingVertical: 10,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingVertical: 60,
+  },
+  loadingText: {
+    color: "#94A3B8",
+    fontSize: 16,
+    marginTop: 16,
+    fontWeight: "500",
+  },
+  // Expanded modal styles
+  expandedModalContainer: {
+    flex: 1,
+    backgroundColor: "#0a0a0a",
+  },
+  expandedModalHeader: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    paddingHorizontal: 24,
+  },
+  expandedModalHeaderContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  expandedCloseButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+  },
+  expandedModalTitle: {
+    color: "white",
+    fontSize: 18,
+    fontWeight: "700",
+    flex: 1,
+    textAlign: "center",
+  },
+  expandedModalSpacer: {
+    width: 40,
+  },
+  expandedModalScroll: {
+    flex: 1,
+  },
+  expandedModalContent: {
+    padding: 24,
+  },
+  expandedRecipeHeader: {
+    marginBottom: 24,
+  },
+  expandedRecipeTitle: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 28,
+    marginBottom: 12,
+    lineHeight: 36,
+    letterSpacing: -0.5,
+  },
+  expandedRecipeDescription: {
+    color: "#D1D5DB",
+    fontSize: 16,
+    marginBottom: 16,
+    lineHeight: 24,
+  },
+  expandedRecipeStats: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  statBadge: {
+    backgroundColor: "rgba(16, 185, 129, 0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(16, 185, 129, 0.4)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  statBadgeBlue: {
+    backgroundColor: "rgba(59, 130, 246, 0.2)",
+    borderColor: "rgba(59, 130, 246, 0.4)",
+  },
+  statBadgePurple: {
+    backgroundColor: "rgba(139, 92, 246, 0.2)",
+    borderColor: "rgba(139, 92, 246, 0.4)",
+  },
+  statBadgeInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statBadgeText: {
+    color: "#10B981",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  statBadgeTextBlue: {
+    color: "#3B82F6",
+  },
+  statBadgeTextPurple: {
+    color: "#8B5CF6",
+  },
+  expandedActionButtons: {
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 24,
+  },
+  expandedActionButton: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    paddingVertical: 12,
+    gap: 6,
+  },
+  expandedReportButton: {
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.4)",
+  },
+  expandedRateButton: {
+    backgroundColor: "rgba(251, 191, 36, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(251, 191, 36, 0.4)",
+  },
+  expandedShareButton: {
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(59, 130, 246, 0.4)",
+  },
+  expandedActionText: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  expandedReportText: {
+    color: "#EF4444",
+  },
+  expandedRateText: {
+    color: "#FBBF24",
+  },
+  expandedShareText: {
+    color: "#3B82F6",
+  },
+  expandedSection: {
+    marginBottom: 24,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+    gap: 12,
+  },
+  sectionTitleBar: {
+    width: 4,
+    height: 24,
+    backgroundColor: "#FACC15",
+    borderRadius: 2,
+  },
+  sectionTitleLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: "rgba(250, 204, 21, 0.2)",
+    marginLeft: 8,
+  },
+  expandedSectionTitle: {
+    color: "#FACC15",
+    fontSize: 20,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  ingredientsContainer: {
+    backgroundColor: "rgba(39, 39, 42, 1)",
+    borderWidth: 4,
+    borderColor: "rgba(63, 63, 70, 1)",
+    borderRadius: 16,
+    padding: 16,
+  },
+  ingredientItemEnhanced: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 12,
+  },
+  ingredientItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
+  },
+  ingredientNumberBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: "rgba(250, 204, 21, 0.2)",
+    borderWidth: 2,
+    borderColor: "#FACC15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  ingredientNumberText: {
+    color: "#FACC15",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  ingredientContent: {
+    flex: 1,
+  },
+  ingredientTextEnhanced: {
+    color: "white",
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  ingredientAmount: {
+    fontWeight: "700",
+  },
+  ingredientNotes: {
+    color: "#D1D5DB",
+    fontSize: 13,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  ingredientItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.05)",
+  },
+  ingredientBullet: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#FACC15",
+    marginTop: 7,
+    marginRight: 12,
+  },
+  ingredientText: {
+    color: "#E5E7EB",
+    fontSize: 15,
+    flex: 1,
+    lineHeight: 20,
+  },
+  instructionCard: {
+    backgroundColor: "rgba(39, 39, 42, 1)",
+    borderWidth: 4,
+    borderColor: "rgba(63, 63, 70, 1)",
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 16,
+  },
+  instructionHeader: {
+    flexDirection: "row",
+  },
+  instructionStepBadge: {
+    width: 56,
+    height: 56,
+    backgroundColor: "#FACC15",
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+    borderWidth: 2,
+    borderColor: "rgba(250, 204, 21, 0.4)",
+  },
+  instructionStepText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 20,
+  },
+  instructionContent: {
+    flex: 1,
+  },
+  instructionText: {
+    color: "white",
+    fontSize: 16,
+    lineHeight: 28,
+  },
+  instructionTipContainer: {
+    backgroundColor: "rgba(250, 204, 21, 0.1)",
+    borderWidth: 2,
+    borderColor: "rgba(250, 204, 21, 0.2)",
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  instructionTipIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: "rgba(250, 204, 21, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+  instructionTipText: {
+    color: "#FEF3C7",
+    fontSize: 14,
+    lineHeight: 24,
+    flex: 1,
+  },
+  instructionItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 16,
+    gap: 12,
+  },
+  instructionNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(250, 204, 21, 0.2)",
+    borderWidth: 2,
+    borderColor: "#FACC15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  instructionNumberText: {
+    color: "#FACC15",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  courseModuleItem: {
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
+  moduleHeader: {
+    marginBottom: 8,
+  },
+  moduleTitle: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  moduleDescription: {
+    color: "#D1D5DB",
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  courseContentText: {
+    color: "#E5E7EB",
+    fontSize: 15,
+    lineHeight: 24,
+  },
+  startCookingButton: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 24,
+    overflow: "hidden",
+    shadowColor: "#FACC15",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  startCookingGradient: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 12,
+  },
+  startCookingText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    marginLeft: 12,
+    fontSize: 18,
+    letterSpacing: 0.5,
   },
 })
 

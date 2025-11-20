@@ -717,7 +717,7 @@ export async function getPublishedRecipes(): Promise<Recipe[]> {
   try {
     console.log('📚 Fetching published recipes');
     const response = await apiClient.get<{ recipes: Recipe[] }>(
-      '/recipes/published',
+      '/recipes/public',
       false, // No auth required for public content
       20000
     );
@@ -737,7 +737,7 @@ export async function getChefPublishedRecipes(chefId: string): Promise<Recipe[]>
   try {
     console.log(`📚 Fetching published recipes from chef: ${chefId}`);
     const response = await apiClient.get<{ recipes: Recipe[] }>(
-      `/recipes/chef/${chefId}/published`,
+      `/recipes/public/chef/${chefId}`,
       false,
       20000
     );
@@ -757,7 +757,7 @@ export async function getPublishedCourses(): Promise<Course[]> {
   try {
     console.log('📚 Fetching published courses');
     const response = await apiClient.get<{ courses: Course[] }>(
-      '/courses/published',
+      '/courses/public',
       false,
       20000
     );
@@ -777,7 +777,7 @@ export async function getChefPublishedCourses(chefId: string): Promise<Course[]>
   try {
     console.log(`📚 Fetching published courses from chef: ${chefId}`);
     const response = await apiClient.get<{ courses: Course[] }>(
-      `/courses/chef/${chefId}/published`,
+      `/courses/public/chef/${chefId}`,
       false,
       20000
     );

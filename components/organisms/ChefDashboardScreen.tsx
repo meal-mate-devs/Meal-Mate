@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import React, { useEffect, useRef, useState } from "react"
 import {
+  ActivityIndicator,
   Alert,
   Animated,
   Dimensions,
@@ -26,6 +27,7 @@ import {
   View,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import CustomDialog from "../atoms/CustomDialog"
 import Dialog from "../atoms/Dialog"
 import ChefProfileViewScreen from "./ChefProfileViewScreen"
 import ChefRegistrationScreen, { ChefRegistrationData } from "./ChefRegistrationScreen"
@@ -46,6 +48,7 @@ interface Recipe {
   cookTime: string
   rating: number
   reviews?: number
+  chefId?: string
   chefName?: string
 }
 
@@ -192,6 +195,35 @@ const ChefDashboardScreen: React.FC = () => {
   const [showPublishErrorDialog, setShowPublishErrorDialog] = useState(false)
   const [publishSuccessMessage, setPublishSuccessMessage] = useState('')
   const [publishErrorMessage, setPublishErrorMessage] = useState('')
+
+  // Recipe Report/Rate Dialog States
+  const [showRecipeReportDialog, setShowRecipeReportDialog] = useState(false)
+  const [showRecipeRatingDialog, setShowRecipeRatingDialog] = useState(false)
+  const [recipeReportReason, setRecipeReportReason] = useState('')
+  const [recipeReportDescription, setRecipeReportDescription] = useState('')
+  const [recipeRating, setRecipeRating] = useState(0)
+  const [recipeRatingFeedback, setRecipeRatingFeedback] = useState('')
+  const [isReportingRecipe, setIsReportingRecipe] = useState(false)
+  const [isRatingRecipe, setIsRatingRecipe] = useState(false)
+
+  // Course Report/Rate Dialog States
+  const [showCourseReportDialog, setShowCourseReportDialog] = useState(false)
+  const [showCourseRatingDialog, setShowCourseRatingDialog] = useState(false)
+  const [courseReportReason, setCourseReportReason] = useState('')
+  const [courseReportDescription, setCourseReportDescription] = useState('')
+  const [courseRating, setCourseRating] = useState(0)
+  const [courseRatingFeedback, setCourseRatingFeedback] = useState('')
+  const [isReportingCourse, setIsReportingCourse] = useState(false)
+  const [isRatingCourse, setIsRatingCourse] = useState(false)
+
+  const reportReasons = [
+    "Inappropriate Content",
+    "Copyright Violation",
+    "Repeated Content",
+    "Misleading Information",
+    "Spam or Scam",
+    "Harassment",
+  ]
   
   // Chef registration states
   const [showChefRegistration, setShowChefRegistration] = useState(false)
@@ -247,11 +279,11 @@ const ChefDashboardScreen: React.FC = () => {
 
   // Fetch chef's recipes and courses from backend
   useEffect(() => {
-    if (userType === "chef" && profile?.isChef) {
+    if (profile?.isChef) {
       fetchUserRecipes()
       fetchUserCourses()
     }
-  }, [userType, profile?.isChef])
+  }, [profile?.isChef])
 
   const fetchUserRecipes = async () => {
     setIsLoadingRecipes(true)
@@ -271,6 +303,7 @@ const ChefDashboardScreen: React.FC = () => {
         rating: r.averageRating || 0,
         isPremium: r.isPremium,
         isPublished: r.isPublished,
+        chefId: r.authorId,
         chefName: "You"
       }))
       
@@ -332,179 +365,106 @@ const ChefDashboardScreen: React.FC = () => {
   const feedbackAnimation = useRef(new Animated.Value(0)).current
   const scaleAnimation = useRef(new Animated.Value(1)).current
 
-  // Mock data
-  const [chefs] = useState<Chef[]>([
-    {
-      id: "1",
-      name: "Gordon Ramsay",
-      avatar: "https://images.unsplash.com/photo-1583394293214-28a5b0a4c7c8?w=150&h=150&fit=crop&crop=face",
-      specialty: "Fine Dining",
-      rating: 4.9,
-      subscribers: 125000,
-      isSubscribed: true,
-      bio: "World-renowned chef with 17 Michelin stars throughout his career. Known for his fiery personality and exceptional culinary skills.",
-      experience: "30+ Years",
-      recipes: [
-        {
-          id: "r1",
-          title: "Beef Wellington",
-          description: "Classic British dish with tender beef fillet wrapped in mushroom duxelles and puff pastry. A signature Gordon Ramsay masterpiece.",
-          image: "https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=300&h=200&fit=crop",
-          isPremium: true,
-          difficulty: "Hard",
-          cookTime: "2h 30m",
-          rating: 4.8,
-          reviews: 234,
-        },
-        {
-          id: "r2",
-          title: "Hell's Kitchen Pasta",
-          description: "Signature pasta dish from the famous TV show. Fresh lobster tail with angel hair pasta in a light tomato cream sauce.",
-          image: "https://images.unsplash.com/photo-1563379091339-03246963d96c?w=300&h=200&fit=crop",
-          isPremium: false,
-          difficulty: "Medium",
-          cookTime: "45m",
-          rating: 4.6,
-          reviews: 189,
-        },
-      ],
-      courses: [
-        {
-          id: "c1",
-          title: "Fine Dining Masterclass",
-          description: "Learn the secrets of Michelin-star cooking",
-          duration: "8 weeks",
-          skillLevel: "Advanced",
-          category: "Fine Dining",
-          subscribers: 1250,
-          rating: 4.9,
-          isPremium: true,
-          chefId: "1",
-          chefName: "Gordon Ramsay",
-          image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop",
-        },
-        {
-          id: "c2",
-          title: "Restaurant Management",
-          description: "How to run a successful restaurant",
-          duration: "6 weeks",
-          skillLevel: "Advanced",
-          category: "Business",
-          subscribers: 890,
-          rating: 4.7,
-          isPremium: true,
-          chefId: "1",
-          chefName: "Gordon Ramsay",
-          image: "https://images.unsplash.com/photo-1577303935007-0d306ee638cf?w=400&h=250&fit=crop",
-        },
-      ],
-    },
-    {
-      id: "2",
-      name: "Julia Child",
-      avatar: "https://images.unsplash.com/photo-1494790108755-2616c9c0e8e0?w=150&h=150&fit=crop&crop=face",
-      specialty: "French Cuisine",
-      rating: 4.7,
-      subscribers: 89000,
-      isSubscribed: true,
-      bio: "Legendary cooking teacher who introduced French cuisine to American households. Pioneer of cooking shows and culinary education.",
-      experience: "40+ Years",
-      recipes: [
-        {
-          id: "r3",
-          title: "Coq au Vin",
-          description: "Traditional French chicken in wine",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          isPremium: true,
-          difficulty: "Medium",
-          cookTime: "1h 30m",
-          rating: 4.8,
-          reviews: 156,
-        },
-      ],
-      courses: [
-        {
-          id: "c3",
-          title: "French Cooking Fundamentals",
-          description: "Master the basics of French cuisine",
-          duration: "5 weeks",
-          skillLevel: "Intermediate",
-          category: "French Cuisine",
-          subscribers: 670,
-          rating: 4.8,
-          isPremium: true,
-          chefId: "2",
-          chefName: "Julia Child",
-          image: "https://images.unsplash.com/photo-1556909114-a6c5e0d67b9d?w=400&h=250&fit=crop",
-        },
-      ],
-    },
-    {
-      id: "3",
-      name: "Jamie Oliver",
-      avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
-      specialty: "Healthy Cooking",
-      rating: 4.6,
-      subscribers: 156000,
-      isSubscribed: false,
-      bio: "British chef and food activist passionate about healthy eating and simple, fresh ingredients. Author of multiple bestselling cookbooks.",
-      experience: "25+ Years",
-      recipes: [
-        {
-          id: "r4",
-          title: "15-Minute Meals",
-          description: "Quick and healthy weeknight dinner",
-          image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=300&h=200&fit=crop",
-          isPremium: false,
-          difficulty: "Easy",
-          cookTime: "15m",
-          rating: 4.5,
-          reviews: 298,
-        },
-        {
-          id: "r5",
-          title: "Superfood Salad Bowl",
-          description: "Nutritious and delicious salad combinations",
-          image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=300&h=200&fit=crop",
-          isPremium: true,
-          difficulty: "Easy",
-          cookTime: "10m",
-          rating: 4.4,
-          reviews: 142,
-        },
-      ],
-      courses: [
-        {
-          id: "c4",
-          title: "Healthy Family Cooking",
-          description: "Nutritious meals the whole family will love",
-          duration: "4 weeks",
-          skillLevel: "Beginner",
-          category: "Healthy Cooking",
-          subscribers: 1120,
-          rating: 4.6,
-          isPremium: false,
-          chefId: "3",
-          chefName: "Jamie Oliver",
-          image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=250&fit=crop",
-        },
-        {
-          id: "c5",
-          title: "Plant-Based Cooking",
-          description: "Delicious vegetarian and vegan recipes",
-          duration: "3 weeks",
-          skillLevel: "Beginner",
-          category: "Plant-Based",
-          subscribers: 890,
-          rating: 4.5,
-          isPremium: true,
-          chefId: "3",
-          chefName: "Jamie Oliver",
-          image: "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400&h=250&fit=crop",
-        },
-      ],
-    },
-  ])
+  // Chef data from backend
+  const [chefs, setChefs] = useState<Chef[]>([])
+  const [isLoadingChefs, setIsLoadingChefs] = useState(false)
+  const [chefsError, setChefsError] = useState<string | null>(null)
+  
+  // Food Explorer recipes and courses
+  const [explorerRecipes, setExplorerRecipes] = useState<any[]>([])
+  const [explorerCourses, setExplorerCourses] = useState<any[]>([])
+  const [isLoadingExplorerRecipes, setIsLoadingExplorerRecipes] = useState(false)
+  const [isLoadingExplorerCourses, setIsLoadingExplorerCourses] = useState(false)
+
+  // Load chefs from backend
+  useEffect(() => {
+    loadChefs()
+    loadExplorerContent()
+  }, [])
+
+  const loadExplorerContent = async () => {
+    // Load all published recipes
+    setIsLoadingExplorerRecipes(true)
+    try {
+      const recipes = await chefService.getPublishedRecipes()
+      setExplorerRecipes(recipes)
+    } catch (error) {
+      console.error('Failed to load explorer recipes:', error)
+    } finally {
+      setIsLoadingExplorerRecipes(false)
+    }
+
+    // Load all published courses
+    setIsLoadingExplorerCourses(true)
+    try {
+      const courses = await chefService.getPublishedCourses()
+      setExplorerCourses(courses)
+    } catch (error) {
+      console.error('Failed to load explorer courses:', error)
+    } finally {
+      setIsLoadingExplorerCourses(false)
+    }
+  }
+
+  const loadChefs = async () => {
+    setIsLoadingChefs(true)
+    setChefsError(null)
+    try {
+      const { chefs: fetchedChefs } = await chefService.getAllChefs({
+        limit: 50,
+        sortBy: 'rating'
+      })
+      
+      // Transform backend chef data to match our Chef interface
+      const transformedChefs: Chef[] = fetchedChefs.map((chef: any) => ({
+        id: chef.id,
+        name: chef.chefName,
+        avatar: chef.portfolioImage?.url || chef.user?.profileImage?.url || "https://via.placeholder.com/150",
+        specialty: chef.expertiseCategory,
+        rating: chef.stats?.averageRating || 0,
+        subscribers: chef.stats?.totalStudents || 0,
+        isSubscribed: false, // Will be updated per user
+        bio: chef.professionalSummary || "",
+        experience: chef.yearsOfExperience ? `${chef.yearsOfExperience}+ Years` : "N/A",
+        recipes: [], // Will be loaded when chef profile is viewed
+        courses: [], // Will be loaded when chef profile is viewed
+        stats: chef.stats
+      }))
+      
+      setChefs(transformedChefs)
+      
+      // Check subscription status for each chef if user is authenticated
+      if (profile) {
+        checkAllSubscriptions(transformedChefs)
+      }
+    } catch (error: any) {
+      console.error('Failed to load chefs:', error)
+      setChefsError(error.message || 'Failed to load chefs')
+    } finally {
+      setIsLoadingChefs(false)
+    }
+  }
+
+  const checkAllSubscriptions = async (chefList: Chef[]) => {
+    try {
+      const subscriptions = await chefService.getMySubscriptions()
+      const subscribedChefIds = new Set(subscriptions.map((sub: any) => sub.chef._id || sub.chef.id))
+      
+      setChefs((prevChefs) =>
+        prevChefs.map((chef) => ({
+          ...chef,
+          isSubscribed: subscribedChefIds.has(chef.id)
+        }))
+      )
+    } catch (error) {
+      console.log('Failed to check subscriptions:', error)
+    }
+  }
+
+  const handleChefSubscriptionToggle = async (chefId: string) => {
+    // Reload chefs to update subscription status
+    await loadChefs()
+  }
 
   const [feedbacks] = useState<Feedback[]>([
     {
@@ -740,7 +700,26 @@ const ChefDashboardScreen: React.FC = () => {
         )}
 
         {/* Chefs List */}
-        {displayedChefs.length > 0 ? (
+        {isLoadingChefs ? (
+          <View style={styles.loadingChefsContainer}>
+            <ActivityIndicator size="large" color="#FACC15" />
+            <Text style={styles.loadingChefsText}>Loading chefs...</Text>
+          </View>
+        ) : chefsError ? (
+          <View style={styles.emptyChefSection}>
+            <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+            <Text style={styles.emptyChefText}>Failed to load chefs</Text>
+            <Text style={styles.emptyChefSubtext}>{chefsError}</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={loadChefs}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="refresh" size={20} color="white" />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : displayedChefs.length > 0 ? (
           <FlatList
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -879,7 +858,7 @@ const ChefDashboardScreen: React.FC = () => {
       sections.push(
         { type: 'chefRibbon', data: [{}] },
         { type: 'foodExplorerTabs', data: [{}] },
-        { type: activeTab === "recipes" ? 'latestRecipes' : 'latestCourses', data: [{}] }
+        { type: 'contentManagement', data: [{}] }
       );
     } else {
       sections.push(
@@ -922,23 +901,25 @@ const ChefDashboardScreen: React.FC = () => {
   const renderLatestRecipes = () => {
     const selectedChefData = chefs.find((chef) => chef.id === selectedChef)
     
-    // Combine static recipes with user-created recipes
-    const allRecipes = [
-      ...chefs.flatMap((chef) => chef.recipes),
-      ...userRecipes
-    ]
+    // For Food Explorer: show only published recipes
+    // For Chef Dashboard: show all recipes (published and unpublished)
+    let recipesToShow = userType === "user" 
+      ? userRecipes.filter(r => r.isPublished).slice(0, 6)
+      : userRecipes.slice(0, 6)
     
-    const recipesToShow = selectedChefData
-      ? selectedChefData.recipes
-      : allRecipes.slice(0, 6)
+    // If a chef is selected on Food Explorer, filter recipes by that chef
+    if (selectedChefData && userType === "user") {
+      recipesToShow = userRecipes.filter(r => r.isPublished && r.chefId === selectedChefData.id).slice(0, 6)
+    }
 
     // Helper function to determine if user can access recipe
     const canAccessRecipe = (recipe: Recipe) => {
-      // Find which chef owns this recipe
-      const ownerChef = chefs.find(chef => chef.recipes.some(r => r.id === recipe.id))
-      // User-created recipes are always accessible
-      const isUserCreated = userRecipes.some(r => r.id === recipe.id)
-      return isUserCreated || !recipe.isPremium || (ownerChef && ownerChef.isSubscribed)
+      // On Chef Dashboard, chef can access all their own recipes
+      if (userType === "chef") return true
+      // On Food Explorer, check if recipe is premium and if user is subscribed
+      if (!recipe.isPremium) return true
+      const ownerChef = chefs.find(chef => chef.id === recipe.chefId)
+      return ownerChef?.isSubscribed || false
     }
 
     return (
@@ -946,31 +927,50 @@ const ChefDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>
           {selectedChefData ? `${selectedChefData.name}'s Recipes` : "Latest Recipes"}
         </Text>
-        {/* Replace FlatList with mapped Views */}
+        {isLoadingRecipes ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FACC15" />
+            <Text style={styles.loadingText}>Loading recipes...</Text>
+          </View>
+        ) : recipesToShow.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="restaurant-outline" size={48} color="#475569" />
+            <Text style={styles.emptyStateText}>No Recipes Available</Text>
+            <Text style={styles.emptyStateSubtext}>
+              {selectedChefData 
+                ? `${selectedChefData.name} hasn't published any recipes yet`
+                : "Check back later for new recipes"}
+            </Text>
+          </View>
+        ) : (
         <View style={styles.recipesGrid}>
-          {recipesToShow.map((item, index) => {
+          {recipesToShow.map((item) => {
             const hasAccess = canAccessRecipe(item)
-            const ownerChef = chefs.find(chef => chef.recipes.some(r => r.id === item.id))
-            const isUserCreated = userRecipes.some(r => r.id === item.id)
+            const ownerChef = chefs.find(chef => chef.id === item.chefId)
             
             return (
               <TouchableOpacity
                 key={item.id} 
                 style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
                 onPress={() => {
-                  if (!hasAccess) {
+                  if (userType === "chef") {
+                    // Chef viewing their own recipes
+                    router.push({
+                      pathname: '/recipe/[id]' as any,
+                      params: { id: item.id }
+                    })
+                  } else if (!hasAccess) {
                     // Premium recipe - subscription required
                     Alert.alert(
                       'Premium Content',
-                      `Subscribe to ${ownerChef?.name} to access this recipe`,
+                      `Subscribe to ${ownerChef?.name || 'this chef'} to access this recipe`,
                       [
                         { text: 'Cancel', style: 'cancel' },
                         { 
                           text: 'View Chef', 
                           onPress: () => {
                             if (ownerChef) {
-                              setSelectedChefProfile(ownerChef)
-                              setChefProfileModalVisible(true)
+                              setViewingChefProfile(ownerChef)
                             }
                           }
                         }
@@ -993,15 +993,15 @@ const ChefDashboardScreen: React.FC = () => {
                     <Text style={styles.premiumText}>Premium</Text>
                   </View>
                 )}
-                {isUserCreated && (
-                  <View style={styles.userCreatedBadge}>
-                    <Ionicons name="person" size={12} color="#10B981" />
-                    <Text style={styles.userCreatedText}>You</Text>
-                  </View>
-                )}
-                {!hasAccess && (
+                {!hasAccess && userType === "user" && (
                   <View style={styles.lockOverlay}>
                     <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+                  </View>
+                )}
+                {!item.isPublished && userType === "chef" && (
+                  <View style={styles.draftBadge}>
+                    <Ionicons name="document-outline" size={12} color="#94A3B8" />
+                    <Text style={styles.draftText}>Draft</Text>
                   </View>
                 )}
                 <View style={styles.recipeInfo}>
@@ -1014,7 +1014,7 @@ const ChefDashboardScreen: React.FC = () => {
                     </View>
                     <View style={styles.statItem}>
                       <Ionicons name="star" size={14} color="#FACC15" />
-                      <Text style={styles.statText}>{item.rating}</Text>
+                      <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
                     </View>
                   </View>
                 </View>
@@ -1022,6 +1022,7 @@ const ChefDashboardScreen: React.FC = () => {
             )
           })}
         </View>
+        )}
       </View>
     )
   }
@@ -1029,22 +1030,25 @@ const ChefDashboardScreen: React.FC = () => {
   const renderLatestCourses = () => {
     const selectedChefData = chefs.find((chef) => chef.id === selectedChef)
     
-    // Combine static courses with user-created courses
-    const allCourses = [
-      ...chefs.flatMap((chef) => chef.courses),
-      ...userCourses
-    ]
+    // For Food Explorer: show only published courses
+    // For Chef Dashboard: show all courses (published and unpublished)
+    let coursesToShow = userType === "user" 
+      ? userCourses.filter(c => c.isPublished).slice(0, 6)
+      : userCourses.slice(0, 6)
     
-    const coursesToShow = selectedChefData
-      ? selectedChefData.courses
-      : allCourses.slice(0, 6)
+    // If a chef is selected on Food Explorer, filter courses by that chef
+    if (selectedChefData && userType === "user") {
+      coursesToShow = userCourses.filter(c => c.isPublished && c.chefId === selectedChefData.id).slice(0, 6)
+    }
 
     // Helper function to determine if user can access course
     const canAccessCourse = (course: Course) => {
-      const chef = chefs.find(c => c.id === course.chefId)
-      // User-created courses are always accessible
-      const isUserCreated = userCourses.some(c => c.id === course.id)
-      return isUserCreated || !course.isPremium || (chef && chef.isSubscribed)
+      // On Chef Dashboard, chef can access all their own courses
+      if (userType === "chef") return true
+      // On Food Explorer, check if course is premium and if user is subscribed
+      if (!course.isPremium) return true
+      const ownerChef = chefs.find(chef => chef.id === course.chefId)
+      return ownerChef?.isSubscribed || false
     }
 
     return (
@@ -1052,29 +1056,47 @@ const ChefDashboardScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>
           {selectedChefData ? `${selectedChefData.name}'s Courses` : "Latest Courses"}
         </Text>
+        {isLoadingCourses ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FACC15" />
+            <Text style={styles.loadingText}>Loading courses...</Text>
+          </View>
+        ) : coursesToShow.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="book-outline" size={48} color="#475569" />
+            <Text style={styles.emptyStateText}>No Courses Available</Text>
+            <Text style={styles.emptyStateSubtext}>
+              {selectedChefData 
+                ? `${selectedChefData.name} hasn't published any courses yet`
+                : "Check back later for new courses"}
+            </Text>
+          </View>
+        ) : (
         <View style={styles.recipesGrid}>
-          {coursesToShow.map((item, index) => {
+          {coursesToShow.map((item) => {
             const hasAccess = canAccessCourse(item)
-            const isUserCreated = userCourses.some(c => c.id === item.id)
+            const ownerChef = chefs.find(chef => chef.id === item.chefId)
+            
             return (
               <TouchableOpacity
                 key={item.id} 
                 style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
                 onPress={() => {
-                  if (!hasAccess) {
+                  if (userType === "chef") {
+                    // Chef viewing their own courses
+                    Alert.alert('Course', `Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                  } else if (!hasAccess) {
                     // Premium course - subscription required
-                    const ownerChef = chefs.find(c => c.id === item.chefId)
                     Alert.alert(
                       'Premium Content',
-                      `Subscribe to ${item.chefName} to access this course`,
+                      `Subscribe to ${ownerChef?.name || 'this chef'} to access this course`,
                       [
                         { text: 'Cancel', style: 'cancel' },
                         { 
                           text: 'View Chef', 
                           onPress: () => {
                             if (ownerChef) {
-                              setSelectedChef(ownerChef)
-                              setChefProfileModalVisible(true)
+                              setViewingChefProfile(ownerChef)
                             }
                           }
                         }
@@ -1094,15 +1116,15 @@ const ChefDashboardScreen: React.FC = () => {
                     <Text style={styles.premiumText}>Premium</Text>
                   </View>
                 )}
-                {isUserCreated && (
-                  <View style={styles.userCreatedBadge}>
-                    <Ionicons name="person" size={12} color="#10B981" />
-                    <Text style={styles.userCreatedText}>You</Text>
-                  </View>
-                )}
-                {!hasAccess && (
+                {!hasAccess && userType === "user" && (
                   <View style={styles.lockOverlay}>
                     <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+                  </View>
+                )}
+                {!item.isPublished && userType === "chef" && (
+                  <View style={styles.draftBadge}>
+                    <Ionicons name="document-outline" size={12} color="#94A3B8" />
+                    <Text style={styles.draftText}>Draft</Text>
                   </View>
                 )}
                 <View style={styles.recipeInfo}>
@@ -1110,23 +1132,24 @@ const ChefDashboardScreen: React.FC = () => {
                   <Text style={styles.recipeDescription}>{item.description}</Text>
                   <View style={styles.courseStats}>
                     <View style={styles.statItem}>
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
-                      <Text style={styles.statText}>{item.duration}</Text>
+                      <Ionicons name="book-outline" size={14} color="#6B7280" />
+                      <Text style={styles.statText}>{item.units?.length || 0} units</Text>
                     </View>
                     <View style={styles.statItem}>
                       <Ionicons name="star" size={14} color="#FACC15" />
-                      <Text style={styles.statText}>{item.rating}</Text>
+                      <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
                     </View>
                   </View>
                   <View style={styles.coursePrice}>
-                    <Text style={styles.priceText}>{item.skillLevel}</Text>
-                    <Text style={styles.subscribersText}>{item.subscribers} subscribers</Text>
+                    <Text style={styles.priceText}>{item.skillLevel || 'Beginner'}</Text>
+                    <Text style={styles.subscribersText}>{item.duration}</Text>
                   </View>
                 </View>
               </TouchableOpacity>
             )
           })}
         </View>
+        )}
       </View>
     )
   }
@@ -1632,51 +1655,75 @@ const ChefDashboardScreen: React.FC = () => {
   )
 
   const renderContentManagement = () => {
+    // For Food Explorer (user), use activeTab and filter published only
+    // For Chef Dashboard, use managementTab and show all
+    const currentTab = userType === "user" ? activeTab : managementTab;
+    const recipesToShow = userType === "user" 
+      ? userRecipes.filter(r => r.isPublished)
+      : userRecipes;
+    const coursesToShow = userType === "user"
+      ? userCourses.filter(c => c.isPublished)
+      : userCourses;
+
     return (
       <View style={styles.contentManagementContainer}>
-        {/* Minimalist Tab Selector */}
-        <View style={styles.minimalistTabSelector}>
-          <TouchableOpacity
-            style={styles.minimalistTab}
-            onPress={() => setManagementTab("recipes")}
-          >
-            <Text style={[styles.minimalistTabText, managementTab === "recipes" && styles.minimalistTabTextActive]}>
-              Recipes ({userRecipes.length})
-            </Text>
-            {managementTab === "recipes" && <View style={styles.tabUnderline} />}
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.minimalistTab}
-            onPress={() => setManagementTab("courses")}
-          >
-            <Text style={[styles.minimalistTabText, managementTab === "courses" && styles.minimalistTabTextActive]}>
-              Courses ({userCourses.length})
-            </Text>
-            {managementTab === "courses" && <View style={styles.tabUnderline} />}
-          </TouchableOpacity>
-        </View>
+        {/* Minimalist Tab Selector - Only show for Chef Dashboard */}
+        {userType === "chef" && (
+          <View style={styles.minimalistTabSelector}>
+            <TouchableOpacity
+              style={styles.minimalistTab}
+              onPress={() => setManagementTab("recipes")}
+            >
+              <Text style={[styles.minimalistTabText, managementTab === "recipes" && styles.minimalistTabTextActive]}>
+                Recipes ({userRecipes.length})
+              </Text>
+              {managementTab === "recipes" && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.minimalistTab}
+              onPress={() => setManagementTab("courses")}
+            >
+              <Text style={[styles.minimalistTabText, managementTab === "courses" && styles.minimalistTabTextActive]}>
+                Courses ({userCourses.length})
+              </Text>
+              {managementTab === "courses" && <View style={styles.tabUnderline} />}
+            </TouchableOpacity>
+          </View>
+        )}
 
         {/* Management Content */}
         <View style={styles.managementContent}>
-          {managementTab === "recipes" ? (
-            userRecipes.length > 0 ? (
-              userRecipes.map((recipe, index) => renderManagementRecipeCard(recipe, index))
+          {currentTab === "recipes" ? (
+            recipesToShow.length > 0 ? (
+              recipesToShow.map((recipe, index) => renderManagementRecipeCard(recipe, index))
             ) : (
               <View style={styles.emptyManagement}>
                 <Ionicons name="restaurant-outline" size={32} color="#64748B" />
-                <Text style={styles.emptyManagementText}>No recipes uploaded yet</Text>
-                <Text style={styles.emptyManagementSubtext}>Start by uploading your first recipe</Text>
+                <Text style={styles.emptyManagementText}>
+                  {userType === "user" ? "No recipes available" : "No recipes uploaded yet"}
+                </Text>
+                <Text style={styles.emptyManagementSubtext}>
+                  {userType === "user" 
+                    ? "Check back later for new recipes" 
+                    : "Start by uploading your first recipe"}
+                </Text>
               </View>
             )
           ) : (
-            userCourses.length > 0 ? (
-              userCourses.map((course, index) => renderManagementCourseCard(course, index))
+            coursesToShow.length > 0 ? (
+              coursesToShow.map((course, index) => renderManagementCourseCard(course, index))
             ) : (
               <View style={styles.emptyManagement}>
                 <Ionicons name="school-outline" size={32} color="#64748B" />
-                <Text style={styles.emptyManagementText}>No courses created yet</Text>
-                <Text style={styles.emptyManagementSubtext}>Start by creating your first course</Text>
+                <Text style={styles.emptyManagementText}>
+                  {userType === "user" ? "No courses available" : "No courses created yet"}
+                </Text>
+                <Text style={styles.emptyManagementSubtext}>
+                  {userType === "user"
+                    ? "Check back later for new courses"
+                    : "Start by creating your first course"}
+                </Text>
               </View>
             )
           )}
@@ -1736,26 +1783,57 @@ const ChefDashboardScreen: React.FC = () => {
         </View>
         
         <View style={styles.managementCardActions}>
-          <TouchableOpacity 
-            style={styles.managementActionButton}
-            onPress={(e) => {
-              e.stopPropagation()
-              handleEditRecipe(recipe)
-            }}
-          >
-            <Ionicons name="create" size={16} color="#3B82F6" />
-            <Text style={styles.managementActionText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.managementActionButton, styles.deleteButton]}
-            onPress={(e) => {
-              e.stopPropagation()
-              handleDeleteRecipe(recipe.id)
-            }}
-          >
-            <Ionicons name="trash" size={16} color="#EF4444" />
-            <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
-          </TouchableOpacity>
+          {userType === "chef" ? (
+            // Chef Dashboard actions: Edit and Delete
+            <>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  handleEditRecipe(recipe)
+                }}
+              >
+                <Ionicons name="create" size={16} color="#3B82F6" />
+                <Text style={styles.managementActionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.managementActionButton, styles.deleteButton]}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  handleDeleteRecipe(recipe.id)
+                }}
+              >
+                <Ionicons name="trash" size={16} color="#EF4444" />
+                <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            // Food Explorer actions: Report and Rate
+            <>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  setExpandedRecipeData(recipe)
+                  setShowRecipeReportDialog(true)
+                }}
+              >
+                <Ionicons name="flag" size={16} color="#EF4444" />
+                <Text style={styles.managementActionText}>Report</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  setExpandedRecipeData(recipe)
+                  setShowRecipeRatingDialog(true)
+                }}
+              >
+                <Ionicons name="star" size={16} color="#FACC15" />
+                <Text style={styles.managementActionText}>Rate</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -1820,26 +1898,57 @@ const ChefDashboardScreen: React.FC = () => {
         </View>
         
         <View style={styles.managementCardActions}>
-          <TouchableOpacity 
-            style={styles.managementActionButton}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleEditCourse(course);
-            }}
-          >
-            <Ionicons name="create" size={16} color="#3B82F6" />
-            <Text style={styles.managementActionText}>Edit</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.managementActionButton, styles.deleteButton]}
-            onPress={(e) => {
-              e.stopPropagation();
-              handleDeleteCourse(course.id);
-            }}
-          >
-            <Ionicons name="trash" size={16} color="#EF4444" />
-            <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
-          </TouchableOpacity>
+          {userType === "chef" ? (
+            // Chef Dashboard actions: Edit and Delete
+            <>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleEditCourse(course);
+                }}
+              >
+                <Ionicons name="create" size={16} color="#3B82F6" />
+                <Text style={styles.managementActionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.managementActionButton, styles.deleteButton]}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleDeleteCourse(course.id);
+                }}
+              >
+                <Ionicons name="trash" size={16} color="#EF4444" />
+                <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            // Food Explorer actions: Report and Rate
+            <>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  setExpandedCourseData(course)
+                  setShowCourseReportDialog(true)
+                }}
+              >
+                <Ionicons name="flag" size={16} color="#EF4444" />
+                <Text style={styles.managementActionText}>Report</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.managementActionButton}
+                onPress={(e) => {
+                  e.stopPropagation()
+                  setExpandedCourseData(course)
+                  setShowCourseRatingDialog(true)
+                }}
+              >
+                <Ionicons name="star" size={16} color="#FACC15" />
+                <Text style={styles.managementActionText}>Rate</Text>
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </TouchableOpacity>
@@ -2167,6 +2276,104 @@ const ChefDashboardScreen: React.FC = () => {
     }
   }
 
+  // Recipe Report/Rate Handlers
+  const handleSubmitRecipeReport = async () => {
+    if (!recipeReportReason && !recipeReportDescription.trim()) {
+      Alert.alert("Error", "Please select a reason or describe your concern")
+      return
+    }
+
+    const finalReason = recipeReportReason || "Custom"
+    
+    setIsReportingRecipe(true)
+    try {
+      await apiClient.post(`/recipes/${expandedRecipeData.id}/report`, {
+        reason: finalReason,
+        description: recipeReportDescription || recipeReportReason
+      })
+      Alert.alert("Success", "Recipe report submitted successfully")
+      setShowRecipeReportDialog(false)
+      setRecipeReportReason("")
+      setRecipeReportDescription("")
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit report")
+    } finally {
+      setIsReportingRecipe(false)
+    }
+  }
+
+  const handleSubmitRecipeRating = async () => {
+    if (recipeRating === 0) {
+      Alert.alert("Error", "Please select a rating")
+      return
+    }
+    
+    setIsRatingRecipe(true)
+    try {
+      const result = await apiClient.post(`/recipes/${expandedRecipeData.id}/rate`, {
+        rating: recipeRating,
+        feedback: recipeRatingFeedback
+      })
+      Alert.alert("Success", "Recipe rating submitted successfully")
+      setShowRecipeRatingDialog(false)
+      setRecipeRating(0)
+      setRecipeRatingFeedback("")
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit rating")
+    } finally {
+      setIsRatingRecipe(false)
+    }
+  }
+
+  // Course Report/Rate Handlers
+  const handleSubmitCourseReport = async () => {
+    if (!courseReportReason && !courseReportDescription.trim()) {
+      Alert.alert("Error", "Please select a reason or describe your concern")
+      return
+    }
+
+    const finalReason = courseReportReason || "Custom"
+    
+    setIsReportingCourse(true)
+    try {
+      await apiClient.post(`/courses/${expandedCourseData.id}/report`, {
+        reason: finalReason,
+        description: courseReportDescription || courseReportReason
+      })
+      Alert.alert("Success", "Course report submitted successfully")
+      setShowCourseReportDialog(false)
+      setCourseReportReason("")
+      setCourseReportDescription("")
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit report")
+    } finally {
+      setIsReportingCourse(false)
+    }
+  }
+
+  const handleSubmitCourseRating = async () => {
+    if (courseRating === 0) {
+      Alert.alert("Error", "Please select a rating")
+      return
+    }
+    
+    setIsRatingCourse(true)
+    try {
+      const result = await apiClient.post(`/courses/${expandedCourseData.id}/rate`, {
+        rating: courseRating,
+        feedback: courseRatingFeedback
+      })
+      Alert.alert("Success", "Course rating submitted successfully")
+      setShowCourseRatingDialog(false)
+      setCourseRating(0)
+      setCourseRatingFeedback("")
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to submit rating")
+    } finally {
+      setIsRatingCourse(false)
+    }
+  }
+
   const handleEditCourse = async (course: Course) => {
     try {
       // Fetch full course details from backend
@@ -2421,7 +2628,7 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Share and Edit Buttons */}
+                {/* Share and Action Buttons - Different for Chef vs Food Explorer */}
                 <View className="flex-row mb-6" style={{ gap: 12 }}>
                   <TouchableOpacity
                     onPress={() => handleShareRecipe(expandedRecipeData)}
@@ -2432,45 +2639,71 @@ const ChefDashboardScreen: React.FC = () => {
                     <Text className="text-amber-300 font-bold ml-2 text-sm tracking-wide">Share</Text>
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      setExpandedRecipeId(null)
-                      setExpandedRecipeData(null)
-                      // Directly set editing recipe since we already have full data
-                      setEditingRecipe(expandedRecipeData)
-                      setShowRecipeModal(true)
-                      console.log('✏️ Opening recipe edit modal for:', expandedRecipeData.title)
-                    }}
-                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
-                    <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
-                  </TouchableOpacity>
+                  {userType === "chef" ? (
+                    // Chef Dashboard actions
+                    <>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setExpandedRecipeId(null)
+                          setExpandedRecipeData(null)
+                          // Directly set editing recipe since we already have full data
+                          setEditingRecipe(expandedRecipeData)
+                          setShowRecipeModal(true)
+                          console.log('✏️ Opening recipe edit modal for:', expandedRecipeData.title)
+                        }}
+                        className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                        <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      console.log('🔘 Publish/Hide button pressed')
-                      console.log('📊 Current recipe state:', {
-                        id: expandedRecipeData._id || expandedRecipeData.id,
-                        title: expandedRecipeData.title,
-                        isPublished: expandedRecipeData.isPublished
-                      })
-                      handleTogglePublish()
-                    }}
-                    disabled={isPublishing}
-                    className={`${expandedRecipeData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons 
-                      name={isPublishing ? "hourglass-outline" : (expandedRecipeData.isPublished ? "eye-off-outline" : "eye-outline")} 
-                      size={18} 
-                      color={expandedRecipeData.isPublished ? "#FB923C" : "#10B981"} 
-                    />
-                    <Text className={`${expandedRecipeData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
-                      {isPublishing ? 'Processing...' : (expandedRecipeData.isPublished ? 'Hide' : 'Publish')}
-                    </Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          console.log('🔘 Publish/Hide button pressed')
+                          console.log('📊 Current recipe state:', {
+                            id: expandedRecipeData._id || expandedRecipeData.id,
+                            title: expandedRecipeData.title,
+                            isPublished: expandedRecipeData.isPublished
+                          })
+                          handleTogglePublish()
+                        }}
+                        disabled={isPublishing}
+                        className={`${expandedRecipeData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons 
+                          name={isPublishing ? "hourglass-outline" : (expandedRecipeData.isPublished ? "eye-off-outline" : "eye-outline")} 
+                          size={18} 
+                          color={expandedRecipeData.isPublished ? "#FB923C" : "#10B981"} 
+                        />
+                        <Text className={`${expandedRecipeData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
+                          {isPublishing ? 'Processing...' : (expandedRecipeData.isPublished ? 'Hide' : 'Publish')}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    // Food Explorer actions
+                    <>
+                      <TouchableOpacity
+                        onPress={() => setShowRecipeReportDialog(true)}
+                        className="bg-red-500/15 border border-red-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="flag-outline" size={18} color="#EF4444" />
+                        <Text className="text-red-300 font-bold ml-2 text-sm tracking-wide">Report</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => setShowRecipeRatingDialog(true)}
+                        className="bg-yellow-500/15 border border-yellow-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="star-outline" size={18} color="#FACC15" />
+                        <Text className="text-yellow-300 font-bold ml-2 text-sm tracking-wide">Rate</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
 
                 {/* 📊 Enhanced Nutrition Section */}
@@ -2791,46 +3024,72 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                 </View>
 
-                {/* Edit and Publish Buttons */}
+                {/* Edit and Publish Buttons - Different for Chef vs Food Explorer */}
                 <View className="flex-row mb-6" style={{ gap: 12 }}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setExpandedCourseId(null)
-                      setExpandedCourseData(null)
-                      setEditingCourse(expandedCourseData)
-                      setShowCourseModal(true)
-                      console.log('✏️ Opening course edit modal for:', expandedCourseData.title)
-                    }}
-                    className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons name="create-outline" size={18} color="#3B82F6" />
-                    <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
-                  </TouchableOpacity>
+                  {userType === "chef" ? (
+                    // Chef Dashboard actions
+                    <>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setExpandedCourseId(null)
+                          setExpandedCourseData(null)
+                          setEditingCourse(expandedCourseData)
+                          setShowCourseModal(true)
+                          console.log('✏️ Opening course edit modal for:', expandedCourseData.title)
+                        }}
+                        className="bg-blue-500/15 border border-blue-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="create-outline" size={18} color="#3B82F6" />
+                        <Text className="text-blue-300 font-bold ml-2 text-sm tracking-wide">Edit</Text>
+                      </TouchableOpacity>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      console.log('🔘 Publish/Hide button pressed')
-                      console.log('📊 Current course state:', {
-                        id: expandedCourseData._id || expandedCourseData.id,
-                        title: expandedCourseData.title,
-                        isPublished: expandedCourseData.isPublished
-                      })
-                      handleToggleCoursePublish()
-                    }}
-                    disabled={isPublishing}
-                    className={`${expandedCourseData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
-                    activeOpacity={0.7}
-                  >
-                    <Ionicons 
-                      name={isPublishing ? "hourglass-outline" : (expandedCourseData.isPublished ? "eye-off-outline" : "eye-outline")} 
-                      size={18} 
-                      color={expandedCourseData.isPublished ? "#FB923C" : "#10B981"} 
-                    />
-                    <Text className={`${expandedCourseData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
-                      {isPublishing ? 'Processing...' : (expandedCourseData.isPublished ? 'Hide' : 'Publish')}
-                    </Text>
-                  </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => {
+                          console.log('🔘 Publish/Hide button pressed')
+                          console.log('📊 Current course state:', {
+                            id: expandedCourseData._id || expandedCourseData.id,
+                            title: expandedCourseData.title,
+                            isPublished: expandedCourseData.isPublished
+                          })
+                          handleToggleCoursePublish()
+                        }}
+                        disabled={isPublishing}
+                        className={`${expandedCourseData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons 
+                          name={isPublishing ? "hourglass-outline" : (expandedCourseData.isPublished ? "eye-off-outline" : "eye-outline")} 
+                          size={18} 
+                          color={expandedCourseData.isPublished ? "#FB923C" : "#10B981"} 
+                        />
+                        <Text className={`${expandedCourseData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
+                          {isPublishing ? 'Processing...' : (expandedCourseData.isPublished ? 'Hide' : 'Publish')}
+                        </Text>
+                      </TouchableOpacity>
+                    </>
+                  ) : (
+                    // Food Explorer actions
+                    <>
+                      <TouchableOpacity
+                        onPress={() => setShowCourseReportDialog(true)}
+                        className="bg-red-500/15 border border-red-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="flag-outline" size={18} color="#EF4444" />
+                        <Text className="text-red-300 font-bold ml-2 text-sm tracking-wide">Report</Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        onPress={() => setShowCourseRatingDialog(true)}
+                        className="bg-yellow-500/15 border border-yellow-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="star-outline" size={18} color="#FACC15" />
+                        <Text className="text-yellow-300 font-bold ml-2 text-sm tracking-wide">Rate</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
 
                 {/* 📚 Course Units Section */}
@@ -3120,6 +3379,420 @@ const ChefDashboardScreen: React.FC = () => {
           }}
         />
       )}
+
+      {/* Recipe Report Dialog */}
+      <CustomDialog
+        visible={showRecipeReportDialog}
+        onClose={() => {
+          setShowRecipeReportDialog(false)
+          setRecipeReportReason("")
+          setRecipeReportDescription("")
+        }}
+        title="Report Recipe"
+        height={550}
+      >
+        <>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Describe Your Concern:</Text>
+            <TextInput
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.1)",
+                borderRadius: 12,
+                padding: 12,
+                color: "#FFFFFF",
+                fontSize: 14,
+                height: 100,
+                textAlignVertical: "top"
+              }}
+              placeholder="Type your reason for reporting this recipe..."
+              placeholderTextColor="#64748B"
+              multiline
+              numberOfLines={4}
+              value={recipeReportDescription}
+              onChangeText={setRecipeReportDescription}
+            />
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
+          </View>
+          
+          <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+            {reportReasons.map((reason) => (
+              <TouchableOpacity
+                key={reason}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  backgroundColor: recipeReportReason === reason ? "rgba(250, 204, 21, 0.1)" : "rgba(255, 255, 255, 0.05)",
+                  borderWidth: 1,
+                  borderColor: recipeReportReason === reason ? "#FACC15" : "rgba(255, 255, 255, 0.1)",
+                }}
+                onPress={() => {
+                  if (recipeReportReason === reason) {
+                    setRecipeReportReason("")
+                  } else {
+                    setRecipeReportReason(reason)
+                    setRecipeReportDescription("")
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: recipeReportReason === reason ? "#FACC15" : "#475569",
+                    marginRight: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {recipeReportReason === reason && (
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FACC15" }} />
+                  )}
+                </View>
+                <Text style={{ color: "#E5E7EB", fontSize: 14 }}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+              onPress={() => {
+                setShowRecipeReportDialog(false)
+                setRecipeReportReason("")
+                setRecipeReportDescription("")
+              }}
+            >
+              <Text style={{ color: "#94A3B8", fontSize: 14, fontWeight: "600" }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: "#EF4444",
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+              onPress={handleSubmitRecipeReport}
+              disabled={isReportingRecipe}
+            >
+              {isReportingRecipe ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>Submit Report</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      </CustomDialog>
+
+      {/* Recipe Rating Dialog */}
+      <CustomDialog
+        visible={showRecipeRatingDialog}
+        onClose={() => {
+          setShowRecipeRatingDialog(false)
+          setRecipeRating(0)
+          setRecipeRatingFeedback("")
+        }}
+        title="Rate This Recipe"
+        height={400}
+      >
+        <View>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>Select Your Rating:</Text>
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 24 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setRecipeRating(star)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={star <= recipeRating ? "star" : "star-outline"}
+                  size={48}
+                  color={star <= recipeRating ? "#FACC15" : "#475569"}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Feedback (Optional):</Text>
+          <TextInput
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderRadius: 12,
+              padding: 12,
+              color: "#FFFFFF",
+              fontSize: 14,
+              height: 100,
+              textAlignVertical: "top"
+            }}
+            placeholder="Share your thoughts about this recipe..."
+            placeholderTextColor="#64748B"
+            multiline
+            numberOfLines={4}
+            value={recipeRatingFeedback}
+            onChangeText={setRecipeRatingFeedback}
+          />
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              padding: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+            onPress={() => {
+              setShowRecipeRatingDialog(false)
+              setRecipeRating(0)
+              setRecipeRatingFeedback("")
+            }}
+          >
+            <Text style={{ color: "#94A3B8", fontSize: 14, fontWeight: "600" }}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSubmitRecipeRating}
+            disabled={recipeRating === 0 || isRatingRecipe}
+            style={{
+              flex: 1,
+              backgroundColor: recipeRating === 0 ? "rgba(250, 204, 21, 0.3)" : "#FACC15",
+              padding: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            {isRatingRecipe ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: recipeRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>Submit Rating</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* Course Report Dialog */}
+      <CustomDialog
+        visible={showCourseReportDialog}
+        onClose={() => {
+          setShowCourseReportDialog(false)
+          setCourseReportReason("")
+          setCourseReportDescription("")
+        }}
+        title="Report Course"
+        height={550}
+      >
+        <>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Describe Your Concern:</Text>
+            <TextInput
+              style={{
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                borderWidth: 1,
+                borderColor: "rgba(255, 255, 255, 0.1)",
+                borderRadius: 12,
+                padding: 12,
+                color: "#FFFFFF",
+                fontSize: 14,
+                height: 100,
+                textAlignVertical: "top"
+              }}
+              placeholder="Type your reason for reporting this course..."
+              placeholderTextColor="#64748B"
+              multiline
+              numberOfLines={4}
+              value={courseReportDescription}
+              onChangeText={setCourseReportDescription}
+            />
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
+          </View>
+          
+          <ScrollView style={{ maxHeight: 250 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+            {reportReasons.map((reason) => (
+              <TouchableOpacity
+                key={reason}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  backgroundColor: courseReportReason === reason ? "rgba(250, 204, 21, 0.1)" : "rgba(255, 255, 255, 0.05)",
+                  borderWidth: 1,
+                  borderColor: courseReportReason === reason ? "#FACC15" : "rgba(255, 255, 255, 0.1)",
+                }}
+                onPress={() => {
+                  if (courseReportReason === reason) {
+                    setCourseReportReason("")
+                  } else {
+                    setCourseReportReason(reason)
+                    setCourseReportDescription("")
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View
+                  style={{
+                    width: 20,
+                    height: 20,
+                    borderRadius: 10,
+                    borderWidth: 2,
+                    borderColor: courseReportReason === reason ? "#FACC15" : "#475569",
+                    marginRight: 12,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {courseReportReason === reason && (
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: "#FACC15" }} />
+                  )}
+                </View>
+                <Text style={{ color: "#E5E7EB", fontSize: 14 }}>{reason}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 16 }}>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: "rgba(255, 255, 255, 0.05)",
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+              onPress={() => {
+                setShowCourseReportDialog(false)
+                setCourseReportReason("")
+                setCourseReportDescription("")
+              }}
+            >
+              <Text style={{ color: "#94A3B8", fontSize: 14, fontWeight: "600" }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{
+                flex: 1,
+                backgroundColor: "#EF4444",
+                padding: 14,
+                borderRadius: 12,
+                alignItems: "center",
+              }}
+              onPress={handleSubmitCourseReport}
+              disabled={isReportingCourse}
+            >
+              {isReportingCourse ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>Submit Report</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </>
+      </CustomDialog>
+
+      {/* Course Rating Dialog */}
+      <CustomDialog
+        visible={showCourseRatingDialog}
+        onClose={() => {
+          setShowCourseRatingDialog(false)
+          setCourseRating(0)
+          setCourseRatingFeedback("")
+        }}
+        title="Rate This Course"
+        height={400}
+      >
+        <View>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>Select Your Rating:</Text>
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 24 }}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <TouchableOpacity
+                key={star}
+                onPress={() => setCourseRating(star)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={star <= courseRating ? "star" : "star-outline"}
+                  size={48}
+                  color={star <= courseRating ? "#FACC15" : "#475569"}
+                />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Feedback (Optional):</Text>
+          <TextInput
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              borderWidth: 1,
+              borderColor: "rgba(255, 255, 255, 0.1)",
+              borderRadius: 12,
+              padding: 12,
+              color: "#FFFFFF",
+              fontSize: 14,
+              height: 100,
+              textAlignVertical: "top"
+            }}
+            placeholder="Share your thoughts about this course..."
+            placeholderTextColor="#64748B"
+            multiline
+            numberOfLines={4}
+            value={courseRatingFeedback}
+            onChangeText={setCourseRatingFeedback}
+          />
+        </View>
+
+        <View style={{ flexDirection: "row", gap: 12, marginTop: 24 }}>
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              backgroundColor: "rgba(255, 255, 255, 0.05)",
+              padding: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+            onPress={() => {
+              setShowCourseRatingDialog(false)
+              setCourseRating(0)
+              setCourseRatingFeedback("")
+            }}
+          >
+            <Text style={{ color: "#94A3B8", fontSize: 14, fontWeight: "600" }}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleSubmitCourseRating}
+            disabled={courseRating === 0 || isRatingCourse}
+            style={{
+              flex: 1,
+              backgroundColor: courseRating === 0 ? "rgba(250, 204, 21, 0.3)" : "#FACC15",
+              padding: 14,
+              borderRadius: 12,
+              alignItems: "center",
+            }}
+          >
+            {isRatingCourse ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Text style={{ color: courseRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>Submit Rating</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
     </LinearGradient>
   )
 }
@@ -6698,6 +7371,60 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     flex: 1,
+  },
+  loadingChefsContainer: {
+    paddingVertical: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingChefsText: {
+    color: "#94A3B8",
+    fontSize: 16,
+    marginTop: 16,
+    fontWeight: "500",
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FACC15",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    gap: 8,
+  },
+  retryButtonText: {
+    color: "#1a1a1a",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  loadingContainer: {
+    paddingVertical: 40,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingText: {
+    color: "#94A3B8",
+    fontSize: 14,
+    marginTop: 12,
+    fontWeight: "500",
+  },
+  draftBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "rgba(148, 163, 184, 0.9)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  draftText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "600",
   },
 })
 
