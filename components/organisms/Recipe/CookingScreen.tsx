@@ -1,8 +1,11 @@
+import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Dimensions,
   ScrollView,
@@ -21,15 +24,18 @@ export default function CookingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
+  const { profile } = useAuthContext();
+
+  const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
 
   // Parse recipe from params with useMemo to prevent re-parsing on every render
   const recipe = useMemo(() => {
     try {
       const recipeParam = params.recipe;
-      
+
       if (typeof recipeParam === 'string' && recipeParam.trim()) {
         const parsed = JSON.parse(recipeParam);
-        
+
         // Validate that we have the required recipe structure
         if (parsed && typeof parsed === 'object' && typeof parsed.title === 'string' && parsed.title.trim()) {
           // Ensure instructions is an array
@@ -55,6 +61,8 @@ export default function CookingScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSpeakingInstruction, setIsSpeakingInstruction] = useState(false);
+  const [isSpeakingIngredients, setIsSpeakingIngredients] = useState(false);
 
   const overallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -168,6 +176,112 @@ export default function CookingScreen() {
   const handlePauseResume = () => {
     setIsPaused((prev) => !prev);
   };
+
+  const handleSpeakInstruction = async () => {
+    if (!isPro) {
+      Alert.alert(
+        '🎙️ Premium Feature',
+        'Text-to-speech for cooking instructions is a premium feature. Upgrade to Pro to listen to your recipes hands-free!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Upgrade to Pro', onPress: () => router.push('/(protected)/(tabs)/(hidden)/settings/subscription') }
+        ]
+      );
+      return;
+    }
+
+    try {
+      if (isSpeakingInstruction) {
+        // Stop speaking
+        await Speech.stop();
+        setIsSpeakingInstruction(false);
+      } else {
+        // Stop any ongoing speech first
+        await Speech.stop();
+        setIsSpeakingIngredients(false);
+
+        // Start speaking instruction
+        setIsSpeakingInstruction(true);
+
+        const textToSpeak = instructionText;
+
+        await Speech.speak(textToSpeak, {
+          language: 'en',
+          pitch: 1.0,
+          rate: 0.9,
+          onDone: () => setIsSpeakingInstruction(false),
+          onStopped: () => setIsSpeakingInstruction(false),
+          onError: () => setIsSpeakingInstruction(false),
+        });
+      }
+    } catch (error) {
+      console.error('Error with speech:', error);
+      setIsSpeakingInstruction(false);
+    }
+  };
+
+  const handleSpeakIngredients = async () => {
+    if (!isPro) {
+      Alert.alert(
+        '🎙️ Premium Feature',
+        'Text-to-speech for ingredients is a premium feature. Upgrade to Pro to listen to your recipes hands-free!',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Upgrade to Pro', onPress: () => router.push('/(protected)/(tabs)/(hidden)/settings/subscription') }
+        ]
+      );
+      return;
+    }
+
+    try {
+      if (isSpeakingIngredients) {
+        // Stop speaking
+        await Speech.stop();
+        setIsSpeakingIngredients(false);
+      } else {
+        // Stop any ongoing speech first
+        await Speech.stop();
+        setIsSpeakingInstruction(false);
+
+        // Start speaking ingredients
+        setIsSpeakingIngredients(true);
+
+        // Build ingredients text
+        const ingredientsArray = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
+        let ingredientsText = 'Ingredients needed: ';
+
+        if (ingredientsArray.length === 0) {
+          ingredientsText += 'No ingredients listed.';
+        } else {
+          ingredientsText += ingredientsArray.map((ingredient: any, index: number) => {
+            const ingredientText = ensureString(ingredient, '');
+            return `${index + 1}. ${ingredientText}`;
+          }).join('. ');
+        }
+
+        await Speech.speak(ingredientsText, {
+          language: 'en',
+          pitch: 1.0,
+          rate: 0.9,
+          onDone: () => setIsSpeakingIngredients(false),
+          onStopped: () => setIsSpeakingIngredients(false),
+          onError: () => setIsSpeakingIngredients(false),
+        });
+      }
+    } catch (error) {
+      console.error('Error with speech:', error);
+      setIsSpeakingIngredients(false);
+    }
+  };
+
+  // Cleanup speech on unmount or step change
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+      setIsSpeakingInstruction(false);
+      setIsSpeakingIngredients(false);
+    };
+  }, [currentStep]);
 
   function ensureString(value: unknown, fallback = ''): string {
     if (value === null || value === undefined) {
@@ -382,40 +496,140 @@ export default function CookingScreen() {
             </View>
           </View>
 
+          {/* Ingredients Section */}
+          {recipe?.ingredients && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 && (
+            <View
+              className="rounded-2xl p-6 mb-6"
+              style={{ backgroundColor: 'rgba(34, 197, 94, 0.05)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.2)' }}
+            >
+              <View className="flex-row items-center mb-4 justify-between">
+                <View className="flex-row items-center flex-1">
+                  <View
+                    className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                    style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+                  >
+                    <Ionicons name="leaf-outline" size={20} color="#22C55E" />
+                  </View>
+                  <Text className="text-lg font-bold" style={{ color: '#22C55E' }}>
+                    INGREDIENTS
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={handleSpeakIngredients}
+                  className="h-10 px-3 rounded-full items-center justify-center"
+                  style={{
+                    backgroundColor: isSpeakingIngredients ? 'rgba(239, 68, 68, 0.15)' : isPro ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    borderColor: isSpeakingIngredients ? 'rgba(239, 68, 68, 0.4)' : isPro ? 'rgba(59, 130, 246, 0.4)' : 'rgba(107, 114, 128, 0.3)',
+                    opacity: isPro ? 1 : 0.7,
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View className="relative">
+                    <Ionicons
+                      name={isSpeakingIngredients ? "stop" : "volume-high"}
+                      size={18}
+                      color={isSpeakingIngredients ? "#EF4444" : "#3B82F6"}
+                    />
+                    {!isPro && (
+                      <View className="absolute -top-1.5 -right-1.5 bg-yellow-400 rounded-full px-1" style={{ minWidth: 20, height: 12 }}>
+                        <Text className="text-black text-xs font-bold" style={{ fontSize: 8, lineHeight: 12 }}>PRO</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              </View>
+
+              <View className="space-y-2">
+                {recipe.ingredients.slice(0, 6).map((ingredient: any, index: number) => (
+                  <View key={index} className="flex-row items-start mb-2">
+                    <View
+                      className="w-6 h-6 rounded-full items-center justify-center mr-3 mt-0.5"
+                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}
+                    >
+                      <Text className="text-xs font-bold" style={{ color: '#22C55E' }}>
+                        {index + 1}
+                      </Text>
+                    </View>
+                    <Text className="text-gray-300 text-sm leading-6 flex-1">
+                      {ensureString(ingredient, 'Ingredient')}
+                    </Text>
+                  </View>
+                ))}
+                {recipe.ingredients.length > 6 && (
+                  <Text className="text-gray-400 text-xs mt-2 ml-9">
+                    + {recipe.ingredients.length - 6} more ingredients
+                  </Text>
+                )}
+              </View>
+            </View>
+          )}
+
           {/* Step Details */}
           <View
             className="rounded-2xl p-6 mb-6"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
           >
-            <View className="flex-row items-center mb-4">
-              <View
-                className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}
-              >
-                <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
-              </View>
-              <Text className="text-lg font-bold" style={{ color: '#FACC15' }}>
-                INSTRUCTION
-              </Text>
-              <TouchableOpacity
-                onPress={handlePauseResume}
-                className="h-10 px-4 rounded-full items-center justify-center ml-3 flex-row"
-                style={{
-                  backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  borderWidth: 2,
-                  borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isPaused ? "play" : "pause"}
-                  size={16}
-                  color={isPaused ? "#22C55E" : "#EF4444"}
-                />
-                <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
-                  {isPaused ? "RESUME" : "PAUSE"}
+            <View className="flex-row items-center mb-4 justify-between">
+              <View className="flex-row items-center flex-1">
+                <View
+                  className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                  style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}
+                >
+                  <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
+                </View>
+                <Text className="text-lg font-bold" style={{ color: '#FACC15' }}>
+                  INSTRUCTION
                 </Text>
-              </TouchableOpacity>
+              </View>
+
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={handleSpeakInstruction}
+                  className="h-10 px-3 rounded-full items-center justify-center mr-2"
+                  style={{
+                    backgroundColor: isSpeakingInstruction ? 'rgba(239, 68, 68, 0.15)' : isPro ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    borderColor: isSpeakingInstruction ? 'rgba(239, 68, 68, 0.4)' : isPro ? 'rgba(59, 130, 246, 0.4)' : 'rgba(107, 114, 128, 0.3)',
+                    opacity: isPro ? 1 : 0.7,
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View className="relative">
+                    <Ionicons
+                      name={isSpeakingInstruction ? "stop" : "volume-high"}
+                      size={18}
+                      color={isSpeakingInstruction ? "#EF4444" : "#3B82F6"}
+                    />
+                    {!isPro && (
+                      <View className="absolute -top-1.5 -right-1.5 bg-yellow-400 rounded-full px-1" style={{ minWidth: 20, height: 12 }}>
+                        <Text className="text-black text-xs font-bold" style={{ fontSize: 8, lineHeight: 12 }}>PRO</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handlePauseResume}
+                  className="h-10 px-4 rounded-full items-center justify-center flex-row"
+                  style={{
+                    backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    borderWidth: 2,
+                    borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isPaused ? "play" : "pause"}
+                    size={16}
+                    color={isPaused ? "#22C55E" : "#EF4444"}
+                  />
+                  <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
+                    {isPaused ? "RESUME" : "PAUSE"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text className="text-white text-base leading-7">{instructionText}</Text>
@@ -424,7 +638,7 @@ export default function CookingScreen() {
             {(() => {
               const duration = recipe?.instructions?.[currentStep]?.duration;
               const hasDuration = duration !== null && duration !== undefined && duration !== '' && duration !== 0;
-              
+
               if (!hasDuration) return null;
 
               let durationText = '';
