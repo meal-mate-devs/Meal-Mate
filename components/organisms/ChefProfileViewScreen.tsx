@@ -6,22 +6,22 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
 import React, { useEffect, useState } from "react"
 import {
-    ActivityIndicator,
-    Alert,
-    BackHandler,
-    Dimensions,
-    Image,
-    Modal,
-    ScrollView,
-    Share,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  BackHandler,
+  Dimensions,
+  Image,
+  Modal,
+  ScrollView,
+  Share,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import CustomDialog from "../atoms/CustomDialog"
+import Dialog from "../atoms/Dialog"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
@@ -134,10 +134,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   // Expandable units and descriptions state
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
+  
+  // Subscribe confirmation dialog
+  const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
+  const [subscribeAction, setSubscribeAction] = useState<'subscribe' | 'unsubscribe'>('subscribe')
 
   // Load recipes and courses from backend
   useEffect(() => {
     if (visible && chef.id) {
+      loadChefProfile()
       loadChefContent()
       checkSubscription()
     }
@@ -173,6 +178,26 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     } catch (error) {
       console.log("Failed to check subscription:", error)
       setSubscriptionChecked(true)
+    }
+  }
+
+  const loadChefProfile = async () => {
+    try {
+      console.log('📊 Loading fresh chef profile with stats:', chef.id)
+      const freshChefData = await chefService.getChefById(chef.id)
+      
+      // Update chef stats with fresh data from backend
+      if (chef.stats && freshChefData.stats) {
+        chef.stats.freeRecipesCount = freshChefData.stats.freeRecipesCount || 0
+        chef.stats.premiumRecipesCount = freshChefData.stats.premiumRecipesCount || 0
+        chef.stats.coursesCount = freshChefData.stats.coursesCount || 0
+        chef.stats.totalStudents = freshChefData.stats.totalStudents || 0
+        chef.stats.averageRating = freshChefData.stats.averageRating || 0
+        chef.stats.totalRatings = freshChefData.stats.totalRatings || 0
+      }
+      console.log('✅ Chef stats updated:', chef.stats)
+    } catch (error) {
+      console.log('❌ Failed to load chef profile:', error)
     }
   }
 
@@ -220,75 +245,58 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   ]
 
   const handleSubscribe = async () => {
+    if (isSubscribed) {
+      // Show unsubscribe confirmation
+      setSubscribeAction('unsubscribe')
+      setShowSubscribeDialog(true)
+    } else {
+      // Subscribe directly
+      await performSubscribe()
+    }
+  }
+  
+  const performSubscribe = async () => {
     setIsSubscribing(true)
     try {
-      if (isSubscribed) {
-        // Unsubscribe
-        Alert.alert(
-          "Unsubscribe",
-          `Are you sure you want to unsubscribe from ${chef.name}?`,
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Unsubscribe",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await chefService.unsubscribeFromChef(chef.id)
-                  setIsSubscribed(false)
-                  // Update parent's chef object
-                  chef.isSubscribed = false
-                  chef.subscribers = Math.max(0, chef.subscribers - 1)
-                  Alert.alert("Success", "Unsubscribed successfully")
-                  onSubscribeToggle?.(chef.id)
-                  // Reload content to update access
-                  loadChefContent()
-                } catch (error: any) {
-                  Alert.alert("Error", error.message || "Failed to unsubscribe")
-                } finally {
-                  setIsSubscribing(false)
-                }
-              }
-            }
-          ]
-        )
+      if (subscribeAction === 'unsubscribe') {
+        await chefService.unsubscribeFromChef(chef.id)
+        setIsSubscribed(false)
+        chef.isSubscribed = false
+        chef.subscribers = Math.max(0, chef.subscribers - 1)
+        onSubscribeToggle?.(chef.id)
+        loadChefContent()
       } else {
-        // Subscribe
         await chefService.subscribeToChef(chef.id)
         setIsSubscribed(true)
-        // Update parent's chef object
         chef.isSubscribed = true
         chef.subscribers = chef.subscribers + 1
-        Alert.alert("Success", `You are now subscribed to ${chef.name}!`)
         onSubscribeToggle?.(chef.id)
-        // Reload content to update access
         loadChefContent()
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to update subscription")
+      console.log('Subscribe error:', error)
     } finally {
       setIsSubscribing(false)
+      setShowSubscribeDialog(false)
     }
   }
 
   const handleSubmitReport = async () => {
     const finalReason = customReason.trim() || reportReason
     if (!finalReason) {
-      Alert.alert("Error", "Please describe your concern or select a reason")
       return
     }
     
     setIsReporting(true)
     try {
       await chefService.reportChef(chef.id, finalReason, reportDescription)
-      Alert.alert("Success", "Report submitted successfully. We'll review it shortly.")
       setShowReportDialog(false)
       setReportReason("")
       setReportDescription("")
       setCustomReason("")
       onReport?.(chef.id, finalReason, reportDescription)
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit report")
+      console.log('Report error:', error)
     } finally {
       setIsReporting(false)
     }
@@ -296,17 +304,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
   const handleSubmitRating = async () => {
     if (userRating === 0) {
-      Alert.alert("Error", "Please select a rating")
       return
     }
     
     setIsRating(true)
     try {
       const result = await chefService.rateChef(chef.id, userRating, userFeedback)
-      Alert.alert(
-        "Success", 
-        `Rating submitted! Chef's average rating: ${result.averageRating.toFixed(1)} ⭐`
-      )
       setShowRatingDialog(false)
       setUserRating(0)
       setUserFeedback("")
@@ -317,7 +320,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         chef.stats.totalRatings = result.totalRatings
       }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit rating")
+      console.log('Rating error:', error)
     } finally {
       setIsRating(false)
     }
@@ -343,12 +346,6 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     } catch (error: any) {
       console.log('❌ Failed to fetch recipe details:', error)
       setExpandedRecipeId(null)
-      
-      Alert.alert(
-        'Unable to Load Recipe',
-        'Failed to load recipe details. Please try again.',
-        [{ text: 'OK', style: 'cancel' }]
-      )
     } finally {
       setIsLoadingRecipeDetails(false)
     }
@@ -375,12 +372,6 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     } catch (error: any) {
       console.log('❌ Failed to fetch course details:', error)
       setExpandedCourseId(null)
-      
-      Alert.alert(
-        'Unable to Load Course',
-        'Failed to load course details. Please try again.',
-        [{ text: 'OK', style: 'cancel' }]
-      )
     } finally {
       setIsLoadingCourseDetails(false)
     }
@@ -388,7 +379,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
   const handleStartCooking = (recipe: any) => {
     if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
-      Alert.alert('No Instructions', 'This recipe has no cooking instructions available.')
+      console.log('No instructions available for recipe')
       return
     }
     
@@ -519,7 +510,14 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   }
 
   const renderRecipeCard = (recipe: Recipe) => {
-    const imageUri = typeof recipe.image === 'string' ? recipe.image : (recipe.image as any)?.url || ''
+    const getImageUrl = (image: any): string => {
+      if (!image) return 'https://via.placeholder.com/400x300'
+      if (typeof image === 'string') return image
+      if (typeof image === 'object' && image.url) return image.url
+      if (typeof image === 'object' && image.uri) return image.uri
+      return 'https://via.placeholder.com/400x300'
+    }
+    const imageUri = getImageUrl(recipe.image)
     return (
     <TouchableOpacity 
       style={styles.contentCard} 
@@ -587,10 +585,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   }
 
   const renderCourseCard = (course: Course) => {
+    const getImageUrl = (image: any): string => {
+      if (!image) return 'https://via.placeholder.com/400x300'
+      if (typeof image === 'string') return image
+      if (typeof image === 'object' && image.url) return image.url
+      if (typeof image === 'object' && image.uri) return image.uri
+      return 'https://via.placeholder.com/400x300'
+    }
     const courseData = course as any
-    const imageUri = typeof courseData.coverImage === 'string' 
-      ? courseData.coverImage 
-      : courseData.coverImage?.url || courseData.image || ''
+    const imageUri = getImageUrl(courseData.coverImage || courseData.image)
     
     // Calculate duration display
     const durationDisplay = courseData.durationValue && courseData.durationUnit
@@ -690,7 +693,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <View style={styles.profileHeader}>
               <View style={styles.profileTopSection}>
                 {/* Avatar on left */}
-                <Image source={{ uri: typeof chef.avatar === 'string' ? chef.avatar : (chef.avatar as any)?.url || '' }} style={styles.chefAvatar} />
+                <Image 
+                  source={{ uri: typeof chef.avatar === 'string' 
+                    ? chef.avatar 
+                    : (chef.avatar as any)?.url || 'https://via.placeholder.com/150' }} 
+                  style={styles.chefAvatar} 
+                />
 
                 {/* Info on right */}
                 <View style={styles.chefInfo}>
@@ -1247,7 +1255,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               style={[styles.dialogButton, styles.submitButton]}
               onPress={() => {
                 // TODO: Implement recipe report submission
-                Alert.alert('Success', 'Recipe report submitted successfully')
+                console.log('Recipe report submitted successfully')
                 setShowRecipeReportDialog(false)
                 setRecipeReportReason("")
                 setRecipeReportDescription("")
@@ -1314,7 +1322,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           <TouchableOpacity
             onPress={() => {
               // TODO: Implement recipe rating submission
-              Alert.alert('Success', 'Recipe rating submitted successfully')
+              console.log('Recipe rating submitted successfully')
               setShowRecipeRatingDialog(false)
               setRecipeRating(0)
               setRecipeRatingFeedback("")
@@ -1406,7 +1414,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               style={[styles.dialogButton, styles.submitButton]}
               onPress={() => {
                 // TODO: Implement course report submission
-                Alert.alert('Success', 'Course report submitted successfully')
+                console.log('Course report submitted successfully')
                 setShowCourseReportDialog(false)
                 setCourseReportReason("")
                 setCourseReportDescription("")
@@ -1473,7 +1481,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           <TouchableOpacity
             onPress={() => {
               // TODO: Implement course rating submission
-              Alert.alert('Success', 'Course rating submitted successfully')
+              console.log('Course rating submitted successfully')
               setShowCourseRatingDialog(false)
               setCourseRating(0)
               setCourseRatingFeedback("")
@@ -2102,6 +2110,21 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </ScrollView>
         </View>
       )}
+      
+      {/* Subscribe Confirmation Dialog */}
+      <Dialog
+        visible={showSubscribeDialog}
+        type="confirm"
+        title={subscribeAction === 'unsubscribe' ? 'Unsubscribe' : 'Subscribe'}
+        message={subscribeAction === 'unsubscribe' 
+          ? `Are you sure you want to unsubscribe from ${chef.name}?`
+          : `Subscribe to ${chef.name} to access premium content?`}
+        onConfirm={performSubscribe}
+        onCancel={() => setShowSubscribeDialog(false)}
+        confirmText={subscribeAction === 'unsubscribe' ? 'Unsubscribe' : 'Subscribe'}
+        cancelText="Cancel"
+        showCancelButton={true}
+      />
     </Modal>
   )
 }

@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
+  RefreshControl,
   ScrollView,
   Share,
   StyleSheet,
@@ -64,6 +65,14 @@ interface Chef {
   experience?: string
   recipes: Recipe[]
   courses: Course[]
+  stats?: {
+    freeRecipesCount: number
+    premiumRecipesCount: number
+    coursesCount: number
+    totalStudents: number
+    averageRating: number
+    totalRatings: number
+  }
 }
 
 interface Course {
@@ -131,6 +140,7 @@ const ChefDashboardScreen: React.FC = () => {
   const [showCourseModal, setShowCourseModal] = useState(false)
   const [showFeedbackDropdown, setShowFeedbackDropdown] = useState(false)
   const [activeTab, setActiveTab] = useState<"recipes" | "courses">("recipes")
+  const [foodExplorerTab, setFoodExplorerTab] = useState<"recipes" | "courses">("recipes")
   const [foodExplorerSection, setFoodExplorerSection] = useState<"all" | "subscribed">("all")
   const [chefSearchVisible, setChefSearchVisible] = useState(false)
   const [chefSearchQuery, setChefSearchQuery] = useState("")
@@ -250,6 +260,9 @@ const ChefDashboardScreen: React.FC = () => {
   const [userCourses, setUserCourses] = useState<Course[]>([])
   const [isLoadingRecipes, setIsLoadingRecipes] = useState(false)
   const [isLoadingCourses, setIsLoadingCourses] = useState(false)
+  const [feedbacks, setFeedbacks] = useState<any[]>([])
+  const [backendChefStats, setBackendChefStats] = useState<any>(null)
+  const [refreshing, setRefreshing] = useState(false)
 
   // Toggle expanded description
   const toggleDescription = (unitId: string) => {
@@ -282,8 +295,59 @@ const ChefDashboardScreen: React.FC = () => {
     if (profile?.isChef) {
       fetchUserRecipes()
       fetchUserCourses()
+      fetchChefStatsAndFeedback()
     }
   }, [profile?.isChef])
+
+  const fetchChefStatsAndFeedback = async () => {
+    try {
+      console.log('📊 Fetching chef stats and feedback from backend...')
+      const response = await apiClient.get<any>('/chef/profile/me', true)
+      
+      if (response.chef) {
+        console.log('✅ Chef profile fetched with stats:', response.chef.stats)
+        console.log('📈 Backend Stats:', {
+          freeRecipes: response.chef.stats?.freeRecipesCount,
+          premiumRecipes: response.chef.stats?.premiumRecipesCount,
+          courses: response.chef.stats?.coursesCount,
+          students: response.chef.stats?.totalStudents,
+          avgRating: response.chef.stats?.averageRating,
+          totalRatings: response.chef.stats?.totalRatings
+        })
+        
+        // Store backend stats
+        setBackendChefStats(response.chef.stats)
+        console.log('✅ Backend stats stored in state')
+        
+        // Transform profileRatings to feedbacks format
+        if (response.chef.profileRatings && response.chef.profileRatings.length > 0) {
+          const transformedFeedbacks = response.chef.profileRatings.map((rating: any) => ({
+            id: rating._id,
+            userName: rating.ratedBy?.userName || 'Anonymous',
+            userAvatar: rating.ratedBy?.profileImage?.url || 'https://via.placeholder.com/40',
+            rating: rating.rating,
+            comment: rating.feedback || 'No feedback provided',
+            date: new Date(rating.ratedAt).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            }),
+            recipeTitle: null
+          })).reverse() // Show newest first
+          
+          console.log(`✅ Loaded ${transformedFeedbacks.length} feedbacks`)
+          setFeedbacks(transformedFeedbacks)
+        } else {
+          console.log('ℹ️ No feedbacks found')
+          setFeedbacks([])
+        }
+      }
+    } catch (error) {
+      console.log('❌ Failed to fetch chef stats and feedback:', error)
+      setFeedbacks([])
+      setBackendChefStats(null)
+    }
+  }
 
   const fetchUserRecipes = async () => {
     setIsLoadingRecipes(true)
@@ -293,7 +357,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log(`✅ Fetched ${recipes.length} recipes`)
       
       // Convert backend recipes to local Recipe format
-      const localRecipes: Recipe[] = recipes.map(r => ({
+      const localRecipes: Recipe[] = recipes.map((r: any) => ({
         id: r._id,
         title: r.title,
         description: r.description,
@@ -303,6 +367,9 @@ const ChefDashboardScreen: React.FC = () => {
         rating: r.averageRating || 0,
         isPremium: r.isPremium,
         isPublished: r.isPublished,
+        isRestricted: r.isRestricted || false,
+        isBanned: r.isBanned || false,
+        totalReports: r.totalReports || 0,
         chefId: r.authorId,
         chefName: "You"
       }))
@@ -323,7 +390,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log(`✅ Fetched ${courses.length} courses`)
       
       // Convert backend courses to local Course format
-      const localCourses: Course[] = courses.map(c => ({
+      const localCourses: Course[] = courses.map((c: any) => ({
         id: c._id,
         title: c.title,
         description: c.description,
@@ -336,12 +403,14 @@ const ChefDashboardScreen: React.FC = () => {
         rating: c.averageRating || 0,
         averageRating: c.averageRating,
         isPremium: c.isPremium,
+        isRestricted: c.isRestricted || false,
+        isBanned: c.isBanned || false,
+        totalReports: c.totalReports || 0,
         isPublished: c.isPublished,
         chefId: c.authorId,
         chefName: "You",
         image: c.coverImage || "https://via.placeholder.com/400x300",
-        totalReports: c.totalReports,
-        units: c.units.map(u => ({
+        units: c.units.map((u: any) => ({
           id: u._id,
           title: u.title,
           objective: u.objective || '',
@@ -461,41 +530,57 @@ const ChefDashboardScreen: React.FC = () => {
     }
   }
 
+  // Handle pull-to-refresh
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      console.log('🔄 Refreshing dashboard data...')
+      
+      // Reload based on current mode
+      if (userType === "chef") {
+        // Chef Dashboard: reload recipes, courses, stats, and feedbacks
+        await Promise.all([
+          fetchUserRecipes(),
+          fetchUserCourses(),
+          fetchChefStatsAndFeedback(),
+          refreshProfile()
+        ])
+        console.log('✅ Chef dashboard refreshed')
+      } else {
+        // Food Explorer: reload chefs and explorer content
+        await Promise.all([
+          loadChefs(),
+          loadExplorerContent(),
+          refreshProfile()
+        ])
+        console.log('✅ Food Explorer refreshed')
+      }
+    } catch (error) {
+      console.log('❌ Failed to refresh:', error)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
   const handleChefSubscriptionToggle = async (chefId: string) => {
     // Reload chefs to update subscription status
     await loadChefs()
   }
 
-  const [feedbacks] = useState<Feedback[]>([
-    {
-      id: "1",
-      userName: "Sarah Johnson",
-      userAvatar: "https://images.unsplash.com/photo-1494790108755-2616c9c0e8e0?w=50&h=50&fit=crop&crop=face",
-      rating: 5,
-      comment: "Amazing recipe! The instructions were so clear and the result was perfect.",
-      date: "2 hours ago",
-      recipeTitle: "Beef Wellington",
-    },
-    {
-      id: "2",
-      userName: "Mike Chen",
-      userAvatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=50&h=50&fit=crop&crop=face",
-      rating: 4,
-      comment: "Great course content, learned so much about knife skills!",
-      date: "1 day ago",
-    },
-    {
-      id: "3",
-      userName: "Emma Wilson",
-      userAvatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=50&h=50&fit=crop&crop=face",
-      rating: 5,
-      comment: "Best cooking instructor ever! Highly recommend the masterclass.",
-      date: "3 days ago",
-    },
-  ])
-
   // Compute real chef stats from fetched data
   const chefStats = React.useMemo(() => {
+    // Use backend stats if available, otherwise compute from local data
+    if (backendChefStats) {
+      return {
+        totalRecipes: (backendChefStats.freeRecipesCount || 0) + (backendChefStats.premiumRecipesCount || 0),
+        totalCourses: backendChefStats.coursesCount || 0,
+        totalSubscribers: backendChefStats.totalStudents || 0,
+        averageRating: backendChefStats.averageRating?.toFixed(1) || '0.0',
+        totalRatings: backendChefStats.totalRatings || 0,
+      };
+    }
+    
+    // Fallback to computing from local data
     const totalRecipes = userRecipes.length;
     const totalCourses = userCourses.length;
     
@@ -509,7 +594,6 @@ const ChefDashboardScreen: React.FC = () => {
       ? (allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length).toFixed(1)
       : '0.0';
     
-    // Placeholder for subscribers - backend doesn't provide this yet
     const totalSubscribers = 0;
     
     return {
@@ -517,8 +601,9 @@ const ChefDashboardScreen: React.FC = () => {
       totalCourses,
       totalSubscribers,
       averageRating,
+      totalRatings: 0,
     };
-  }, [userRecipes, userCourses]);
+  }, [userRecipes, userCourses, backendChefStats]);
 
   // Animation effects
   useEffect(() => {
@@ -769,31 +854,31 @@ const ChefDashboardScreen: React.FC = () => {
   const renderFoodExplorerTabs = () => (
     <View style={styles.tabContainer}>
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === "recipes" && styles.activeTab]}
-        onPress={() => setActiveTab("recipes")}
+        style={[styles.tabButton, foodExplorerTab === "recipes" && styles.activeTab]}
+        onPress={() => setFoodExplorerTab("recipes")}
         activeOpacity={0.8}
       >
         <Ionicons 
           name="restaurant-outline" 
           size={20} 
-          color={activeTab === "recipes" ? "#22C55E" : "#94A3B8"} 
+          color={foodExplorerTab === "recipes" ? "#22C55E" : "#94A3B8"} 
         />
-        <Text style={[styles.tabText, activeTab === "recipes" && styles.activeTabText]}>
+        <Text style={[styles.tabText, foodExplorerTab === "recipes" && styles.activeTabText]}>
           Recipes
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === "courses" && styles.activeTab ]}
-        onPress={() => setActiveTab("courses")}
+        style={[styles.tabButton, foodExplorerTab === "courses" && styles.activeTab ]}
+        onPress={() => setFoodExplorerTab("courses")}
         activeOpacity={0.8}
       >
         <Ionicons 
           name="school-outline" 
           size={20} 
-          color={activeTab === "courses" ? "#22C55E" : "#94A3B8"} 
+          color={foodExplorerTab === "courses" ? "#22C55E" : "#94A3B8"} 
         />
-        <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText ]}>
+        <Text style={[styles.tabText, foodExplorerTab === "courses" && styles.activeTabText ]}>
           Courses
         </Text>
       </TouchableOpacity>
@@ -838,7 +923,16 @@ const ChefDashboardScreen: React.FC = () => {
     <View style={styles.profileButtonContainer}>
       <TouchableOpacity
         style={styles.profileButton}
-        onPress={() => setShowProfileModal(true)}
+        onPress={async () => {
+          // Reload chef data before showing profile
+          await Promise.all([
+            fetchUserRecipes(),
+            fetchUserCourses(),
+            fetchChefStatsAndFeedback(),
+            refreshProfile()
+          ])
+          setShowProfileModal(true)
+        }}
         activeOpacity={0.7}
       >
         <Ionicons name="person-circle-outline" size={22} color="#06B6D4" />
@@ -851,21 +945,20 @@ const ChefDashboardScreen: React.FC = () => {
   // Create sections for FlatList
   const getSections = () => {
     const sections = [
-      { type: 'userTypeSelector', data: [{}] },
+      { type: 'userTypeSelector', data: [{}], id: 'user-type-selector' },
     ];
 
     if (userType === "user") {
       sections.push(
-        { type: 'chefRibbon', data: [{}] },
-        { type: 'foodExplorerTabs', data: [{}] },
-        { type: 'contentManagement', data: [{}] }
+        { type: 'chefRibbon', data: [{}], id: 'chef-ribbon' },
+        { type: 'foodExplorerTabs', data: [{}], id: 'food-explorer-tabs' },
+        { type: 'contentManagement', data: [{}], id: 'content-management-user' }
       );
     } else {
       sections.push(
-        { type: 'profileButton', data: [{}] },
-        { type: 'chefActions', data: [{}] },
-        { type: 'contentSwitch', data: [{}] },
-        { type: 'contentManagement', data: [{}] }
+        { type: 'profileButton', data: [{}], id: 'profile-button' },
+        { type: 'chefActions', data: [{}], id: 'chef-actions' },
+        { type: 'contentManagement', data: [{}], id: 'content-management-chef' }
       );
     }
 
@@ -890,6 +983,8 @@ const ChefDashboardScreen: React.FC = () => {
         return renderProfileButton();
       case 'chefActions':
         return renderChefActions();
+      case 'contentSwitch':
+        return renderContentSwitch();
       case 'contentManagement':
         return renderContentManagement();
       default:
@@ -1518,13 +1613,13 @@ const ChefDashboardScreen: React.FC = () => {
                 <View style={styles.contentSubSection}>
                   <Text style={styles.subSectionTitle}>Recipes ({restrictedRecipes.length})</Text>
                   {restrictedRecipes.map(recipe => (
-                    <View key={recipe.id} style={styles.contentItem}>
+                    <View key={`restricted-recipe-${recipe.id}`} style={styles.contentItem}>
                       <Image source={{ uri: recipe.image }} style={styles.contentItemImage} />
                       <View style={styles.contentItemInfo}>
                         <Text style={styles.contentItemTitle} numberOfLines={1}>{recipe.title}</Text>
-                        <Text style={[styles.contentItemMeta, { color: '#F97316' }]}>Under Review</Text>
+                        <Text style={[styles.contentItemMeta, { color: '#F97316' }]}>Will be banned if more reports.</Text>
                       </View>
-                      <Ionicons name="alert-circle" size={20} color="#F97316" />
+                      <Ionicons name="alert-circle" size={18} color="#F97316" />
                     </View>
                   ))}
                 </View>
@@ -1534,7 +1629,7 @@ const ChefDashboardScreen: React.FC = () => {
                 <View style={[styles.contentSubSection, restrictedRecipes.length > 0 && { marginTop: 16 }]}>
                   <Text style={styles.subSectionTitle}>Courses ({restrictedCourses.length})</Text>
                   {restrictedCourses.map(course => (
-                    <View key={course.id} style={styles.contentItem}>
+                    <View key={`restricted-course-${course.id}`} style={styles.contentItem}>
                       <Image source={{ uri: course.image }} style={styles.contentItemImage} />
                       <View style={styles.contentItemInfo}>
                         <Text style={styles.contentItemTitle} numberOfLines={1}>{course.title}</Text>
@@ -1575,7 +1670,7 @@ const ChefDashboardScreen: React.FC = () => {
                 <View style={styles.contentSubSection}>
                   <Text style={styles.subSectionTitle}>Recipes ({bannedRecipes.length})</Text>
                   {bannedRecipes.map(recipe => (
-                    <View key={recipe.id} style={styles.contentItem}>
+                    <View key={`banned-recipe-${recipe.id}`} style={styles.contentItem}>
                       <Image source={{ uri: recipe.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
                       <View style={styles.contentItemInfo}>
                         <Text style={[styles.contentItemTitle, { color: '#94A3B8' }]} numberOfLines={1}>{recipe.title}</Text>
@@ -1591,7 +1686,7 @@ const ChefDashboardScreen: React.FC = () => {
                 <View style={[styles.contentSubSection, bannedRecipes.length > 0 && { marginTop: 16 }]}>
                   <Text style={styles.subSectionTitle}>Courses ({bannedCourses.length})</Text>
                   {bannedCourses.map(course => (
-                    <View key={course.id} style={styles.contentItem}>
+                    <View key={`banned-course-${course.id}`} style={styles.contentItem}>
                       <Image source={{ uri: course.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
                       <View style={styles.contentItemInfo}>
                         <Text style={[styles.contentItemTitle, { color: '#94A3B8' }]} numberOfLines={1}>{course.title}</Text>
@@ -1613,7 +1708,6 @@ const ChefDashboardScreen: React.FC = () => {
     <View style={styles.feedbackContainer}>
       {feedbacks.map((feedback) => (
         <View key={feedback.id} style={styles.feedbackItem}>
-          <Image source={{ uri: feedback.userAvatar }} style={styles.feedbackAvatar} />
           <View style={styles.feedbackContent}>
             <View style={styles.feedbackHeader}>
               <Text style={styles.feedbackUserName}>{feedback.userName}</Text>
@@ -1655,14 +1749,14 @@ const ChefDashboardScreen: React.FC = () => {
   )
 
   const renderContentManagement = () => {
-    // For Food Explorer (user), use activeTab and filter published only
+    // For Food Explorer (user), use foodExplorerTab and filter published only
     // For Chef Dashboard, use managementTab and show all
-    const currentTab = userType === "user" ? activeTab : managementTab;
+    const currentTab = userType === "user" ? foodExplorerTab : managementTab;
     const recipesToShow = userType === "user" 
-      ? userRecipes.filter(r => r.isPublished)
+      ? explorerRecipes.filter(r => r.isPublished)
       : userRecipes;
     const coursesToShow = userType === "user"
-      ? userCourses.filter(c => c.isPublished)
+      ? explorerCourses.filter(c => c.isPublished)
       : userCourses;
 
     return (
@@ -1696,7 +1790,11 @@ const ChefDashboardScreen: React.FC = () => {
         <View style={styles.managementContent}>
           {currentTab === "recipes" ? (
             recipesToShow.length > 0 ? (
-              recipesToShow.map((recipe, index) => renderManagementRecipeCard(recipe, index))
+              recipesToShow.map((recipe, index) => (
+                <View key={recipe.id || `recipe-${index}`}>
+                  {renderManagementRecipeCard(recipe, index)}
+                </View>
+              ))
             ) : (
               <View style={styles.emptyManagement}>
                 <Ionicons name="restaurant-outline" size={32} color="#64748B" />
@@ -1712,7 +1810,11 @@ const ChefDashboardScreen: React.FC = () => {
             )
           ) : (
             coursesToShow.length > 0 ? (
-              coursesToShow.map((course, index) => renderManagementCourseCard(course, index))
+              coursesToShow.map((course, index) => (
+                <View key={course.id || `course-${index}`}>
+                  {renderManagementCourseCard(course, index)}
+                </View>
+              ))
             ) : (
               <View style={styles.emptyManagement}>
                 <Ionicons name="school-outline" size={32} color="#64748B" />
@@ -1732,14 +1834,21 @@ const ChefDashboardScreen: React.FC = () => {
     )
   }
 
-  const renderManagementRecipeCard = (recipe: Recipe, index: number) => (
+  const renderManagementRecipeCard = (recipe: Recipe, index: number) => {
+    const getImageUrl = (image: any): string => {
+      if (typeof image === 'string') return image;
+      if (image?.url) return image.url;
+      if (image?.uri) return image.uri;
+      return 'https://via.placeholder.com/400x200?text=No+Image';
+    };
+
+    return (
     <TouchableOpacity 
-      key={recipe.id} 
       style={styles.managementCard}
       onPress={() => handleViewRecipe(recipe)}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: recipe.image }} style={styles.managementCardImage} />
+      <Image source={{ uri: getImageUrl(recipe.image) }} style={styles.managementCardImage} />
       <View style={styles.managementCardContent}>
         <View style={styles.managementCardHeader}>
           <Text style={styles.managementCardTitle}>{recipe.title}</Text>
@@ -1837,16 +1946,24 @@ const ChefDashboardScreen: React.FC = () => {
         </View>
       </View>
     </TouchableOpacity>
-  )
+  );
+  };
 
-  const renderManagementCourseCard = (course: Course, index: number) => (
+  const renderManagementCourseCard = (course: Course, index: number) => {
+    const getImageUrl = (image: any): string => {
+      if (typeof image === 'string') return image;
+      if (image?.url) return image.url;
+      if (image?.uri) return image.uri;
+      return 'https://via.placeholder.com/400x200?text=No+Image';
+    };
+
+    return (
     <TouchableOpacity 
-      key={course.id} 
       style={styles.managementCard}
       onPress={() => handleViewCourse(course)}
       activeOpacity={0.7}
     >
-      <Image source={{ uri: course.image }} style={styles.managementCardImage} />
+      <Image source={{ uri: getImageUrl(course.image) }} style={styles.managementCardImage} />
       <View style={styles.managementCardContent}>
         <View style={styles.managementCardHeader}>
           <Text style={styles.managementCardTitle}>{course.title}</Text>
@@ -1952,7 +2069,8 @@ const ChefDashboardScreen: React.FC = () => {
         </View>
       </View>
     </TouchableOpacity>
-  )
+    );
+  };
 
   // Handler functions for view, edit and delete
   const handleViewRecipe = async (recipe: Recipe) => {
@@ -2497,14 +2615,23 @@ const ChefDashboardScreen: React.FC = () => {
           ref={scrollRef}
           data={getSections()}
           renderItem={renderSection}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: showFeedbackDropdown ? 40 : 0,
           }}
           scrollEnabled={true}
-          bounces={showFeedbackDropdown}
+          bounces={true}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor="#22C55E"
+              colors={["#22C55E"]}
+              progressBackgroundColor="#1F2937"
+            />
+          }
           onScrollToIndexFailed={(info) => {
             // Fallback if scrollToIndex fails
             const wait = new Promise(resolve => setTimeout(resolve, 500));
@@ -3313,7 +3440,6 @@ const ChefDashboardScreen: React.FC = () => {
                   <View style={{ gap: 12 }}>
                     {feedbacks.map((feedback) => (
                       <View key={feedback.id} style={styles.feedbackItem}>
-                        <Image source={{ uri: feedback.userAvatar }} style={styles.feedbackAvatar} />
                         <View style={styles.feedbackContent}>
                           <View style={styles.feedbackHeader}>
                             <Text style={styles.feedbackUserName}>{feedback.userName}</Text>
@@ -3364,17 +3490,24 @@ const ChefDashboardScreen: React.FC = () => {
         <ChefProfileViewScreen
           visible={!!viewingChefProfile}
           onClose={() => setViewingChefProfile(null)}
-          chef={viewingChefProfile}
-          onSubscribeToggle={(chefId) => {
-            // TODO: Implement subscribe/unsubscribe logic
-            console.log("Toggle subscription for chef:", chefId)
+          chef={{
+            ...viewingChefProfile,
+            stats: {
+              ...viewingChefProfile.stats,
+              // These will be loaded dynamically by ChefProfileViewScreen
+              freeRecipesCount: viewingChefProfile.stats?.freeRecipesCount || 0,
+              premiumRecipesCount: viewingChefProfile.stats?.premiumRecipesCount || 0,
+              coursesCount: viewingChefProfile.stats?.coursesCount || 0,
+              totalStudents: viewingChefProfile.stats?.totalStudents || viewingChefProfile.subscribers,
+              averageRating: viewingChefProfile.stats?.averageRating || viewingChefProfile.rating,
+              totalRatings: viewingChefProfile.stats?.totalRatings || 0,
+            }
           }}
+          onSubscribeToggle={handleChefSubscriptionToggle}
           onReport={(chefId, reason, description) => {
-            // TODO: Implement report logic
             console.log("Report chef:", chefId, reason, description)
           }}
           onRate={(chefId, rating, feedback) => {
-            // TODO: Implement rating logic
             console.log("Rate chef:", chefId, rating, feedback)
           }}
         />
@@ -6471,12 +6604,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
-  feedbackAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: 16,
-  },
+  
   feedbackContent: {
     flex: 1,
   },

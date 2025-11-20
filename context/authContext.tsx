@@ -41,6 +41,8 @@ type Profile = {
   isChef: boolean;
   isPro: boolean;
   bio?: string;
+  hasPassword?: boolean; // Track if Google user has set a password
+  isGoogleUser?: boolean; // Track if user registered via Google
   chefProfile?: {
     chefName: string;
     expertiseCategory: string;
@@ -61,6 +63,7 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage?: any) => Promise<any>;
   loginWithGoogle: (idToken: string) => Promise<any>;
+  setGoogleUserPassword: (password: string) => Promise<any>;
   updateUserProfile: (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => Promise<any>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -510,6 +513,47 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
 
 
+  // Set password for Google users
+  const setGoogleUserPassword = async (password: string) => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No authenticated user found');
+      }
+
+      const token = await auth.currentUser.getIdToken();
+
+      // Call backend to set password
+      const response = await fetch(`${API_BASE_URL}/auth/set-google-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to set password');
+      }
+
+      const data = await response.json();
+      console.log('Password set successfully for Google user');
+
+      // Update profile with hasPassword flag
+      if (profile) {
+        setProfile({ ...profile, hasPassword: true } as Profile);
+      }
+
+      return data;
+    } catch (error) {
+      console.log('Error setting Google user password:', error);
+      throw error;
+    }
+  };
+
+
+
   // Enhanced logout function that handles Google sign-out
   const logout = async () => {
     try {
@@ -723,6 +767,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         login,
         register,
         loginWithGoogle,
+        setGoogleUserPassword,
         updateUserProfile,
         logout,
         deleteAccount,

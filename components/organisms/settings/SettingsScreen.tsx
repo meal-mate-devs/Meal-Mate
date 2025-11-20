@@ -6,12 +6,14 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native";
 import { useProfileStore } from '../../../hooks/useProfileStore';
+import ChangePasswordDialog from "../../molecules/ChangePasswordDialog";
 import DeleteAccountModal from "../../molecules/DeleteAccountModal";
 
 const SettingsScreen: React.FC = () => {
   const router = useRouter()
   const params = useLocalSearchParams()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   
   // Get real user profile data
   const { profileData, subscribe } = useProfileStore();
@@ -48,11 +50,11 @@ const SettingsScreen: React.FC = () => {
       icon: "diamond-outline",
     },
     {
-      id: "privacy",
-      icon: "shield-checkmark-outline",
-      title: "Privacy & Security",
-      subtitle: "Password, data protection, permissions",
-      link: "/settings/privacy",
+      id: "password",
+      icon: "key-outline",
+      title: "Change Password",
+      subtitle: "Update your account password",
+      action: () => setShowPasswordDialog(true),
       showBadge: false,
     },
   ]
@@ -92,7 +94,7 @@ const SettingsScreen: React.FC = () => {
     <View key={item.id}>
       <TouchableOpacity
         className="flex-row items-center justify-between py-4 px-4"
-        onPress={() => router.push(item.link)}
+        onPress={() => item.action ? item.action() : router.push(item.link)}
       >
         <View className="flex-row items-center flex-1">
           {item.icon && (
@@ -224,6 +226,12 @@ const SettingsScreen: React.FC = () => {
       <DeleteAccountModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
+      />
+
+      {/* Change Password Dialog */}
+      <ChangePasswordDialog
+        visible={showPasswordDialog}
+        onClose={() => setShowPasswordDialog(false)}
       />
     </SafeAreaView>
     </LinearGradient>
