@@ -1,10 +1,13 @@
 "use client"
 
+import Dialog from "@/components/atoms/Dialog"
+import { dietPlanningService } from "@/lib/services/dietPlanningService"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
+    ActivityIndicator,
     Modal,
     SafeAreaView,
     ScrollView,
@@ -44,6 +47,36 @@ const HealthConditionsScreen = () => {
     const [showDetailModal, setShowDetailModal] = useState(false)
     const [showGeneratePlanModal, setShowGeneratePlanModal] = useState(false)
     const [planDuration, setPlanDuration] = useState<"weekly" | "monthly">("weekly")
+    const [isGenerating, setIsGenerating] = useState(false)
+    const [hasExistingPlan, setHasExistingPlan] = useState(false)
+
+    // Dialog state
+    const [showDialog, setShowDialog] = useState(false)
+    const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'info'>('info')
+    const [dialogTitle, setDialogTitle] = useState('')
+    const [dialogMessage, setDialogMessage] = useState('')
+
+    // Check for existing plan on mount
+    useEffect(() => {
+        checkExistingPlan()
+    }, [])
+
+    const checkExistingPlan = async () => {
+        try {
+            const response = await dietPlanningService.getActivePlan()
+            if (response.plan) {
+                setHasExistingPlan(true)
+                setDialogType('warning')
+                setDialogTitle('Active Plan Exists')
+                setDialogMessage('You already have an active meal plan. Please cancel your current plan from the Diet Planning screen before generating a new one.')
+                setShowDialog(true)
+                setTimeout(() => router.back(), 2500)
+            }
+        } catch (error: any) {
+            // No plan exists, proceed normally
+            setHasExistingPlan(false)
+        }
+    }
 
     // Health conditions with detailed plans
     const healthConditions: HealthCondition[] = [
@@ -519,8 +552,8 @@ const HealthConditionsScreen = () => {
                                             <View
                                                 key={index}
                                                 className={`flex-row items-center py-2 ${index < selectedCondition.dietaryFocus.length - 1
-                                                        ? "border-b border-zinc-700"
-                                                        : ""
+                                                    ? "border-b border-zinc-700"
+                                                    : ""
                                                     }`}
                                             >
                                                 <View className="w-6 h-6 rounded-full bg-green-900/30 items-center justify-center mr-3">
@@ -540,8 +573,8 @@ const HealthConditionsScreen = () => {
                                             <View
                                                 key={index}
                                                 className={`flex-row items-center py-2 ${index < selectedCondition.avoidFoods.length - 1
-                                                        ? "border-b border-zinc-700"
-                                                        : ""
+                                                    ? "border-b border-zinc-700"
+                                                    : ""
                                                     }`}
                                             >
                                                 <View className="w-6 h-6 rounded-full bg-red-900/30 items-center justify-center mr-3">
@@ -561,8 +594,8 @@ const HealthConditionsScreen = () => {
                                             <View
                                                 key={index}
                                                 className={`flex-row items-center py-2 ${index < selectedCondition.recommendedFoods.length - 1
-                                                        ? "border-b border-zinc-700"
-                                                        : ""
+                                                    ? "border-b border-zinc-700"
+                                                    : ""
                                                     }`}
                                             >
                                                 <View className="w-6 h-6 rounded-full bg-green-900/30 items-center justify-center mr-3">
@@ -714,51 +747,121 @@ const HealthConditionsScreen = () => {
                                 </View>
 
                                 <TouchableOpacity
-                                    onPress={() => {
+                                    onPress={async () => {
                                         if (!selectedCondition) {
                                             console.error('No condition selected')
                                             setShowGeneratePlanModal(false)
                                             return
                                         }
 
-                                        const planData = {
-                                            condition: selectedCondition.id,
-                                            conditionName: selectedCondition.name,
-                                            duration: planDuration,
-                                            nutritionalGuidelines: selectedCondition.nutritionalGuidelines,
-                                        }
+                                        setIsGenerating(true)
 
-                                        console.log("Generating health condition plan:", planData)
-                                        setShowGeneratePlanModal(false)
-                                        router.back()
+                                        try {
+                                            // Parse calories from string (e.g., "1,800-2,200 per day" -> 2000)
+                                            const caloriesStr = selectedCondition.nutritionalGuidelines.calories
+                                            const caloriesMatch = caloriesStr.match(/([\d,]+)/g)
+                                            const targetCalories = caloriesMatch
+                                                ? parseInt(caloriesMatch[0].replace(/,/g, ''))
+                                                : 2000
+
+                                            // Determine goal type based on condition
+                                            const goalType: 'maintain' | 'lose' | 'gain' =
+                                                selectedCondition.id === 'muscle_gain' ? 'gain' :
+                                                    selectedCondition.id === 'weight_loss' ? 'lose' : 'maintain'
+
+                                            const planData = {
+                                                goalType,
+                                                targetCalories,
+                                                duration: planDuration === 'weekly' ? 7 : 30,
+                                                healthConditions: [selectedCondition.id],
+                                                dietaryPreferences: [
+                                                    ...selectedCondition.dietaryFocus,
+                                                    ...selectedCondition.recommendedFoods.map(f => `prefer:${f}`),
+                                                    ...selectedCondition.avoidFoods.map(f => `avoid:${f}`),
+                                                ]
+                                            }
+
+                                            console.log("Generating health condition plan:", planData)
+
+                                            const response = await dietPlanningService.generateAIMealPlan(planData)
+
+                                            if (response.success) {
+                                                const totalMeals = response.plan.dailyPlans.reduce((sum, day) => sum + day.meals.length, 0)
+                                                setShowGeneratePlanModal(false)
+                                                setShowDetailModal(false)
+
+                                                setDialogType('success')
+                                                setDialogTitle('Success! 🎉')
+                                                setDialogMessage(`Your ${planDuration} plan for ${selectedCondition.name} has been generated with ${totalMeals} specialized meals!`)
+                                                setShowDialog(true)
+                                                setTimeout(() => router.back(), 2500)
+                                            } else {
+                                                setDialogType('error');
+                                                setDialogTitle('Generation Failed');
+                                                setDialogMessage(response.message || 'Failed to generate meal plan');
+                                                setShowDialog(true)
+                                            }
+                                        } catch (error: any) {
+                                            console.error('Error generating plan:', error)
+                                            setDialogType('error')
+                                            setDialogTitle('Error')
+                                            setDialogMessage(error.message || 'Failed to generate meal plan. Please try again.')
+                                            setShowDialog(true)
+                                        } finally {
+                                            setIsGenerating(false)
+                                        }
                                     }}
                                     activeOpacity={0.8}
+                                    disabled={isGenerating}
                                     className="overflow-hidden rounded-2xl"
                                 >
                                     <LinearGradient
-                                        colors={["#8B5CF6", "#6366F1"]}
+                                        colors={isGenerating ? ["#6B7280", "#4B5563"] : ["#8B5CF6", "#6366F1"]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         className="py-4"
                                     >
                                         <View className="flex-row items-center justify-center">
-                                            <Ionicons name="sparkles" size={24} color="white" />
-                                            <Text className="text-white text-center font-bold text-lg ml-2">
-                                                Generate {planDuration === "weekly" ? "Weekly" : "Monthly"} Plan
-                                            </Text>
+                                            {isGenerating ? (
+                                                <>
+                                                    <ActivityIndicator color="white" size="small" />
+                                                    <Text className="text-white text-center font-bold text-lg ml-2">
+                                                        Generating...
+                                                    </Text>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Ionicons name="sparkles" size={24} color="white" />
+                                                    <Text className="text-white text-center font-bold text-lg ml-2">
+                                                        Generate {planDuration === "weekly" ? "Weekly" : "Monthly"} Plan
+                                                    </Text>
+                                                </>
+                                            )}
                                         </View>
                                     </LinearGradient>
                                 </TouchableOpacity>
                                 <Text className="text-gray-400 text-center text-xs mt-3">
-                                    AI will create a {planDuration} plan optimized for {selectedCondition.name.toLowerCase()}
+                                    {isGenerating
+                                        ? 'This may take up to 90 seconds...'
+                                        : `AI will create a ${planDuration} plan optimized for ${selectedCondition.name.toLowerCase()}`
+                                    }
                                 </Text>
                             </View>
                         )}
                     </View>
                 </View>
             </Modal>
+
+            <Dialog
+                visible={showDialog}
+                type={dialogType}
+                title={dialogTitle}
+                message={dialogMessage}
+                onClose={() => setShowDialog(false)}
+            />
         </SafeAreaView>
     )
 }
 
 export default HealthConditionsScreen
+

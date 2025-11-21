@@ -13,6 +13,8 @@ export interface MealLog {
     time: string;
     completed: boolean;
     completedAt?: string;
+    hasRecipe?: boolean; // Flag to indicate if recipe is available
+    recipeId?: string;   // ID for fetching recipe from backend
 }
 
 export interface DailyLog {
@@ -52,6 +54,7 @@ interface DietPlanningStore {
     toggleMealCompletion: (mealId: string) => Promise<void>;
     addWater: () => Promise<void>;
     removeWater: () => Promise<void>;
+    setWaterIntake: (intake: number) => Promise<void>;
     setTodayMeals: (meals: MealLog[]) => Promise<void>;
     getTodayStats: () => {
         mealsCompleted: number;
@@ -382,6 +385,25 @@ export const useDietPlanningStore = (): DietPlanningStore => {
         }
     }, []);
 
+    const setWaterIntake = useCallback(async (intake: number) => {
+        const today = getToday();
+
+        if (globalTodayDate !== today) {
+            saveDailyLog();
+            globalTodayDate = today;
+            globalTodayWaterIntake = 0;
+            globalTodayCaloriesConsumed = 0;
+        }
+
+        globalTodayWaterIntake = intake;
+        await saveToStorage(STORAGE_KEYS.WATER, {
+            date: today,
+            intake: globalTodayWaterIntake,
+        });
+        notifySubscribers();
+        saveDailyLog();
+    }, []);
+
     const setTodayMeals = useCallback(async (meals: MealLog[]) => {
         const today = getToday();
 
@@ -430,6 +452,7 @@ export const useDietPlanningStore = (): DietPlanningStore => {
         toggleMealCompletion,
         addWater,
         removeWater,
+        setWaterIntake,
         setTodayMeals,
         getTodayStats,
     };
