@@ -474,7 +474,7 @@ const ChefDashboardScreen: React.FC = () => {
       }))
       setExplorerRecipes(normalizedRecipes)
     } catch (error) {
-      console.error('Failed to load explorer recipes:', error)
+      console.log('Failed to load explorer recipes:', error)
     } finally {
       setIsLoadingExplorerRecipes(false)
     }
@@ -492,7 +492,7 @@ const ChefDashboardScreen: React.FC = () => {
       }))
       setExplorerCourses(normalizedCourses)
     } catch (error) {
-      console.error('Failed to load explorer courses:', error)
+      console.log('Failed to load explorer courses:', error)
     } finally {
       setIsLoadingExplorerCourses(false)
     }
@@ -530,7 +530,7 @@ const ChefDashboardScreen: React.FC = () => {
         checkAllSubscriptions(transformedChefs)
       }
     } catch (error: any) {
-      console.error('Failed to load chefs:', error)
+      console.log('Failed to load chefs:', error)
       setChefsError(error.message || 'Failed to load chefs')
     } finally {
       setIsLoadingChefs(false)
@@ -1261,7 +1261,7 @@ const ChefDashboardScreen: React.FC = () => {
         setEditedPortfolioImage(result.assets[0].uri)
       }
     } catch (error) {
-      console.error('Error picking image:', error)
+      console.log('Error picking image:', error)
       setGeneralErrorMessage('Failed to pick image')
       setShowGeneralErrorDialog(true)
     }
@@ -1353,7 +1353,7 @@ const ChefDashboardScreen: React.FC = () => {
                     setShowGeneralSuccessDialog(true)
                     console.log('✅ Chef profile updated successfully')
                   } catch (error: any) {
-                    console.error('❌ Error updating chef profile:', error.message)
+                    console.log('❌ Error updating chef profile:', error.message)
                     setGeneralErrorMessage(error.message || 'Failed to update chef profile')
                     setShowGeneralErrorDialog(true)
                   }
