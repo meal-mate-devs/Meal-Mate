@@ -179,7 +179,7 @@ const SubscriptionScreen: React.FC = () => {
           {/* Plan Selection Skeleton */}
           <View className="mb-6">
             <View className="w-32 h-5 bg-zinc-800 rounded mb-4 opacity-50" />
-            
+
             {/* Yearly Plan Skeleton */}
             <View className="mb-4">
               <View className="rounded-2xl overflow-hidden border border-zinc-700">

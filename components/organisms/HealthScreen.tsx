@@ -3,7 +3,7 @@
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import React, { useState } from "react"
+import { useState } from "react"
 import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 const HealthScreen = () => {
@@ -327,6 +327,45 @@ const HealthScreen = () => {
           </View>
         </View>
 
+        {/* Diet Planning Module Card */}
+        <View className="mb-6">
+          <TouchableOpacity
+            onPress={() => router.push("/diet-plan" as any)}
+            activeOpacity={0.8}
+          >
+            <View className="overflow-hidden rounded-3xl">
+              <LinearGradient
+                colors={["#10B981", "#059669"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                className="p-5"
+              >
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-1">
+                    <View className="flex-row items-center mb-2">
+                      <View className="bg-white/20 px-3 py-1 rounded-full mr-2">
+                        <Text className="text-white text-xs font-bold">NEW</Text>
+                      </View>
+                      <Text className="text-white/90 text-sm">Personalized Plans</Text>
+                    </View>
+                    <Text className="text-white text-2xl font-bold mb-2">Diet Planning</Text>
+                    <Text className="text-white/80 text-sm mb-3">
+                      Get personalized meal plans, health condition recommendations, and detailed nutritional breakdowns
+                    </Text>
+                    <View className="flex-row items-center">
+                      <Text className="text-white font-semibold mr-2">Explore Now</Text>
+                      <Ionicons name="arrow-forward" size={20} color="white" />
+                    </View>
+                  </View>
+                  <View className="w-20 h-20 bg-white/20 rounded-full items-center justify-center ml-3">
+                    <Text className="text-5xl">🍽️</Text>
+                  </View>
+                </View>
+              </LinearGradient>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Health Recommendations */}
         <View className="mb-8">
           <Text className="text-white text-xl font-bold mb-4">Recommendations</Text>
@@ -335,9 +374,8 @@ const HealthScreen = () => {
               <View key={rec.id} className="bg-zinc-800 rounded-2xl p-4 mb-3">
                 <View className="flex-row items-start">
                   <View
-                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${
-                      rec.priority === "high" ? "bg-red-900/30" : "bg-orange-900/30"
-                    }`}
+                    className={`w-10 h-10 rounded-full items-center justify-center mr-3 ${rec.priority === "high" ? "bg-red-900/30" : "bg-orange-900/30"
+                      }`}
                   >
                     <Ionicons
                       name={rec.icon as any}
