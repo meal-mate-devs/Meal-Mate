@@ -1,16 +1,17 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
+import { subscriptionService } from '@/lib/services/subscriptionService';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signInWithCredential,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -20,6 +21,9 @@ type User = {
   displayName: string | null;
   emailVerified: boolean;
 };
+
+type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing' | null;
+type SubscriptionPlan = 'monthly' | 'yearly' | null;
 
 type Profile = {
   _id: string;
@@ -40,19 +44,12 @@ type Profile = {
   isProfileComplete: boolean;
   isChef: boolean;
   isPro: boolean;
-  bio?: string;
-  hasPassword?: boolean; // Track if Google user has set a password
-  isGoogleUser?: boolean; // Track if user registered via Google
-  chefProfile?: {
-    chefName: string;
-    expertiseCategory: string;
-    professionalSummary: string;
-    yearsOfExperience: number;
-    portfolioImage?: string;
-    registeredAt?: Date;
-    freeRecipesCount?: number;
-    premiumRecipesCount?: number;
-  };
+  // Subscription fields
+  stripeCustomerId?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: SubscriptionStatus;
+  subscriptionPlan?: SubscriptionPlan;
+  subscriptionCurrentPeriodEnd?: Date | string | null;
 };
 
 type AuthContextType = {
@@ -63,7 +60,6 @@ type AuthContextType = {
   login: (email: string, password: string) => Promise<any>;
   register: (email: string, password: string, username: string, firstName: string, lastName: string, age: number, gender: string, dateOfBirth: string, phoneNumber: string, profileImage?: any) => Promise<any>;
   loginWithGoogle: (idToken: string) => Promise<any>;
-  setGoogleUserPassword: (password: string) => Promise<any>;
   updateUserProfile: (userData: Partial<Omit<Profile, 'firebaseUid' | 'email' | 'isProfileComplete' | 'isChef' | 'isPro'>>, profileImage?: any) => Promise<any>;
   logout: () => Promise<void>;
   sendPasswordReset: (email: string) => Promise<void>;
@@ -187,6 +183,29 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Profile fetch successful:', data.user.userName);
+
+      // Fetch subscription details if user is Pro
+      if (data.user.isPro && data.user.subscriptionId) {
+        try {
+          console.log('Fetching subscription details for Pro user...');
+          const subscriptionData = await subscriptionService.getCurrentSubscription();
+
+          if (subscriptionData.subscription) {
+            // Merge subscription details into the profile
+            data.user.subscriptionStatus = subscriptionData.subscription.status;
+            data.user.subscriptionPlan = subscriptionData.subscription.planType;
+            data.user.subscriptionCurrentPeriodEnd = subscriptionData.subscription.currentPeriodEnd;
+            console.log('Subscription details fetched:', {
+              status: subscriptionData.subscription.status,
+              plan: subscriptionData.subscription.planType,
+              endDate: subscriptionData.subscription.currentPeriodEnd
+            });
+          }
+        } catch (subError) {
+          console.log('Failed to fetch subscription details:', subError);
+          // Continue with profile data even if subscription fetch fails
+        }
+      }
 
       // Only update the profile if there are actual changes
       if (JSON.stringify(data.user) !== JSON.stringify(profile)) {
@@ -320,7 +339,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       // Handle DD-MM-YYYY format from frontend
       let dobDate;
       let formattedDOB;
-      
+
       try {
         // Check if dateOfBirth is in DD-MM-YYYY format
         if (typeof dateOfBirth === 'string' && dateOfBirth.includes('-') && dateOfBirth.length === 10) {
@@ -329,7 +348,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         } else {
           dobDate = new Date(dateOfBirth);
         }
-        
+
         formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
       } catch (error) {
         console.log('Date parsing error:', error);
@@ -413,7 +432,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async (idToken: string) => {
     try {
       console.log('Starting Google authentication with Firebase...');
-      
+
       // Create Google credential with the ID token
       const credential = GoogleAuthProvider.credential(idToken);
 
@@ -513,47 +532,6 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
 
 
 
-  // Set password for Google users
-  const setGoogleUserPassword = async (password: string) => {
-    try {
-      if (!auth.currentUser) {
-        throw new Error('No authenticated user found');
-      }
-
-      const token = await auth.currentUser.getIdToken();
-
-      // Call backend to set password
-      const response = await fetch(`${API_BASE_URL}/auth/set-google-password`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to set password');
-      }
-
-      const data = await response.json();
-      console.log('Password set successfully for Google user');
-
-      // Update profile with hasPassword flag
-      if (profile) {
-        setProfile({ ...profile, hasPassword: true } as Profile);
-      }
-
-      return data;
-    } catch (error) {
-      console.log('Error setting Google user password:', error);
-      throw error;
-    }
-  };
-
-
-
   // Enhanced logout function that handles Google sign-out
   const logout = async () => {
     try {
@@ -563,10 +541,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         console.log('Signing out from Google...');
         await signOutFromGoogle();
       }
-      
+
       // Sign out from Firebase
       await signOut(auth);
-      
+
       console.log('User signed out successfully');
     } catch (error) {
       console.log('Error signing out:', error);
@@ -691,7 +669,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       if (userData.dateOfBirth) {
         let dobDate;
         let formattedDOB;
-        
+
         try {
           // Check if dateOfBirth is in DD-MM-YYYY format
           if (typeof userData.dateOfBirth === 'string' && userData.dateOfBirth.includes('-') && userData.dateOfBirth.length === 10) {
@@ -700,13 +678,13 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           } else {
             dobDate = new Date(userData.dateOfBirth);
           }
-          
+
           formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
         } catch (error) {
           console.log('Date parsing error in updateUserProfile:', error);
           formattedDOB = userData.dateOfBirth;
         }
-        
+
         formData.append('dateOfBirth', formattedDOB);
       }
 
@@ -767,7 +745,6 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         login,
         register,
         loginWithGoogle,
-        setGoogleUserPassword,
         updateUserProfile,
         logout,
         deleteAccount,
