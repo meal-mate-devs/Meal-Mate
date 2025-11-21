@@ -71,16 +71,16 @@ class ApiClient {
             }
 
             console.log(`Fetching ${API_BASE_URL}${endpoint}`);
-            
+
             // Create AbortController for timeout
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), timeout); // Configurable timeout
-            
+
             const response = await fetch(`${API_BASE_URL}${endpoint}`, {
                 ...fetchOptions,
                 signal: controller.signal
             });
-            
+
             clearTimeout(timeoutId);
             console.log(`Response status: ${response.status}`);
 
@@ -124,12 +124,12 @@ class ApiClient {
             return await response.json();
         } catch (error) {
             console.log('API Request failed:', error);
-            
+
             // Handle timeout errors specifically
             if (error instanceof Error && error.name === 'AbortError') {
                 throw new Error('Request timeout - please check your connection');
             }
-            
+
             throw error;
         }
     }
@@ -176,6 +176,13 @@ class ApiClient {
         return this.request<T>(endpoint, {
             method: 'PATCH',
             body: data,
+        }, requireAuth, timeout);
+    }
+
+    async patch<T>(endpoint: string, data: any, requireAuth: boolean = true, timeout: number = 10000): Promise<T> {
+        return this.request<T>(endpoint, {
+            method: 'PATCH',
+            body: JSON.stringify(data),
         }, requireAuth, timeout);
     }
 

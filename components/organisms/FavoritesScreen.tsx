@@ -99,45 +99,6 @@ const FavoritesScreen: React.FC = () => {
   }, [refreshFavorites])
 
   // test data for UI testing when no backend data
-  const mockFavorites = favorites.length === 0 && !isLoading && !error ? [
-    {
-      id: 'mock-favorite-recipe-001',
-      userId: 'mock-user',
-      recipeId: 'mock-recipe-001',
-      title: 'Delicious Pasta Carbonara',
-      description: 'A classic Italian pasta dish with eggs, cheese, and pancetta that comes together in just 20 minutes.',
-      cookTime: 15,
-      prepTime: 5,
-      servings: 4,
-      difficulty: 'Medium' as const,
-      cuisine: 'Italian',
-      category: 'Main Course',
-      ingredients: [
-        { name: 'Spaghetti', amount: '400', unit: 'g' },
-        { name: 'Pancetta', amount: '150', unit: 'g', notes: 'diced' },
-        { name: 'Eggs', amount: '3', unit: 'large' },
-        { name: 'Parmesan cheese', amount: '100', unit: 'g', notes: 'grated' }
-      ],
-      instructions: [
-        { step: 1, instruction: 'Cook spaghetti in salted boiling water until al dente', duration: 10 },
-        { step: 2, instruction: 'Fry pancetta until crispy', duration: 5 },
-        { step: 3, instruction: 'Mix eggs and cheese in a bowl' },
-        { step: 4, instruction: 'Combine everything and toss quickly', tips: 'Work fast to avoid scrambling eggs' }
-      ],
-      nutritionInfo: {
-        calories: 520,
-        protein: 25,
-        carbs: 65,
-        fat: 18
-      },
-      tips: ['Use room temperature eggs for best results', 'Reserve pasta water for consistency'],
-      substitutions: [
-        { original: 'Pancetta', substitute: 'Bacon', ratio: '1:1', notes: 'Bacon works well as substitute' }
-      ],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ] : []
 
   // Use real favorites data directly, bypass mock data
   const displayFavorites = favorites
