@@ -4,16 +4,16 @@ import { LinearGradient } from "expo-linear-gradient"
 import { router, useLocalSearchParams } from "expo-router"
 import React, { useCallback, useEffect, useState } from "react"
 import {
-  ActivityIndicator,
-  BackHandler,
-  RefreshControl,
-  ScrollView,
-  Share,
-  StatusBar,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    ActivityIndicator,
+    BackHandler,
+    RefreshControl,
+    ScrollView,
+    Share,
+    StatusBar,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useFavoritesStore } from "../../hooks/useFavoritesStore"
@@ -510,6 +510,17 @@ const FavoritesScreen: React.FC = () => {
                     <View className="flex-row justify-between items-start">
                       <View className="flex-1 pr-4">
                         <Text className="text-white font-bold text-xl mb-2 leading-tight tracking-tight">{recipe.title}</Text>
+                        
+                        {/* Creator Name - Show who created this recipe */}
+                        {recipe.creator && (
+                          <View className="flex-row items-center mb-2">
+                            <Ionicons name="person" size={14} color="#A78BFA" />
+                            <Text className="text-purple-300 text-sm font-semibold ml-1">
+                              By: {recipe.creator}
+                            </Text>
+                          </View>
+                        )}
+                        
                         <Text className="text-gray-300 text-base mb-4 leading-relaxed" numberOfLines={isExpanded ? undefined : 2}>
                           {recipe.description || 'Delicious recipe from your favorites'}
                         </Text>
@@ -632,6 +643,18 @@ const FavoritesScreen: React.FC = () => {
                         borderTopColor: "rgba(255, 255, 255, 0.08)"
                       }}
                     >
+                      {/* Creator Name in Expanded View */}
+                      {recipe.creator && (
+                        <View className="mb-4">
+                          <View className="flex-row items-center">
+                            <Ionicons name="person-circle-outline" size={18} color="#A78BFA" />
+                            <Text className="text-purple-300 text-sm font-semibold ml-2">
+                              by {recipe.creator}
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                      
                       {/* 📊 Enhanced Nutrition Section */}
                       <View className="mb-6">
                         <View className="flex-row items-center mb-4">

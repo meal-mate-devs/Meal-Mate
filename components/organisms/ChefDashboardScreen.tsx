@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { useFavoritesStore } from "@/hooks/useFavoritesStore"
 import * as chefService from "@/lib/api/chefService"
 import { apiClient } from "@/lib/api/client"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
@@ -10,7 +11,6 @@ import { router } from "expo-router"
 import React, { useEffect, useRef, useState } from "react"
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   Dimensions,
   FlatList,
@@ -25,7 +25,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View,
+  View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import CustomDialog from "../atoms/CustomDialog"
@@ -51,6 +51,7 @@ interface Recipe {
   reviews?: number
   chefId?: string
   chefName?: string
+  creator?: string
 }
 
 interface Chef {
@@ -133,6 +134,7 @@ const ChefDashboardScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<FlatList>(null)
   const { profile, refreshProfile } = useAuthContext()
+  const { addToFavorites, isFavorite, removeFromFavorites } = useFavoritesStore()
   
   const [userType, setUserType] = useState<"user" | "chef">("user")
   const [selectedChef, setSelectedChef] = useState<string | null>(null)
@@ -245,6 +247,12 @@ const ChefDashboardScreen: React.FC = () => {
   // Chef dashboard toggle state
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [managementTab, setManagementTab] = useState<"recipes" | "courses">("recipes")
+  
+  // General success and error dialogs
+  const [showGeneralSuccessDialog, setShowGeneralSuccessDialog] = useState(false)
+  const [showGeneralErrorDialog, setShowGeneralErrorDialog] = useState(false)
+  const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
+  const [generalErrorMessage, setGeneralErrorMessage] = useState('')
   
   // Check if user should see chef registration
   useEffect(() => {
@@ -456,7 +464,13 @@ const ChefDashboardScreen: React.FC = () => {
     setIsLoadingExplorerRecipes(true)
     try {
       const recipes = await chefService.getPublishedRecipes()
-      setExplorerRecipes(recipes)
+      // Ensure recipes have 'id' field for consistency and map averageRating to rating
+      const normalizedRecipes = recipes.map(r => ({
+        ...r,
+        id: r._id || (r as any).id,
+        rating: r.averageRating || 0
+      }))
+      setExplorerRecipes(normalizedRecipes)
     } catch (error) {
       console.error('Failed to load explorer recipes:', error)
     } finally {
@@ -467,7 +481,14 @@ const ChefDashboardScreen: React.FC = () => {
     setIsLoadingExplorerCourses(true)
     try {
       const courses = await chefService.getPublishedCourses()
-      setExplorerCourses(courses)
+      // Ensure courses have 'id' field for consistency and map averageRating to rating
+      const normalizedCourses = courses.map(c => ({
+        ...c,
+        id: c._id || (c as any).id,
+        rating: c.averageRating || 0,
+        image: c.coverImage || "https://via.placeholder.com/400x300"
+      }))
+      setExplorerCourses(normalizedCourses)
     } catch (error) {
       console.error('Failed to load explorer courses:', error)
     } finally {
@@ -1056,21 +1077,8 @@ const ChefDashboardScreen: React.FC = () => {
                     })
                   } else if (!hasAccess) {
                     // Premium recipe - subscription required
-                    Alert.alert(
-                      'Premium Content',
-                      `Subscribe to ${ownerChef?.name || 'this chef'} to access this recipe`,
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { 
-                          text: 'View Chef', 
-                          onPress: () => {
-                            if (ownerChef) {
-                              setViewingChefProfile(ownerChef)
-                            }
-                          }
-                        }
-                      ]
-                    )
+                    setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this recipe`)
+                    setShowGeneralErrorDialog(true)
                   } else {
                     // Navigate to recipe detail screen
                     router.push({
@@ -1179,27 +1187,16 @@ const ChefDashboardScreen: React.FC = () => {
                 onPress={() => {
                   if (userType === "chef") {
                     // Chef viewing their own courses
-                    Alert.alert('Course', `Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                    setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                    setShowGeneralErrorDialog(true)
                   } else if (!hasAccess) {
                     // Premium course - subscription required
-                    Alert.alert(
-                      'Premium Content',
-                      `Subscribe to ${ownerChef?.name || 'this chef'} to access this course`,
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { 
-                          text: 'View Chef', 
-                          onPress: () => {
-                            if (ownerChef) {
-                              setViewingChefProfile(ownerChef)
-                            }
-                          }
-                        }
-                      ]
-                    )
+                    setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this course`)
+                    setShowGeneralErrorDialog(true)
                   } else {
                     // Navigate to course detail screen (to be implemented)
-                    Alert.alert('Course', `Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                    setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                    setShowGeneralErrorDialog(true)
                   }
                 }}
                 activeOpacity={0.8}
@@ -1263,7 +1260,8 @@ const ChefDashboardScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error picking image:', error)
-      Alert.alert('Error', 'Failed to pick image')
+      setGeneralErrorMessage('Failed to pick image')
+      setShowGeneralErrorDialog(true)
     }
   }
 
@@ -1308,11 +1306,13 @@ const ChefDashboardScreen: React.FC = () => {
                     
                     // Validate professional summary length
                     if (editedProfessionalSummary.trim().length < 50) {
-                      Alert.alert('Validation Error', 'Professional summary must be at least 50 characters')
+                      setGeneralErrorMessage('Professional summary must be at least 50 characters')
+                      setShowGeneralErrorDialog(true)
                       return
                     }
                     if (editedProfessionalSummary.trim().length > 500) {
-                      Alert.alert('Validation Error', 'Professional summary must not exceed 500 characters')
+                      setGeneralErrorMessage('Professional summary must not exceed 500 characters')
+                      setShowGeneralErrorDialog(true)
                       return
                     }
                     
@@ -1347,11 +1347,13 @@ const ChefDashboardScreen: React.FC = () => {
                     setShowExpertiseDropdown(false)
                     setEditMode(false)
                     
-                    Alert.alert('Success', 'Chef profile updated successfully')
+                    setGeneralSuccessMessage('Chef profile updated successfully')
+                    setShowGeneralSuccessDialog(true)
                     console.log('✅ Chef profile updated successfully')
                   } catch (error: any) {
                     console.error('❌ Error updating chef profile:', error.message)
-                    Alert.alert('Error', error.message || 'Failed to update chef profile')
+                    setGeneralErrorMessage(error.message || 'Failed to update chef profile')
+                    setShowGeneralErrorDialog(true)
                   }
                 }}
               >
@@ -1883,12 +1885,14 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{recipe.rating}</Text>
+            <Text style={styles.metaText}>{recipe.rating?.toFixed(1) || '0.0'}</Text>
           </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="chatbubble" size={14} color="#64748B" />
-            <Text style={styles.metaText}>{recipe.reviews || 0} reviews</Text>
-          </View>
+          {recipe.creator && (
+            <View style={styles.metaItem}>
+              <Ionicons name="person" size={14} color="#a0edf7e0" />
+              <Text style={[styles.metaText, { color: '#a0edf7ff' }]}>By: {recipe.creator}</Text>
+            </View>
+          )}
         </View>
         
         <View style={styles.managementCardActions}>
@@ -2002,7 +2006,7 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{course.rating || course.averageRating || '0'}</Text>
+            <Text style={styles.metaText}>{(course.rating || course.averageRating || 0).toFixed(1)}</Text>
           </View>
           <View style={styles.metaItem}>
             <Ionicons name="book-outline" size={14} color="#64748B" />
@@ -2076,22 +2080,20 @@ const ChefDashboardScreen: React.FC = () => {
   const handleViewRecipe = async (recipe: Recipe) => {
     try {
       setIsLoadingRecipeDetails(true)
-      setExpandedRecipeId(recipe.id)
+      // Handle both 'id' and '_id' fields (explorer recipes use _id)
+      const recipeId = recipe.id || (recipe as any)._id
+      setExpandedRecipeId(recipeId)
       
-      console.log('👁️ Fetching recipe details for view:', recipe.id)
-      const fullRecipe = await chefService.getRecipeById(recipe.id)
+      console.log('👁️ Fetching recipe details for view:', recipeId)
+      const fullRecipe = await chefService.getRecipeById(recipeId)
       
       console.log('✅ Full recipe fetched:', fullRecipe.title)
       setExpandedRecipeData(fullRecipe)
     } catch (error: any) {
       console.log('❌ Failed to fetch recipe details:', error)
       setExpandedRecipeId(null)
-      
-      Alert.alert(
-        'Unable to Load Recipe',
-        'Failed to load recipe details. Please try again.',
-        [{ text: 'OK', style: 'cancel' }]
-      )
+      setGeneralErrorMessage('Failed to load recipe details. Please try again.')
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsLoadingRecipeDetails(false)
     }
@@ -2130,13 +2132,8 @@ const ChefDashboardScreen: React.FC = () => {
       console.log(recipe.id)
       
       // Show error to user instead of opening incomplete form
-      Alert.alert(
-        'Unable to Edit Recipe',
-        'Failed to load recipe details.',
-        [
-          { text: 'OK', style: 'cancel' }
-        ]
-      )
+      setGeneralErrorMessage('Failed to load recipe details.')
+      setShowGeneralErrorDialog(true)
       return
       
     }
@@ -2151,6 +2148,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('🗑️ Deleting recipe:', recipe.title)
       await chefService.deleteRecipe(recipeId)
       setUserRecipes(prev => prev.filter(r => r.id !== recipeId))
+      await fetchChefStatsAndFeedback()
       console.log('✅ Recipe deleted successfully')
     } catch (error) {
       console.log('❌ Failed to delete recipe:', error)
@@ -2188,6 +2186,9 @@ const ChefDashboardScreen: React.FC = () => {
             : r
         ))
         
+        // Reload stats
+        await fetchChefStatsAndFeedback()
+        
         // Show success dialog
         setPublishSuccessMessage('Your recipe is now offline and only visible to you.')
         setShowPublishSuccessDialog(true)
@@ -2203,6 +2204,9 @@ const ChefDashboardScreen: React.FC = () => {
             ? { ...r, isPublished: true } 
             : r
         ))
+        
+        // Reload stats
+        await fetchChefStatsAndFeedback()
         
         // Show success dialog
         setPublishSuccessMessage('Your recipe is now live and visible to food explorers!')
@@ -2248,6 +2252,9 @@ const ChefDashboardScreen: React.FC = () => {
             : c
         ))
         
+        // Reload stats
+        await fetchChefStatsAndFeedback()
+        
         // Show success dialog
         setPublishSuccessMessage('Your course is now offline and only visible to you.')
         setShowPublishSuccessDialog(true)
@@ -2264,6 +2271,9 @@ const ChefDashboardScreen: React.FC = () => {
             : c
         ))
         
+        // Reload stats
+        await fetchChefStatsAndFeedback()
+        
         // Show success dialog
         setPublishSuccessMessage('Your course is now live and visible to learners!')
         setShowPublishSuccessDialog(true)
@@ -2277,9 +2287,75 @@ const ChefDashboardScreen: React.FC = () => {
     }
   }
 
+  const handleToggleFavoriteRecipe = async () => {
+    if (!expandedRecipeData) return
+    
+    const recipeId = expandedRecipeData._id || expandedRecipeData.id
+    const isCurrentlyFavorite = isFavorite(recipeId)
+    
+    if (isCurrentlyFavorite) {
+      // Remove from favorites
+      const success = await removeFromFavorites(recipeId)
+      if (success) {
+        setGeneralSuccessMessage('Recipe removed from favorites')
+        setShowGeneralSuccessDialog(true)
+      } else {
+        setGeneralErrorMessage('Failed to remove from favorites')
+        setShowGeneralErrorDialog(true)
+      }
+    } else {
+      // Add to favorites - mold the schema to match FavoriteRecipe
+      const success = await addToFavorites({
+        recipeId: recipeId,
+        title: expandedRecipeData.title,
+        description: expandedRecipeData.description || '',
+        image: expandedRecipeData.image?.url || expandedRecipeData.image || '',
+        cookTime: expandedRecipeData.cookTime || 0,
+        prepTime: expandedRecipeData.prepTime || 0,
+        servings: expandedRecipeData.servings || 1,
+        difficulty: (expandedRecipeData.difficulty || 'Easy') as 'Easy' | 'Medium' | 'Hard',
+        cuisine: expandedRecipeData.cuisine || 'General',
+        category: expandedRecipeData.category || 'Other',
+        creator: expandedRecipeData.creator || 'Unknown Chef', // Include creator field
+        ingredients: (expandedRecipeData.ingredients || []).map((ing: any) => ({
+          name: ing.name || '',
+          amount: ing.amount || '',
+          unit: ing.unit || '',
+          notes: ing.notes || ''
+        })),
+        instructions: (expandedRecipeData.instructions || []).map((inst: any) => ({
+          step: inst.step || 0,
+          instruction: inst.instruction || '',
+          duration: inst.duration || 0,
+          tips: inst.tips || ''
+        })),
+        nutritionInfo: {
+          calories: expandedRecipeData.nutrition?.calories || expandedRecipeData.nutritionInfo?.calories || 0,
+          protein: expandedRecipeData.nutrition?.protein || expandedRecipeData.nutritionInfo?.protein || 0,
+          carbs: expandedRecipeData.nutrition?.carbs || expandedRecipeData.nutritionInfo?.carbs || 0,
+          fat: expandedRecipeData.nutrition?.fat || expandedRecipeData.nutritionInfo?.fat || 0,
+          fiber: expandedRecipeData.nutrition?.fiber || expandedRecipeData.nutritionInfo?.fiber || 0,
+          sugar: expandedRecipeData.nutrition?.sugar || expandedRecipeData.nutritionInfo?.sugar || 0,
+          sodium: expandedRecipeData.nutrition?.sodium || expandedRecipeData.nutritionInfo?.sodium || 0
+        },
+        tips: expandedRecipeData.tips || [],
+        substitutions: expandedRecipeData.substitutions || []
+      })
+      
+      if (success) {
+        setGeneralSuccessMessage('Recipe added to favorites')
+        setShowGeneralSuccessDialog(true)
+      } else {
+        setGeneralErrorMessage('Failed to add to favorites')
+        setShowGeneralErrorDialog(true)
+      }
+    }
+  }
+
   const handleStartCooking = (recipe: any) => {
     if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
-      Alert.alert('No Instructions', 'This recipe has no cooking instructions available.')
+      setGeneralErrorMessage('This recipe has no cooking instructions available.')
+      setShowGeneralErrorDialog(true)
       return
     }
     
@@ -2373,22 +2449,20 @@ const ChefDashboardScreen: React.FC = () => {
   const handleViewCourse = async (course: Course) => {
     try {
       setIsLoadingCourseDetails(true)
-      setExpandedCourseId(course.id)
+      // Handle both 'id' and '_id' fields (explorer courses use _id)
+      const courseId = course.id || (course as any)._id
+      setExpandedCourseId(courseId)
       
-      console.log('👁️ Fetching course details for view:', course.id)
-      const fullCourse = await chefService.getCourseById(course.id)
+      console.log('👁️ Fetching course details for view:', courseId)
+      const fullCourse = await chefService.getCourseById(courseId)
       
       console.log('✅ Full course fetched:', fullCourse.title)
       setExpandedCourseData(fullCourse)
     } catch (error: any) {
       console.log('❌ Failed to fetch course details:', error)
       setExpandedCourseId(null)
-      
-      Alert.alert(
-        'Unable to Load Course',
-        'Failed to load course details. Please try again.',
-        [{ text: 'OK', style: 'cancel' }]
-      )
+      setGeneralErrorMessage('Failed to load course details. Please try again.')
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsLoadingCourseDetails(false)
     }
@@ -2397,24 +2471,29 @@ const ChefDashboardScreen: React.FC = () => {
   // Recipe Report/Rate Handlers
   const handleSubmitRecipeReport = async () => {
     if (!recipeReportReason && !recipeReportDescription.trim()) {
-      Alert.alert("Error", "Please select a reason or describe your concern")
+      setGeneralErrorMessage("Please select a reason or describe your concern")
+      setShowGeneralErrorDialog(true)
       return
     }
 
     const finalReason = recipeReportReason || "Custom"
+    const recipeId = expandedRecipeData._id || expandedRecipeData.id
     
     setIsReportingRecipe(true)
     try {
-      await apiClient.post(`/recipes/${expandedRecipeData.id}/report`, {
+      await apiClient.post(`/recipes/${recipeId}/report`, {
         reason: finalReason,
         description: recipeReportDescription || recipeReportReason
       })
-      Alert.alert("Success", "Recipe report submitted successfully")
       setShowRecipeReportDialog(false)
       setRecipeReportReason("")
       setRecipeReportDescription("")
+      setGeneralSuccessMessage("Recipe reported successfully. Our team will review this report.")
+      setShowGeneralSuccessDialog(true)
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit report")
+      setShowRecipeReportDialog(false)
+      setGeneralErrorMessage(error.message || "Failed to submit report")
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsReportingRecipe(false)
     }
@@ -2422,22 +2501,35 @@ const ChefDashboardScreen: React.FC = () => {
 
   const handleSubmitRecipeRating = async () => {
     if (recipeRating === 0) {
-      Alert.alert("Error", "Please select a rating")
+      setGeneralErrorMessage("Please select a rating")
+      setShowGeneralErrorDialog(true)
       return
     }
     
+    const recipeId = expandedRecipeData._id || expandedRecipeData.id
+    
     setIsRatingRecipe(true)
     try {
-      const result = await apiClient.post(`/recipes/${expandedRecipeData.id}/rate`, {
+      const result = await apiClient.post(`/recipes/${recipeId}/rate`, {
         rating: recipeRating,
         feedback: recipeRatingFeedback
       })
-      Alert.alert("Success", "Recipe rating submitted successfully")
       setShowRecipeRatingDialog(false)
       setRecipeRating(0)
       setRecipeRatingFeedback("")
+      setGeneralSuccessMessage("Recipe rating submitted successfully!")
+      setShowGeneralSuccessDialog(true)
+      
+      // Reload data to reflect updated ratings
+      if (userType === "chef") {
+        await fetchUserRecipes()
+      } else {
+        await loadExplorerContent()
+      }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit rating")
+      setShowRecipeRatingDialog(false)
+      setGeneralErrorMessage(error.message || "Failed to submit rating")
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsRatingRecipe(false)
     }
@@ -2446,24 +2538,29 @@ const ChefDashboardScreen: React.FC = () => {
   // Course Report/Rate Handlers
   const handleSubmitCourseReport = async () => {
     if (!courseReportReason && !courseReportDescription.trim()) {
-      Alert.alert("Error", "Please select a reason or describe your concern")
+      setGeneralErrorMessage("Please select a reason or describe your concern")
+      setShowGeneralErrorDialog(true)
       return
     }
 
     const finalReason = courseReportReason || "Custom"
+    const courseId = expandedCourseData._id || expandedCourseData.id
     
     setIsReportingCourse(true)
     try {
-      await apiClient.post(`/courses/${expandedCourseData.id}/report`, {
+      await apiClient.post(`/courses/${courseId}/report`, {
         reason: finalReason,
         description: courseReportDescription || courseReportReason
       })
-      Alert.alert("Success", "Course report submitted successfully")
       setShowCourseReportDialog(false)
       setCourseReportReason("")
       setCourseReportDescription("")
+      setGeneralSuccessMessage("Course reported successfully. Our team will review this report.")
+      setShowGeneralSuccessDialog(true)
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit report")
+      setShowCourseReportDialog(false)
+      setGeneralErrorMessage(error.message || "Failed to submit report")
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsReportingCourse(false)
     }
@@ -2471,22 +2568,35 @@ const ChefDashboardScreen: React.FC = () => {
 
   const handleSubmitCourseRating = async () => {
     if (courseRating === 0) {
-      Alert.alert("Error", "Please select a rating")
+      setGeneralErrorMessage("Please select a rating")
+      setShowGeneralErrorDialog(true)
       return
     }
     
+    const courseId = expandedCourseData._id || expandedCourseData.id
+    
     setIsRatingCourse(true)
     try {
-      const result = await apiClient.post(`/courses/${expandedCourseData.id}/rate`, {
+      const result = await apiClient.post(`/courses/${courseId}/rate`, {
         rating: courseRating,
         feedback: courseRatingFeedback
       })
-      Alert.alert("Success", "Course rating submitted successfully")
       setShowCourseRatingDialog(false)
       setCourseRating(0)
       setCourseRatingFeedback("")
+      setGeneralSuccessMessage("Course rating submitted successfully!")
+      setShowGeneralSuccessDialog(true)
+      
+      // Reload data to reflect updated ratings
+      if (userType === "chef") {
+        await fetchUserCourses()
+      } else {
+        await loadExplorerContent()
+      }
     } catch (error: any) {
-      Alert.alert("Error", error.message || "Failed to submit rating")
+      setShowCourseRatingDialog(false)
+      setGeneralErrorMessage(error.message || "Failed to submit rating")
+      setShowGeneralErrorDialog(true)
     } finally {
       setIsRatingCourse(false)
     }
@@ -2518,6 +2628,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('🗑️ Deleting course:', course.title)
       await chefService.deleteCourse(courseId)
       setUserCourses(prev => prev.filter(c => c.id !== courseId))
+      await fetchChefStatsAndFeedback()
       console.log('✅ Course deleted successfully')
     } catch (error) {
       console.log('❌ Failed to delete course:', error)
@@ -2651,8 +2762,9 @@ const ChefDashboardScreen: React.FC = () => {
         >
           <RecipeUploadModal
             onClose={handleModalClose}
-            onSave={(recipe) => {
-              fetchUserRecipes()
+            onSave={async (recipe) => {
+              await fetchUserRecipes()
+              await fetchChefStatsAndFeedback()
               handleModalClose()
             }}
             editingRecipe={editingRecipe}
@@ -2668,8 +2780,9 @@ const ChefDashboardScreen: React.FC = () => {
         >
           <CourseCreationModal
             onClose={handleModalClose}
-            onSave={(course) => {
-              fetchUserCourses()
+            onSave={async (course) => {
+              await fetchUserCourses()
+              await fetchChefStatsAndFeedback()
               handleModalClose()
             }}
             editingCourse={editingCourse}
@@ -2722,9 +2835,34 @@ const ChefDashboardScreen: React.FC = () => {
                   <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
                     {expandedRecipeData.title}
                   </Text>
+                  
+                  {/* Creator Name - Display who created this recipe */}
+                  {expandedRecipeData.creator && (
+                    <View className="mb-3">
+                      <View className="flex-row items-center">
+                        <Ionicons name="person-circle-outline" size={18} color="#A78BFA" />
+                        <Text className="text-purple-300 text-sm font-semibold ml-2">
+                          by {expandedRecipeData.creator}
+                        </Text>
+                      </View>
+                    </View>
+                  )}
+                  
                   <Text className="text-gray-300 text-base mb-4 leading-relaxed">
                     {expandedRecipeData.description || 'Delicious recipe from your collection'}
                   </Text>
+
+                  {/* Rating Badge */}
+                  <View className="mb-4">
+                    <View className="bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-2 self-start">
+                      <View className="flex-row items-center">
+                        <Ionicons name="star" size={16} color="#FBBF24" />
+                        <Text className="text-amber-300 ml-2 text-sm font-bold">
+                          {(expandedRecipeData.averageRating || 0).toFixed(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
 
                   {/* Recipe Stats */}
                   <View className="flex-row flex-wrap">
@@ -2812,6 +2950,21 @@ const ChefDashboardScreen: React.FC = () => {
                   ) : (
                     // Food Explorer actions
                     <>
+                      <TouchableOpacity
+                        onPress={handleToggleFavoriteRecipe}
+                        className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'bg-pink-500/15 border-pink-500/40' : 'bg-purple-500/15 border-purple-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1`}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons 
+                          name={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "heart" : "heart-outline"} 
+                          size={18} 
+                          color={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "#EC4899" : "#A78BFA"}
+                        />
+                        <Text className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'text-pink-300' : 'text-purple-300'} font-bold ml-2 text-sm tracking-wide`}>
+                          {isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'Saved' : 'Save'}
+                        </Text>
+                      </TouchableOpacity>
+
                       <TouchableOpacity
                         onPress={() => setShowRecipeReportDialog(true)}
                         className="bg-red-500/15 border border-red-500/40 rounded-xl py-3 flex-row items-center justify-center flex-1"
@@ -3097,6 +3250,18 @@ const ChefDashboardScreen: React.FC = () => {
                   <Text className="text-gray-300 text-base mb-4 leading-relaxed">
                     {expandedCourseData.description || 'Comprehensive course from your collection'}
                   </Text>
+
+                  {/* Rating Badge */}
+                  <View className="mb-4">
+                    <View className="bg-amber-500/20 border border-amber-500/40 rounded-full px-3 py-2 self-start">
+                      <View className="flex-row items-center">
+                        <Ionicons name="star" size={16} color="#FBBF24" />
+                        <Text className="text-amber-300 ml-2 text-sm font-bold">
+                          {(expandedCourseData.averageRating || 0).toFixed(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
 
                   {/* Course Stats */}
                   <View className="flex-row flex-wrap">
@@ -3484,6 +3649,56 @@ const ChefDashboardScreen: React.FC = () => {
         onClose={() => setShowPublishErrorDialog(false)}
         confirmText="OK"
       />
+
+      {/* General Success Dialog */}
+      <CustomDialog
+        visible={showGeneralSuccessDialog}
+        onClose={() => setShowGeneralSuccessDialog(false)}
+        title="Success"
+        height={250}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#10B981', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            {generalSuccessMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowGeneralSuccessDialog(false)}
+            style={{
+              backgroundColor: '#10B981',
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* General Error Dialog */}
+      <CustomDialog
+        visible={showGeneralErrorDialog}
+        onClose={() => setShowGeneralErrorDialog(false)}
+        title="Error"
+        height={250}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#EF4444', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            {generalErrorMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowGeneralErrorDialog(false)}
+            style={{
+              backgroundColor: '#EF4444',
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
 
       {/* Chef Profile View Modal */}
       {viewingChefProfile && (

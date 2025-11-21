@@ -21,7 +21,6 @@ import {
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import CustomDialog from "../atoms/CustomDialog"
-import Dialog from "../atoms/Dialog"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
@@ -110,6 +109,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [courses, setCourses] = useState<Course[]>(chef.courses || [])
   const [isSubscribed, setIsSubscribed] = useState(chef.isSubscribed)
   const [subscriptionChecked, setSubscriptionChecked] = useState(false)
+  const [chefStats, setChefStats] = useState(chef.stats)
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
   const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
@@ -138,6 +138,12 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   // Subscribe confirmation dialog
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
   const [subscribeAction, setSubscribeAction] = useState<'subscribe' | 'unsubscribe'>('subscribe')
+  
+  // Success and error dialogs
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [successMessage, setSuccessMessage] = useState('')
+  const [errorMessage, setErrorMessage] = useState('')
 
   // Load recipes and courses from backend
   useEffect(() => {
@@ -186,16 +192,18 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       console.log('📊 Loading fresh chef profile with stats:', chef.id)
       const freshChefData = await chefService.getChefById(chef.id)
       
-      // Update chef stats with fresh data from backend
-      if (chef.stats && freshChefData.stats) {
-        chef.stats.freeRecipesCount = freshChefData.stats.freeRecipesCount || 0
-        chef.stats.premiumRecipesCount = freshChefData.stats.premiumRecipesCount || 0
-        chef.stats.coursesCount = freshChefData.stats.coursesCount || 0
-        chef.stats.totalStudents = freshChefData.stats.totalStudents || 0
-        chef.stats.averageRating = freshChefData.stats.averageRating || 0
-        chef.stats.totalRatings = freshChefData.stats.totalRatings || 0
+      // Update chef stats with fresh data from backend using setState to trigger re-render
+      if (freshChefData.stats) {
+        setChefStats({
+          freeRecipesCount: freshChefData.stats.freeRecipesCount || 0,
+          premiumRecipesCount: freshChefData.stats.premiumRecipesCount || 0,
+          coursesCount: freshChefData.stats.coursesCount || 0,
+          totalStudents: freshChefData.stats.totalStudents || 0,
+          averageRating: freshChefData.stats.averageRating || 0,
+          totalRatings: freshChefData.stats.totalRatings || 0
+        })
+        console.log('✅ Chef stats updated:', freshChefData.stats)
       }
-      console.log('✅ Chef stats updated:', chef.stats)
     } catch (error) {
       console.log('❌ Failed to load chef profile:', error)
     }
@@ -244,46 +252,72 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     "Harassment",
   ]
 
-  const handleSubscribe = async () => {
-    if (isSubscribed) {
-      // Show unsubscribe confirmation
-      setSubscribeAction('unsubscribe')
-      setShowSubscribeDialog(true)
-    } else {
-      // Subscribe directly
-      await performSubscribe()
+  // Format error messages for better user experience
+  const formatErrorMessage = (error: any): string => {
+    // If error.message exists and contains "API Error:"
+    if (error.message && typeof error.message === 'string') {
+      // Try to extract the actual error message from API Error format
+      const apiErrorMatch = error.message.match(/API Error: \d+ - (\{.*\})/);
+      if (apiErrorMatch) {
+        try {
+          const errorData = JSON.parse(apiErrorMatch[1]);
+          if (errorData.error) {
+            return errorData.error;
+          }
+          if (errorData.message) {
+            return errorData.message;
+          }
+        } catch (parseError) {
+          console.log('Failed to parse error JSON:', parseError);
+        }
+      }
+      
+      // Return the original message if no parsing needed
+      return error.message;
     }
+    
+    return 'An unexpected error occurred. Please try again.';
   }
-  
-  const performSubscribe = async () => {
+
+  const handleSubscribe = async () => {
     setIsSubscribing(true)
     try {
-      if (subscribeAction === 'unsubscribe') {
+      if (isSubscribed) {
+        // Unsubscribe
         await chefService.unsubscribeFromChef(chef.id)
         setIsSubscribed(false)
         chef.isSubscribed = false
         chef.subscribers = Math.max(0, chef.subscribers - 1)
         onSubscribeToggle?.(chef.id)
+        // Reload chef profile to get fresh stats
+        await loadChefProfile()
         loadChefContent()
       } else {
+        // Subscribe
         await chefService.subscribeToChef(chef.id)
         setIsSubscribed(true)
         chef.isSubscribed = true
         chef.subscribers = chef.subscribers + 1
         onSubscribeToggle?.(chef.id)
+        // Reload chef profile to get fresh stats
+        await loadChefProfile()
         loadChefContent()
       }
     } catch (error: any) {
       console.log('Subscribe error:', error)
+      const formattedError = formatErrorMessage(error)
+      setErrorMessage(formattedError || `Failed to ${isSubscribed ? 'unsubscribe from' : 'subscribe to'} chef. Please try again.`)
+      setShowErrorDialog(true)
     } finally {
       setIsSubscribing(false)
-      setShowSubscribeDialog(false)
     }
   }
 
   const handleSubmitReport = async () => {
     const finalReason = customReason.trim() || reportReason
     if (!finalReason) {
+      setErrorMessage('Please select a reason or describe your concern')
+      setShowErrorDialog(true)
       return
     }
     
@@ -294,9 +328,17 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       setReportReason("")
       setReportDescription("")
       setCustomReason("")
+      setSuccessMessage('Chef reported successfully. Our team will review this report.')
+      setShowSuccessDialog(true)
       onReport?.(chef.id, finalReason, reportDescription)
+      // Reload chef profile to get fresh stats
+      await loadChefProfile()
     } catch (error: any) {
       console.log('Report error:', error)
+      setShowReportDialog(false)
+      const formattedError = formatErrorMessage(error)
+      setErrorMessage(formattedError || 'Failed to submit report. Please try again.')
+      setShowErrorDialog(true)
     } finally {
       setIsReporting(false)
     }
@@ -304,6 +346,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
   const handleSubmitRating = async () => {
     if (userRating === 0) {
+      setErrorMessage('Please select a rating')
+      setShowErrorDialog(true)
       return
     }
     
@@ -313,14 +357,17 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       setShowRatingDialog(false)
       setUserRating(0)
       setUserFeedback("")
+      setSuccessMessage('Chef rating submitted successfully!')
+      setShowSuccessDialog(true)
       onRate?.(chef.id, userRating, userFeedback)
-      // Update chef stats if available
-      if (chef.stats) {
-        chef.stats.averageRating = result.averageRating
-        chef.stats.totalRatings = result.totalRatings
-      }
+      // Reload chef profile to get fresh stats
+      await loadChefProfile()
     } catch (error: any) {
       console.log('Rating error:', error)
+      setShowRatingDialog(false)
+      const formattedError = formatErrorMessage(error)
+      setErrorMessage(formattedError || 'Failed to submit rating. Please try again.')
+      setShowErrorDialog(true)
     } finally {
       setIsRating(false)
     }
@@ -346,6 +393,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     } catch (error: any) {
       console.log('❌ Failed to fetch recipe details:', error)
       setExpandedRecipeId(null)
+      const formattedError = formatErrorMessage(error)
+      setErrorMessage(formattedError || 'Failed to load recipe details. Please try again.')
+      setShowErrorDialog(true)
     } finally {
       setIsLoadingRecipeDetails(false)
     }
@@ -372,6 +422,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     } catch (error: any) {
       console.log('❌ Failed to fetch course details:', error)
       setExpandedCourseId(null)
+      const formattedError = formatErrorMessage(error)
+      setErrorMessage(formattedError || 'Failed to load course details. Please try again.')
+      setShowErrorDialog(true)
     } finally {
       setIsLoadingCourseDetails(false)
     }
@@ -549,11 +602,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </View>
           <View style={styles.metaBadge}>
             <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{recipe.rating}</Text>
-          </View>
-          <View style={styles.metaBadge}>
-            <Ionicons name="chatbubble-outline" size={14} color="#64748B" />
-            <Text style={styles.metaText}>{recipe.reviews || 0} reviews</Text>
+            <Text style={styles.metaText}>{(recipe.rating || 0).toFixed(1)}</Text>
           </View>
         </View>
         
@@ -634,7 +683,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           {course.rating && (
             <View style={styles.metaBadge}>
               <Ionicons name="star" size={14} color="#FACC15" />
-              <Text style={styles.metaText}>{course.rating}</Text>
+              <Text style={styles.metaText}>{(course.rating || 0).toFixed(1)}</Text>
             </View>
           )}
           <View style={styles.metaBadge}>
@@ -768,7 +817,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Ionicons name="restaurant-outline" size={15} color="#22C55E" />
                     </View>
                     <Text style={styles.statGridValue}>
-                      {(chef.stats?.freeRecipesCount || 0) + (chef.stats?.premiumRecipesCount || 0)}
+                      {(chefStats?.freeRecipesCount || 0) + (chefStats?.premiumRecipesCount || 0)}
                     </Text>
                     <Text style={styles.statGridLabel}>Total Recipes</Text>
                   </View>
@@ -778,7 +827,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Ionicons name="book-outline" size={15} color="#8B5CF6" />
                     </View>
                     <Text style={styles.statGridValue}>
-                      {chef.stats?.coursesCount || 0}
+                      {chefStats?.coursesCount || 0}
                     </Text>
                     <Text style={styles.statGridLabel}>Total Courses</Text>
                   </View>
@@ -788,7 +837,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Ionicons name="people-outline" size={15} color="#3B82F6" />
                     </View>
                     <Text style={styles.statGridValue}>
-                      {chef.stats?.totalStudents || chef.subscribers}
+                      {chefStats?.totalStudents || chef.subscribers}
                     </Text>
                     <Text style={styles.statGridLabel}>Subscribers</Text>
                   </View>
@@ -798,7 +847,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Ionicons name="star" size={15} color="#F59E0B" />
                     </View>
                     <Text style={styles.statGridValue}>
-                      {chef.stats?.averageRating?.toFixed(1) || chef.rating.toFixed(1)}
+                      {chefStats?.averageRating?.toFixed(1) || chef.rating.toFixed(1)}
                     </Text>
                     <Text style={styles.statGridLabel}>Avg Rating</Text>
                   </View>
@@ -2111,20 +2160,56 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         </View>
       )}
       
-      {/* Subscribe Confirmation Dialog */}
-      <Dialog
-        visible={showSubscribeDialog}
-        type="confirm"
-        title={subscribeAction === 'unsubscribe' ? 'Unsubscribe' : 'Subscribe'}
-        message={subscribeAction === 'unsubscribe' 
-          ? `Are you sure you want to unsubscribe from ${chef.name}?`
-          : `Subscribe to ${chef.name} to access premium content?`}
-        onConfirm={performSubscribe}
-        onCancel={() => setShowSubscribeDialog(false)}
-        confirmText={subscribeAction === 'unsubscribe' ? 'Unsubscribe' : 'Subscribe'}
-        cancelText="Cancel"
-        showCancelButton={true}
-      />
+      {/* Success Dialog */}
+      <CustomDialog
+        visible={showSuccessDialog}
+        onClose={() => setShowSuccessDialog(false)}
+        title="Success"
+        height={200}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#10B981', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            {successMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowSuccessDialog(false)}
+            style={{
+              backgroundColor: '#10B981',
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* Error Dialog */}
+      <CustomDialog
+        visible={showErrorDialog}
+        onClose={() => setShowErrorDialog(false)}
+        title="Error"
+        height={200}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#EF4444', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            {errorMessage}
+          </Text>
+          <TouchableOpacity
+            onPress={() => setShowErrorDialog(false)}
+            style={{
+              backgroundColor: '#EF4444',
+              borderRadius: 12,
+              paddingVertical: 14,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>OK</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomDialog>
+      
     </Modal>
   )
 }

@@ -12,6 +12,7 @@ export interface FavoriteRecipe {
   difficulty: 'Easy' | 'Medium' | 'Hard'
   cuisine: string
   category: string
+  creator?: string
   ingredients: Array<{
     name: string
     amount: string
@@ -73,6 +74,7 @@ export interface AddToFavoritesRequest {
   difficulty: 'Easy' | 'Medium' | 'Hard'
   cuisine: string
   category: string
+  creator?: string
   ingredients: Array<{
     name: string
     amount: string
