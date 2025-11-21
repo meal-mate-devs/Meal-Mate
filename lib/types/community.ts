@@ -5,8 +5,6 @@ export interface User {
     username: string
     avatar: any
     isVerified?: boolean
-    isPro?: boolean
-    subscriptionStatus?: string
     followerCount?: number
     followingCount?: number
     recipeCount?: number

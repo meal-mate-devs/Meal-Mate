@@ -351,6 +351,7 @@ export default function RecipeResponseRoute(): JSX.Element {
         difficulty: validatedRecipe.difficulty as 'Easy' | 'Medium' | 'Hard',
         cuisine: validatedRecipe.cuisine,
         category: validatedRecipe.category,
+        creator: 'AI Chef', // AI-generated recipes have 'AI Chef' as creator
         ingredients: validatedRecipe.ingredients.map((ing) => ({
           name: ing.name,
           amount: ing.amount,

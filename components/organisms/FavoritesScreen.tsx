@@ -510,6 +510,17 @@ const FavoritesScreen: React.FC = () => {
                     <View className="flex-row justify-between items-start">
                       <View className="flex-1 pr-4">
                         <Text className="text-white font-bold text-xl mb-2 leading-tight tracking-tight">{recipe.title}</Text>
+
+                        {/* Creator Name - Show who created this recipe */}
+                        {recipe.creator && (
+                          <View className="flex-row items-center mb-2">
+                            <Ionicons name="person" size={14} color="#A78BFA" />
+                            <Text className="text-purple-300 text-sm font-semibold ml-1">
+                              By: {recipe.creator}
+                            </Text>
+                          </View>
+                        )}
+
                         <Text className="text-gray-300 text-base mb-4 leading-relaxed" numberOfLines={isExpanded ? undefined : 2}>
                           {recipe.description || 'Delicious recipe from your favorites'}
                         </Text>
@@ -632,6 +643,18 @@ const FavoritesScreen: React.FC = () => {
                           borderTopColor: "rgba(255, 255, 255, 0.08)"
                         }}
                       >
+                        {/* Creator Name in Expanded View */}
+                        {recipe.creator && (
+                          <View className="mb-4">
+                            <View className="flex-row items-center">
+                              <Ionicons name="person-circle-outline" size={18} color="#A78BFA" />
+                              <Text className="text-purple-300 text-sm font-semibold ml-2">
+                                by {recipe.creator}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+
                         {/* 📊 Enhanced Nutrition Section */}
                         <View className="mb-6">
                           <View className="flex-row items-center mb-4">
@@ -672,223 +695,223 @@ const FavoritesScreen: React.FC = () => {
                               </View>
                             </View>
                           </View>
-                        </View>
 
-                        {/* 🥕 Enhanced Ingredients Section - Recipe Response Style */}
-                        <View className="mb-6">
-                          <View className="flex-row items-center mb-4">
-                            <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                            <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
-                            <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
-                          </View>
-                          <View
-                            className="rounded-2xl p-3 shadow-xl bg-zinc-800"
-                            style={{
-                              borderWidth: 1,
-                              borderColor: "rgba(255, 255, 255, 0.08)"
-                            }}
-                          >
-                            {recipe.ingredients.map((ingredient, index) => (
-                              <View
-                                key={`ingredient-${recipe.id}-${index}`}
-                                className={`flex-row items-start py-2 ${index !== recipe.ingredients.length - 1 ? "border-b border-zinc-600" : ""
-                                  }`}
-                              >
-                                <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
-                                  <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
-                                </View>
-                                <View className="flex-1">
-                                  <Text className="text-white text-base leading-relaxed">
-                                    <Text className="font-bold">
-                                      {ingredient.amount} {ingredient.unit}
-                                    </Text>
-                                    <Text> {ingredient.name}</Text>
-                                  </Text>
-                                  {ingredient.notes && (
-                                    <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
-                                  )}
-                                </View>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-
-                        {/* 👨‍🍳 Enhanced Instructions Section - Recipe Response Style */}
-                        <View className="mb-6">
-                          <View className="flex-row items-center mb-5">
-                            <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                            <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
-                            <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
-                          </View>
-                          <View className="space-y-4">
-                            {recipe.instructions.map((instruction, index) => (
-                              <View
-                                key={`instruction-${recipe.id}-${index}`}
-                                className="rounded-2xl p-6 shadow-xl bg-zinc-800"
-                                style={{
-                                  borderWidth: 1,
-                                  borderColor: "rgba(255, 255, 255, 0.08)"
-                                }}
-                              >
-                                <View className="flex-row">
-                                  <View
-                                    className="w-14 h-14 rounded-2xl items-center justify-center mr-4 shadow-xl"
-                                    style={{
-                                      backgroundColor: "#FACC15",
-                                      borderWidth: 2,
-                                      borderColor: "rgba(250, 204, 21, 0.4)"
-                                    }}
-                                  >
-                                    <Text className="text-white font-bold text-xl">{instruction.step}</Text>
-                                  </View>
-                                  <View className="flex-1">
-                                    <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
-                                    {instruction.tips && (
-                                      <View
-                                        className="rounded-xl p-4 mt-3"
-                                        style={{
-                                          backgroundColor: "rgba(250, 204, 21, 0.1)",
-                                          borderWidth: 1,
-                                          borderColor: "rgba(250, 204, 21, 0.2)"
-                                        }}
-                                      >
-                                        <View className="flex-row items-start">
-                                          <View
-                                            className="w-7 h-7 rounded-lg items-center justify-center mr-3"
-                                            style={{ backgroundColor: "rgba(250, 204, 21, 0.15)" }}
-                                          >
-                                            <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
-                                          </View>
-                                          <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
-                                        </View>
-                                      </View>
-                                    )}
-                                  </View>
-                                </View>
-                              </View>
-                            ))}
-                          </View>
-                        </View>
-
-                        {/* ⭐ Enhanced Chef's Tips - Recipe Response Style */}
-                        {recipe.tips && recipe.tips.length > 0 && (
+                          {/* 🥕 Enhanced Ingredients Section - Recipe Response Style */}
                           <View className="mb-6">
-                            <View className="flex-row items-center mb-5">
+                            <View className="flex-row items-center mb-4">
                               <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                              <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                              <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
                               <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                             </View>
                             <View
-                              className="rounded-2xl p-6 shadow-xl"
+                              className="rounded-2xl p-3 shadow-xl bg-zinc-800"
                               style={{
-                                backgroundColor: "rgba(250, 204, 21, 0.1)",
                                 borderWidth: 1,
-                                borderColor: "rgba(250, 204, 21, 0.3)"
+                                borderColor: "rgba(255, 255, 255, 0.08)"
                               }}
                             >
-                              {recipe.tips.map((tip, index) => (
+                              {recipe.ingredients.map((ingredient, index) => (
                                 <View
-                                  key={`tip-${recipe.id}-${index}`}
-                                  className={`flex-row items-start ${index !== recipe.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                                  key={`ingredient-${recipe.id}-${index}`}
+                                  className={`flex-row items-start py-2 ${index !== recipe.ingredients.length - 1 ? "border-b border-zinc-600" : ""
                                     }`}
                                 >
-                                  <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
-                                    <Ionicons name="star" size={14} color="#FCD34D" />
+                                  <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
+                                    <Text className="text-emerald-100 text-base font-bold">{index + 1}</Text>
                                   </View>
-                                  <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                                  <View className="flex-1">
+                                    <Text className="text-white text-base leading-relaxed">
+                                      <Text className="font-bold">
+                                        {ingredient.amount} {ingredient.unit}
+                                      </Text>
+                                      <Text> {ingredient.name}</Text>
+                                    </Text>
+                                    {ingredient.notes && (
+                                      <Text className="text-gray-300 text-sm mt-2 leading-6 italic">{ingredient.notes}</Text>
+                                    )}
+                                  </View>
                                 </View>
                               ))}
                             </View>
                           </View>
-                        )}
 
-                        {/* 🔄 Enhanced Substitutions - Recipe Response Style */}
-                        {recipe.substitutions && recipe.substitutions.length > 0 && (
+                          {/* 👨‍🍳 Enhanced Instructions Section - Recipe Response Style */}
                           <View className="mb-6">
-                            <View className="flex-row items-center justify-between mb-5">
-                              <View className="flex-row items-center">
-                                <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
-                                <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
-                              </View>
-                              <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
-                                <Text className="text-blue-300 text-xs font-bold">{recipe.substitutions.length} options</Text>
-                              </View>
+                            <View className="flex-row items-center mb-5">
+                              <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
+                              <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                              <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                             </View>
-                            <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-5 space-y-5 shadow-xl">
-                              {recipe.substitutions.map((sub, index) => (
+                            <View className="space-y-4">
+                              {recipe.instructions.map((instruction, index) => (
                                 <View
-                                  key={`substitution-${recipe.id}-${index}`}
-                                  className={`${index !== recipe.substitutions.length - 1 ? "pb-5" : ""}`}
+                                  key={`instruction-${recipe.id}-${index}`}
+                                  className="rounded-2xl p-6 shadow-xl bg-zinc-800"
                                   style={{
-                                    borderBottomWidth: index !== recipe.substitutions.length - 1 ? 1 : 0,
-                                    borderBottomColor: "rgba(255, 255, 255, 0.1)"
+                                    borderWidth: 1,
+                                    borderColor: "rgba(255, 255, 255, 0.08)"
                                   }}
                                 >
-                                  <View className="flex-row items-center mb-3">
-                                    <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
-                                      <Ionicons name="swap-horizontal" size={18} color="#3b82f6" />
+                                  <View className="flex-row">
+                                    <View
+                                      className="w-14 h-14 rounded-2xl items-center justify-center mr-4 shadow-xl"
+                                      style={{
+                                        backgroundColor: "#FACC15",
+                                        borderWidth: 2,
+                                        borderColor: "rgba(250, 204, 21, 0.4)"
+                                      }}
+                                    >
+                                      <Text className="text-white font-bold text-xl">{instruction.step}</Text>
                                     </View>
-                                    <Text className="text-zinc-100 font-bold text-base flex-1">
-                                      {sub.original} → {sub.substitute}
-                                    </Text>
+                                    <View className="flex-1">
+                                      <Text className="text-white text-base leading-7">{instruction.instruction}</Text>
+                                      {instruction.tips && (
+                                        <View
+                                          className="rounded-xl p-4 mt-3"
+                                          style={{
+                                            backgroundColor: "rgba(250, 204, 21, 0.1)",
+                                            borderWidth: 1,
+                                            borderColor: "rgba(250, 204, 21, 0.2)"
+                                          }}
+                                        >
+                                          <View className="flex-row items-start">
+                                            <View
+                                              className="w-7 h-7 rounded-lg items-center justify-center mr-3"
+                                              style={{ backgroundColor: "rgba(250, 204, 21, 0.15)" }}
+                                            >
+                                              <Ionicons name="bulb-outline" size={14} color="#FCD34D" />
+                                            </View>
+                                            <Text className="text-amber-100 text-sm leading-6 flex-1">{instruction.tips}</Text>
+                                          </View>
+                                        </View>
+                                      )}
+                                    </View>
                                   </View>
-                                  <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
-                                  <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
                                 </View>
                               ))}
                             </View>
                           </View>
-                        )}
 
-                        {/* � Start Cooking Button - Recipe Response Style */}
-                        <View className="flex-row justify-center mt-6 mb-3">
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation()
-                              handleStartCooking(recipe)
-                            }}
-                            className="rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
-                            activeOpacity={0.7}
-                          >
-                            <LinearGradient
-                              colors={['#FACC15', '#F97316']}
-                              start={{ x: 0, y: 0 }}
-                              end={{ x: 1, y: 0 }}
-                              style={{
-                                position: 'absolute',
-                                left: 0,
-                                right: 0,
-                                top: 0,
-                                bottom: 0,
-                                borderRadius: 12,
+                          {/* ⭐ Enhanced Chef's Tips - Recipe Response Style */}
+                          {recipe.tips && recipe.tips.length > 0 && (
+                            <View className="mb-6">
+                              <View className="flex-row items-center mb-5">
+                                <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
+                                <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                                <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
+                              </View>
+                              <View
+                                className="rounded-2xl p-6 shadow-xl"
+                                style={{
+                                  backgroundColor: "rgba(250, 204, 21, 0.1)",
+                                  borderWidth: 1,
+                                  borderColor: "rgba(250, 204, 21, 0.3)"
+                                }}
+                              >
+                                {recipe.tips.map((tip, index) => (
+                                  <View
+                                    key={`tip-${recipe.id}-${index}`}
+                                    className={`flex-row items-start ${index !== recipe.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                                      }`}
+                                  >
+                                    <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
+                                      <Ionicons name="star" size={14} color="#FCD34D" />
+                                    </View>
+                                    <Text className="text-amber-100 text-base leading-7 flex-1">{tip}</Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+
+                          {/* 🔄 Enhanced Substitutions - Recipe Response Style */}
+                          {recipe.substitutions && recipe.substitutions.length > 0 && (
+                            <View className="mb-6">
+                              <View className="flex-row items-center justify-between mb-5">
+                                <View className="flex-row items-center">
+                                  <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
+                                  <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                                </View>
+                                <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
+                                  <Text className="text-blue-300 text-xs font-bold">{recipe.substitutions.length} options</Text>
+                                </View>
+                              </View>
+                              <View className="bg-gray-800 border-4 border-gray-600 rounded-2xl p-5 space-y-5 shadow-xl">
+                                {recipe.substitutions.map((sub, index) => (
+                                  <View
+                                    key={`substitution-${recipe.id}-${index}`}
+                                    className={`${index !== recipe.substitutions.length - 1 ? "pb-5" : ""}`}
+                                    style={{
+                                      borderBottomWidth: index !== recipe.substitutions.length - 1 ? 1 : 0,
+                                      borderBottomColor: "rgba(255, 255, 255, 0.1)"
+                                    }}
+                                  >
+                                    <View className="flex-row items-center mb-3">
+                                      <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
+                                        <Ionicons name="swap-horizontal" size={18} color="#3b82f6" />
+                                      </View>
+                                      <Text className="text-zinc-100 font-bold text-base flex-1">
+                                        {sub.original} → {sub.substitute}
+                                      </Text>
+                                    </View>
+                                    <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
+                                    <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
+                                  </View>
+                                ))}
+                              </View>
+                            </View>
+                          )}
+
+                          {/* � Start Cooking Button - Recipe Response Style */}
+                          <View className="flex-row justify-center mt-6 mb-3">
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation()
+                                handleStartCooking(recipe)
                               }}
-                            />
-                            <Ionicons name="flame" size={20} color="#FFFFFF" />
-                            <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Start Cooking</Text>
-                          </TouchableOpacity>
-                        </View>
+                              className="rounded-xl py-3 flex-row items-center justify-center shadow-sm flex-1"
+                              activeOpacity={0.7}
+                            >
+                              <LinearGradient
+                                colors={['#FACC15', '#F97316']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={{
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  top: 0,
+                                  bottom: 0,
+                                  borderRadius: 12,
+                                }}
+                              />
+                              <Ionicons name="flame" size={20} color="#FFFFFF" />
+                              <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Start Cooking</Text>
+                            </TouchableOpacity>
+                          </View>
 
-                        {/* �🗑️ Enhanced Remove Button - Recipe Response Style */}
-                        <View className="flex-row justify-center mt-3">
-                          <TouchableOpacity
-                            onPress={(e) => {
-                              e.stopPropagation()
-                              // First collapse the recipe
-                              setExpandedRecipeId(null)
-                              // Then set up for removal
-                              setRecipeToRemove(recipe.id)
-                              setShowRemoveDialog(true)
-                            }}
-                            className="rounded-xl py-3 flex-row items-center justify-center shadow-sm"
-                            style={{
-                              backgroundColor: "rgba(239, 68, 68, 0.1)",
-                              borderWidth: 1,
-                              borderColor: "rgba(239, 68, 68, 0.3)"
-                            }}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={{ color: "#EF4444", fontWeight: "600", marginLeft: 12, marginRight: 12, fontSize: 16, letterSpacing: 0.5 }}>Remove from Favorites</Text>
-                          </TouchableOpacity>
+                          {/* �🗑️ Enhanced Remove Button - Recipe Response Style */}
+                          <View className="flex-row justify-center mt-3">
+                            <TouchableOpacity
+                              onPress={(e) => {
+                                e.stopPropagation()
+                                // First collapse the recipe
+                                setExpandedRecipeId(null)
+                                // Then set up for removal
+                                setRecipeToRemove(recipe.id)
+                                setShowRemoveDialog(true)
+                              }}
+                              className="rounded-xl py-3 flex-row items-center justify-center shadow-sm"
+                              style={{
+                                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                                borderWidth: 1,
+                                borderColor: "rgba(239, 68, 68, 0.3)"
+                              }}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={{ color: "#EF4444", fontWeight: "600", marginLeft: 12, marginRight: 12, fontSize: 16, letterSpacing: 0.5 }}>Remove from Favorites</Text>
+                            </TouchableOpacity>
+                          </View>
                         </View>
                       </View>
                     </View>
