@@ -167,23 +167,22 @@ const ChefDashboardScreen: React.FC = () => {
     "Vegan & Vegetarian", "Other"
   ]
   
-  // Update chef editing values when profile changes
+  // Update chef editing values when chef profile data changes
   React.useEffect(() => {
-    if (profile?.chefProfile) {
-      setChefProfileData(profile.chefProfile)
-      setEditedChefName(profile.chefProfile.chefName || '')
-      setEditedExpertiseCategory(profile.chefProfile.expertiseCategory || '')
-      setEditedProfessionalSummary(profile.chefProfile.professionalSummary || '')
-      setEditedYearsOfExperience(profile.chefProfile.yearsOfExperience || 0)
+    if (chefProfileData) {
+      setEditedChefName(chefProfileData.chefName || '')
+      setEditedExpertiseCategory(chefProfileData.expertiseCategory || '')
+      setEditedProfessionalSummary(chefProfileData.professionalSummary || '')
+      setEditedYearsOfExperience(chefProfileData.yearsOfExperience || 0)
       // Handle portfolioImage - it could be a string or an object with url property
-      const portfolioImageUrl = typeof profile.chefProfile.portfolioImage === 'string' 
-        ? profile.chefProfile.portfolioImage 
-        : (profile.chefProfile.portfolioImage && typeof profile.chefProfile.portfolioImage === 'object' && 'url' in profile.chefProfile.portfolioImage)
-          ? (profile.chefProfile.portfolioImage as any).url 
+      const portfolioImageUrl = typeof chefProfileData.portfolioImage === 'string' 
+        ? chefProfileData.portfolioImage 
+        : (chefProfileData.portfolioImage && typeof chefProfileData.portfolioImage === 'object' && 'url' in chefProfileData.portfolioImage)
+          ? (chefProfileData.portfolioImage as any).url 
           : ''
       setEditedPortfolioImage(portfolioImageUrl)
     }
-  }, [profile])
+  }, [chefProfileData])
   
   // Edit mode states
   const [editingRecipe, setEditingRecipe] = useState<any>(null)
@@ -322,6 +321,9 @@ const ChefDashboardScreen: React.FC = () => {
           avgRating: response.chef.stats?.averageRating,
           totalRatings: response.chef.stats?.totalRatings
         })
+        
+        // Store chef profile data
+        setChefProfileData(response.chef)
         
         // Store backend stats
         setBackendChefStats(response.chef.stats)
