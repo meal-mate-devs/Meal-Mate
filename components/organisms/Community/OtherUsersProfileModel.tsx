@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { communityService } from "@/lib/services/community.service"
 import { Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
@@ -21,6 +22,7 @@ export default function OtherUsersProfileModel({
     onClose,
     currentUserId,
 }: OtherUsersProfileModelProps): JSX.Element {
+    const { t } = useLanguage()
     const [isFollowing, setIsFollowing] = useState<boolean>(user?.isFollowing || false)
     const [activeTab, setActiveTab] = useState<"posts" | "recipes" | "badges">("posts")
     const [userPosts, setUserPosts] = useState<Post[] | null>(null)
@@ -92,10 +94,10 @@ export default function OtherUsersProfileModel({
                 console.log('userIdToFetch:', userIdToFetch);
                 console.log('currentUserId:', currentUserId);
                 console.log('========================');
-                
+
                 const resp = await communityService.getUserPosts(userIdToFetch, 1, 20)
                 console.log('getUserPosts response:', resp);
-                
+
                 if (resp && resp.posts) {
                     setUserPosts(resp.posts.map((p: any) => ({
                         ...p,
@@ -130,8 +132,8 @@ export default function OtherUsersProfileModel({
     }
 
 
-    console.log("Rendering profile for user:", 
-        userPosts && userPosts.length > 0 && userPosts[0].images && userPosts[0].images.length > 0 
+    console.log("Rendering profile for user:",
+        userPosts && userPosts.length > 0 && userPosts[0].images && userPosts[0].images.length > 0
             ? userPosts[0].images[0].url || userPosts[0].images[0]
             : "No posts available"
     )
@@ -223,7 +225,7 @@ export default function OtherUsersProfileModel({
                                                 {followLoading ? (
                                                     <ActivityIndicator size="small" color={isFollowing ? "#FFFFFF" : "#000000"} />
                                                 ) : (
-                                                    <Text className="text-white font-bold">{isFollowing ? "Following" : "Follow"}</Text>
+                                                    <Text className="text-white font-bold">{isFollowing ? t('community.unfollow') : t('community.follow')}</Text>
                                                 )}
                                             </LinearGradient>
                                         </TouchableOpacity>
@@ -289,7 +291,7 @@ export default function OtherUsersProfileModel({
                                     onPress={() => setActiveTab("posts")}
                                 >
                                     <Text className={`text-center font-bold ${activeTab === "posts" ? "text-black" : "text-white"}`}>
-                                        Posts
+                                        {t('community.tabs.posts')}
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
@@ -297,7 +299,7 @@ export default function OtherUsersProfileModel({
                                     onPress={() => setActiveTab("recipes")}
                                 >
                                     <Text className={`text-center font-bold ${activeTab === "recipes" ? "text-black" : "text-white"}`}>
-                                        Recipes
+                                        {t('community.tabs.recipes')}
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
@@ -305,7 +307,7 @@ export default function OtherUsersProfileModel({
                                     onPress={() => setActiveTab("badges")}
                                 >
                                     <Text className={`text-center font-bold ${activeTab === "badges" ? "text-black" : "text-white"}`}>
-                                        Badges
+                                        {t('community.tabs.badges')}
                                     </Text>
                                 </TouchableOpacity>
                             </>
@@ -320,7 +322,7 @@ export default function OtherUsersProfileModel({
                                 {postsLoading ? (
                                     <View className="py-8 items-center">
                                         <ActivityIndicator size="large" color="#FBBF24" />
-                                        <Text className="text-zinc-400 mt-3">Loading posts...</Text>
+                                        <Text className="text-zinc-400 mt-3">{t('community.loadingPosts')}</Text>
                                     </View>
                                 ) : postsError ? (
                                     <View className="py-8 items-center">
@@ -332,10 +334,10 @@ export default function OtherUsersProfileModel({
                                             <View className="p-4">
                                                 <Text className="text-white mb-2">{post.content}</Text>
                                                 {post.images && post.images.length > 0 && (
-                                                    <Image 
-                                                        source={{ uri: post.images[0]?.url || post.images[0] }} 
-                                                        className="w-full h-48 rounded-lg" 
-                                                        resizeMode="cover" 
+                                                    <Image
+                                                        source={{ uri: post.images[0]?.url || post.images[0] }}
+                                                        className="w-full h-48 rounded-lg"
+                                                        resizeMode="cover"
                                                     />
                                                 )}
                                                 <View className="flex-row justify-between mt-3">

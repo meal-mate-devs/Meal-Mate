@@ -1,4 +1,5 @@
 "use client"
+import { useLanguage } from "@/context/LanguageContext"
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { router, useLocalSearchParams } from "expo-router"
@@ -23,6 +24,7 @@ const FavoritesScreen: React.FC = () => {
   const params = useLocalSearchParams()
   const insets = useSafeAreaInsets()
   const { favorites, removeFromFavorites, updateFavorite, getFavorites, refreshFavorites, isLoading, error } = useFavoritesStore()
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
@@ -967,7 +969,7 @@ const FavoritesScreen: React.FC = () => {
               </TouchableOpacity>
 
               <Text className="text-white text-lg font-bold flex-1 text-center">
-                {isEditMode ? "Edit Recipe" : "Recipe Details"}
+                {isEditMode ? t('recipe.edit') : t('recipe.details')}
               </Text>
 
               <TouchableOpacity

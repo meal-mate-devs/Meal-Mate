@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { CreatePostData } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
@@ -28,19 +29,19 @@ interface CreatePostDrawerProps {
 const { height } = Dimensions.get("window")
 
 const RECIPE_CATEGORIES = [
-    "Appetizer",
-    "Main Course",
-    "Dessert",
-    "Soup",
-    "Salad",
-    "Pasta",
-    "Seafood",
-    "Vegetarian",
-    "Snack",
-    "Beverage",
+    "appetizer",
+    "mainCourse",
+    "dessert",
+    "soup",
+    "salad",
+    "pasta",
+    "seafood",
+    "vegetarian",
+    "snack",
+    "beverage",
 ]
 
-const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"]
+const DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
 
 export default function CreatePostDrawer({
     visible,
@@ -48,6 +49,7 @@ export default function CreatePostDrawer({
     onCreatePost,
     userAvatar,
 }: CreatePostDrawerProps): JSX.Element {
+    const { t } = useLanguage();
     const [postType, setPostType] = useState<"simple" | "recipe">("simple")
     const [content, setContent] = useState<string>("")
     const [images, setImages] = useState<any[]>([])
@@ -55,8 +57,8 @@ export default function CreatePostDrawer({
     const [recipeTitle, setRecipeTitle] = useState<string>("")
     const [cookTime, setCookTime] = useState<string>("")
     const [servings, setServings] = useState<number>(4)
-    const [difficulty, setDifficulty] = useState<string>("Easy")
-    const [category, setCategory] = useState<string>("Main Course")
+    const [difficulty, setDifficulty] = useState<string>("easy")
+    const [category, setCategory] = useState<string>("mainCourse")
     const [ingredients, setIngredients] = useState<string[]>([""])
     const [instructions, setInstructions] = useState<string[]>([""])
     const [tags, setTags] = useState<string[]>([])
@@ -82,8 +84,8 @@ export default function CreatePostDrawer({
         setRecipeTitle("")
         setCookTime("")
         setServings(4)
-        setDifficulty("Easy")
-        setCategory("Main Course")
+        setDifficulty("easy")
+        setCategory("mainCourse")
         setIngredients([""])
         setInstructions([""])
         setTags([])
@@ -103,7 +105,7 @@ export default function CreatePostDrawer({
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
             if (status !== 'granted') {
-                Alert.alert('Permission needed', 'Please grant camera roll permissions to add images.')
+                Alert.alert(t('community.createPost.permissionNeeded'), t('community.createPost.cameraPermissionMessage'))
                 return
             }
 
@@ -134,7 +136,7 @@ export default function CreatePostDrawer({
             }
         } catch (error) {
             console.log('Error picking image from gallery:', error)
-            Alert.alert('Error', 'Failed to pick image from gallery')
+            Alert.alert(t('community.createPost.error'), t('community.createPost.failedToPickImage'))
         } finally {
             setShowImagePicker(false)
         }
@@ -144,7 +146,7 @@ export default function CreatePostDrawer({
         try {
             const { status } = await ImagePicker.requestCameraPermissionsAsync()
             if (status !== 'granted') {
-                Alert.alert('Permission needed', 'Please grant camera permissions to take photos.')
+                Alert.alert(t('community.createPost.permissionNeeded'), t('community.createPost.cameraPermissionNeeded'))
                 return
             }
 
@@ -174,7 +176,7 @@ export default function CreatePostDrawer({
             }
         } catch (error) {
             console.log('Error taking photo:', error)
-            Alert.alert('Error', 'Failed to take photo')
+            Alert.alert(t('community.createPost.error'), t('community.createPost.failedToTakePhoto'))
         } finally {
             setShowImagePicker(false)
         }
@@ -229,12 +231,12 @@ export default function CreatePostDrawer({
 
     const handleCreatePost = async (): Promise<void> => {
         if (!content.trim()) {
-            Alert.alert("Please add some content to your post")
+            Alert.alert(t('community.createPost.pleaseAddContent'))
             return
         }
 
         if (postType === "recipe" && !recipeTitle.trim()) {
-            Alert.alert("Please add a recipe title")
+            Alert.alert(t('community.createPost.pleaseAddRecipeTitle'))
             return
         }
 
@@ -273,12 +275,12 @@ export default function CreatePostDrawer({
             postType: postType,
         }
 
-        showDialog('loading', 'Posting', 'Please wait while we create your post...')
+        showDialog('loading', t('community.createPost.posting'), t('community.createPost.postingMessage'))
 
         try {
 
             await onCreatePost(postData)
-            showDialog('success', 'Post Created', 'Your post was created successfully.')
+            showDialog('success', t('community.createPost.postCreated'), t('community.createPost.postCreatedMessage'))
             setTimeout(() => {
                 setDialogVisible(false)
                 resetForm()
@@ -287,15 +289,15 @@ export default function CreatePostDrawer({
 
         } catch (err: any) {
             console.log('Error creating post:', err)
-            showDialog('error', 'Failed to Create Post', err?.message || 'An error occurred while creating your post.')
+            showDialog('error', t('community.createPost.failedToCreatePost'), err?.message || t('community.createPost.error'))
             return Promise.reject(err)
         }
     }
 
     return (
         <Modal visible={visible} animationType="slide" transparent={false} statusBarTranslucent={false}>
-            <KeyboardAvoidingView 
-                behavior={Platform.OS === "ios" ? "padding" : "height"} 
+            <KeyboardAvoidingView
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
                 style={{ flex: 1, backgroundColor: '#18181b' }}
                 keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
             >
@@ -304,308 +306,308 @@ export default function CreatePostDrawer({
                         <TouchableOpacity onPress={handleClose}>
                             <Ionicons name="close" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
-                        <Text className="text-white text-lg font-bold">Create Post</Text>
+                        <Text className="text-white text-lg font-bold">{t('community.createPost.title')}</Text>
                         <TouchableOpacity onPress={handleCreatePost}>
-                            <Text className="text-yellow-400 font-bold text-lg">Post</Text>
+                            <Text className="text-yellow-400 font-bold text-lg">{t('community.createPost.post')}</Text>
                         </TouchableOpacity>
                     </View>
 
 
-                            <ScrollView
-                                className="flex-1"
-                                showsVerticalScrollIndicator={false}
-                                keyboardShouldPersistTaps="handled"
-                                contentContainerStyle={{ paddingBottom: 20 }}
-                            >
-                                <View className="flex-row items-center p-4">
-                                    <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
-                                    <View className="ml-3">
-                                        <Text className="text-white font-bold">You</Text>
-                                        <Text className="text-zinc-400 text-sm">Sharing with Recipe Community</Text>
-                                    </View>
-                                </View>
-
-                            <View className="px-4 mb-4">
-                                <View className="flex-row bg-zinc-800 rounded-xl p-1">
-                                    <TouchableOpacity
-                                        className={`flex-1 py-3 rounded-lg ${postType === "simple" ? "bg-yellow-400" : ""}`}
-                                        onPress={() => setPostType("simple")}
-                                    >
-                                        <Text className={`text-center font-bold ${postType === "simple" ? "text-black" : "text-white"}`}>
-                                            Simple Post
-                                        </Text>
-                                    </TouchableOpacity>
-                                    <TouchableOpacity
-                                        className={`flex-1 py-3 rounded-lg ${postType === "recipe" ? "bg-yellow-400" : ""}`}
-                                        onPress={() => setPostType("recipe")}
-                                    >
-                                        <Text className={`text-center font-bold ${postType === "recipe" ? "text-black" : "text-white"}`}>
-                                            Recipe Post
-                                        </Text>
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View className="px-4 mb-4">
-                                <TextInput
-                                    className="bg-zinc-800 rounded-xl p-4 text-white text-base"
-                                    style={{ minHeight: 100, maxHeight: 150 }}
-                                    placeholder={
-                                        postType === "recipe"
-                                            ? "Share your cooking experience, tips, or story behind this recipe..."
-                                            : "What's cooking? Share your culinary thoughts..."
-                                    }
-                                    placeholderTextColor="#9CA3AF"
-                                    multiline
-                                    textAlignVertical="top"
-                                    value={content}
-                                    onChangeText={setContent}
-                                    scrollEnabled={true}
-
-                                />
-                            </View>
-
-                            {postType === "recipe" && (
-                                <View className="px-4 mb-4">
-                                    <Text className="text-white font-bold text-lg mb-4">Recipe Details</Text>
-
-                                    <View className="mb-4">
-                                        <Text className="text-white font-bold mb-2">Recipe Title</Text>
-                                        <TextInput
-                                            className="bg-zinc-800 rounded-xl p-4 text-white"
-                                            placeholder="Enter recipe title..."
-                                            placeholderTextColor="#9CA3AF"
-                                            value={recipeTitle}
-                                            onChangeText={setRecipeTitle}
-                                        />
-                                    </View>
-
-                                    <View className="flex-row justify-between mb-4">
-                                        <View className="flex-1 mr-2">
-                                            <Text className="text-white font-bold mb-2">Cook Time</Text>
-                                            <TextInput
-                                                className="bg-zinc-800 rounded-xl p-4 text-white"
-                                                placeholder="30 min"
-                                                placeholderTextColor="#9CA3AF"
-                                                value={cookTime}
-                                                onChangeText={setCookTime}
-                                            />
-                                        </View>
-                                        <View className="flex-1 ml-2">
-                                            <Text className="text-white font-bold mb-2">Servings</Text>
-                                            <View className="bg-zinc-800 rounded-xl p-4 flex-row items-center justify-between">
-                                                <TouchableOpacity onPress={() => setServings(Math.max(1, servings - 1))}>
-                                                    <Ionicons name="remove" size={20} color="#FFFFFF" />
-                                                </TouchableOpacity>
-                                                <Text className="text-white font-bold">{servings}</Text>
-                                                <TouchableOpacity onPress={() => setServings(Math.min(12, servings + 1))}>
-                                                    <Ionicons name="add" size={20} color="#FFFFFF" />
-                                                </TouchableOpacity>
-                                            </View>
-                                        </View>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-white font-bold mb-2">Difficulty</Text>
-                                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                            <View className="flex-row">
-                                                {DIFFICULTY_LEVELS.map((level) => (
-                                                    <TouchableOpacity
-                                                        key={level}
-                                                        className={`mr-2 px-4 py-2 rounded-full ${difficulty === level ? "bg-yellow-400" : "bg-zinc-800"
-                                                            }`}
-                                                        onPress={() => setDifficulty(level)}
-                                                    >
-                                                        <Text className={`font-bold ${difficulty === level ? "text-black" : "text-white"}`}>
-                                                            {level}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </ScrollView>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-white font-bold mb-2">Category</Text>
-                                        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                            <View className="flex-row">
-                                                {RECIPE_CATEGORIES.map((cat) => (
-                                                    <TouchableOpacity
-                                                        key={cat}
-                                                        className={`mr-2 px-4 py-2 rounded-full ${category === cat ? "bg-yellow-400" : "bg-zinc-800"
-                                                            }`}
-                                                        onPress={() => setCategory(cat)}
-                                                    >
-                                                        <Text className={`font-bold ${category === cat ? "text-black" : "text-white"}`}>{cat}</Text>
-                                                    </TouchableOpacity>
-                                                ))}
-                                            </View>
-                                        </ScrollView>
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <View className="flex-row justify-between items-center mb-2">
-                                            <Text className="text-white font-bold">Ingredients</Text>
-                                            <TouchableOpacity onPress={handleAddIngredient}>
-                                                <Ionicons name="add-circle" size={24} color="#FBBF24" />
-                                            </TouchableOpacity>
-                                        </View>
-                                        {ingredients.map((ingredient, index) => (
-                                            <View key={index} className="flex-row items-center mb-2">
-                                                <TextInput
-                                                    className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
-                                                    placeholder={`Ingredient ${index + 1}`}
-                                                    placeholderTextColor="#9CA3AF"
-                                                    value={ingredient}
-                                                    onChangeText={(value) => handleUpdateIngredient(index, value)}
-                                                />
-                                                {ingredients.length > 1 && (
-                                                    <TouchableOpacity onPress={() => handleRemoveIngredient(index)}>
-                                                        <Ionicons name="remove-circle" size={24} color="#EF4444" />
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        ))}
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <View className="flex-row justify-between items-center mb-2">
-                                            <Text className="text-white font-bold">Instructions</Text>
-                                            <TouchableOpacity onPress={handleAddInstruction}>
-                                                <Ionicons name="add-circle" size={24} color="#FBBF24" />
-                                            </TouchableOpacity>
-                                        </View>
-                                        {instructions.map((instruction, index) => (
-                                            <View key={index} className="flex-row items-start mb-2">
-                                                <View className="w-6 h-6 rounded-full bg-yellow-400 items-center justify-center mr-2 mt-2">
-                                                    <Text className="text-black font-bold text-xs">{index + 1}</Text>
-                                                </View>
-                                                <TextInput
-                                                    className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
-                                                    style={{ minHeight: 40 }}
-                                                    placeholder={`Step ${index + 1}`}
-                                                    placeholderTextColor="#9CA3AF"
-                                                    multiline
-                                                    value={instruction}
-                                                    onChangeText={(value) => handleUpdateInstruction(index, value)}
-                                                />
-                                                {instructions.length > 1 && (
-                                                    <TouchableOpacity onPress={() => handleRemoveInstruction(index)} className="mt-2">
-                                                        <Ionicons name="remove-circle" size={24} color="#EF4444" />
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        ))}
-                                    </View>
-
-                                    <View className="mb-4">
-                                        <Text className="text-white font-bold mb-2">Tags</Text>
-                                        <View className="flex-row items-center mb-2">
-                                            <TextInput
-                                                className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
-                                                placeholder="Add tag..."
-                                                placeholderTextColor="#9CA3AF"
-                                                value={newTag}
-                                                onChangeText={setNewTag}
-                                            />
-                                            <TouchableOpacity onPress={handleAddTag}>
-                                                <Ionicons name="add-circle" size={24} color="#FBBF24" />
-                                            </TouchableOpacity>
-                                        </View>
-                                        <View className="flex-row flex-wrap">
-                                            {tags.map((tag) => (
-                                                <TouchableOpacity
-                                                    key={tag}
-                                                    className="bg-yellow-400 rounded-full px-3 py-1 mr-2 mb-2 flex-row items-center"
-                                                    onPress={() => handleRemoveTag(tag)}
-                                                >
-                                                    <Text className="text-black font-bold text-sm">{tag}</Text>
-                                                    <Ionicons name="close" size={16} color="#000000" className="ml-1" />
-                                                </TouchableOpacity>
-                                            ))}
-                                        </View>
-                                    </View>
-                                </View>
-                            )}
-
-                            <View className="px-4 mb-6">
-                                <View className="flex-row justify-between items-center mb-2">
-                                    <Text className="text-white font-bold">Photos</Text>
-                                    <TouchableOpacity onPress={handleAddImage}>
-                                        <Ionicons name="camera" size={24} color="#FBBF24" />
-                                    </TouchableOpacity>
-                                </View>
-                                {images.length > 0 && (
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                                        <View className="flex-row">
-                                            {images.map((image, index) => (
-                                                <View key={index} className="relative mr-3">
-                                                    <Image
-                                                        source={{ uri: typeof image === 'string' ? image : image.uri }}
-                                                        className="w-20 h-20 rounded-xl"
-                                                    />
-                                                    <TouchableOpacity
-                                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full items-center justify-center"
-                                                        onPress={() => handleRemoveImage(index)}
-                                                    >
-                                                        <Ionicons name="close" size={16} color="#FFFFFF" />
-                                                    </TouchableOpacity>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </ScrollView>
-                                )}
-                            </View>
-
-                        </ScrollView>
-                </View>
-
-                {/* Image Picker Modal */}
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={showImagePicker}
-                        onRequestClose={() => setShowImagePicker(false)}
+                    <ScrollView
+                        className="flex-1"
+                        showsVerticalScrollIndicator={false}
+                        keyboardShouldPersistTaps="handled"
+                        contentContainerStyle={{ paddingBottom: 20 }}
                     >
-                        <View className="flex-1 justify-end bg-black/50">
-                            <View className="bg-white rounded-t-xl p-6">
-                                <Text className="text-lg font-semibold text-center mb-6 text-gray-800">
-                                    Add Image
-                                </Text>
+                        <View className="flex-row items-center p-4">
+                            <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
+                            <View className="ml-3">
+                                <Text className="text-white font-bold">{t('community.createPost.you')}</Text>
+                                <Text className="text-zinc-400 text-sm">{t('community.createPost.sharingWith')}</Text>
+                            </View>
+                        </View>
 
+                        <View className="px-4 mb-4">
+                            <View className="flex-row bg-zinc-800 rounded-xl p-1">
                                 <TouchableOpacity
-                                    onPress={pickImageFromCamera}
-                                    className="bg-green-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                    className={`flex-1 py-3 rounded-lg ${postType === "simple" ? "bg-yellow-400" : ""}`}
+                                    onPress={() => setPostType("simple")}
                                 >
-                                    <Text className="text-white font-medium text-lg">Take Photo</Text>
+                                    <Text className={`text-center font-bold ${postType === "simple" ? "text-black" : "text-white"}`}>
+                                        {t('community.createPost.simplePost')}
+                                    </Text>
                                 </TouchableOpacity>
-
                                 <TouchableOpacity
-                                    onPress={pickImageFromGallery}
-                                    className="bg-blue-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                    className={`flex-1 py-3 rounded-lg ${postType === "recipe" ? "bg-yellow-400" : ""}`}
+                                    onPress={() => setPostType("recipe")}
                                 >
-                                    <Text className="text-white font-medium text-lg">Choose from Gallery</Text>
-                                </TouchableOpacity>
-
-                                <TouchableOpacity
-                                    onPress={() => setShowImagePicker(false)}
-                                    className="bg-gray-200 rounded-xl p-4 flex-row items-center justify-center"
-                                >
-                                    <Text className="text-gray-700 font-medium text-lg">Cancel</Text>
+                                    <Text className={`text-center font-bold ${postType === "recipe" ? "text-black" : "text-white"}`}>
+                                        {t('community.createPost.recipePost')}
+                                    </Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
-                    </Modal>
 
-                    {/* Dialog for posting status */}
-                    <Dialog
-                        visible={dialogVisible}
-                        type={dialogType}
-                        title={dialogTitle}
-                        message={dialogMessage}
-                        onClose={() => setDialogVisible(false)}
-                        autoClose={dialogType !== 'loading'}
-                    />
+                        <View className="px-4 mb-4">
+                            <TextInput
+                                className="bg-zinc-800 rounded-xl p-4 text-white text-base"
+                                style={{ minHeight: 100, maxHeight: 150 }}
+                                placeholder={
+                                    postType === "recipe"
+                                        ? t('community.createPost.shareExperience')
+                                        : t('community.createPost.whatsCooking')
+                                }
+                                placeholderTextColor="#9CA3AF"
+                                multiline
+                                textAlignVertical="top"
+                                value={content}
+                                onChangeText={setContent}
+                                scrollEnabled={true}
+
+                            />
+                        </View>
+
+                        {postType === "recipe" && (
+                            <View className="px-4 mb-4">
+                                <Text className="text-white font-bold text-lg mb-4">{t('recipe.details')}</Text>
+
+                                <View className="mb-4">
+                                    <Text className="text-white font-bold mb-2">{t('community.createPost.recipeTitle')}</Text>
+                                    <TextInput
+                                        className="bg-zinc-800 rounded-xl p-4 text-white"
+                                        placeholder={t('community.createPost.recipeTitlePlaceholder')}
+                                        placeholderTextColor="#9CA3AF"
+                                        value={recipeTitle}
+                                        onChangeText={setRecipeTitle}
+                                    />
+                                </View>
+
+                                <View className="flex-row justify-between mb-4">
+                                    <View className="flex-1 mr-2">
+                                        <Text className="text-white font-bold mb-2">{t('community.createPost.cookTime')}</Text>
+                                        <TextInput
+                                            className="bg-zinc-800 rounded-xl p-4 text-white"
+                                            placeholder={t('community.createPost.cookTimePlaceholder')}
+                                            placeholderTextColor="#9CA3AF"
+                                            value={cookTime}
+                                            onChangeText={setCookTime}
+                                        />
+                                    </View>
+                                    <View className="flex-1 ml-2">
+                                        <Text className="text-white font-bold mb-2">{t('community.createPost.servings')}</Text>
+                                        <View className="bg-zinc-800 rounded-xl p-4 flex-row items-center justify-between">
+                                            <TouchableOpacity onPress={() => setServings(Math.max(1, servings - 1))}>
+                                                <Ionicons name="remove" size={20} color="#FFFFFF" />
+                                            </TouchableOpacity>
+                                            <Text className="text-white font-bold">{servings}</Text>
+                                            <TouchableOpacity onPress={() => setServings(Math.min(12, servings + 1))}>
+                                                <Ionicons name="add" size={20} color="#FFFFFF" />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                </View>
+
+                                <View className="mb-4">
+                                    <Text className="text-white font-bold mb-2">{t('community.createPost.difficulty')}</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                        <View className="flex-row">
+                                            {DIFFICULTY_LEVELS.map((level) => (
+                                                <TouchableOpacity
+                                                    key={level}
+                                                    className={`mr-2 px-4 py-2 rounded-full ${difficulty === level ? "bg-yellow-400" : "bg-zinc-800"
+                                                        }`}
+                                                    onPress={() => setDifficulty(level)}
+                                                >
+                                                    <Text className={`font-bold ${difficulty === level ? "text-black" : "text-white"}`}>
+                                                        {t(`community.createPost.${level}`)}
+                                                    </Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </ScrollView>
+                                </View>
+
+                                <View className="mb-4">
+                                    <Text className="text-white font-bold mb-2">{t('community.createPost.category')}</Text>
+                                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                        <View className="flex-row">
+                                            {RECIPE_CATEGORIES.map((cat) => (
+                                                <TouchableOpacity
+                                                    key={cat}
+                                                    className={`mr-2 px-4 py-2 rounded-full ${category === cat ? "bg-yellow-400" : "bg-zinc-800"
+                                                        }`}
+                                                    onPress={() => setCategory(cat)}
+                                                >
+                                                    <Text className={`font-bold ${category === cat ? "text-black" : "text-white"}`}>{t(`community.createPost.categories.${cat}`)}</Text>
+                                                </TouchableOpacity>
+                                            ))}
+                                        </View>
+                                    </ScrollView>
+                                </View>
+
+                                <View className="mb-4">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Text className="text-white font-bold">{t('community.createPost.ingredients')}</Text>
+                                        <TouchableOpacity onPress={handleAddIngredient}>
+                                            <Ionicons name="add-circle" size={24} color="#FBBF24" />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {ingredients.map((ingredient, index) => (
+                                        <View key={index} className="flex-row items-center mb-2">
+                                            <TextInput
+                                                className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
+                                                placeholder={t('community.createPost.ingredientPlaceholder', { number: (index + 1).toString() })}
+                                                placeholderTextColor="#9CA3AF"
+                                                value={ingredient}
+                                                onChangeText={(value) => handleUpdateIngredient(index, value)}
+                                            />
+                                            {ingredients.length > 1 && (
+                                                <TouchableOpacity onPress={() => handleRemoveIngredient(index)}>
+                                                    <Ionicons name="remove-circle" size={24} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    ))}
+                                </View>
+
+                                <View className="mb-4">
+                                    <View className="flex-row justify-between items-center mb-2">
+                                        <Text className="text-white font-bold">{t('community.createPost.instructions')}</Text>
+                                        <TouchableOpacity onPress={handleAddInstruction}>
+                                            <Ionicons name="add-circle" size={24} color="#FBBF24" />
+                                        </TouchableOpacity>
+                                    </View>
+                                    {instructions.map((instruction, index) => (
+                                        <View key={index} className="flex-row items-start mb-2">
+                                            <View className="w-6 h-6 rounded-full bg-yellow-400 items-center justify-center mr-2 mt-2">
+                                                <Text className="text-black font-bold text-xs">{index + 1}</Text>
+                                            </View>
+                                            <TextInput
+                                                className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
+                                                style={{ minHeight: 40 }}
+                                                placeholder={t('community.createPost.instructionPlaceholder', { number: (index + 1).toString() })}
+                                                placeholderTextColor="#9CA3AF"
+                                                multiline
+                                                value={instruction}
+                                                onChangeText={(value) => handleUpdateInstruction(index, value)}
+                                            />
+                                            {instructions.length > 1 && (
+                                                <TouchableOpacity onPress={() => handleRemoveInstruction(index)} className="mt-2">
+                                                    <Ionicons name="remove-circle" size={24} color="#EF4444" />
+                                                </TouchableOpacity>
+                                            )}
+                                        </View>
+                                    ))}
+                                </View>
+
+                                <View className="mb-4">
+                                    <Text className="text-white font-bold mb-2">{t('community.createPost.tags')}</Text>
+                                    <View className="flex-row items-center mb-2">
+                                        <TextInput
+                                            className="flex-1 bg-zinc-800 rounded-xl p-3 text-white mr-2"
+                                            placeholder={t('community.createPost.tagPlaceholder')}
+                                            placeholderTextColor="#9CA3AF"
+                                            value={newTag}
+                                            onChangeText={setNewTag}
+                                        />
+                                        <TouchableOpacity onPress={handleAddTag}>
+                                            <Ionicons name="add-circle" size={24} color="#FBBF24" />
+                                        </TouchableOpacity>
+                                    </View>
+                                    <View className="flex-row flex-wrap">
+                                        {tags.map((tag) => (
+                                            <TouchableOpacity
+                                                key={tag}
+                                                className="bg-yellow-400 rounded-full px-3 py-1 mr-2 mb-2 flex-row items-center"
+                                                onPress={() => handleRemoveTag(tag)}
+                                            >
+                                                <Text className="text-black font-bold text-sm">{tag}</Text>
+                                                <Ionicons name="close" size={16} color="#000000" className="ml-1" />
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            </View>
+                        )}
+
+                        <View className="px-4 mb-6">
+                            <View className="flex-row justify-between items-center mb-2">
+                                <Text className="text-white font-bold">{t('community.createPost.photos')}</Text>
+                                <TouchableOpacity onPress={handleAddImage}>
+                                    <Ionicons name="camera" size={24} color="#FBBF24" />
+                                </TouchableOpacity>
+                            </View>
+                            {images.length > 0 && (
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                                    <View className="flex-row">
+                                        {images.map((image, index) => (
+                                            <View key={index} className="relative mr-3">
+                                                <Image
+                                                    source={{ uri: typeof image === 'string' ? image : image.uri }}
+                                                    className="w-20 h-20 rounded-xl"
+                                                />
+                                                <TouchableOpacity
+                                                    className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full items-center justify-center"
+                                                    onPress={() => handleRemoveImage(index)}
+                                                >
+                                                    <Ionicons name="close" size={16} color="#FFFFFF" />
+                                                </TouchableOpacity>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </ScrollView>
+                            )}
+                        </View>
+
+                    </ScrollView>
+                </View>
+
+                {/* Image Picker Modal */}
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={showImagePicker}
+                    onRequestClose={() => setShowImagePicker(false)}
+                >
+                    <View className="flex-1 justify-end bg-black/50">
+                        <View className="bg-white rounded-t-xl p-6">
+                            <Text className="text-lg font-semibold text-center mb-6 text-gray-800">
+                                {t('community.createPost.addImage')}
+                            </Text>
+
+                            <TouchableOpacity
+                                onPress={pickImageFromCamera}
+                                className="bg-green-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                            >
+                                <Text className="text-white font-medium text-lg">{t('community.createPost.takePhoto')}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={pickImageFromGallery}
+                                className="bg-blue-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                            >
+                                <Text className="text-white font-medium text-lg">{t('community.createPost.chooseFromGallery')}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => setShowImagePicker(false)}
+                                className="bg-gray-200 rounded-xl p-4 flex-row items-center justify-center"
+                            >
+                                <Text className="text-gray-700 font-medium text-lg">{t('community.createPost.cancel')}</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </Modal>
+
+                {/* Dialog for posting status */}
+                <Dialog
+                    visible={dialogVisible}
+                    type={dialogType}
+                    title={dialogTitle}
+                    message={dialogMessage}
+                    onClose={() => setDialogVisible(false)}
+                    autoClose={dialogType !== 'loading'}
+                />
             </KeyboardAvoidingView>
         </Modal>
     )

@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { Post, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
@@ -35,6 +36,7 @@ export default function PostItem({
     onUpdatePost,
     loadPosts,
 }: PostItemProps): JSX.Element {
+    const { t } = useLanguage()
     const [showComments, setShowComments] = useState<boolean>(false)
     const [commentText, setCommentText] = useState<string>("")
     const [showOptionsPopover, setShowOptionsPopover] = useState<boolean>(false)
@@ -100,12 +102,12 @@ export default function PostItem({
         <>
             <View className="bg-zinc-800 rounded-xl mb-4 overflow-hidden border border-zinc-700">
                 <TouchableOpacity className="flex-row items-center p-4" onPress={() => onUserPress(post.author)}>
-                    <Image 
-                        source={post.author.avatar && typeof post.author.avatar === 'string' 
-                            ? { uri: post.author.avatar } 
+                    <Image
+                        source={post.author.avatar && typeof post.author.avatar === 'string'
+                            ? { uri: post.author.avatar }
                             : post.author.avatar || require("../../../assets/images/avatar.png")
-                        } 
-                        className="w-10 h-10 rounded-full border border-yellow-400" 
+                        }
+                        className="w-10 h-10 rounded-full border border-yellow-400"
                     />
                     <View className="ml-3 flex-1">
                         <Text className="text-white font-bold">{post.author.name}</Text>
@@ -139,7 +141,7 @@ export default function PostItem({
                             {post.recipeDetails.servings && (
                                 <View className="flex-row items-center">
                                     <Ionicons name="people-outline" size={16} color="#FBBF24" />
-                                    <Text className="text-white text-xs ml-1">Serves {post.recipeDetails.servings}</Text>
+                                    <Text className="text-white text-xs ml-1">{t('community.post.serves', { count: post.recipeDetails.servings.toString() })}</Text>
                                 </View>
                             )}
                             {post.recipeDetails.difficulty && (
@@ -150,7 +152,7 @@ export default function PostItem({
                             )}
                         </View>
                         <TouchableOpacity className="mt-1" onPress={() => onViewRecipe(post)}>
-                            <Text className="text-yellow-400 text-sm font-medium">View full recipe →</Text>
+                            <Text className="text-yellow-400 text-sm font-medium">{t('community.post.viewFullRecipe')}</Text>
                         </TouchableOpacity>
                     </View>
                 )}
@@ -182,19 +184,19 @@ export default function PostItem({
 
                 {showComments && (
                     <View className="px-4 py-4 border-t border-zinc-700 bg-zinc-750">
-                        <Text className="text-white font-bold mb-3">Comments ({post.comments})</Text>
+                        <Text className="text-white font-bold mb-3">{t('community.post.commentsCount', { count: post.comments.toString() })}</Text>
 
                         {post.commentsList && post.commentsList.length > 0 ? (
                             <View className="mb-4">
                                 {post.commentsList.map((comment) => (
                                     <View key={comment.id} className="mb-3">
                                         <View className="flex-row items-start">
-                                            <Image 
+                                            <Image
                                                 source={comment.author.avatar && typeof comment.author.avatar === 'string'
                                                     ? { uri: comment.author.avatar }
                                                     : require("../../../assets/images/avatar.png")
                                                 }
-                                                className="w-8 h-8 rounded-full mr-3" 
+                                                className="w-8 h-8 rounded-full mr-3"
                                             />
                                             <View className="flex-1">
                                                 <View className="bg-zinc-700 rounded-xl p-3">
@@ -209,22 +211,22 @@ export default function PostItem({
                             </View>
                         ) : (
                             <View className="mb-4">
-                                <Text className="text-zinc-400 text-sm text-center py-2">No comments yet. Be the first to comment!</Text>
+                                <Text className="text-zinc-400 text-sm text-center py-2">{t('community.post.noCommentsYet')}</Text>
                             </View>
                         )}
 
                         <View className="flex-row items-center">
-                            <Image 
+                            <Image
                                 source={currentUser.avatar && currentUser.avatar.uri
                                     ? { uri: currentUser.avatar.uri }
                                     : currentUser.avatar || require("../../../assets/images/avatar.png")
                                 }
-                                className="w-8 h-8 rounded-full mr-3" 
+                                className="w-8 h-8 rounded-full mr-3"
                             />
                             <View className="flex-1 flex-row items-center bg-zinc-700 rounded-full">
                                 <TextInput
                                     className="flex-1 px-4 py-3 text-white text-sm"
-                                    placeholder="Add a comment..."
+                                    placeholder={t('community.post.addComment')}
                                     placeholderTextColor="#9CA3AF"
                                     value={commentText}
                                     onChangeText={setCommentText}
