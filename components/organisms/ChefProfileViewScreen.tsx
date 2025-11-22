@@ -609,8 +609,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         <View style={styles.contentActions}>
           <TouchableOpacity 
             style={styles.contentActionButton}
-            onPress={(e) => {
-              e.stopPropagation()
+            onPress={() => {
               setShowRecipeReportDialog(true)
             }}
           >
@@ -619,8 +618,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.contentActionButton, styles.rateActionButton]}
-            onPress={(e) => {
-              e.stopPropagation()
+            onPress={() => {
               setShowRecipeRatingDialog(true)
             }}
           >
@@ -695,8 +693,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
         <View style={styles.contentActions}>
           <TouchableOpacity 
             style={styles.contentActionButton}
-            onPress={(e) => {
-              e.stopPropagation()
+            onPress={() => {
               setShowCourseReportDialog(true)
             }}
           >
@@ -705,8 +702,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.contentActionButton, styles.rateActionButton]}
-            onPress={(e) => {
-              e.stopPropagation()
+            onPress={() => {
               setShowCourseRatingDialog(true)
             }}
           >
@@ -1084,7 +1080,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               multiline
               numberOfLines={4}
               value={customReason}
-              onChangeText={(text) => {
+              onChangeText={(text: string) => {
                 setCustomReason(text)
                 if (text.trim()) {
                   setReportReason("")

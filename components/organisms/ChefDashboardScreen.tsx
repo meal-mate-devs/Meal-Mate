@@ -832,9 +832,9 @@ const ChefDashboardScreen: React.FC = () => {
             horizontal
             showsHorizontalScrollIndicator={false}
             data={displayedChefs}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item: Chef) => item.id}
             contentContainerStyle={styles.chefRibbonContent}
-            renderItem={({ item }) => (
+            renderItem={({ item }: { item: Chef }) => (
               <TouchableOpacity
                 style={[styles.chefCard, selectedChef === item.id && styles.selectedChefCard]}
                 onPress={() => setViewingChefProfile(item)}
@@ -1468,7 +1468,7 @@ const ChefDashboardScreen: React.FC = () => {
                     <TextInput
                       style={[styles.profileBadgeText, { color: '#3B82F6', flex: 1, padding: 0 }]}
                       value={editedYearsOfExperience > 0 ? editedYearsOfExperience.toString() : ''}
-                      onChangeText={(text) => {
+                      onChangeText={(text: string) => {
                         const num = parseInt(text) || 0
                         setEditedYearsOfExperience(Math.max(0, Math.min(100, num)))
                       }}
@@ -1513,7 +1513,7 @@ const ChefDashboardScreen: React.FC = () => {
               <TextInput
                 style={[styles.chefBioText, { minHeight: 100 }]}
                 value={editedProfessionalSummary}
-                onChangeText={(text) => {
+                onChangeText={(text: string) => {
                   if (text.length <= 500) {
                     setEditedProfessionalSummary(text)
                   }
@@ -1903,8 +1903,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   handleEditRecipe(recipe)
                 }}
               >
@@ -1913,8 +1912,7 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.managementActionButton, styles.deleteButton]}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   handleDeleteRecipe(recipe.id)
                 }}
               >
@@ -1927,8 +1925,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   setExpandedRecipeData(recipe)
                   setShowRecipeReportDialog(true)
                 }}
@@ -1938,8 +1935,7 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   setExpandedRecipeData(recipe)
                   setShowRecipeRatingDialog(true)
                 }}
@@ -2026,8 +2022,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation();
+                onPress={() => {
                   handleEditCourse(course);
                 }}
               >
@@ -2036,8 +2031,7 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={[styles.managementActionButton, styles.deleteButton]}
-                onPress={(e) => {
-                  e.stopPropagation();
+                onPress={() => {
                   handleDeleteCourse(course.id);
                 }}
               >
@@ -2050,8 +2044,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   setExpandedCourseData(course)
                   setShowCourseReportDialog(true)
                 }}
@@ -2061,8 +2054,7 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.managementActionButton}
-                onPress={(e) => {
-                  e.stopPropagation()
+                onPress={() => {
                   setExpandedCourseData(course)
                   setShowCourseRatingDialog(true)
                 }}
@@ -2728,7 +2720,7 @@ const ChefDashboardScreen: React.FC = () => {
           ref={scrollRef}
           data={getSections()}
           renderItem={renderSection}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item: any) => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
             flexGrow: 1,
@@ -2745,7 +2737,7 @@ const ChefDashboardScreen: React.FC = () => {
               progressBackgroundColor="#1F2937"
             />
           }
-          onScrollToIndexFailed={(info) => {
+          onScrollToIndexFailed={(info: any) => {
             // Fallback if scrollToIndex fails
             const wait = new Promise(resolve => setTimeout(resolve, 500));
             wait.then(() => {
@@ -2764,7 +2756,7 @@ const ChefDashboardScreen: React.FC = () => {
         >
           <RecipeUploadModal
             onClose={handleModalClose}
-            onSave={async (recipe) => {
+            onSave={async (recipe: Recipe) => {
               await fetchUserRecipes()
               await fetchChefStatsAndFeedback()
               handleModalClose()
@@ -2782,7 +2774,7 @@ const ChefDashboardScreen: React.FC = () => {
         >
           <CourseCreationModal
             onClose={handleModalClose}
-            onSave={async (course) => {
+            onSave={async (course: Course) => {
               await fetchUserCourses()
               await fetchChefStatsAndFeedback()
               handleModalClose()
@@ -3721,10 +3713,10 @@ const ChefDashboardScreen: React.FC = () => {
             }
           }}
           onSubscribeToggle={handleChefSubscriptionToggle}
-          onReport={(chefId, reason, description) => {
+          onReport={(chefId: string, reason: string, description: string) => {
             console.log("Report chef:", chefId, reason, description)
           }}
-          onRate={(chefId, rating, feedback) => {
+          onRate={(chefId: string, rating: number, feedback: string) => {
             console.log("Rate chef:", chefId, rating, feedback)
           }}
         />
@@ -4815,7 +4807,7 @@ const RecipeUploadModal: React.FC<{
             <TextInput
               style={styles.textInput}
               value={recipeData.title}
-              onChangeText={(text) => setRecipeData({ ...recipeData, title: text })}
+              onChangeText={(text: string) => setRecipeData({ ...recipeData, title: text })}
               placeholder="Enter recipe title"
               placeholderTextColor="#64748B"
             />
@@ -4826,7 +4818,7 @@ const RecipeUploadModal: React.FC<{
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={recipeData.description}
-              onChangeText={(text) => setRecipeData({ ...recipeData, description: text })}
+              onChangeText={(text: string) => setRecipeData({ ...recipeData, description: text })}
               placeholder="Describe your recipe"
               placeholderTextColor="#64748B"
               multiline
@@ -4874,7 +4866,7 @@ const RecipeUploadModal: React.FC<{
             <TextInput
               style={styles.textInput}
               value={recipeData.cuisine}
-              onChangeText={(text) => setRecipeData({ ...recipeData, cuisine: text })}
+              onChangeText={(text: string) => setRecipeData({ ...recipeData, cuisine: text })}
               placeholder="e.g., Italian, Mexican, Chinese"
               placeholderTextColor="#64748B"
             />
@@ -4888,7 +4880,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.servings}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, servings: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, servings: text })}
                   placeholder="Servings"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -4898,7 +4890,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.prepTime}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, prepTime: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, prepTime: text })}
                   placeholder="Prep (min)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -4910,7 +4902,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.cookTime}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, cookTime: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, cookTime: text })}
                   placeholder="Cook (min)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -4978,7 +4970,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.calories}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, calories: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, calories: text })}
                   placeholder="Calories"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -4988,7 +4980,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.protein}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, protein: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, protein: text })}
                   placeholder="Protein (g)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -5000,7 +4992,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.carbs}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, carbs: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, carbs: text })}
                   placeholder="Carbs (g)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -5010,7 +5002,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.fat}
-                  onChangeText={(text) => setRecipeData({ ...recipeData, fat: text })}
+                  onChangeText={(text: string) => setRecipeData({ ...recipeData, fat: text })}
                   placeholder="Fat (g)"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -5052,7 +5044,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, { marginBottom: 8 }]}
                   value={ingredient.name}
-                  onChangeText={(text) => handleUpdateIngredient(ingredient.id, 'name', text)}
+                  onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'name', text)}
                   placeholder="Ingredient name"
                   placeholderTextColor="#64748B"
                 />
@@ -5060,7 +5052,7 @@ const RecipeUploadModal: React.FC<{
                   <TextInput
                     style={[styles.textInput, { flex: 1 }]}
                     value={ingredient.amount}
-                    onChangeText={(text) => handleUpdateIngredient(ingredient.id, 'amount', text)}
+                    onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'amount', text)}
                     placeholder="Amount"
                     placeholderTextColor="#64748B"
                     keyboardType="numeric"
@@ -5097,7 +5089,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, { marginTop: 8 }]}
                   value={ingredient.notes}
-                  onChangeText={(text) => handleUpdateIngredient(ingredient.id, 'notes', text)}
+                  onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'notes', text)}
                   placeholder="Notes (optional)"
                   placeholderTextColor="#64748B"
                 />
@@ -5143,7 +5135,7 @@ const RecipeUploadModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, styles.textArea, { marginBottom: 8 }]}
                   value={instruction.instruction}
-                  onChangeText={(text) => handleUpdateInstruction(instruction.id, 'instruction', text)}
+                  onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'instruction', text)}
                   placeholder="Enter instruction"
                   placeholderTextColor="#64748B"
                   multiline
@@ -5153,7 +5145,7 @@ const RecipeUploadModal: React.FC<{
                   <TextInput
                     style={[styles.textInput, { flex: 1 }]}
                     value={instruction.duration}
-                    onChangeText={(text) => handleUpdateInstruction(instruction.id, 'duration', text)}
+                    onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'duration', text)}
                     placeholder="Duration (min)"
                     placeholderTextColor="#64748B"
                     keyboardType="numeric"
@@ -5161,7 +5153,7 @@ const RecipeUploadModal: React.FC<{
                   <TextInput
                     style={[styles.textInput, { flex: 2 }]}
                     value={instruction.tips}
-                    onChangeText={(text) => handleUpdateInstruction(instruction.id, 'tips', text)}
+                    onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'tips', text)}
                     placeholder="Tips (optional)"
                     placeholderTextColor="#64748B"
                   />
@@ -5952,7 +5944,7 @@ const CourseCreationModal: React.FC<{
             <TextInput
               style={styles.textInput}
               value={courseData.title}
-              onChangeText={(text) => setCourseData({ ...courseData, title: text })}
+              onChangeText={(text: string) => setCourseData({ ...courseData, title: text })}
               placeholder="Enter course title"
               placeholderTextColor="#64748B"
             />
@@ -5963,7 +5955,7 @@ const CourseCreationModal: React.FC<{
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={courseData.description}
-              onChangeText={(text) => setCourseData({ ...courseData, description: text })}
+              onChangeText={(text: string) => setCourseData({ ...courseData, description: text })}
               placeholder="Describe your course"
               placeholderTextColor="#64748B"
               multiline
@@ -6011,7 +6003,7 @@ const CourseCreationModal: React.FC<{
                 <TextInput
                   style={styles.textInput}
                   value={courseData.durationValue}
-                  onChangeText={(text) => setCourseData({ ...courseData, durationValue: text })}
+                  onChangeText={(text: string) => setCourseData({ ...courseData, durationValue: text })}
                   placeholder="Enter number"
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
@@ -6143,7 +6135,7 @@ const CourseCreationModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, { marginBottom: 8 }]}
                   value={unit.title}
-                  onChangeText={(text) => handleUpdateUnit(unit.id, 'title', text)}
+                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'title', text)}
                   placeholder="Unit title"
                   placeholderTextColor="#64748B"
                 />
@@ -6151,7 +6143,7 @@ const CourseCreationModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, { marginBottom: 8 }]}
                   value={unit.objective}
-                  onChangeText={(text) => handleUpdateUnit(unit.id, 'objective', text)}
+                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'objective', text)}
                   placeholder="Objective (e.g., Maintain edge integrity)"
                   placeholderTextColor="#64748B"
                 />
@@ -6159,7 +6151,7 @@ const CourseCreationModal: React.FC<{
                 <TextInput
                   style={[styles.textInput, styles.textArea, { marginBottom: 12 }]}
                   value={unit.content}
-                  onChangeText={(text) => handleUpdateUnit(unit.id, 'content', text)}
+                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'content', text)}
                   placeholder="Instructional content"
                   placeholderTextColor="#64748B"
                   multiline
@@ -6188,7 +6180,7 @@ const CourseCreationModal: React.FC<{
                       <TextInput
                         style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
                         value={step.text}
-                        onChangeText={(text) => handleUpdateStep(unit.id, step.id, text)}
+                        onChangeText={(text: string) => handleUpdateStep(unit.id, step.id, text)}
                         placeholder="Step description"
                         placeholderTextColor="#64748B"
                       />
@@ -6223,7 +6215,7 @@ const CourseCreationModal: React.FC<{
                       <TextInput
                         style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
                         value={error.text}
-                        onChangeText={(text) => handleUpdateError(unit.id, error.id, text)}
+                        onChangeText={(text: string) => handleUpdateError(unit.id, error.id, text)}
                         placeholder="Common error"
                         placeholderTextColor="#64748B"
                       />
@@ -6258,7 +6250,7 @@ const CourseCreationModal: React.FC<{
                       <TextInput
                         style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
                         value={practice.text}
-                        onChangeText={(text) => handleUpdateBestPractice(unit.id, practice.id, text)}
+                        onChangeText={(text: string) => handleUpdateBestPractice(unit.id, practice.id, text)}
                         placeholder="Best practice tip"
                         placeholderTextColor="#64748B"
                       />

@@ -1,7 +1,7 @@
 import * as chefService from '@/lib/api/chefService';
 import { groceryService } from '@/lib/services/groceryService';
 import { pantryService } from '@/lib/services/pantryService';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -71,7 +71,6 @@ interface Recipe {
 
 const HomeScreen: React.FC = () => {
     const insets = useSafeAreaInsets()
-    const [activeTab, setActiveTab] = useState<string>('All');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     
     // Animation state
@@ -118,12 +117,8 @@ const HomeScreen: React.FC = () => {
         return unsubscribe;
     }, [subscribe, profileData]);
 
-    const tabs = ['All', 'Breakfast', 'Lunch', 'Dinner', 'Dessert'];
-
     // Filter recipes by category
-    const filteredRecipes = recipes.filter(recipe =>
-        activeTab === 'All' || recipe.category === activeTab
-    );
+    const filteredRecipes = recipes;
 
     const loadRecipes = async () => {
         setIsLoadingRecipes(true)
@@ -134,8 +129,12 @@ const HomeScreen: React.FC = () => {
                 id: r._id || r.id,
                 rating: r.averageRating || 0
             }))
-            setRecipes(normalizedRecipes)
-            console.log('✅ Loaded', normalizedRecipes.length, 'recipes')
+            // Sort by createdAt in descending order (latest first)
+            const sortedRecipes = normalizedRecipes.sort((a: any, b: any) => 
+                new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            )
+            setRecipes(sortedRecipes)
+            console.log('✅ Loaded', sortedRecipes.length, 'recipes (sorted by latest)')
         } catch (error) {
             console.error('❌ Failed to load recipes:', error)
         } finally {
@@ -146,8 +145,6 @@ const HomeScreen: React.FC = () => {
     // Preload or reset state when the screen is focused
     useFocusEffect(
         useCallback(() => {
-            setActiveTab('All');
-            
             // Animate progress bar
             progressAnimation.setValue(0);
             Animated.timing(progressAnimation, {
@@ -209,10 +206,15 @@ const HomeScreen: React.FC = () => {
         try {
             setIsLoadingRecipeDetails(true)
             const recipeId = recipe.id || recipe._id
+            if (!recipeId) {
+                setGeneralErrorMessage('Recipe ID is missing. Please try again.')
+                setShowGeneralErrorDialog(true)
+                return
+            }
             setExpandedRecipeId(recipeId)
             
             console.log('👁️ Fetching recipe details:', recipeId)
-            const fullRecipe = await chefService.getRecipeById(recipeId!)
+            const fullRecipe = await chefService.getRecipeById(recipeId)
             
             console.log('✅ Full recipe fetched:', fullRecipe.title)
             setExpandedRecipeData(fullRecipe)
@@ -328,41 +330,60 @@ const HomeScreen: React.FC = () => {
         const isCurrentlyFavorite = isFavorite(recipeId)
         
         if (isCurrentlyFavorite) {
+            // Remove from favorites
             const success = await removeFromFavorites(recipeId)
             if (success) {
                 setGeneralSuccessMessage('Recipe removed from favorites')
                 setShowGeneralSuccessDialog(true)
+            } else {
+                setGeneralErrorMessage('Failed to remove from favorites')
+                setShowGeneralErrorDialog(true)
             }
         } else {
-            // Mold the recipe data to match FavoriteRecipe schema
-            const favoriteData = {
+            // Add to favorites - mold the schema to match FavoriteRecipe
+            const success = await addToFavorites({
                 recipeId: recipeId,
                 title: expandedRecipeData.title,
-                description: expandedRecipeData.description,
-                image: expandedRecipeData.image,
+                description: expandedRecipeData.description || '',
+                image: expandedRecipeData.image?.url || expandedRecipeData.image || '',
                 cookTime: expandedRecipeData.cookTime || 0,
                 prepTime: expandedRecipeData.prepTime || 0,
                 servings: expandedRecipeData.servings || 1,
-                difficulty: expandedRecipeData.difficulty || 'Easy',
-                cuisine: expandedRecipeData.cuisine || '',
-                category: expandedRecipeData.category || '',
-                creator: expandedRecipeData.creator || 'Unknown Chef',
-                ingredients: expandedRecipeData.ingredients || [],
-                instructions: expandedRecipeData.instructions || [],
-                nutritionInfo: expandedRecipeData.nutrition || {
-                    calories: 0,
-                    protein: 0,
-                    carbs: 0,
-                    fat: 0
+                difficulty: (expandedRecipeData.difficulty || 'Easy') as 'Easy' | 'Medium' | 'Hard',
+                cuisine: expandedRecipeData.cuisine || 'General',
+                category: expandedRecipeData.category || 'Other',
+                creator: expandedRecipeData.creator || 'Unknown Chef', // Include creator field
+                ingredients: (expandedRecipeData.ingredients || []).map((ing: any) => ({
+                    name: ing.name || '',
+                    amount: ing.amount || '',
+                    unit: ing.unit || '',
+                    notes: ing.notes || ''
+                })),
+                instructions: (expandedRecipeData.instructions || []).map((inst: any) => ({
+                    step: inst.step || 0,
+                    instruction: inst.instruction || '',
+                    duration: inst.duration || 0,
+                    tips: inst.tips || ''
+                })),
+                nutritionInfo: {
+                    calories: expandedRecipeData.nutrition?.calories || expandedRecipeData.nutritionInfo?.calories || 0,
+                    protein: expandedRecipeData.nutrition?.protein || expandedRecipeData.nutritionInfo?.protein || 0,
+                    carbs: expandedRecipeData.nutrition?.carbs || expandedRecipeData.nutritionInfo?.carbs || 0,
+                    fat: expandedRecipeData.nutrition?.fat || expandedRecipeData.nutritionInfo?.fat || 0,
+                    fiber: expandedRecipeData.nutrition?.fiber || expandedRecipeData.nutritionInfo?.fiber || 0,
+                    sugar: expandedRecipeData.nutrition?.sugar || expandedRecipeData.nutritionInfo?.sugar || 0,
+                    sodium: expandedRecipeData.nutrition?.sodium || expandedRecipeData.nutritionInfo?.sodium || 0
                 },
                 tips: expandedRecipeData.tips || [],
                 substitutions: expandedRecipeData.substitutions || []
-            }
+            })
             
-            const success = await addToFavorites(favoriteData)
             if (success) {
                 setGeneralSuccessMessage('Recipe added to favorites')
                 setShowGeneralSuccessDialog(true)
+            } else {
+                setGeneralErrorMessage('Failed to add to favorites')
+                setShowGeneralErrorDialog(true)
             }
         }
     }
@@ -545,35 +566,6 @@ const HomeScreen: React.FC = () => {
                 </View>
                 </View>
             </Animated.View>
-
-            {/* Category Tabs */}
-            <View className="px-4 py-2 bg-zinc-900">
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    className="mb-3"
-                >
-                    {tabs.map((tab) => (
-                        <TouchableOpacity
-                            key={tab}
-                            onPress={() => setActiveTab(tab)}
-                            className={`py-2 px-6 mr-2 rounded-full ${activeTab === tab ? 'overflow-hidden' : 'bg-zinc-800'}`}
-                        >
-                            {activeTab === tab ? (
-                                <LinearGradient
-                                    colors={['#FACC15', '#F97316']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    className="absolute inset-0"
-                                />
-                            ) : null}
-                            <Text className={`${activeTab === tab ? 'text-white' : 'text-gray-400'} font-medium`}>
-                                {tab}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
 
             {/* Recipes ScrollView - Food Explorer Style */}
             <ScrollView 
@@ -766,7 +758,7 @@ const HomeScreen: React.FC = () => {
                                         color={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "#EC4899" : "#A78BFA"}
                                     />
                                     <Text className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'text-pink-300' : 'text-purple-300'} font-bold ml-2 text-sm tracking-wide`}>
-                                        {isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'Saved' : 'Save'}
+                                        {isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'Saved' : 'Favorite'}
                                     </Text>
                                 </TouchableOpacity>
                             </View>
