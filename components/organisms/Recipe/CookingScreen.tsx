@@ -5,14 +5,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    Animated,
-    Dimensions,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Dialog from '../../atoms/Dialog';
@@ -485,76 +485,6 @@ export default function CookingScreen() {
             </View>
           </View>
 
-          {/* Ingredients Section */}
-          {recipe?.ingredients && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0 && (
-            <View
-              className="rounded-2xl p-6 mb-6"
-              style={{ backgroundColor: 'rgba(34, 197, 94, 0.05)', borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.2)' }}
-            >
-              <View className="flex-row items-center mb-4 justify-between">
-                <View className="flex-row items-center flex-1">
-                  <View
-                    className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                    style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
-                  >
-                    <Ionicons name="leaf-outline" size={20} color="#22C55E" />
-                  </View>
-                  <Text className="text-lg font-bold" style={{ color: '#22C55E' }}>
-                    INGREDIENTS
-                  </Text>
-                </View>
-
-                <TouchableOpacity
-                  onPress={handleSpeakIngredients}
-                  className="h-10 px-3 rounded-full items-center justify-center"
-                  style={{
-                    backgroundColor: isSpeakingIngredients ? 'rgba(239, 68, 68, 0.15)' : isPro ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
-                    borderWidth: 2,
-                    borderColor: isSpeakingIngredients ? 'rgba(239, 68, 68, 0.4)' : isPro ? 'rgba(59, 130, 246, 0.4)' : 'rgba(107, 114, 128, 0.3)',
-                    opacity: isPro ? 1 : 0.7,
-                  }}
-                  activeOpacity={0.8}
-                >
-                  <View className="relative">
-                    <Ionicons
-                      name={isSpeakingIngredients ? "stop" : "volume-high"}
-                      size={18}
-                      color={isSpeakingIngredients ? "#EF4444" : "#3B82F6"}
-                    />
-                    {!isPro && (
-                      <View className="absolute -top-1.5 -right-1.5 bg-yellow-400 rounded-full px-1" style={{ minWidth: 20, height: 12 }}>
-                        <Text className="text-black text-xs font-bold" style={{ fontSize: 8, lineHeight: 12 }}>PRO</Text>
-                      </View>
-                    )}
-                  </View>
-                </TouchableOpacity>
-              </View>
-
-              <View className="space-y-2">
-                {recipe.ingredients.slice(0, 6).map((ingredient: any, index: number) => (
-                  <View key={index} className="flex-row items-start mb-2">
-                    <View
-                      className="w-6 h-6 rounded-full items-center justify-center mr-3 mt-0.5"
-                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.2)' }}
-                    >
-                      <Text className="text-xs font-bold" style={{ color: '#22C55E' }}>
-                        {index + 1}
-                      </Text>
-                    </View>
-                    <Text className="text-gray-300 text-sm leading-6 flex-1">
-                      {ensureString(ingredient, 'Ingredient')}
-                    </Text>
-                  </View>
-                ))}
-                {recipe.ingredients.length > 6 && (
-                  <Text className="text-gray-400 text-xs mt-2 ml-9">
-                    + {recipe.ingredients.length - 6} more ingredients
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-
           {/* Step Details */}
           <View
             className="rounded-2xl p-6 mb-6"
@@ -788,7 +718,7 @@ export default function CookingScreen() {
         showCancelButton={true}
         onConfirm={() => {
           setShowUpgradeDialog(false);
-          router.push('/(protected)/(tabs)/(hidden)/settings/subscription');
+          router.push('/settings/subscription');
         }}
         onCancel={() => setShowUpgradeDialog(false)}
         onClose={() => setShowUpgradeDialog(false)}

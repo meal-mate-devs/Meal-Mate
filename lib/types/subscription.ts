@@ -37,6 +37,8 @@ export interface PaymentSheetResponse {
     success: boolean;
     subscriptionId: string;
     clientSecret: string;
+    customerId?: string;
+    ephemeralKey?: string;
     plan: {
         type: PlanType;
         name: string;

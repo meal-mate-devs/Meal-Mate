@@ -145,7 +145,6 @@ const CookingScreen: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0)
   const [isTimerRunning, setIsTimerRunning] = useState(false)
   const [timeElapsed, setTimeElapsed] = useState(0) // Single timer counting up
-  const [showIngredients, setShowIngredients] = useState(false)
   const [isCookingComplete, setIsCookingComplete] = useState(false)
 
   // Single timer effect
@@ -261,9 +260,7 @@ const CookingScreen: React.FC = () => {
             <Ionicons name="close" size={24} color="white" />
           </TouchableOpacity>
           <Text className="text-white text-lg font-bold">Cooking Mode</Text>
-          <TouchableOpacity onPress={() => setShowIngredients(!showIngredients)}>
-            <MaterialIcons name="list-alt" size={24} color="white" />
-          </TouchableOpacity>
+          <View style={{ width: 24 }} />
         </View>
 
         <Text className="text-gray-300 text-center mb-2">{recipe.title}</Text>
@@ -280,23 +277,8 @@ const CookingScreen: React.FC = () => {
         </Text>
       </View>
 
-      {showIngredients ? (
-        /* Ingredients Panel */
-        <ScrollView className="flex-1 px-4 py-6">
-          <Text className="text-white text-xl font-bold mb-4">Ingredients Needed</Text>
-          {recipe.ingredients.map((ingredient: string, index: number) => (
-            <View key={index} className="flex-row items-center mb-3 bg-zinc-800 p-3 rounded-xl">
-              <View className="w-3 h-3 bg-orange-500 rounded-full mr-3" />
-              <Text className="text-gray-300 flex-1">{ingredient}</Text>
-            </View>
-          ))}
-          <TouchableOpacity onPress={() => setShowIngredients(false)} className="bg-zinc-700 py-3 rounded-full mt-4">
-            <Text className="text-white text-center font-semibold">Back to Cooking</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      ) : (
-        /* Cooking Interface */
-        <ScrollView className="flex-1 px-4 py-6">
+      {/* Cooking Interface */}
+      <ScrollView className="flex-1 px-4 py-6">
           {/* Single Timer Display */}
           <View className="bg-zinc-800 rounded-3xl p-6 mb-6 items-center">
             <Text className="text-gray-400 text-sm mb-2">Cooking Time</Text>
@@ -387,7 +369,6 @@ const CookingScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      )}
     </SafeAreaView>
   </LinearGradient>
   )

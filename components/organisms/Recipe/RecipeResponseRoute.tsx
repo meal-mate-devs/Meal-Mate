@@ -973,7 +973,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                       {isEditMode ? (
                         <TextInput
                           value={editedRecipe?.title || ''}
-                          onChangeText={(text) => setEditedRecipe(prev => prev ? { ...prev, title: text } : null)}
+                          onChangeText={(text: any) => setEditedRecipe(prev => prev ? { ...prev, title: text } : null)}
                           className="text-2xl font-bold leading-tight tracking-tight"
                           style={{ color: '#FFFFFF', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 8, padding: 8, backgroundColor: 'rgba(0, 0, 0, 0.2)' }}
                           placeholder="Recipe Title"
@@ -1000,7 +1000,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                   {isEditMode ? (
                     <TextInput
                       value={editedRecipe?.description || ''}
-                      onChangeText={(text) => setEditedRecipe(prev => prev ? { ...prev, description: text } : null)}
+                      onChangeText={(text: any) => setEditedRecipe(prev => prev ? { ...prev, description: text } : null)}
                       multiline
                       className="text-base leading-relaxed"
                       style={{ color: '#94A3B8', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)', borderRadius: 8, padding: 8, backgroundColor: 'rgba(0, 0, 0, 0.2)', minHeight: 80 }}
@@ -1211,7 +1211,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                                 <View className="flex-row items-center space-x-2">
                                   <TextInput
                                     value={editedRecipe?.ingredients[index]?.amount?.toString() || ''}
-                                    onChangeText={(text) => {
+                                    onChangeText={(text: any) => {
                                       const newIngredients = [...(editedRecipe?.ingredients || [])];
                                       newIngredients[index] = { ...newIngredients[index], amount: text };
                                       setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
@@ -1224,7 +1224,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                                   />
                                   <TextInput
                                     value={editedRecipe?.ingredients[index]?.unit || ''}
-                                    onChangeText={(text) => {
+                                    onChangeText={(text: any) => {
                                       const newIngredients = [...(editedRecipe?.ingredients || [])];
                                       newIngredients[index] = { ...newIngredients[index], unit: text };
                                       setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
@@ -1237,7 +1237,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                                 </View>
                                 <TextInput
                                   value={editedRecipe?.ingredients[index]?.name || ''}
-                                  onChangeText={(text) => {
+                                  onChangeText={(text: any) => {
                                     const newIngredients = [...(editedRecipe?.ingredients || [])];
                                     newIngredients[index] = { ...newIngredients[index], name: text };
                                     setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
@@ -1249,7 +1249,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                                 />
                                 <TextInput
                                   value={editedRecipe?.ingredients[index]?.notes || ''}
-                                  onChangeText={(text) => {
+                                  onChangeText={(text: any) => {
                                     const newIngredients = [...(editedRecipe?.ingredients || [])];
                                     newIngredients[index] = { ...newIngredients[index], notes: text };
                                     setEditedRecipe(prev => prev ? { ...prev, ingredients: newIngredients } : null);
@@ -1343,7 +1343,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                             {isEditMode ? (
                               <TextInput
                                 value={typeof ingredient === 'string' ? ingredient : getIngredientName(ingredient)}
-                                onChangeText={(text) => {
+                                onChangeText={(text: string | MissingIngredient) => {
                                   const newMissingIngredients = [...missingIngredients];
                                   newMissingIngredients[index] = text;
                                   setMissingIngredients(newMissingIngredients);
@@ -1466,7 +1466,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                               <View className="space-y-3">
                                 <TextInput
                                   value={editedRecipe?.instructions[index]?.instruction || ''}
-                                  onChangeText={(text) => {
+                                  onChangeText={(text: any) => {
                                     const newInstructions = [...(editedRecipe?.instructions || [])];
                                     newInstructions[index] = { ...newInstructions[index], instruction: text };
                                     setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
@@ -1479,7 +1479,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                                 />
                                 <TextInput
                                   value={editedRecipe?.instructions[index]?.tips || ''}
-                                  onChangeText={(text) => {
+                                  onChangeText={(text: any) => {
                                     const newInstructions = [...(editedRecipe?.instructions || [])];
                                     newInstructions[index] = { ...newInstructions[index], tips: text };
                                     setEditedRecipe(prev => prev ? { ...prev, instructions: newInstructions } : null);
@@ -1543,7 +1543,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                           {isEditMode ? (
                             <TextInput
                               value={editedRecipe?.tips[index] || ''}
-                              onChangeText={(text) => {
+                              onChangeText={(text: string) => {
                                 const newTips = [...(editedRecipe?.tips || [])];
                                 newTips[index] = text;
                                 setEditedRecipe(prev => prev ? { ...prev, tips: newTips } : null);
@@ -1748,7 +1748,7 @@ export default function RecipeResponseRoute(): JSX.Element {
                       <TextInput
                         style={styles.textInput}
                         value={newItemForm.name}
-                        onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, name: text }))}
+                        onChangeText={(text: any) => setNewItemForm((prev) => ({ ...prev, name: text }))}
                         placeholder="Enter item name"
                         placeholderTextColor="#64748B"
                         returnKeyType="next"

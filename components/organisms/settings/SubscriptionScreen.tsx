@@ -95,6 +95,8 @@ const SubscriptionScreen: React.FC = () => {
         setErrorMessage(presentError.message)
         setShowErrorDialog(true)
       } else {
+        // Payment successful - refresh user profile to get updated Pro status
+        await refreshProfile()
         setShowSuccessDialog(true)
       }
     } catch (error: any) {
@@ -121,6 +123,8 @@ const SubscriptionScreen: React.FC = () => {
     try {
       setLoading(true)
       await subscriptionService.cancelSubscription(profile!.subscriptionId!)
+      // Refresh profile to update Pro status
+      await refreshProfile()
       setShowCancelSuccessDialog(true)
     } catch (error: any) {
       console.error('Cancel subscription error:', error)
