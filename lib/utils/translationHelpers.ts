@@ -87,3 +87,32 @@ export const getReportReasonTranslation = (
     }
     return map[reason] || reason
 }
+
+/**
+ * Translate expertise category from English constant to localized string
+ * @param category - English expertise category constant
+ * @param t - Translation function
+ * @returns Translated expertise category string
+ */
+export const getExpertiseCategoryTranslation = (
+    category: string | undefined,
+    t: TranslationFunction
+): string => {
+    if (!category) return ''
+
+    const map: Record<string, string> = {
+        'Baking': t('chef.expertiseCategories.baking'),
+        'Desi Cooking': t('chef.expertiseCategories.desiCooking'),
+        'Knife Skills': t('chef.expertiseCategories.knifeSkills'),
+        'Healthy Cooking': t('chef.expertiseCategories.healthyCooking'),
+        'Continental': t('chef.expertiseCategories.continental'),
+        'Beginner Fundamentals': t('chef.expertiseCategories.beginnerFundamentals'),
+        'Italian Cuisine': t('chef.expertiseCategories.italianCuisine'),
+        'Asian Fusion': t('chef.expertiseCategories.asianFusion'),
+        'Desserts & Pastries': t('chef.expertiseCategories.dessertsAndPastries'),
+        'Grilling & BBQ': t('chef.expertiseCategories.grillingAndBBQ'),
+        'Vegan & Vegetarian': t('chef.expertiseCategories.veganAndVegetarian'),
+        'Other': t('chef.expertiseCategories.other')
+    }
+    return map[category] || category
+}

@@ -339,6 +339,20 @@
     "summaryTooShort": "El resumen profesional debe tener al menos 50 caracteres",
     "summaryTooLong": "El resumen profesional no debe exceder 500 caracteres",
     "selectExpertise": "Seleccionar especialidad",
+    "expertiseCategories": {
+      "baking": "Repostería",
+      "desiCooking": "Cocina Desi",
+      "knifeSkills": "Habilidades con Cuchillo",
+      "healthyCooking": "Cocina Saludable",
+      "continental": "Continental",
+      "beginnerFundamentals": "Fundamentos para Principiantes",
+      "italianCuisine": "Cocina Italiana",
+      "asianFusion": "Fusión Asiática",
+      "dessertsAndPastries": "Postres y Pasteles",
+      "grillingAndBBQ": "Parrilla y BBQ",
+      "veganAndVegetarian": "Vegano y Vegetariano",
+      "other": "Otro"
+    },
     "cancel": "Cancelar",
     "save": "Guardar",
     "editProfile": "Editar Perfil",
@@ -442,7 +456,16 @@
     "hours": "horas",
     "days": "días",
     "weeks": "semanas",
-    "months": "meses"
+    "months": "meses",
+    "reportChefProfile": "Reportar Perfil de Chef",
+    "rateThisChef": "Calificar Este Chef",
+    "typeReasonChef": "Escribe tu razón para reportar a este chef...",
+    "shareExperience": "Comparte tu experiencia...",
+    "restrictedContent": "Contenido Restringido",
+    "bannedContent": "Contenido Baneado",
+    "noRestrictedRecipesOrCourses": "No hay recetas o cursos restringidos",
+    "noBannedRecipesOrCourses": "No hay recetas o cursos baneados",
+    "pleaseSelectReasonOrDescribe": "Por favor selecciona una razón o describe tu preocupación"
   },
   "sidebar": {
     "notifications": "Notificaciones",

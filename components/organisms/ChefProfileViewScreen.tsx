@@ -118,7 +118,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
   const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(false)
   const { t } = useLanguage()
-
+''
   // Recipe/Course specific report and rate dialogs
   const [showRecipeReportDialog, setShowRecipeReportDialog] = useState(false)
   const [showRecipeRatingDialog, setShowRecipeRatingDialog] = useState(false)
@@ -318,7 +318,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const handleSubmitReport = async () => {
     const finalReason = customReason.trim() || reportReason
     if (!finalReason) {
-      setErrorMessage('Please select a reason or describe your concern')
+      setErrorMessage(t('chef.pleaseSelectReasonOrDescribe'))
       setShowErrorDialog(true)
       return
     }
@@ -809,7 +809,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
               {/* Stats Grid */}
               <View style={styles.statsCard}>
-                <Text style={styles.statsSectionTitle}>Performance Statistics</Text>
+                <Text style={styles.statsSectionTitle}>{t('chef.performanceStatistics')}</Text>
 
                 <View style={styles.statsGrid}>
                   <View style={styles.statGridItem}>
@@ -819,7 +819,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {(chefStats?.freeRecipesCount || 0) + (chefStats?.premiumRecipesCount || 0)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Recipes</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalRecipes')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -829,7 +829,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.coursesCount || 0}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Courses</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalCourses')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -839,7 +839,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.totalStudents || chef.subscribers}
                     </Text>
-                    <Text style={styles.statGridLabel}>Subscribers</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.subscribers')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -849,7 +849,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.averageRating?.toFixed(1) || chef.rating.toFixed(1)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Avg Rating</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.avgRating')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -860,7 +860,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       {(chef.stats?.premiumRecipesCount || 0) +
                         (chef.courses?.filter(c => c.isPremium).length || 0)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Premium Items</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.premiumItems')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -870,7 +870,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chef.stats?.totalRatings || 0}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Ratings</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalRatings')}</Text>
                   </View>
                 </View>
               </View>
@@ -1008,7 +1008,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   <View style={styles.sectionContainer}>
                     <View style={styles.sectionHeaderBar}>
                       <Ionicons name="lock-closed" size={20} color="#F59E0B" />
-                      <Text style={styles.sectionHeaderText}>Restricted Content</Text>
+                      <Text style={styles.sectionHeaderText}>{t('chef.restrictedContent')}</Text>
                       <View style={styles.sectionBadge}>
                         <Text style={styles.sectionBadgeText}>
                           {recipes.filter((r) => r.isRestricted && !r.isBanned).length +
@@ -1022,9 +1022,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       courses.filter((c) => c.isRestricted && !c.isBanned).length === 0 && (
                         <View style={styles.emptyState}>
                           <Ionicons name="lock-closed-outline" size={48} color="#475569" />
-                          <Text style={styles.emptyStateText}>No Restricted Content</Text>
+                          <Text style={styles.emptyStateText}>{t('chef.noRestrictedContent')}</Text>
                           <Text style={styles.emptyStateSubtext}>
-                            No restricted recipes or courses
+                            {t('chef.noRestrictedRecipesOrCourses')}
                           </Text>
                         </View>
                       )}
@@ -1034,7 +1034,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   <View style={[styles.sectionContainer, { marginTop: 20 }]}>
                     <View style={styles.sectionHeaderBar}>
                       <Ionicons name="ban" size={20} color="#EF4444" />
-                      <Text style={styles.sectionHeaderText}>Banned Content</Text>
+                      <Text style={styles.sectionHeaderText}>{t('chef.bannedContent')}</Text>
                       <View style={[styles.sectionBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
                         <Text style={[styles.sectionBadgeText, { color: '#EF4444' }]}>
                           {recipes.filter((r) => r.isBanned).length +
@@ -1048,9 +1048,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       courses.filter((c) => c.isBanned).length === 0 && (
                         <View style={styles.emptyState}>
                           <Ionicons name="checkmark-circle-outline" size={48} color="#22C55E" />
-                          <Text style={styles.emptyStateText}>No Banned Content</Text>
+                          <Text style={styles.emptyStateText}>{t('chef.noBannedContent')}</Text>
                           <Text style={styles.emptyStateSubtext}>
-                            No banned recipes or courses
+                            {t('chef.noBannedRecipesOrCourses')}
                           </Text>
                         </View>
                       )}
@@ -1071,15 +1071,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setReportDescription("")
           setCustomReason("")
         }}
-        title="Report Chef Profile"
+        title={t('chef.reportChefProfile')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this chef..."
+              placeholder={t('chef.typeReasonChef')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1092,7 +1092,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               }}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
 
           <ScrollView
@@ -1142,7 +1142,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCustomReason("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1152,7 +1152,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               {isReporting ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit Report</Text>
+                <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1167,11 +1167,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setUserRating(0)
           setUserFeedback("")
         }}
-        title="Rate This Chef"
+        title={t('chef.rateThisChef')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1188,10 +1188,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your experience..."
+            placeholder={t('chef.shareExperience')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1209,7 +1209,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setUserFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSubmitRating}
@@ -1219,7 +1219,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             {isRating ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+              <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1233,15 +1233,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setRecipeReportReason("")
           setRecipeReportDescription("")
         }}
-        title="Report Recipe"
+        title={t('chef.reportRecipe')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this recipe..."
+              placeholder={t('chef.typeReason')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1249,7 +1249,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               onChangeText={setRecipeReportDescription}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
 
           <ScrollView
@@ -1298,7 +1298,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setRecipeReportDescription("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1310,7 +1310,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setRecipeReportDescription("")
               }}
             >
-              <Text style={styles.submitButtonText}>Submit Report</Text>
+              <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -1324,11 +1324,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setRecipeRating(0)
           setRecipeRatingFeedback("")
         }}
-        title="Rate This Recipe"
+        title={t('chef.rateRecipe')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1345,10 +1345,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your thoughts about this recipe..."
+            placeholder={t('chef.shareThoughtsRecipe')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1366,7 +1366,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setRecipeRatingFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1379,7 +1379,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             disabled={recipeRating === 0}
             style={[styles.dialogButton, styles.submitButton, recipeRating === 0 && styles.disabledButton]}
           >
-            <Text style={[styles.submitButtonText, recipeRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            <Text style={[styles.submitButtonText, recipeRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
           </TouchableOpacity>
         </View>
       </CustomDialog>
@@ -1392,15 +1392,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setCourseReportReason("")
           setCourseReportDescription("")
         }}
-        title="Report Course"
+        title={t('chef.reportCourse')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this course..."
+              placeholder={t('chef.typeReasonCourse')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1408,7 +1408,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               onChangeText={setCourseReportDescription}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
 
           <ScrollView
@@ -1457,7 +1457,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCourseReportDescription("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1469,7 +1469,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCourseReportDescription("")
               }}
             >
-              <Text style={styles.submitButtonText}>Submit Report</Text>
+              <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -1483,11 +1483,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setCourseRating(0)
           setCourseRatingFeedback("")
         }}
-        title="Rate This Course"
+        title={t('chef.rateCourse')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1504,10 +1504,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your thoughts about this course..."
+            placeholder={t('chef.shareThoughtsCourse')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1525,7 +1525,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setCourseRatingFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1538,7 +1538,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             disabled={courseRating === 0}
             style={[styles.dialogButton, styles.submitButton, courseRating === 0 && styles.disabledButton]}
           >
-            <Text style={[styles.submitButtonText, courseRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            <Text style={[styles.submitButtonText, courseRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
           </TouchableOpacity>
         </View>
       </CustomDialog>

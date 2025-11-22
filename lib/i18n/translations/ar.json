@@ -339,6 +339,20 @@
     "summaryTooShort": "يجب أن يحتوي الملخص المهني على 50 حرفاً على الأقل",
     "summaryTooLong": "يجب ألا يتجاوز الملخص المهني 500 حرف",
     "selectExpertise": "اختر الخبرة",
+    "expertiseCategories": {
+      "baking": "الخبز",
+      "desiCooking": "الطبخ الديسي",
+      "knifeSkills": "مهارات السكين",
+      "healthyCooking": "الطبخ الصحي",
+      "continental": "قاري",
+      "beginnerFundamentals": "أساسيات للمبتدئين",
+      "italianCuisine": "المطبخ الإيطالي",
+      "asianFusion": "الاندماج الآسيوي",
+      "dessertsAndPastries": "الحلويات والمعجنات",
+      "grillingAndBBQ": "الشوي والباربيكيو",
+      "veganAndVegetarian": "نباتي ونباتي صرف",
+      "other": "أخرى"
+    },
     "cancel": "إلغاء",
     "save": "حفظ",
     "editProfile": "تعديل الملف الشخصي",
@@ -439,7 +453,16 @@
     "hours": "ساعات",
     "days": "أيام",
     "weeks": "أسابيع",
-    "months": "أشهر"
+    "months": "أشهر",
+    "reportChefProfile": "الإبلاغ عن ملف الشيف",
+    "rateThisChef": "تقييم هذا الشيف",
+    "typeReasonChef": "اكتب سبب الإبلاغ عن هذا الشيف...",
+    "shareExperience": "شارك تجربتك...",
+    "restrictedContent": "المحتوى المقيد",
+    "bannedContent": "المحتوى المحظور",
+    "noRestrictedRecipesOrCourses": "لا توجد وصفات أو دورات مقيدة",
+    "noBannedRecipesOrCourses": "لا توجد وصفات أو دورات محظورة",
+    "pleaseSelectReasonOrDescribe": "الرجاء اختيار سبب أو وصف مخاوفك"
   },
   "sidebar": {
     "notifications": "الإشعارات",

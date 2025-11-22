@@ -339,6 +339,20 @@
     "summaryTooShort": "Die berufliche Zusammenfassung muss mindestens 50 Zeichen enthalten",
     "summaryTooLong": "Die berufliche Zusammenfassung darf 500 Zeichen nicht überschreiten",
     "selectExpertise": "Fachgebiet auswählen",
+    "expertiseCategories": {
+      "baking": "Backen",
+      "desiCooking": "Desi-Küche",
+      "knifeSkills": "Messerfähigkeiten",
+      "healthyCooking": "Gesunde Küche",
+      "continental": "Kontinental",
+      "beginnerFundamentals": "Grundlagen für Anfänger",
+      "italianCuisine": "Italienische Küche",
+      "asianFusion": "Asiatische Fusion",
+      "dessertsAndPastries": "Desserts und Gebäck",
+      "grillingAndBBQ": "Grillen und BBQ",
+      "veganAndVegetarian": "Vegan und Vegetarisch",
+      "other": "Andere"
+    },
     "cancel": "Abbrechen",
     "save": "Speichern",
     "editProfile": "Profil Bearbeiten",
@@ -442,7 +456,16 @@
     "hours": "Stunden",
     "days": "Tage",
     "weeks": "Wochen",
-    "months": "Monate"
+    "months": "Monate",
+    "reportChefProfile": "Chef-Profil Melden",
+    "rateThisChef": "Diesen Chef Bewerten",
+    "typeReasonChef": "Geben Sie Ihren Grund für die Meldung dieses Chefs ein...",
+    "shareExperience": "Teilen Sie Ihre Erfahrung...",
+    "restrictedContent": "Eingeschränkte Inhalte",
+    "bannedContent": "Gesperrte Inhalte",
+    "noRestrictedRecipesOrCourses": "Keine eingeschränkten Rezepte oder Kurse",
+    "noBannedRecipesOrCourses": "Keine gesperrten Rezepte oder Kurse",
+    "pleaseSelectReasonOrDescribe": "Bitte wählen Sie einen Grund aus oder beschreiben Sie Ihr Anliegen"
   },
   "sidebar": {
     "notifications": "Benachrichtigungen",

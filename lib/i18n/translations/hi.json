@@ -339,6 +339,20 @@
     "summaryTooShort": "पेशेवर सारांश कम से कम 50 अक्षर का होना चाहिए",
     "summaryTooLong": "पेशेवर सारांश 500 अक्षर से अधिक नहीं हो सकता",
     "selectExpertise": "विशेषज्ञता चुनें",
+    "expertiseCategories": {
+      "baking": "बेकिंग",
+      "desiCooking": "देसी खाना",
+      "knifeSkills": "चाकू कौशल",
+      "healthyCooking": "स्वस्थ खाना",
+      "continental": "कॉन्टिनेंटल",
+      "beginnerFundamentals": "शुरुआती मूल बातें",
+      "italianCuisine": "इतालवी व्यंजन",
+      "asianFusion": "एशियाई फ्यूजन",
+      "dessertsAndPastries": "मिठाई और पेस्ट्री",
+      "grillingAndBBQ": "ग्रिलिंग और BBQ",
+      "veganAndVegetarian": "शाकाहारी",
+      "other": "अन्य"
+    },
     "cancel": "रद्द करें",
     "save": "सेव करें",
     "editProfile": "प्रोफाइल संपादित करें",
@@ -439,7 +453,16 @@
     "hours": "घंटे",
     "days": "दिन",
     "weeks": "सप्ताह",
-    "months": "महीने"
+    "months": "महीने",
+    "reportChefProfile": "शेफ प्रोफाइल रिपोर्ट करें",
+    "rateThisChef": "इस शेफ को रेट करें",
+    "typeReasonChef": "इस शेफ को रिपोर्ट करने का कारण लिखें...",
+    "shareExperience": "अपना अनुभव साझा करें...",
+    "restrictedContent": "प्रतिबंधित सामग्री",
+    "bannedContent": "बैन की गई सामग्री",
+    "noRestrictedRecipesOrCourses": "कोई प्रतिबंधित रेसिपी या कोर्स नहीं",
+    "noBannedRecipesOrCourses": "कोई बैन की गई रेसिपी या कोर्स नहीं",
+    "pleaseSelectReasonOrDescribe": "कृपया एक कारण चुनें या अपनी चिंता का वर्णन करें"
   },
   "sidebar": {
     "notifications": "सूचनाएं",

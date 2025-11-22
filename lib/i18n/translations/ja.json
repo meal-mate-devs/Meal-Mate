@@ -339,6 +339,20 @@
     "summaryTooShort": "プロフェッショナルサマリーは少なくとも50文字必要です",
     "summaryTooLong": "プロフェッショナルサマリーは500文字を超えてはいけません",
     "selectExpertise": "専門分野を選択",
+    "expertiseCategories": {
+      "baking": "ベーキング",
+      "desiCooking": "デシ料理",
+      "knifeSkills": "ナイフスキル",
+      "healthyCooking": "ヘルシー料理",
+      "continental": "コンチネンタル",
+      "beginnerFundamentals": "初心者の基礎",
+      "italianCuisine": "イタリア料理",
+      "asianFusion": "アジアンフュージョン",
+      "dessertsAndPastries": "デザートとペイストリー",
+      "grillingAndBBQ": "グリルとBBQ",
+      "veganAndVegetarian": "ヴィーガンとベジタリアン",
+      "other": "その他"
+    },
     "cancel": "キャンセル",
     "save": "保存",
     "editProfile": "プロフィールを編集",
@@ -439,7 +453,16 @@
     "hours": "時間",
     "days": "日",
     "weeks": "週",
-    "months": "ヶ月"
+    "months": "月",
+    "reportChefProfile": "シェフプロフィールを報告",
+    "rateThisChef": "このシェフを評価",
+    "typeReasonChef": "このシェフを報告する理由を入力してください...",
+    "shareExperience": "あなたの経験を共有してください...",
+    "restrictedContent": "制限されたコンテンツ",
+    "bannedContent": "禁止されたコンテンツ",
+    "noRestrictedRecipesOrCourses": "制限されたレシピやコースはありません",
+    "noBannedRecipesOrCourses": "禁止されたレシピやコースはありません",
+    "pleaseSelectReasonOrDescribe": "理由を選択するか、懸念事項を説明してください"
   },
   "sidebar": {
     "notifications": "通知",

@@ -6,7 +6,7 @@ import { useFavoritesStore } from "@/hooks/useFavoritesStore"
 import * as chefService from "@/lib/api/chefService"
 import { apiClient } from "@/lib/api/client"
 import { DIFFICULTY_LEVELS, DURATION_UNITS, SKILL_LEVELS } from "@/lib/constants/chefConstants"
-import { getDifficultyTranslation, getDurationUnitTranslation, getSkillLevelTranslation } from "@/lib/utils/translationHelpers"
+import { getDifficultyTranslation, getDurationUnitTranslation, getSkillLevelTranslation, getExpertiseCategoryTranslation } from "@/lib/utils/translationHelpers"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
@@ -840,7 +840,7 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                 )}
                 <Text style={styles.chefName}>{item.name}</Text>
-                <Text style={styles.chefSpecialty}>{item.specialty}</Text>
+                <Text style={styles.chefSpecialty}>{getExpertiseCategoryTranslation(item.specialty, t)}</Text>
                 <View style={styles.chefRating}>
                   <Ionicons name="star" size={12} color="#FACC15" />
                   <Text style={styles.ratingText}>{item.rating}</Text>
@@ -1399,7 +1399,7 @@ const ChefDashboardScreen: React.FC = () => {
             <View style={styles.profileBadgesRow}>
               {editMode ? (
                 <View style={{ width: '100%', marginTop: 8 }}>
-                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>Expertise Category</Text>
+                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>{t('chef.expertiseCategory')}</Text>
                   <TouchableOpacity
                     style={[styles.profileBadge, {
                       backgroundColor: 'rgba(139, 92, 246, 0.15)',
@@ -1411,7 +1411,7 @@ const ChefDashboardScreen: React.FC = () => {
                   >
                     <Ionicons name="school" size={14} color="#8B5CF6" />
                     <Text style={[styles.profileBadgeText, { color: '#8B5CF6', flex: 1 }]}>
-                      {editedExpertiseCategory || 'Select expertise'}
+                      {editedExpertiseCategory ? getExpertiseCategoryTranslation(editedExpertiseCategory, t) : t('chef.selectExpertise')}
                     </Text>
                     <Ionicons name={showExpertiseDropdown ? "chevron-up" : "chevron-down"} size={16} color="#8B5CF6" />
                   </TouchableOpacity>
@@ -1427,7 +1427,7 @@ const ChefDashboardScreen: React.FC = () => {
                               setShowExpertiseDropdown(false)
                             }}
                           >
-                            <Text style={styles.dropdownItemText}>{category}</Text>
+                            <Text style={styles.dropdownItemText}>{getExpertiseCategoryTranslation(category, t)}</Text>
                             {editedExpertiseCategory === category && (
                               <Ionicons name="checkmark-circle" size={20} color="#8B5CF6" />
                             )}
@@ -1442,7 +1442,7 @@ const ChefDashboardScreen: React.FC = () => {
                   {chefProfileData?.expertiseCategory && (
                     <View style={[styles.profileBadge, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}>
                       <Ionicons name="school" size={14} color="#8B5CF6" />
-                      <Text style={[styles.profileBadgeText, { color: '#FFFFFF' }]}>{chefProfileData.expertiseCategory}</Text>
+                      <Text style={[styles.profileBadgeText, { color: '#FFFFFF' }]}>{getExpertiseCategoryTranslation(chefProfileData.expertiseCategory, t)}</Text>
                     </View>
                   )}
                 </>

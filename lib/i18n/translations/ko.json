@@ -339,6 +339,20 @@
     "summaryTooShort": "전문 요약은 최소 50자여야 합니다",
     "summaryTooLong": "전문 요약은 500자를 초과할 수 없습니다",
     "selectExpertise": "전문 분야 선택",
+    "expertiseCategories": {
+      "baking": "제과",
+      "desiCooking": "데시 요리",
+      "knifeSkills": "칼 기술",
+      "healthyCooking": "건강 요리",
+      "continental": "컨티넌털",
+      "beginnerFundamentals": "초보자 기초",
+      "italianCuisine": "이탈리아 요리",
+      "asianFusion": "아시안 퓨전",
+      "dessertsAndPastries": "디저트와 페이스트리",
+      "grillingAndBBQ": "그릴과 BBQ",
+      "veganAndVegetarian": "비건과 채식",
+      "other": "기타"
+    },
     "cancel": "취소",
     "save": "저장",
     "editProfile": "프로필 편집",
@@ -439,7 +453,16 @@
     "hours": "시간",
     "days": "일",
     "weeks": "주",
-    "months": "월"
+    "months": "개월",
+    "reportChefProfile": "셰프 프로필 신고",
+    "rateThisChef": "이 셰프 평가",
+    "typeReasonChef": "이 셰프를 신고하는 이유를 입력하세요...",
+    "shareExperience": "경험을 공유하세요...",
+    "restrictedContent": "제한된 콘텐츠",
+    "bannedContent": "금지된 콘텐츠",
+    "noRestrictedRecipesOrCourses": "제한된 레시피나 코스가 없습니다",
+    "noBannedRecipesOrCourses": "금지된 레시피나 코스가 없습니다",
+    "pleaseSelectReasonOrDescribe": "이유를 선택하거나 우려 사항을 설명하세요"
   },
   "sidebar": {
     "notifications": "알림",

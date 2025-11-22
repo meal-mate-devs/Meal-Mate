@@ -339,6 +339,20 @@
     "summaryTooShort": "专业总结至少需要50个字符",
     "summaryTooLong": "专业总结不能超过500个字符",
     "selectExpertise": "选择专业领域",
+    "expertiseCategories": {
+      "baking": "烘焙",
+      "desiCooking": "印度食物",
+      "knifeSkills": "刀功",
+      "healthyCooking": "健康烹饪",
+      "continental": "欧陆菜",
+      "beginnerFundamentals": "初学者基础",
+      "italianCuisine": "意大利菜",
+      "asianFusion": "亚洲融合",
+      "dessertsAndPastries": "甜点和糕点",
+      "grillingAndBBQ": "烧烤和BBQ",
+      "veganAndVegetarian": "纯素和素食",
+      "other": "其他"
+    },
     "cancel": "取消",
     "save": "保存",
     "editProfile": "编辑资料",
@@ -439,7 +453,16 @@
     "hours": "小时",
     "days": "天",
     "weeks": "周",
-    "months": "月"
+    "months": "月",
+    "reportChefProfile": "举报厨师资料",
+    "rateThisChef": "评价此厨师",
+    "typeReasonChef": "输入举报此厨师的原因...",
+    "shareExperience": "分享您的经历...",
+    "restrictedContent": "受限内容",
+    "bannedContent": "被禁内容",
+    "noRestrictedRecipesOrCourses": "没有受限的食谱或课程",
+    "noBannedRecipesOrCourses": "没有被禁的食谱或课程",
+    "pleaseSelectReasonOrDescribe": "请选择原因或描述您的担忧"
   },
   "sidebar": {
     "notifications": "通知",

@@ -339,6 +339,20 @@
     "summaryTooShort": "Профессиональное резюме должно содержать минимум 50 символов",
     "summaryTooLong": "Профессиональное резюме не может превышать 500 символов",
     "selectExpertise": "Выбрать экспертизу",
+    "expertiseCategories": {
+      "baking": "Выпечка",
+      "desiCooking": "Кухня Деси",
+      "knifeSkills": "Навыки работы с ножом",
+      "healthyCooking": "Здоровое питание",
+      "continental": "Континентальная",
+      "beginnerFundamentals": "Основы для начинающих",
+      "italianCuisine": "Итальянская кухня",
+      "asianFusion": "Азиатская фьюжн",
+      "dessertsAndPastries": "Десерты и выпечка",
+      "grillingAndBBQ": "Гриль и барбекю",
+      "veganAndVegetarian": "Веганское и вегетарианское",
+      "other": "Другое"
+    },
     "cancel": "Отмена",
     "save": "Сохранить",
     "editProfile": "Редактировать профиль",
@@ -439,7 +453,16 @@
     "hours": "часы",
     "days": "дни",
     "weeks": "недели",
-    "months": "месяцы"
+    "months": "месяцы",
+    "reportChefProfile": "Пожаловаться на профиль шеф-повара",
+    "rateThisChef": "Оценить этого шеф-повара",
+    "typeReasonChef": "Напишите причину жалобы на этого шеф-повара...",
+    "shareExperience": "Поделитесь своим опытом...",
+    "restrictedContent": "Ограниченный контент",
+    "bannedContent": "Заблокированный контент",
+    "noRestrictedRecipesOrCourses": "Нет ограниченных рецептов или курсов",
+    "noBannedRecipesOrCourses": "Нет заблокированных рецептов или курсов",
+    "pleaseSelectReasonOrDescribe": "Пожалуйста, выберите причину или опишите вашу проблему"
   },
   "sidebar": {
     "notifications": "Уведомления",
