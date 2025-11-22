@@ -2,8 +2,8 @@ import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Tts from 'react-native-tts';
 import {
   Animated,
   Dimensions,
@@ -64,6 +64,7 @@ export default function CookingScreen() {
   const [isSpeakingIngredients, setIsSpeakingIngredients] = useState(false);
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [upgradeDialogType, setUpgradeDialogType] = useState<'instruction' | 'ingredients'>('instruction');
+  const [showTTSErrorDialog, setShowTTSErrorDialog] = useState(false);
 
   const overallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -185,92 +186,96 @@ export default function CookingScreen() {
       return;
     }
 
-    try {
-      if (isSpeakingInstruction) {
-        // Stop speaking
-        await Speech.stop();
-        setIsSpeakingInstruction(false);
-      } else {
-        // Stop any ongoing speech first
-        await Speech.stop();
-        setIsSpeakingIngredients(false);
-
-        // Start speaking instruction
-        setIsSpeakingInstruction(true);
-
-        const textToSpeak = instructionText;
-
-        await Speech.speak(textToSpeak, {
-          language: 'en',
-          pitch: 1.0,
-          rate: 0.9,
-          onDone: () => setIsSpeakingInstruction(false),
-          onStopped: () => setIsSpeakingInstruction(false),
-          onError: () => setIsSpeakingInstruction(false),
-        });
-      }
-    } catch (error) {
-      console.error('Error with speech:', error);
+    console.log('🔊 handleSpeakInstruction called, isSpeakingInstruction:', isSpeakingInstruction);
+    
+    if (isSpeakingInstruction) {
+      // Stop speaking
+      console.log('⏹️ Stopping speech...');
+      Tts.stop();
       setIsSpeakingInstruction(false);
-    }
-  };
-
-  const handleSpeakIngredients = async () => {
-    if (!isPro) {
-      setUpgradeDialogType('ingredients');
-      setShowUpgradeDialog(true);
       return;
     }
 
+    // Check if speech is available
     try {
-      if (isSpeakingIngredients) {
-        // Stop speaking
-        await Speech.stop();
-        setIsSpeakingIngredients(false);
-      } else {
-        // Stop any ongoing speech first
-        await Speech.stop();
+      const voices = await Tts.voices();
+      console.log('🎙️ Available voices:', voices.length);
+      if (voices.length === 0) {
+        console.log('⚠️ No TTS voices available on device');
+        setShowTTSErrorDialog(true);
         setIsSpeakingInstruction(false);
-
-        // Start speaking ingredients
-        setIsSpeakingIngredients(true);
-
-        // Build ingredients text
-        const ingredientsArray = Array.isArray(recipe?.ingredients) ? recipe.ingredients : [];
-        let ingredientsText = 'Ingredients needed: ';
-
-        if (ingredientsArray.length === 0) {
-          ingredientsText += 'No ingredients listed.';
-        } else {
-          ingredientsText += ingredientsArray.map((ingredient: any, index: number) => {
-            const ingredientText = ensureString(ingredient, '');
-            return `${index + 1}. ${ingredientText}`;
-          }).join('. ');
-        }
-
-        await Speech.speak(ingredientsText, {
-          language: 'en',
-          pitch: 1.0,
-          rate: 0.9,
-          onDone: () => setIsSpeakingIngredients(false),
-          onStopped: () => setIsSpeakingIngredients(false),
-          onError: () => setIsSpeakingIngredients(false),
-        });
+        return;
+      }
+      // Set default voice to first English voice found
+      const englishVoice = voices.find(v => v.language.startsWith('en'));
+      if (englishVoice) {
+        await Tts.setDefaultLanguage(englishVoice.language);
       }
     } catch (error) {
-      console.error('Error with speech:', error);
-      setIsSpeakingIngredients(false);
+      console.error('❌ Error checking voices:', error);
+      setShowTTSErrorDialog(true);
+      return;
+    }
+
+    // Stop any ongoing speech first
+    console.log('🛑 Stopping any ongoing speech...');
+    Tts.stop();
+    setIsSpeakingIngredients(false);
+
+    // Start speaking instruction
+    console.log('▶️ Starting speech...');
+    setIsSpeakingInstruction(true);
+
+    const textToSpeak = instructionText;
+    console.log('📝 Text to speak:', textToSpeak.substring(0, 50) + '...');
+
+    try {
+      await Tts.speak(textToSpeak, {
+        androidParams: {
+          KEY_PARAM_PAN: 0,
+          KEY_PARAM_VOLUME: 1.0,
+          KEY_PARAM_STREAM: 'STREAM_MUSIC',
+        },
+      });
+      console.log('🎤 Tts.speak called successfully');
+    } catch (error) {
+      console.log('❌ Speech error:', error);
+      setIsSpeakingInstruction(false);
     }
   };
 
-  // Cleanup speech on unmount or step change
+  // Setup TTS event listeners
+  useEffect(() => {
+    Tts.addEventListener('tts-finish', () => {
+      console.log('✅ Speech done');
+      setIsSpeakingInstruction(false);
+    });
+
+    Tts.addEventListener('tts-cancel', () => {
+      console.log('⏹️ Speech cancelled');
+      setIsSpeakingInstruction(false);
+    });
+
+    return () => {
+      Tts.removeAllListeners('tts-finish');
+      Tts.removeAllListeners('tts-cancel');
+    };
+  }, []);
+
+  // Cleanup speech on step change only (not on every render)
+  useEffect(() => {
+    // Stop speech when moving to a different step
+    Tts.stop();
+    setIsSpeakingInstruction(false);
+    setIsSpeakingIngredients(false);
+  }, [currentStep]);
+
+  // Cleanup speech on unmount
   useEffect(() => {
     return () => {
-      Speech.stop();
-      setIsSpeakingInstruction(false);
-      setIsSpeakingIngredients(false);
+      Tts.stop();
     };
-  }, [currentStep]);
+  }, []);
 
   function ensureString(value: unknown, fallback = ''): string {
     if (value === null || value === undefined) {
@@ -722,6 +727,17 @@ export default function CookingScreen() {
         }}
         onCancel={() => setShowUpgradeDialog(false)}
         onClose={() => setShowUpgradeDialog(false)}
+      />
+
+      {/* TTS Error Dialog */}
+      <Dialog
+        visible={showTTSErrorDialog}
+        type="error"
+        title="⚠️ Text-to-Speech Unavailable"
+        message="Text-to-speech is not available on your device. Please install a TTS engine (like Google Text-to-Speech) from the Play Store and enable it in your device settings."
+        confirmText="OK"
+        onConfirm={() => setShowTTSErrorDialog(false)}
+        onClose={() => setShowTTSErrorDialog(false)}
       />
     </View>
   );
