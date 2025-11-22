@@ -43,8 +43,8 @@ const SettingsScreen: React.FC = () => {
     {
       id: "subscription",
       title: "Pro Subscription",
-      subtitle: "valid until 03/24",
-      link: "subscription",
+      subtitle: "Manage your subscription plan",
+      link: "/(protected)/(tabs)/(hidden)/settings/subscription",
       showBadge: true,
       badgeColor: "#10B981",
       icon: "diamond-outline",
@@ -75,13 +75,6 @@ const SettingsScreen: React.FC = () => {
       link: "notifications",
     },
     {
-      id: "payment",
-      icon: "card-outline",
-      title: "Payment & Billing",
-      subtitle: "Payment methods, invoices",
-      link: "payment",
-    },
-    {
       id: "help",
       icon: "help-circle-outline",
       title: "Help & Support",
@@ -94,7 +87,7 @@ const SettingsScreen: React.FC = () => {
     <View key={item.id}>
       <TouchableOpacity
         className="flex-row items-center justify-between py-4 px-4"
-        onPress={() => item.action ? item.action() : router.push(item.link)}
+        onPress={() => item.action ? item.action() : router.push(item.link as any)}
       >
         <View className="flex-row items-center flex-1">
           {item.icon && (
@@ -163,7 +156,10 @@ const SettingsScreen: React.FC = () => {
         {/* Quick Actions */}
         <View className="mb-6">
           <View className="flex-row">
-            <TouchableOpacity className="flex-1 overflow-hidden rounded-2xl mr-2">
+            <TouchableOpacity 
+              className="flex-1 overflow-hidden rounded-2xl mr-2"
+              onPress={() => router.push('/(protected)/(tabs)/(hidden)/settings/subscription')}
+            >
               <LinearGradient
                 colors={["#FACC15", "#F97316"]}
                 start={{ x: 0, y: 0 }}

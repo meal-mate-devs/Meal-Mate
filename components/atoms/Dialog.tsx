@@ -896,11 +896,15 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: '600',
+        paddingHorizontal: 8,
+        textAlign: 'center',
     },
     cancelText: {
         color: 'rgba(255, 255, 255, 0.9)',
         fontSize: 16,
         fontWeight: '600',
+        paddingHorizontal: 8,
+        textAlign: 'center',
     },
     closeButton: {
         position: 'absolute',
