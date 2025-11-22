@@ -179,7 +179,7 @@ export default function CookingScreen() {
     setIsPaused((prev) => !prev);
   };
 
-  const handleSpeakInstruction = () => {
+  const handleSpeakInstruction = async () => {
     if (!isPro) {
       setUpgradeDialogType('instruction');
       setShowUpgradeDialog(true);
@@ -196,6 +196,16 @@ export default function CookingScreen() {
       return;
     }
 
+    // Check if TTS is available
+    try {
+      const available = await Speech.isSpeakingAsync();
+      console.log('🎙️ Speech available:', available);
+    } catch (error) {
+      console.log('⚠️ TTS check failed:', error);
+      setShowTTSErrorDialog(true);
+      return;
+    }
+
     // Stop any ongoing speech first
     console.log('🛑 Stopping any ongoing speech...');
     Speech.stop();
@@ -208,24 +218,31 @@ export default function CookingScreen() {
     const textToSpeak = instructionText;
     console.log('📝 Text to speak:', textToSpeak.substring(0, 50) + '...');
 
-    Speech.speak(textToSpeak, {
-      language: 'en-US',
-      pitch: 1.0,
-      rate: 0.9,
-      onDone: () => {
-        console.log('✅ Speech done');
-        setIsSpeakingInstruction(false);
-      },
-      onStopped: () => {
-        console.log('⏹️ Speech stopped');
-        setIsSpeakingInstruction(false);
-      },
-      onError: (error) => {
-        console.log('❌ Speech error:', error);
-        setIsSpeakingInstruction(false);
-      },
-    });
-    console.log('🎤 Speech.speak called successfully');
+    try {
+      Speech.speak(textToSpeak, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.9,
+        onDone: () => {
+          console.log('✅ Speech done');
+          setIsSpeakingInstruction(false);
+        },
+        onStopped: () => {
+          console.log('⏹️ Speech stopped');
+          setIsSpeakingInstruction(false);
+        },
+        onError: (error) => {
+          console.log('❌ Speech error:', error);
+          setIsSpeakingInstruction(false);
+          setShowTTSErrorDialog(true);
+        },
+      });
+      console.log('🎤 Speech.speak called successfully');
+    } catch (error) {
+      console.log('❌ Failed to speak:', error);
+      setIsSpeakingInstruction(false);
+      setShowTTSErrorDialog(true);
+    }
   };
 
   // Cleanup speech on step change
