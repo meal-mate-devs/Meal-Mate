@@ -1,5 +1,6 @@
 import CustomSplashScreen from "@/components/molecules/CustomSplashScreen";
 import { AuthContextProvider, useAuthContext } from "@/context/authContext";
+import { NotificationProvider } from "@/context/notificationContext";
 import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
 import * as NavigationBar from 'expo-navigation-bar';
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
@@ -65,7 +66,9 @@ export default function RootLayout() {
         <CustomSplashScreen />
       ) : (
         <AuthContextProvider>
-          <RootLayoutContent />
+          <NotificationProvider>
+            <RootLayoutContent />
+          </NotificationProvider>
         </AuthContextProvider>
       )}
     </View>

@@ -5,6 +5,7 @@ import ErrorDisplay from "@/components/atoms/ErrorDisplay"
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
+import { useNotifications } from "@/hooks/useNotifications"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -15,19 +16,19 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Animated,
+    Dimensions,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -357,6 +358,10 @@ const PantryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const params = useLocalSearchParams()
+  
+  // Notification hook for checking expiry
+  const { checkPantryExpiry } = useNotifications()
+  
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
@@ -778,6 +783,9 @@ const PantryManagementScreen: React.FC = () => {
             useNativeDriver: true,
           }),
         ]).start();
+        
+        // Check pantry expiry after adding item
+        checkPantryExpiry().catch(err => console.log('Error checking pantry expiry:', err));
       } else {
         showCustomDialog('error', 'Error', 'Failed to add item to pantry.', 'OK', 'Cancel', false, () => {
           hideDialog();
