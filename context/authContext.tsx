@@ -3,15 +3,15 @@ import { auth } from '@/lib/config/clientApp';
 import { subscriptionService } from '@/lib/services/subscriptionService';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
-  createUserWithEmailAndPassword,
-  fetchSignInMethodsForEmail,
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  sendEmailVerification,
-  sendPasswordResetEmail,
-  signInWithCredential,
-  signInWithEmailAndPassword,
-  signOut
+    createUserWithEmailAndPassword,
+    fetchSignInMethodsForEmail,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    sendEmailVerification,
+    sendPasswordResetEmail,
+    signInWithCredential,
+    signInWithEmailAndPassword,
+    signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -42,7 +42,7 @@ type Profile = {
     publicId: string | null;
   };
   isProfileComplete: boolean;
-  isChef: boolean;
+  isChef: 'no' | 'yes' | 'banned';
   isPro: boolean;
   // Subscription fields
   stripeCustomerId?: string | null;
@@ -164,7 +164,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             publicId: null
           },
           isProfileComplete: false,
-          isChef: false,
+          isChef: 'no',
           isPro: false
         };
 
@@ -236,7 +236,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           publicId: null
         },
         isProfileComplete: false,
-        isChef: false,
+        isChef: 'no',
         isPro: false
       };
 
@@ -363,6 +363,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       formData.append('gender', gender);
       formData.append('dateOfBirth', formattedDOB);
       formData.append('phoneNumber', phoneNumber);
+      formData.append('isChef', 'no');
 
       if (profileImage) {
         const imageType = profileImage.type || profileImage.mimeType || 'image/jpeg';
@@ -478,7 +479,8 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({
               firstName: userCredential.user.displayName?.split(' ')[0] || '',
               lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
-              isGoogleUser: true
+              isGoogleUser: true,
+              isChef: 'no'
             }),
           });
 
@@ -511,7 +513,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             publicId: null
           },
           isProfileComplete: false, // Mark as incomplete since we don't have all required fields
-          isChef: false,
+          isChef: 'no',
           isPro: false
         };
 

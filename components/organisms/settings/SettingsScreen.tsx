@@ -49,7 +49,9 @@ const SettingsScreen: React.FC = () => {
       badgeColor: "#10B981",
       icon: "diamond-outline",
     },
-    {
+  ]
+
+  const appSettingsItems = [{
       id: "password",
       icon: "key-outline",
       title: "Change Password",
@@ -57,29 +59,19 @@ const SettingsScreen: React.FC = () => {
       action: () => setShowPasswordDialog(true),
       showBadge: false,
     },
-  ]
-
-  const appSettingsItems = [
-    {
-      id: "general",
-      icon: "settings-outline",
-      title: "General",
-      subtitle: "Language, region, accessibility",
-      link: "general",
-    },
     {
       id: "notifications",
       icon: "notifications-outline",
       title: "Notifications",
       subtitle: "Push notifications, email alerts",
-      link: "notifications",
+      link: "/(protected)/(tabs)/(hidden)/settings/notifications",
     },
     {
       id: "help",
       icon: "help-circle-outline",
       title: "Help & Support",
       subtitle: "FAQ, contact support",
-      link: "help",
+      link: "/(protected)/(tabs)/(hidden)/settings/help",
     },
   ]
 

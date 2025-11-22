@@ -233,11 +233,9 @@ const ChefDashboardScreen: React.FC = () => {
     "Repeated Content",
     "Misleading Information",
     "Spam or Scam",
-    "Harassment",
   ]
   
   // Chef registration states
-  const [showChefRegistration, setShowChefRegistration] = useState(false)
   const [isRegisteringChef, setIsRegisteringChef] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [showRegErrorDialog, setShowRegErrorDialog] = useState(false)
@@ -253,15 +251,6 @@ const ChefDashboardScreen: React.FC = () => {
   const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
   const [generalErrorMessage, setGeneralErrorMessage] = useState('')
   
-  // Check if user should see chef registration
-  useEffect(() => {
-    if (userType === "chef" && profile && !profile.isChef) {
-      setShowChefRegistration(true)
-    } else {
-      setShowChefRegistration(false)
-    }
-  }, [userType, profile])
-
   // Dynamic state for user-created content
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([])
   const [userCourses, setUserCourses] = useState<Course[]>([])
@@ -297,9 +286,9 @@ const ChefDashboardScreen: React.FC = () => {
     })
   }
 
-  // Fetch chef's recipes and courses from backend
+  // Fetch chef's recipes and courses from backend - only for actual chefs
   useEffect(() => {
-    if (profile?.isChef) {
+    if (profile?.isChef === 'yes') {
       fetchUserRecipes()
       fetchUserCourses()
       fetchChefStatsAndFeedback()
@@ -1573,8 +1562,7 @@ const ChefDashboardScreen: React.FC = () => {
                 <Ionicons name="flag-outline" size={15} color="#EF4444" />
               </View>
               <Text style={styles.statGridValue}>
-                {(userRecipes.reduce((sum, r) => sum + (r.totalReports || 0), 0) + 
-                  userCourses.reduce((sum, c) => sum + (c.totalReports || 0), 0))}
+                {chefProfileData?.reports?.length || 0}
               </Text>
               <Text style={styles.statGridLabel}>Total Reports</Text>
             </View>
@@ -1589,6 +1577,39 @@ const ChefDashboardScreen: React.FC = () => {
               <Text style={styles.statGridLabel}>Premium Items</Text>
             </View>
           </View>
+
+          {/* Reports Warning */}
+          {(chefProfileData?.reports?.length || 0) >= 8 && (
+            <View style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+              borderRadius: 12,
+              padding: 16,
+              marginTop: 16,
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              gap: 12
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: '#EF4444',
+                  marginBottom: 6
+                }}>
+                  ⚠️ Account Warning
+                </Text>
+                <Text style={{
+                  fontSize: 14,
+                  color: '#E5E7EB',
+                  lineHeight: 20
+                }}>
+                  Your account has received repeated reports and will be banned if you continue to violate community guidelines. Please review our policies and ensure your content meets our standards.
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Restricted Content Section */}
@@ -2654,7 +2675,6 @@ const ChefDashboardScreen: React.FC = () => {
       // Refresh profile to get updated isChef status
       await refreshProfile()
       
-      setShowChefRegistration(false)
       setShowSuccessDialog(true)
       setIsRegisteringChef(false)
     } catch (error: any) {
@@ -2666,19 +2686,18 @@ const ChefDashboardScreen: React.FC = () => {
   }
 
   const handleCancelChefRegistration = () => {
-    setShowChefRegistration(false)
     setUserType("user") // Switch back to user view
   }
 
-  // Show chef registration screen if user is not a chef
-  if (showChefRegistration && profile && !profile.isChef) {
+  // Show chef registration screen if user wants to be chef but is not registered yet
+  if (userType === "chef" && profile?.isChef === 'no') {
     return (
       <>
         <ChefRegistrationScreen
           onComplete={handleChefRegistration}
           onCancel={handleCancelChefRegistration}
         />
-        
+
         {/* Success Dialog */}
         <Dialog
           visible={showSuccessDialog}
@@ -2702,6 +2721,154 @@ const ChefDashboardScreen: React.FC = () => {
           confirmText="OK"
         />
       </>
+    )
+  }
+
+  // Render banned screen if chef is banned
+  if (userType === "chef" && profile?.isChef === 'banned') {
+    return (
+      <LinearGradient
+        colors={["#09090b", "#18181b"]}
+        style={{ flex: 1 }}
+      >
+        <View style={[styles.container, { paddingTop: insets.top + 20, backgroundColor: 'transparent', paddingHorizontal: 24 }]}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40, alignItems: 'center', justifyContent: 'center', flex: 1 }}
+          >
+            {/* Header */}
+            <View style={{ alignItems: 'center', marginBottom: 24 }}>
+              <View style={{
+                width: 60,
+                height: 60,
+                borderRadius: 30,
+                backgroundColor: 'rgba(239, 68, 68, 0.2)',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 16
+              }}>
+                <Ionicons name="ban" size={30} color="#EF4444" />
+              </View>
+              
+              <Text style={{
+                fontSize: 24,
+                fontWeight: '800',
+                color: '#FFFFFF',
+                marginBottom: 8,
+                textAlign: 'center'
+              }}>
+                Account Banned
+              </Text>
+              
+              <Text style={{
+                fontSize: 14,
+                color: '#94A3B8',
+                textAlign: 'center',
+                lineHeight: 20,
+                paddingHorizontal: 20
+              }}>
+                Your chef account has been suspended
+              </Text>
+            </View>
+
+            {/* Info Card */}
+            <View style={{
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgba(239, 68, 68, 0.3)',
+              borderRadius: 12,
+              padding: 16,
+              marginBottom: 16,
+              width: '100%'
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 12 }}>
+                <Ionicons name="information-circle" size={20} color="#EF4444" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: '#EF4444',
+                    marginBottom: 6
+                  }}>
+                    Why was I banned?
+                  </Text>
+                  <Text style={{
+                    fontSize: 13,
+                    color: '#E5E7EB',
+                    lineHeight: 18
+                  }}>
+                    Your account received multiple reports for violating our community guidelines. We take these reports seriously to maintain a safe and enjoyable platform for everyone.
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Appeal Card */}
+            <View style={{
+              backgroundColor: 'rgba(250, 204, 21, 0.1)',
+              borderWidth: 1,
+              borderColor: 'rgba(250, 204, 21, 0.3)',
+              borderRadius: 12,
+              padding: 16,
+              width: '100%'
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                <Ionicons name="mail" size={20} color="#FACC15" />
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: '700',
+                    color: '#FACC15',
+                    marginBottom: 6
+                  }}>
+                    Think this was a mistake?
+                  </Text>
+                  <Text style={{
+                    fontSize: 13,
+                    color: '#E5E7EB',
+                    lineHeight: 18,
+                    marginBottom: 8
+                  }}>
+                    If you believe your account was banned in error, you can request a review by contacting us at:
+                  </Text>
+                  <Text style={{
+                    fontSize: 14,
+                    fontWeight: '600',
+                    color: '#FACC15',
+                    textDecorationLine: 'underline'
+                  }}>
+                    mealmate.fyp@gmail.com
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            {/* Switch to Food Explorer */}
+            <TouchableOpacity
+              style={{
+                backgroundColor: '#FACC15',
+                paddingHorizontal: 24,
+                paddingVertical: 12,
+                borderRadius: 10,
+                marginTop: 24,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 6
+              }}
+              onPress={() => handleUserTypeSwitch('user')}
+            >
+              <Ionicons name="restaurant" size={18} color="#1a1a1a" />
+              <Text style={{
+                fontSize: 14,
+                fontWeight: '700',
+                color: '#1a1a1a'
+              }}>
+                Browse as Food Explorer
+              </Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </LinearGradient>
     )
   }
 
