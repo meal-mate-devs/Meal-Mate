@@ -12,6 +12,7 @@ import React, { useEffect, useRef, useState } from "react"
 import {
     Alert,
     Animated,
+    BackHandler,
     ScrollView,
     Share,
     StatusBar,
@@ -93,6 +94,18 @@ const ViewRecipeScreen = () => {
         }
     }, [])
 
+    // Handle hardware back button
+    useEffect(() => {
+        const backAction = () => {
+            router.push("/health")
+            return true // Prevent default back behavior
+        }
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction)
+
+        return () => backHandler.remove()
+    }, [router])
+
     const performRecipeGeneration = async (): Promise<void> => {
         timeoutRef.current = setTimeout(() => {
             if (isGenerating) {
@@ -144,7 +157,7 @@ const ViewRecipeScreen = () => {
     }
 
     const handleClose = (): void => {
-        router.back()
+        router.push("/diet-plan/meal-planning")
     }
 
     const handleRetry = (): void => {
@@ -227,52 +240,53 @@ const ViewRecipeScreen = () => {
     }
 
     const handleShareRecipe = async (recipe: GeneratedRecipe): Promise<void> => {
-        let recipeText = `🍽️ ${recipe.title}\n\n`
-        recipeText += `📝 ${recipe.description}\n\n`
-        recipeText += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
-        recipeText += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
+        let textToShare: string = `🍽️ ${recipe.title}\n\n`
+        textToShare += `📝 ${recipe.description}\n\n`
+        textToShare += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
+        textToShare += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
 
-        recipeText += `📊 Nutrition (per serving):\n`
-        recipeText += `• Calories: ${recipe.nutritionInfo.calories}\n`
-        recipeText += `• Protein: ${recipe.nutritionInfo.protein}g\n`
-        recipeText += `• Carbs: ${recipe.nutritionInfo.carbs}g\n`
-        recipeText += `• Fat: ${recipe.nutritionInfo.fat}g\n\n`
+        textToShare += `📊 Nutrition (per serving):\n`
+        textToShare += `• Calories: ${recipe.nutritionInfo.calories}\n`
+        textToShare += `• Protein: ${recipe.nutritionInfo.protein}g\n`
+        textToShare += `• Carbs: ${recipe.nutritionInfo.carbs}g\n`
+        textToShare += `• Fat: ${recipe.nutritionInfo.fat}g\n\n`
 
-        recipeText += `🛒 Ingredients:\n`
+        textToShare += `🛒 Ingredients:\n`
         recipe.ingredients.forEach((ingredient, index) => {
-            recipeText += `${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
+            textToShare += `${index + 1}. ${ingredient.amount} ${ingredient.unit} ${ingredient.name}`
             if (ingredient.notes) {
-                recipeText += ` (${ingredient.notes})`
+                textToShare += ` (${ingredient.notes})`
             }
-            recipeText += `\n`
+            textToShare += `\n`
         })
-        recipeText += `\n`
+        textToShare += `\n`
 
-        recipeText += `👨‍🍳 Instructions:\n`
+        textToShare += `👨‍🍳 Instructions:\n`
         recipe.instructions.forEach((instruction) => {
-            recipeText += `${instruction.step}. ${instruction.instruction}`
+            textToShare += `${instruction.step}. ${instruction.instruction}`
             if (instruction.duration) {
-                recipeText += ` (${instruction.duration} min)`
+                textToShare += ` (${instruction.duration} min)`
             }
-            recipeText += `\n`
+            textToShare += `\n`
             if (instruction.tips) {
-                recipeText += `   💡 ${instruction.tips}\n`
+                textToShare += `   💡 ${instruction.tips}\n`
             }
         })
-        recipeText += `\n`
+        textToShare += `\n`
 
-        if (recipe.tips.length > 0) {
-            recipeText += `💡 Chef's Tips:\n`
-            recipe.tips.forEach((tip) => {
-                recipeText += `• ${tip}\n`
+        if ((recipe.tips || []).length > 0) {
+            const tipsSection = ['💡 Chef\'s Tips:\n']
+            ;(recipe.tips || []).forEach((tip: string) => {
+                tipsSection.push(`• ${tip || 'No tip available'}\n`)
             })
+            textToShare += tipsSection.join('')
         }
 
-        recipeText += `---\nShared from Meal Mate App 🍳`
+        textToShare += `---\nShared from Meal Mate App 🍳`
 
         try {
             await Share.share({
-                message: recipeText,
+                message: textToShare,
             })
         } catch (error) {
             console.log("Unable to share recipe", error)
@@ -453,11 +467,11 @@ const ViewRecipeScreen = () => {
                                         <Text className="text-base leading-relaxed" style={{ color: '#94A3B8' }}>
                                             {showFullDescription
                                                 ? generatedRecipe.description
-                                                : generatedRecipe.description.length > 120
-                                                    ? `${generatedRecipe.description.substring(0, 120)}...`
+                                                : (generatedRecipe.description || '').length > 120
+                                                    ? `${(generatedRecipe.description || '').substring(0, 120)}...`
                                                     : generatedRecipe.description
                                             }
-                                            {generatedRecipe.description.length > 120 && (
+                                            {(generatedRecipe.description || '').length > 120 && (
                                                 <Text className="text-sm font-medium" style={{ color: '#FACC15' }}>
                                                     {showFullDescription ? ' Show Less' : ' Read More'}
                                                 </Text>
@@ -558,10 +572,10 @@ const ViewRecipeScreen = () => {
                                         <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                                     </View>
                                     <View className="rounded-2xl p-3 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-                                        {generatedRecipe.ingredients.map((ingredient, index) => (
+                                        {(generatedRecipe.ingredients || []).map((ingredient, index) => (
                                             <View
                                                 key={`ingredient-${index}`}
-                                                className={`flex-row items-start py-2 ${index !== generatedRecipe.ingredients.length - 1 ? "border-b" : ""
+                                                className={`flex-row items-start py-2 ${index !== (generatedRecipe.ingredients || []).length - 1 ? "border-b" : ""
                                                     }`}
                                                 style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                                             >
@@ -594,7 +608,7 @@ const ViewRecipeScreen = () => {
                                         <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                                     </View>
                                     <View>
-                                        {generatedRecipe.instructions.map((instruction, index) => (
+                                        {(generatedRecipe.instructions || []).map((instruction, index) => (
                                             <View
                                                 key={`instruction-${index}`}
                                                 className="mb-4 rounded-2xl p-5 shadow-lg bg-zinc-800"
@@ -632,7 +646,7 @@ const ViewRecipeScreen = () => {
                                 </View>
 
                                 {/* Tips */}
-                                {generatedRecipe.tips.length > 0 && (
+                                {(generatedRecipe.tips || []).length > 0 && (
                                     <View className="px-4 pb-6">
                                         <View className="flex-row items-center mb-5">
                                             <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: '#FACC15' }} />
@@ -640,10 +654,10 @@ const ViewRecipeScreen = () => {
                                             <View className="flex-1 h-px ml-4" style={{ backgroundColor: 'rgba(250, 204, 21, 0.2)' }} />
                                         </View>
                                         <View className="rounded-2xl p-5 shadow-xl bg-zinc-800" style={{ borderWidth: 4, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
-                                            {generatedRecipe.tips.map((tip, index) => (
+                                            {(generatedRecipe.tips || []).filter(tip => tip && typeof tip === 'string').map((tip, index, filteredTips) => (
                                                 <View
                                                     key={`tip-${index}`}
-                                                    className={`flex-row items-start py-3 ${index !== generatedRecipe.tips.length - 1 ? "border-b" : ""
+                                                    className={`flex-row items-start py-3 ${index !== filteredTips.length - 1 ? "border-b" : ""
                                                         }`}
                                                     style={{ borderBottomColor: 'rgba(255, 255, 255, 0.1)' }}
                                                 >
@@ -651,7 +665,7 @@ const ViewRecipeScreen = () => {
                                                         <Ionicons name="bulb" size={14} color="#FACC15" />
                                                     </View>
                                                     <Text className="flex-1 leading-relaxed" style={{ color: '#94A3B8' }}>
-                                                        {tip}
+                                                        {tip || 'No tip available'}
                                                     </Text>
                                                 </View>
                                             ))}

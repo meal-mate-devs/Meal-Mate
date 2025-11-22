@@ -9,6 +9,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { useCallback, useEffect, useState } from "react"
 import {
+    BackHandler,
     Modal,
     Platform,
     SafeAreaView,
@@ -124,6 +125,18 @@ const MealPlanningScreen = () => {
         fetchActivePlan()
     }, [])
 
+    // Handle hardware back button
+    useEffect(() => {
+        const backAction = () => {
+            router.push("/health")
+            return true // Prevent default back behavior
+        }
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction)
+
+        return () => backHandler.remove()
+    }, [router])
+
     // Refresh plan data when screen comes into focus
     useFocusEffect(
         useCallback(() => {
@@ -186,7 +199,7 @@ const MealPlanningScreen = () => {
             {/* Header */}
             <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
                 <View className="flex-row items-center justify-between mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 rounded-full">
+                    <TouchableOpacity onPress={() => router.push("/health")} className="p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text className="text-white text-xl font-bold">Meal Tracking</Text>
