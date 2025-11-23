@@ -8,6 +8,7 @@ import { useRouter } from "expo-router"
 import React, { useEffect, useState } from "react"
 import {
     ActivityIndicator,
+    BackHandler,
     Modal,
     SafeAreaView,
     ScrollView,
@@ -61,6 +62,18 @@ const HealthConditionsScreen = () => {
         checkExistingPlan()
     }, [])
 
+    // Handle hardware back button
+    useEffect(() => {
+        const backAction = () => {
+            router.push("/health")
+            return true // Prevent default back behavior
+        }
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction)
+
+        return () => backHandler.remove()
+    }, [router])
+
     const checkExistingPlan = async () => {
         try {
             const response = await dietPlanningService.getActivePlan()
@@ -70,7 +83,7 @@ const HealthConditionsScreen = () => {
                 setDialogTitle('Active Plan Exists')
                 setDialogMessage('You already have an active meal plan. Please cancel your current plan from the Diet Planning screen before generating a new one.')
                 setShowDialog(true)
-                setTimeout(() => router.back(), 2500)
+                setTimeout(() => router.push("/health"), 2500)
             }
         } catch (error: any) {
             // No plan exists, proceed normally
@@ -426,7 +439,7 @@ const HealthConditionsScreen = () => {
             {/* Header */}
             <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
                 <View className="flex-row items-center justify-between mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 rounded-full">
+                    <TouchableOpacity onPress={() => router.push("/health")} className="p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text className="text-white text-xl font-bold">Health Conditions</Text>
@@ -794,7 +807,7 @@ const HealthConditionsScreen = () => {
                                                 setDialogTitle('Success! 🎉')
                                                 setDialogMessage(`Your ${planDuration} plan for ${selectedCondition.name} has been generated with ${totalMeals} specialized meals!`)
                                                 setShowDialog(true)
-                                                setTimeout(() => router.back(), 2500)
+                                                setTimeout(() => router.push("/health"), 2500)
                                             } else {
                                                 setDialogType('error');
                                                 setDialogTitle('Generation Failed');
