@@ -416,7 +416,7 @@ const HomeScreen: React.FC = () => {
                 </View>
 
             {/* Stats Container */}
-            <View className="px-4 mt-4 mb-2">
+            <View className="px-4 mt-1 mb-3">
                 <View className="rounded-3xl p-2 shadow-lg bg-zinc-800" style={{ borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                     <View className="flex-row items-center justify-between ml-6 mr-6">
                         <View className="items-center">
