@@ -221,14 +221,87 @@
     "following": "يتابع"
   },
   "notifications": {
-    "title": "الإشعارات",
+    "screenTitle": "الإشعارات",
     "subtitle": "إدارة إشعاراتك",
     "pushNotifications": "إشعارات الدفع",
     "emailNotifications": "إشعارات البريد الإلكتروني",
     "recipeUpdates": "تحديثات الوصفات",
     "newRecipes": "وصفات جديدة",
     "socialActivity": "النشاط الاجتماعي",
-    "messages": "الرسائل"
+    "messages": "الرسائل",
+    "filters": {
+      "all": "الكل",
+      "unread": "غير مقروء",
+      "recipes": "الوصفات",
+      "social": "الاجتماعي",
+      "system": "النظام"
+    },
+    "categories": {
+      "recipe": "وصفة",
+      "social": "اجتماعي",
+      "system": "نظام",
+      "promotion": "ترويجي",
+      "update": "تحديث"
+    },
+    "priorities": {
+      "high": "عالي",
+      "medium": "متوسط",
+      "low": "منخفض"
+    },
+    "actions": {
+      "markAsRead": "وضع علامة كمقروء",
+      "markAsUnread": "وضع علامة كغير مقروء",
+      "delete": "حذف",
+      "view": "عرض",
+      "dismiss": "تجاهل",
+      "archive": "أرشفة",
+      "unarchive": "إلغاء الأرشفة"
+    },
+    "time": {
+      "justNow": "الآن",
+      "minutesAgo": "منذ {{count}} دقيقة",
+      "minutesAgo_plural": "منذ {{count}} دقائق",
+      "hoursAgo": "منذ {{count}} ساعة",
+      "hoursAgo_plural": "منذ {{count}} ساعات",
+      "daysAgo": "منذ {{count}} يوم",
+      "daysAgo_plural": "منذ {{count}} أيام",
+      "weeksAgo": "منذ {{count}} أسبوع",
+      "weeksAgo_plural": "منذ {{count}} أسابيع",
+      "monthsAgo": "منذ {{count}} شهر",
+      "monthsAgo_plural": "منذ {{count}} أشهر",
+      "yearsAgo": "منذ {{count}} سنة",
+      "yearsAgo_plural": "منذ {{count}} سنوات",
+      "expired": "منتهي الصلاحية"
+    },
+    "data": {
+      "noNotifications": "لا توجد إشعارات",
+      "noNotificationsDesc": "ستظهر إشعاراتك هنا عندما تكون متوفرة",
+      "loadingNotifications": "جاري تحميل الإشعارات...",
+      "failedToLoad": "فشل في تحميل الإشعارات",
+      "retry": "إعادة المحاولة",
+      "newNotifications": "{{count}} إشعار جديد",
+      "newNotifications_plural": "{{count}} إشعارات جديدة",
+      "markAllAsRead": "وضع علامة على الكل كمقروء",
+      "clearAll": "مسح الكل",
+      "notificationSettings": "إعدادات الإشعارات",
+      "enablePushNotifications": "تفعيل إشعارات الدفع",
+      "enableEmailNotifications": "تفعيل إشعارات البريد الإلكتروني",
+      "notificationPreferences": "تفضيلات الإشعارات",
+      "soundEnabled": "الصوت مفعل",
+      "vibrationEnabled": "الاهتزاز مفعل",
+      "quietHours": "ساعات الهدوء",
+      "quietHoursStart": "بداية ساعات الهدوء",
+      "quietHoursEnd": "نهاية ساعات الهدوء"
+    },
+    "errors": {
+      "loadFailed": "فشل في تحميل الإشعارات",
+      "loadFailedDesc": "حدث خطأ أثناء تحميل إشعاراتك. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+      "markAsReadFailed": "فشل في وضع علامة كمقروء",
+      "deleteFailed": "فشل في حذف الإشعار",
+      "settingsUpdateFailed": "فشل في تحديث الإعدادات",
+      "networkError": "خطأ في الشبكة",
+      "serverError": "خطأ في الخادم"
+    }
   },
   "help": {
     "title": "المساعدة والدعم",

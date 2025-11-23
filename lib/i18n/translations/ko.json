@@ -221,14 +221,87 @@
     "following": "팔로잉"
   },
   "notifications": {
-    "title": "알림",
-    "subtitle": "알림 관리",
+    "screenTitle": "알림",
+    "subtitle": "알림을 관리하세요",
     "pushNotifications": "푸시 알림",
     "emailNotifications": "이메일 알림",
     "recipeUpdates": "레시피 업데이트",
     "newRecipes": "새 레시피",
     "socialActivity": "소셜 활동",
-    "messages": "메시지"
+    "messages": "메시지",
+    "filters": {
+      "all": "전체",
+      "unread": "읽지 않음",
+      "recipes": "레시피",
+      "social": "소셜",
+      "system": "시스템"
+    },
+    "categories": {
+      "recipe": "레시피",
+      "social": "소셜",
+      "system": "시스템",
+      "promotion": "프로모션",
+      "update": "업데이트"
+    },
+    "priorities": {
+      "high": "높음",
+      "medium": "중간",
+      "low": "낮음"
+    },
+    "actions": {
+      "markAsRead": "읽음으로 표시",
+      "markAsUnread": "읽지 않음으로 표시",
+      "delete": "삭제",
+      "view": "보기",
+      "dismiss": "무시",
+      "archive": "보관",
+      "unarchive": "보관 해제"
+    },
+    "time": {
+      "justNow": "방금",
+      "minutesAgo": "분 전",
+      "minutesAgo_plural": "{{count}}분 전",
+      "hoursAgo": "시간 전",
+      "hoursAgo_plural": "{{count}}시간 전",
+      "daysAgo": "일 전",
+      "daysAgo_plural": "{{count}}일 전",
+      "weeksAgo": "주 전",
+      "weeksAgo_plural": "{{count}}주 전",
+      "monthsAgo": "개월 전",
+      "monthsAgo_plural": "{{count}}개월 전",
+      "yearsAgo": "년 전",
+      "yearsAgo_plural": "{{count}}년 전",
+      "expired": "만료됨"
+    },
+    "data": {
+      "noNotifications": "알림 없음",
+      "noNotificationsDesc": "사용 가능해지면 알림이 여기에 표시됩니다",
+      "loadingNotifications": "알림 로딩 중...",
+      "failedToLoad": "알림 로드 실패",
+      "retry": "재시도",
+      "newNotifications": "새 알림",
+      "newNotifications_plural": "{{count}}개의 새 알림",
+      "markAllAsRead": "모두 읽음으로 표시",
+      "clearAll": "모두 지우기",
+      "notificationSettings": "알림 설정",
+      "enablePushNotifications": "푸시 알림 활성화",
+      "enableEmailNotifications": "이메일 알림 활성화",
+      "notificationPreferences": "알림 기본 설정",
+      "soundEnabled": "소리 활성화",
+      "vibrationEnabled": "진동 활성화",
+      "quietHours": "무음 시간",
+      "quietHoursStart": "무음 시간 시작",
+      "quietHoursEnd": "무음 시간 종료"
+    },
+    "errors": {
+      "loadFailed": "알림 로드 실패",
+      "loadFailedDesc": "알림을 로드하는 중 오류가 발생했습니다. 인터넷 연결을 확인하고 다시 시도하세요.",
+      "markAsReadFailed": "읽음 표시 실패",
+      "deleteFailed": "알림 삭제 실패",
+      "settingsUpdateFailed": "설정 업데이트 실패",
+      "networkError": "네트워크 오류",
+      "serverError": "서버 오류"
+    }
   },
   "help": {
     "title": "도움말 & 지원",

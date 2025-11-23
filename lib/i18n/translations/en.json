@@ -228,7 +228,84 @@
     "recipeUpdates": "Recipe Updates",
     "newRecipes": "New Recipes",
     "socialActivity": "Social Activity",
-    "messages": "Messages"
+    "messages": "Messages",
+    "screenTitle": "Notifications",
+    "allRead": "All Read",
+    "unreadNotifications": "{{count}} unread notifications",
+    "allCaughtUp": "All caught up!",
+    "sendTestNotification": "Send Test Notification",
+    "runStatusChecks": "Run Status Checks",
+    "statusCheckDescription": "Check pantry expiry, grocery deadlines, and status changes",
+    "loadingNotifications": "Loading notifications...",
+    "noNotifications": "No notifications",
+    "noNotificationsMessage": "You're all caught up!",
+    "noFilteredNotifications": "No {{filter}} notifications",
+    "filters": {
+      "all": "All",
+      "pantry": "Pantry",
+      "grocery": "Grocery",
+      "community": "Community",
+      "chef": "Chef",
+      "health": "Health"
+    },
+    "categories": {
+      "pantry": "Pantry",
+      "grocery": "Grocery",
+      "community": "Community",
+      "chef": "Chef",
+      "payment": "Payment",
+      "subscription": "Premium",
+      "health": "Health",
+      "system": "General"
+    },
+    "priorities": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "urgent": "Urgent"
+    },
+    "actions": {
+      "delete": "Delete",
+      "markRead": "Mark Read",
+      "markAsRead": "Mark as Read",
+      "deleteNotification": "Delete Notification"
+    },
+    "timeFormatting": {
+      "justNow": "Just now",
+      "minutesAgo": "{{count}} minute ago",
+      "minutesAgo_plural": "{{count}} minutes ago",
+      "hoursAgo": "{{count}} hour ago",
+      "hoursAgo_plural": "{{count}} hours ago",
+      "daysAgo": "{{count}} day ago",
+      "daysAgo_plural": "{{count}} days ago",
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "expired": "Expired"
+    },
+    "pantryData": {
+      "expiresToday": "Today",
+      "expiresTomorrow": "Tomorrow",
+      "expiresInDays": "{{count}} days",
+      "expired": "Expired"
+    },
+    "groceryData": {
+      "dueToday": "Due today",
+      "overdue": "Overdue",
+      "dueInDays": "Due in {{count}} days"
+    },
+    "chefData": {
+      "recipeTitle": "Recipe: {{title}}",
+      "courseTitle": "Course: {{title}}"
+    },
+    "emptyStates": {
+      "noNotifications": "No notifications yet",
+      "checkBackLater": "Check back later for updates"
+    },
+    "errors": {
+      "failedToLoad": "Failed to load notifications",
+      "failedToMarkRead": "Failed to mark as read",
+      "failedToDelete": "Failed to delete notification"
+    }
   },
   "help": {
     "title": "Help & Support",

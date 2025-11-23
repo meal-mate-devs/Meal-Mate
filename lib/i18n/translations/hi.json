@@ -221,14 +221,87 @@
     "following": "फॉलोइंग"
   },
   "notifications": {
-    "title": "सूचनाएं",
+    "screenTitle": "सूचनाएं",
     "subtitle": "अपनी सूचनाएं प्रबंधित करें",
     "pushNotifications": "पुश सूचनाएं",
     "emailNotifications": "ईमेल सूचनाएं",
     "recipeUpdates": "रेसिपी अपडेट",
     "newRecipes": "नई रेसिपी",
     "socialActivity": "सामाजिक गतिविधि",
-    "messages": "संदेश"
+    "messages": "संदेश",
+    "filters": {
+      "all": "सभी",
+      "unread": "अपठित",
+      "recipes": "रेसिपी",
+      "social": "सामाजिक",
+      "system": "सिस्टम"
+    },
+    "categories": {
+      "recipe": "रेसिपी",
+      "social": "सामाजिक",
+      "system": "सिस्टम",
+      "promotion": "प्रमोशन",
+      "update": "अपडेट"
+    },
+    "priorities": {
+      "high": "उच्च",
+      "medium": "मध्यम",
+      "low": "निम्न"
+    },
+    "actions": {
+      "markAsRead": "पठित के रूप में चिह्नित करें",
+      "markAsUnread": "अपठित के रूप में चिह्नित करें",
+      "delete": "मिटाएं",
+      "view": "देखें",
+      "dismiss": "खारिज करें",
+      "archive": "संग्रहित करें",
+      "unarchive": "संग्रह से निकालें"
+    },
+    "time": {
+      "justNow": "अभी",
+      "minutesAgo": "मिनट पहले",
+      "minutesAgo_plural": "{{count}} मिनट पहले",
+      "hoursAgo": "घंटा पहले",
+      "hoursAgo_plural": "{{count}} घंटे पहले",
+      "daysAgo": "दिन पहले",
+      "daysAgo_plural": "{{count}} दिन पहले",
+      "weeksAgo": "सप्ताह पहले",
+      "weeksAgo_plural": "{{count}} सप्ताह पहले",
+      "monthsAgo": "महीना पहले",
+      "monthsAgo_plural": "{{count}} महीने पहले",
+      "yearsAgo": "साल पहले",
+      "yearsAgo_plural": "{{count}} साल पहले",
+      "expired": "समाप्त"
+    },
+    "data": {
+      "noNotifications": "कोई सूचनाएं नहीं",
+      "noNotificationsDesc": "जब उपलब्ध होंगी तो आपकी सूचनाएं यहां दिखाई देंगी",
+      "loadingNotifications": "सूचनाएं लोड हो रही हैं...",
+      "failedToLoad": "सूचनाएं लोड करने में विफल",
+      "retry": "पुनः प्रयास करें",
+      "newNotifications": "नई सूचना",
+      "newNotifications_plural": "{{count}} नई सूचनाएं",
+      "markAllAsRead": "सभी को पठित के रूप में चिह्नित करें",
+      "clearAll": "सभी साफ करें",
+      "notificationSettings": "सूचना सेटिंग्स",
+      "enablePushNotifications": "पुश सूचनाएं सक्षम करें",
+      "enableEmailNotifications": "ईमेल सूचनाएं सक्षम करें",
+      "notificationPreferences": "सूचना प्राथमिकताएं",
+      "soundEnabled": "ध्वनि सक्षम",
+      "vibrationEnabled": "कंपन सक्षम",
+      "quietHours": "शांत घंटे",
+      "quietHoursStart": "शांत घंटे शुरू",
+      "quietHoursEnd": "शांत घंटे समाप्त"
+    },
+    "errors": {
+      "loadFailed": "सूचनाएं लोड करने में विफल",
+      "loadFailedDesc": "आपकी सूचनाएं लोड करते समय एक त्रुटि हुई। कृपया अपना इंटरनेट कनेक्शन जांचें और पुनः प्रयास करें।",
+      "markAsReadFailed": "पठित के रूप में चिह्नित करने में विफल",
+      "deleteFailed": "सूचना मिटाने में विफल",
+      "settingsUpdateFailed": "सेटिंग्स अपडेट करने में विफल",
+      "networkError": "नेटवर्क त्रुटि",
+      "serverError": "सर्वर त्रुटि"
+    }
   },
   "help": {
     "title": "मदद और सहायता",

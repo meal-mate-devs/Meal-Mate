@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { useNotifications } from "@/hooks/useNotifications"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
@@ -21,8 +22,9 @@ interface Notification {
 const NotificationsScreen: React.FC = () => {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const { 
-    notifications: realNotifications, 
+  const { t } = useLanguage()
+  const {
+    notifications: realNotifications,
     unreadCount: realUnreadCount,
     loading,
     fetchNotifications,
@@ -89,21 +91,21 @@ const NotificationsScreen: React.FC = () => {
   const getCategoryLabel = (type: string) => {
     switch (type) {
       case "pantry":
-        return "Pantry"
+        return t("notifications.categories.recipe")
       case "grocery":
-        return "Grocery"
+        return t("notifications.categories.recipe")
       case "community":
-        return "Community"
+        return t("notifications.categories.social")
       case "chef":
-        return "Chef"
+        return t("notifications.categories.recipe")
       case "payment":
-        return "Payment"
+        return t("notifications.categories.system")
       case "subscription":
-        return "Premium"
+        return t("notifications.categories.promotion")
       case "health":
-        return "Health"
+        return t("notifications.categories.update")
       default:
-        return "General"
+        return t("notifications.categories.system")
     }
   }
 
@@ -165,10 +167,10 @@ const NotificationsScreen: React.FC = () => {
     const diffHours = Math.floor(diffMs / 3600000)
     const diffDays = Math.floor(diffMs / 86400000)
 
-    if (diffMins < 1) return "Just now"
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    if (diffMins < 1) return t("notifications.timeFormatting.justNow")
+    if (diffMins < 60) return t("notifications.timeFormatting.minutesAgo", { count: diffMins })
+    if (diffHours < 24) return t("notifications.timeFormatting.hoursAgo", { count: diffHours })
+    if (diffDays < 7) return t("notifications.timeFormatting.daysAgo", { count: diffDays })
     return date.toLocaleDateString()
   }
 
@@ -176,12 +178,12 @@ const NotificationsScreen: React.FC = () => {
     filter === "all" ? notifications : notifications.filter((notif) => notif.type === filter)
 
   const filters = [
-    { key: "all", label: "All", count: notifications.length },
-    { key: "pantry", label: "Pantry", count: notifications.filter((n) => n.type === "pantry").length },
-    { key: "grocery", label: "Grocery", count: notifications.filter((n) => n.type === "grocery").length },
-    { key: "community", label: "Community", count: notifications.filter((n) => n.type === "community").length },
-    { key: "chef", label: "Chef", count: notifications.filter((n) => n.type === "chef").length },
-    { key: "health", label: "Health", count: notifications.filter((n) => n.type === "health").length },
+    { key: "all", label: t("notifications.filters.all"), count: notifications.length },
+    { key: "pantry", label: t("notifications.categories.recipe"), count: notifications.filter((n) => n.type === "pantry").length },
+    { key: "grocery", label: t("notifications.categories.recipe"), count: notifications.filter((n) => n.type === "grocery").length },
+    { key: "community", label: t("notifications.categories.social"), count: notifications.filter((n) => n.type === "community").length },
+    { key: "chef", label: t("notifications.categories.recipe"), count: notifications.filter((n) => n.type === "chef").length },
+    { key: "health", label: t("notifications.categories.update"), count: notifications.filter((n) => n.type === "health").length },
   ]
 
   const renderNotification = (notification: Notification) => {
@@ -219,21 +221,19 @@ const NotificationsScreen: React.FC = () => {
                 <Text className="text-gray-400 text-xs mb-2">{formatTimestamp(notification.createdAt)}</Text>
                 <TouchableOpacity
                   onPress={() => notification.isRead ? deleteNotification(notification._id) : markAsRead(notification._id)}
-                  className={`px-3 py-1.5 rounded-lg flex-row items-center ${
-                    notification.isRead ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"
-                  }`}
-                >
-                  <Ionicons 
-                    name={notification.isRead ? "trash-outline" : "checkmark-circle-outline"} 
-                    size={14} 
-                    color={notification.isRead ? "#ef4444" : "#10b981"} 
-                  />
-                  <Text 
-                    className={`text-xs font-medium ml-1 ${
-                      notification.isRead ? "text-red-400" : "text-green-400"
+                  className={`px-3 py-1.5 rounded-lg flex-row items-center ${notification.isRead ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"
                     }`}
+                >
+                  <Ionicons
+                    name={notification.isRead ? "trash-outline" : "checkmark-circle-outline"}
+                    size={14}
+                    color={notification.isRead ? "#ef4444" : "#10b981"}
+                  />
+                  <Text
+                    className={`text-xs font-medium ml-1 ${notification.isRead ? "text-red-400" : "text-green-400"
+                      }`}
                   >
-                    {notification.isRead ? "Delete" : "Mark Read"}
+                    {notification.isRead ? t("notifications.actions.delete") : t("notifications.actions.markAsRead")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -252,10 +252,10 @@ const NotificationsScreen: React.FC = () => {
                       <Text className="text-white font-medium">{notification.data.itemName}</Text>
                       {notification.data.daysLeft !== undefined && (
                         <Text className="text-gray-400 text-sm">
-                          {notification.data.daysLeft === 0 ? "Today" : 
-                           notification.data.daysLeft === 1 ? "Tomorrow" :
-                           notification.data.daysLeft > 0 ? `${notification.data.daysLeft} days` :
-                           "Expired"}
+                          {notification.data.daysLeft === 0 ? t("notifications.timeFormatting.today") :
+                            notification.data.daysLeft === 1 ? t("notifications.timeFormatting.tomorrow") :
+                              notification.data.daysLeft > 0 ? t("notifications.timeFormatting.daysAgo", { count: notification.data.daysLeft }) :
+                                t("notifications.timeFormatting.expired")}
                         </Text>
                       )}
                     </View>
@@ -291,13 +291,13 @@ const NotificationsScreen: React.FC = () => {
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <Text className="text-white text-xl font-bold justify-center">Notifications</Text>
+            <Text className="text-white text-xl font-bold justify-center">{t("notifications.screenTitle")}</Text>
             <TouchableOpacity onPress={markAllAsRead}>
-              <Text className="text-orange-500 font-semibold">All Read</Text>
+              <Text className="text-orange-500 font-semibold">{t("notifications.actions.markAllRead")}</Text>
             </TouchableOpacity>
           </View>
           <Text className="text-gray-400 text-center">
-            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up!"}
+            {unreadCount > 0 ? t("notifications.dataDisplay.unreadCount", { count: unreadCount }) : t("notifications.dataDisplay.noNotificationsDesc")}
           </Text>
         </View>
 
@@ -345,9 +345,8 @@ const NotificationsScreen: React.FC = () => {
                 <TouchableOpacity
                   key={filterItem.key}
                   onPress={() => setFilter(filterItem.key)}
-                  className={`py-2 px-3 mr-2 rounded-full flex-row items-center min-w-[80px] justify-center ${
-                    filter === filterItem.key ? "overflow-hidden" : "bg-zinc-800"
-                  }`}
+                  className={`py-2 px-3 mr-2 rounded-full flex-row items-center min-w-[80px] justify-center ${filter === filterItem.key ? "overflow-hidden" : "bg-zinc-800"
+                    }`}
                   style={{ height: 36 }}
                 >
                   {filter === filterItem.key ? (
@@ -376,16 +375,16 @@ const NotificationsScreen: React.FC = () => {
         {loading && notifications.length === 0 ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color="#F97316" />
-            <Text className="text-gray-400 mt-4">Loading notifications...</Text>
+            <Text className="text-gray-400 mt-4">{t("notifications.dataDisplay.loadingNotifications")}</Text>
           </View>
         ) : (
-          <ScrollView 
-            className="flex-1 px-4" 
+          <ScrollView
+            className="flex-1 px-4"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ backgroundColor: '#000000' }}
             refreshControl={
-              <RefreshControl 
-                refreshing={refreshing} 
+              <RefreshControl
+                refreshing={refreshing}
                 onRefresh={onRefresh}
                 tintColor="#F97316"
               />
@@ -394,9 +393,9 @@ const NotificationsScreen: React.FC = () => {
             {filteredNotifications.length === 0 ? (
               <View className="flex-1 items-center justify-center py-20">
                 <Ionicons name="notifications-off-outline" size={64} color="#4B5563" />
-                <Text className="text-gray-400 text-lg mt-4 text-center">No notifications</Text>
+                <Text className="text-gray-400 text-lg mt-4 text-center">{t("notifications.dataDisplay.noNotifications")}</Text>
                 <Text className="text-gray-500 text-center mt-2">
-                  {filter === "all" ? "You're all caught up!" : `No ${filter} notifications`}
+                  {filter === "all" ? t("notifications.dataDisplay.noNotificationsDesc") : t("notifications.dataDisplay.noNotificationsDesc")}
                 </Text>
               </View>
             ) : (

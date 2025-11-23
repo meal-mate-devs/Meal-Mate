@@ -221,14 +221,87 @@
     "following": "Подписки"
   },
   "notifications": {
-    "title": "Уведомления",
+    "screenTitle": "Уведомления",
     "subtitle": "Управляйте уведомлениями",
     "pushNotifications": "Push-уведомления",
     "emailNotifications": "Email-уведомления",
     "recipeUpdates": "Обновления рецептов",
     "newRecipes": "Новые рецепты",
     "socialActivity": "Социальная активность",
-    "messages": "Сообщения"
+    "messages": "Сообщения",
+    "filters": {
+      "all": "Все",
+      "unread": "Непрочитанные",
+      "recipes": "Рецепты",
+      "social": "Социальные",
+      "system": "Система"
+    },
+    "categories": {
+      "recipe": "Рецепт",
+      "social": "Социальный",
+      "system": "Система",
+      "promotion": "Продвижение",
+      "update": "Обновление"
+    },
+    "priorities": {
+      "high": "Высокий",
+      "medium": "Средний",
+      "low": "Низкий"
+    },
+    "actions": {
+      "markAsRead": "Отметить как прочитанное",
+      "markAsUnread": "Отметить как непрочитанное",
+      "delete": "Удалить",
+      "view": "Просмотреть",
+      "dismiss": "Отклонить",
+      "archive": "Архивировать",
+      "unarchive": "Разархивировать"
+    },
+    "time": {
+      "justNow": "Только что",
+      "minutesAgo": "минут назад",
+      "minutesAgo_plural": "{{count}} минут назад",
+      "hoursAgo": "час назад",
+      "hoursAgo_plural": "{{count}} часов назад",
+      "daysAgo": "день назад",
+      "daysAgo_plural": "{{count}} дней назад",
+      "weeksAgo": "неделю назад",
+      "weeksAgo_plural": "{{count}} недель назад",
+      "monthsAgo": "месяц назад",
+      "monthsAgo_plural": "{{count}} месяцев назад",
+      "yearsAgo": "год назад",
+      "yearsAgo_plural": "{{count}} лет назад",
+      "expired": "Истек"
+    },
+    "data": {
+      "noNotifications": "Нет уведомлений",
+      "noNotificationsDesc": "Когда они появятся, ваши уведомления будут отображаться здесь",
+      "loadingNotifications": "Загрузка уведомлений...",
+      "failedToLoad": "Не удалось загрузить уведомления",
+      "retry": "Повторить",
+      "newNotifications": "новое уведомление",
+      "newNotifications_plural": "{{count}} новых уведомлений",
+      "markAllAsRead": "Отметить все как прочитанные",
+      "clearAll": "Очистить все",
+      "notificationSettings": "Настройки уведомлений",
+      "enablePushNotifications": "Включить push-уведомления",
+      "enableEmailNotifications": "Включить email-уведомления",
+      "notificationPreferences": "Предпочтения уведомлений",
+      "soundEnabled": "Звук включен",
+      "vibrationEnabled": "Вибрация включена",
+      "quietHours": "Тихие часы",
+      "quietHoursStart": "Начало тихих часов",
+      "quietHoursEnd": "Конец тихих часов"
+    },
+    "errors": {
+      "loadFailed": "Не удалось загрузить уведомления",
+      "loadFailedDesc": "Произошла ошибка при загрузке ваших уведомлений. Пожалуйста, проверьте подключение к интернету и попробуйте снова.",
+      "markAsReadFailed": "Не удалось отметить как прочитанное",
+      "deleteFailed": "Не удалось удалить уведомление",
+      "settingsUpdateFailed": "Не удалось обновить настройки",
+      "networkError": "Ошибка сети",
+      "serverError": "Ошибка сервера"
+    }
   },
   "help": {
     "title": "Помощь и поддержка",

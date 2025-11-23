@@ -221,14 +221,87 @@
     "following": "フォロー中"
   },
   "notifications": {
-    "title": "通知",
+    "screenTitle": "通知",
     "subtitle": "通知を管理",
     "pushNotifications": "プッシュ通知",
     "emailNotifications": "メール通知",
     "recipeUpdates": "レシピ更新",
     "newRecipes": "新着レシピ",
     "socialActivity": "ソーシャル活動",
-    "messages": "メッセージ"
+    "messages": "メッセージ",
+    "filters": {
+      "all": "すべて",
+      "unread": "未読",
+      "recipes": "レシピ",
+      "social": "ソーシャル",
+      "system": "システム"
+    },
+    "categories": {
+      "recipe": "レシピ",
+      "social": "ソーシャル",
+      "system": "システム",
+      "promotion": "プロモーション",
+      "update": "更新"
+    },
+    "priorities": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "actions": {
+      "markAsRead": "既読としてマーク",
+      "markAsUnread": "未読としてマーク",
+      "delete": "削除",
+      "view": "表示",
+      "dismiss": "却下",
+      "archive": "アーカイブ",
+      "unarchive": "アーカイブ解除"
+    },
+    "time": {
+      "justNow": "たった今",
+      "minutesAgo": "分前",
+      "minutesAgo_plural": "{{count}}分前",
+      "hoursAgo": "時間前",
+      "hoursAgo_plural": "{{count}}時間前",
+      "daysAgo": "日前",
+      "daysAgo_plural": "{{count}}日前",
+      "weeksAgo": "週間前",
+      "weeksAgo_plural": "{{count}}週間前",
+      "monthsAgo": "ヶ月前",
+      "monthsAgo_plural": "{{count}}ヶ月前",
+      "yearsAgo": "年前",
+      "yearsAgo_plural": "{{count}}年前",
+      "expired": "期限切れ"
+    },
+    "data": {
+      "noNotifications": "通知なし",
+      "noNotificationsDesc": "利用可能になると、通知がここに表示されます",
+      "loadingNotifications": "通知を読み込み中...",
+      "failedToLoad": "通知の読み込みに失敗しました",
+      "retry": "再試行",
+      "newNotifications": "新しい通知",
+      "newNotifications_plural": "{{count}}件の新しい通知",
+      "markAllAsRead": "すべてを既読としてマーク",
+      "clearAll": "すべてクリア",
+      "notificationSettings": "通知設定",
+      "enablePushNotifications": "プッシュ通知を有効化",
+      "enableEmailNotifications": "メール通知を有効化",
+      "notificationPreferences": "通知設定",
+      "soundEnabled": "サウンド有効",
+      "vibrationEnabled": "振動有効",
+      "quietHours": "サイレント時間",
+      "quietHoursStart": "サイレント時間開始",
+      "quietHoursEnd": "サイレント時間終了"
+    },
+    "errors": {
+      "loadFailed": "通知の読み込みに失敗しました",
+      "loadFailedDesc": "通知の読み込み中にエラーが発生しました。インターネット接続を確認して再試行してください。",
+      "markAsReadFailed": "既読マークに失敗しました",
+      "deleteFailed": "通知の削除に失敗しました",
+      "settingsUpdateFailed": "設定の更新に失敗しました",
+      "networkError": "ネットワークエラー",
+      "serverError": "サーバーエラー"
+    }
   },
   "help": {
     "title": "ヘルプ＆サポート",

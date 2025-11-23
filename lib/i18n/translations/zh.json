@@ -221,14 +221,82 @@
     "following": "关注"
   },
   "notifications": {
-    "title": "通知",
-    "subtitle": "管理您的通知",
+    "screenTitle": "通知",
+    "subtitle": "管理您的通知设置",
     "pushNotifications": "推送通知",
     "emailNotifications": "邮件通知",
     "recipeUpdates": "食谱更新",
     "newRecipes": "新食谱",
     "socialActivity": "社交活动",
-    "messages": "消息"
+    "messages": "消息",
+    "filters": {
+      "all": "全部",
+      "unread": "未读",
+      "read": "已读",
+      "today": "今天",
+      "thisWeek": "本周",
+      "thisMonth": "本月"
+    },
+    "categories": {
+      "recipe": "食谱",
+      "social": "社交",
+      "system": "系统",
+      "promotion": "促销",
+      "update": "更新"
+    },
+    "priorities": {
+      "high": "高",
+      "medium": "中",
+      "low": "低"
+    },
+    "actions": {
+      "markAsRead": "标记为已读",
+      "markAsUnread": "标记为未读",
+      "delete": "删除",
+      "archive": "归档",
+      "view": "查看",
+      "dismiss": "关闭",
+      "clearAll": "清除全部",
+      "markAllRead": "全部标记为已读"
+    },
+    "timeFormatting": {
+      "justNow": "刚刚",
+      "minutesAgo": "{{count}}分钟前",
+      "hoursAgo": "{{count}}小时前",
+      "daysAgo": "{{count}}天前",
+      "weeksAgo": "{{count}}周前",
+      "monthsAgo": "{{count}}个月前",
+      "yearsAgo": "{{count}}年前",
+      "yesterday": "昨天",
+      "today": "今天",
+      "tomorrow": "明天",
+      "expired": "过期"
+    },
+    "dataDisplay": {
+      "noNotifications": "没有通知",
+      "noNotificationsDesc": "您还没有收到任何通知",
+      "loadingNotifications": "正在加载通知...",
+      "failedToLoad": "加载通知失败",
+      "retry": "重试",
+      "notificationCount": "{{count}}个通知",
+      "notificationCount_one": "1个通知",
+      "notificationCount_other": "{{count}}个通知",
+      "unreadCount": "{{count}}个未读",
+      "unreadCount_one": "1个未读",
+      "unreadCount_other": "{{count}}个未读"
+    },
+    "errorMessages": {
+      "loadFailed": "无法加载通知",
+      "loadFailedDesc": "请检查您的互联网连接并重试",
+      "deleteFailed": "删除通知失败",
+      "deleteFailedDesc": "无法删除此通知，请重试",
+      "markReadFailed": "标记已读失败",
+      "markReadFailedDesc": "无法标记此通知为已读",
+      "networkError": "网络错误",
+      "networkErrorDesc": "请检查您的连接并重试",
+      "genericError": "出现错误",
+      "genericErrorDesc": "请稍后重试"
+    }
   },
   "help": {
     "title": "帮助与支持",
