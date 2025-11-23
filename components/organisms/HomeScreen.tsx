@@ -1,3 +1,4 @@
+import { useAuthContext } from '@/context/authContext';
 import * as chefService from '@/lib/api/chefService';
 import { groceryService } from '@/lib/services/groceryService';
 import { pantryService } from '@/lib/services/pantryService';
@@ -9,6 +10,7 @@ import {
     ActivityIndicator,
     Animated,
     Image,
+    RefreshControl,
     SafeAreaView,
     ScrollView,
     Share,
@@ -43,6 +45,8 @@ interface Recipe {
   cuisine: string
   category: string
   creator?: string
+  authorId?: string
+  chefId?: string
   ingredients?: Array<{
     name: string
     amount: string
@@ -78,6 +82,7 @@ const HomeScreen: React.FC = () => {
     const progressAnimation = useRef(new Animated.Value(0)).current;
     
     // Profile and pantry/grocery data
+    const { profile } = useAuthContext();
     const { profileData, subscribe } = useProfileStore();
     const { streakData, getTodayStats, todayCaloriesConsumed } = useDietPlanningStore();
     const [localUserData, setLocalUserData] = useState(profileData);
@@ -102,8 +107,10 @@ const HomeScreen: React.FC = () => {
     const [generalErrorMessage, setGeneralErrorMessage] = useState('')
     const [showGeneralSuccessDialog, setShowGeneralSuccessDialog] = useState(false)
     const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
+    const [showPremiumDialog, setShowPremiumDialog] = useState(false)
 
-    // Subscribe to profile updates
+    // Refresh functionality
+    const [refreshing, setRefreshing] = useState(false)
     useEffect(() => {
         const unsubscribe = subscribe((updatedData) => {
             setLocalUserData(updatedData);
@@ -113,7 +120,7 @@ const HomeScreen: React.FC = () => {
     }, [subscribe, profileData]);
 
     // Filter recipes by category
-    const filteredRecipes = recipes;
+    const filteredRecipes = recipes.filter(recipe => recipe.rating === 0 || recipe.rating >= 3);
 
     const loadRecipes = async () => {
         setIsLoadingRecipes(true)
@@ -199,6 +206,15 @@ const HomeScreen: React.FC = () => {
         }
     };
 
+    // Pull to refresh functionality
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadRecipes();
+        await fetchPantryData();
+        await fetchGroceryData();
+        setRefreshing(false);
+    };
+
     // Handle viewing a recipe - fetch full details
     const handleViewRecipe = async (recipe: Recipe) => {
         try {
@@ -209,11 +225,22 @@ const HomeScreen: React.FC = () => {
                 setShowGeneralErrorDialog(true)
                 return
             }
-            setExpandedRecipeId(recipeId)
             
             console.log('👁️ Fetching recipe details:', recipeId)
             const fullRecipe = await chefService.getRecipeById(recipeId)
             
+            // Check if premium recipe and user is not pro (but allow author to view)
+            const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
+            const isAuthor = (fullRecipe as any).userId?.firebaseUid === profile?.firebaseUid;
+            console.log('🔐 Premium Check:', { isPremium: fullRecipe.isPremium, isPro, isAuthor, recipeUserFirebaseUid: (fullRecipe as any).userId?.firebaseUid, userFirebaseUid: profile?.firebaseUid })
+            
+            if (fullRecipe.isPremium && !isPro && !isAuthor) {
+                setShowPremiumDialog(true)
+                setIsLoadingRecipeDetails(false)
+                return
+            }
+
+            setExpandedRecipeId(recipeId)
             console.log('✅ Full recipe fetched:', fullRecipe.title)
             setExpandedRecipeData(fullRecipe)
         } catch (error: any) {
@@ -512,6 +539,15 @@ const HomeScreen: React.FC = () => {
             <ScrollView 
                 className="flex-1 px-4"
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl 
+                        refreshing={false} 
+                        onRefresh={onRefresh}
+                        tintColor="transparent"
+                        colors={["transparent"]}
+                        progressBackgroundColor="transparent"
+                    />
+                }
             >
                 {isLoadingRecipes ? (
                     <View className="flex-1 items-center justify-center py-20">
@@ -940,6 +976,25 @@ const HomeScreen: React.FC = () => {
                 message={generalSuccessMessage}
                 onClose={() => setShowGeneralSuccessDialog(false)}
                 confirmText="OK"
+            />
+
+            <Dialog
+                visible={showPremiumDialog}
+                type="warning"
+                title="Premium Content"
+                message="This is a premium recipe. Upgrade to Pro to access exclusive content and features."
+                onClose={() => setShowPremiumDialog(false)}
+                onConfirm={() => {
+                    setShowPremiumDialog(false)
+                    try {
+                        router.push('/settings/subscription')
+                    } catch (error) {
+                        console.log('Navigation error:', error)
+                    }
+                }}
+                confirmText="Upgrade to Pro"
+                cancelText="Cancel"
+                showCancelButton={true}
             />
         </SafeAreaView>
     </LinearGradient>

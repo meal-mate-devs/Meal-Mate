@@ -76,6 +76,8 @@ interface ChefProfileViewScreenProps {
       totalRatings: number
     }
   }
+  currentUserIsPro: boolean
+  currentUserFirebaseUid?: string
   onSubscribeToggle?: (chefId: string) => void
   onReport?: (chefId: string, reason: string, description: string) => void
   onRate?: (chefId: string, rating: number, feedback: string) => void
@@ -87,6 +89,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   visible,
   onClose,
   chef,
+  currentUserIsPro,
+  currentUserFirebaseUid,
   onSubscribeToggle,
   onReport,
   onRate,
@@ -144,6 +148,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [successMessage, setSuccessMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const [showPremiumDialog, setShowPremiumDialog] = useState(false)
 
   // Load recipes and courses from backend
   useEffect(() => {
@@ -382,6 +387,16 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       console.log('👁️ Fetching recipe details for view:', recipe.id)
       const fullRecipe = await chefService.getRecipeById(recipe.id)
       
+      // Check if premium recipe and user is not pro (but allow author to view their own content)
+      const isAuthor = (fullRecipe as any).userId?.firebaseUid === currentUserFirebaseUid;
+      console.log('🔐 Premium Check (Recipe):', { isPremium: fullRecipe.isPremium, currentUserIsPro, isAuthor, recipeUserFirebaseUid: (fullRecipe as any).userId?.firebaseUid, currentUserFirebaseUid })
+      
+      if (fullRecipe.isPremium && !currentUserIsPro && !isAuthor) {
+        setShowPremiumDialog(true)
+        setIsLoadingRecipeDetails(false)
+        return
+      }
+
       console.log('✅ Full recipe fetched:', fullRecipe.title)
       setExpandedRecipeData(fullRecipe)
       
@@ -410,6 +425,16 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       console.log('👁️ Fetching course details for view:', course.id)
       const fullCourse = await chefService.getCourseById(course.id)
       
+      // Check if premium course and user is not pro (but allow author to view their own content)
+      const isAuthor = (fullCourse as any).userId?.firebaseUid === currentUserFirebaseUid;
+      console.log('🔐 Premium Check (Course):', { isPremium: fullCourse.isPremium, currentUserIsPro, isAuthor, courseUserFirebaseUid: (fullCourse as any).userId?.firebaseUid, currentUserFirebaseUid })
+      
+      if (fullCourse.isPremium && !currentUserIsPro && !isAuthor) {
+        setShowPremiumDialog(true)
+        setIsLoadingCourseDetails(false)
+        return
+      }
+
       console.log('✅ Full course fetched:', fullCourse.title)
       setExpandedCourseData(fullCourse)
       
@@ -2203,6 +2228,56 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           >
             <Text style={{ color: '#FFFFFF', fontSize: 16, fontWeight: '700' }}>OK</Text>
           </TouchableOpacity>
+        </View>
+      </CustomDialog>
+
+      {/* Premium Content Dialog */}
+      <CustomDialog
+        visible={showPremiumDialog}
+        onClose={() => setShowPremiumDialog(false)}
+        title="Premium Content"
+        height={280}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#F59E0B', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            This is premium content. Upgrade to Pro to access exclusive recipes, courses, and features.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => setShowPremiumDialog(false)}
+              style={{
+                flex: 1,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderColor: '#6B7280',
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#9CA3AF', fontSize: 16, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setShowPremiumDialog(false)
+                onClose()
+                try {
+                  router.push('/settings/subscription')
+                } catch (error) {
+                  console.log('Navigation error:', error)
+                }
+              }}
+              style={{
+                flex: 1,
+                backgroundColor: '#FACC15',
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#000000', fontSize: 16, fontWeight: '700' }}>Upgrade to Pro</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </CustomDialog>
       

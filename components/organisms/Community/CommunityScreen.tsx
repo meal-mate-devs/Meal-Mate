@@ -318,12 +318,12 @@ export default function CommunityScreen(): JSX.Element {
     )
 
     const renderContent = (): JSX.Element => {
-        if (loading) {
-            return renderSkeletonLoader()
+        if (posts.length === 0 && !refreshing) {
+            return renderEmptyState()
         }
 
-        if (posts.length === 0) {
-            return renderEmptyState()
+        if (refreshing) {
+            return renderSkeletonLoader()
         }
 
         return (

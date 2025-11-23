@@ -250,6 +250,7 @@ const ChefDashboardScreen: React.FC = () => {
   const [showGeneralErrorDialog, setShowGeneralErrorDialog] = useState(false)
   const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
   const [generalErrorMessage, setGeneralErrorMessage] = useState('')
+  const [showPremiumDialog, setShowPremiumDialog] = useState(false)
   
   // Dynamic state for user-created content
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([])
@@ -797,12 +798,7 @@ const ChefDashboardScreen: React.FC = () => {
         )}
 
         {/* Chefs List */}
-        {isLoadingChefs ? (
-          <View style={styles.loadingChefsContainer}>
-            <ActivityIndicator size="large" color="#FACC15" />
-            <Text style={styles.loadingChefsText}>Loading chefs...</Text>
-          </View>
-        ) : chefsError ? (
+        {chefsError ? (
           <View style={styles.emptyChefSection}>
             <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
             <Text style={styles.emptyChefText}>Failed to load chefs</Text>
@@ -2097,11 +2093,22 @@ const ChefDashboardScreen: React.FC = () => {
       setIsLoadingRecipeDetails(true)
       // Handle both 'id' and '_id' fields (explorer recipes use _id)
       const recipeId = recipe.id || (recipe as any)._id
-      setExpandedRecipeId(recipeId)
       
       console.log('👁️ Fetching recipe details for view:', recipeId)
       const fullRecipe = await chefService.getRecipeById(recipeId)
       
+      // Check if premium recipe and user is not pro (but allow author to view)
+      const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
+      const isAuthor = (fullRecipe as any).userId?.firebaseUid === profile?.firebaseUid;
+      console.log('🔐 Premium Check (ChefDashboard):', { isPremium: fullRecipe.isPremium, isPro, isAuthor, recipeUserFirebaseUid: (fullRecipe as any).userId?.firebaseUid, userFirebaseUid: profile?.firebaseUid })
+      
+      if (fullRecipe.isPremium && !isPro && !isAuthor) {
+        setShowPremiumDialog(true)
+        setIsLoadingRecipeDetails(false)
+        return
+      }
+
+      setExpandedRecipeId(recipeId)
       console.log('✅ Full recipe fetched:', fullRecipe.title)
       setExpandedRecipeData(fullRecipe)
     } catch (error: any) {
@@ -2466,11 +2473,22 @@ const ChefDashboardScreen: React.FC = () => {
       setIsLoadingCourseDetails(true)
       // Handle both 'id' and '_id' fields (explorer courses use _id)
       const courseId = course.id || (course as any)._id
-      setExpandedCourseId(courseId)
       
       console.log('👁️ Fetching course details for view:', courseId)
       const fullCourse = await chefService.getCourseById(courseId)
       
+      // Check if premium course and user is not pro (but allow author to view)
+      const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
+      const isAuthor = (fullCourse as any).userId?.firebaseUid === profile?.firebaseUid;
+      console.log('🔐 Premium Check (Course):', { isPremium: fullCourse.isPremium, isPro, isAuthor, courseUserFirebaseUid: (fullCourse as any).userId?.firebaseUid, userFirebaseUid: profile?.firebaseUid })
+      
+      if (fullCourse.isPremium && !isPro && !isAuthor) {
+        setShowPremiumDialog(true)
+        setIsLoadingCourseDetails(false)
+        return
+      }
+
+      setExpandedCourseId(courseId)
       console.log('✅ Full course fetched:', fullCourse.title)
       setExpandedCourseData(fullCourse)
     } catch (error: any) {
@@ -3861,6 +3879,55 @@ const ChefDashboardScreen: React.FC = () => {
         </View>
       </CustomDialog>
 
+      {/* Premium Content Dialog */}
+      <CustomDialog
+        visible={showPremiumDialog}
+        onClose={() => setShowPremiumDialog(false)}
+        title="Premium Content"
+        height={280}
+      >
+        <View style={{ paddingHorizontal: 20, paddingVertical: 10 }}>
+          <Text style={{ color: '#F59E0B', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
+            This is premium content. Upgrade to Pro to access exclusive recipes, courses, and features.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <TouchableOpacity
+              onPress={() => setShowPremiumDialog(false)}
+              style={{
+                flex: 1,
+                backgroundColor: 'transparent',
+                borderWidth: 2,
+                borderColor: '#6B7280',
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#9CA3AF', fontSize: 16, fontWeight: '700' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                setShowPremiumDialog(false)
+                try {
+                  router.push('/settings/subscription')
+                } catch (error) {
+                  console.log('Navigation error:', error)
+                }
+              }}
+              style={{
+                flex: 1,
+                backgroundColor: '#FACC15',
+                borderRadius: 12,
+                paddingVertical: 14,
+                alignItems: 'center',
+              }}
+            >
+              <Text style={{ color: '#000000', fontSize: 16, fontWeight: '700' }}>Upgrade to Pro</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </CustomDialog>
+
       {/* Chef Profile View Modal */}
       {viewingChefProfile && (
         <ChefProfileViewScreen
@@ -3879,6 +3946,8 @@ const ChefDashboardScreen: React.FC = () => {
               totalRatings: viewingChefProfile.stats?.totalRatings || 0,
             }
           }}
+          currentUserIsPro={(profile?.isPro ?? false) && (profile?.subscriptionStatus === 'active')}
+          currentUserFirebaseUid={profile?.firebaseUid}
           onSubscribeToggle={handleChefSubscriptionToggle}
           onReport={(chefId: string, reason: string, description: string) => {
             console.log("Report chef:", chefId, reason, description)
