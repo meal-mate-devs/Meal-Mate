@@ -462,7 +462,626 @@
     "bannedContent": "금지된 콘텐츠",
     "noRestrictedRecipesOrCourses": "제한된 레시피나 코스가 없습니다",
     "noBannedRecipesOrCourses": "금지된 레시피나 코스가 없습니다",
-    "pleaseSelectReasonOrDescribe": "이유를 선택하거나 우려 사항을 설명하세요"
+    "pleaseSelectReasonOrDescribe": "이유를 선택하거나 우려 사항을 설명해 주세요"
+  },
+  "diet": {
+    "screenTitle": "식단 계획",
+    "myPlans": "내 계획",
+    "discover": "발견",
+    "progress": "진행",
+    "noPlansYet": "아직 식단 계획이 없습니다",
+    "createFirstPlan": "건강한 여정을 시작하기 위해 첫 번째 개인 맞춤 식단 계획을 만드세요!",
+    "createDietPlan": "식단 계획 만들기",
+    "active": "활성",
+    "completed": "완료",
+    "paused": "일시 중지",
+    "viewDetails": "세부 정보 보기",
+    "editPlan": "계획 편집",
+    "deletePlan": "계획 삭제",
+    "kcalPerDay": "kcal/일",
+    "days": "일",
+    "deleteDietPlan": "식단 계획 삭제",
+    "deletePlanConfirm": "이 계획을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.",
+    "delete": "삭제",
+    "discoverDietPlans": "식단 계획 발견",
+    "findPerfectPlan": "목표에 맞는 완벽한 계획 찾기",
+    "allPlans": "모든 계획",
+    "weightLoss": "체중 감량",
+    "muscleGain": "근육 증가",
+    "maintenance": "유지",
+    "health": "건강",
+    "searchDietPlans": "식단 계획 검색...",
+    "premium": "프리미엄",
+    "free": "무료",
+    "startPlan": "계획 시작",
+    "noPlansFound": "계획을 찾을 수 없음",
+    "tryAdjustingFilters": "필터를 조정해 보세요",
+    "noActivePlan": "활성 계획 없음",
+    "startPlanToTrack": "진행 상황을 추적하기 위해 식단 계획을 시작하세요",
+    "browsePlans": "계획 찾아보기",
+    "currentPlanProgress": "현재 계획 진행 상황",
+    "dayOf": "{{total}}일 중 {{current}}일",
+    "caloriesToday": "오늘 칼로리",
+    "target": "목표: {{value}}",
+    "protein": "단백질",
+    "carbs": "탄수화물",
+    "fat": "지방",
+    "weightProgress": "체중 진행 상황",
+    "current": "현재: {{value}} kg",
+    "targetWeight": "목표: {{value}} kg",
+    "startWeight": "시작: {{value}} kg",
+    "kg": "kg",
+    "addWeightEntry": "체중 기록 추가",
+    "weeklyOverview": "주간 개요",
+    "mon": "월",
+    "tue": "화",
+    "wed": "수",
+    "thu": "목",
+    "fri": "금",
+    "sat": "토",
+    "sun": "일",
+    "todaysMeals": "오늘 식사",
+    "breakfast": "아침 식사",
+    "lunch": "점심 식사",
+    "dinner": "저녁 식사",
+    "snacks": "간식",
+    "completed": "완료",
+    "pending": "대기 중",
+    "achievements": "업적",
+    "dayStreak": "연속 일수",
+    "mealsLogged": "기록된 식사",
+    "weightLost": "감량된 체중",
+    "createNewDietPlan": "새 식단 계획 만들기",
+    "basicInformation": "기본 정보",
+    "planName": "계획 이름",
+    "enterPlanName": "계획 이름 입력",
+    "goal": "목표",
+    "durationDays": "기간 (일)",
+    "enterDuration": "기간 입력",
+    "targetCalories": "목표 칼로리 (매일)",
+    "enterTargetCalories": "목표 칼로리 입력",
+    "next": "다음",
+    "back": "뒤로",
+    "macronutrientDistribution": "거대 영양소 분포",
+    "proteinG": "단백질 (g)",
+    "enterProteinTarget": "단백질 목표 입력",
+    "carbsG": "탄수화물 (g)",
+    "enterCarbsTarget": "탄수화물 목표 입력",
+    "fatG": "지방 (g)",
+    "enterFatTarget": "지방 목표 입력",
+    "total": "총계: {{value}} kcal",
+    "proteinPercent": "단백질: {{value}}%",
+    "carbsPercent": "탄수화물: {{value}}%",
+    "fatPercent": "지방: {{value}}%",
+    "mealPlanning": "식사 계획",
+    "mealsPerDay": "하루 식사 횟수",
+    "breakfastTime": "아침 식사 시간",
+    "lunchTime": "점심 식사 시간",
+    "dinnerTime": "저녁 식사 시간",
+    "snack1Time": "간식 1 시간",
+    "snack2Time": "간식 2 시간",
+    "snack3Time": "간식 3 시간",
+    "dietaryPreferences": "식단 선호도",
+    "dietaryRestrictions": "식단 제한",
+    "none": "없음",
+    "vegetarian": "채식주의자",
+    "vegan": "비건",
+    "glutenFree": "글루텐 프리",
+    "dairyFree": "유제품 프리",
+    "keto": "케토",
+    "paleo": "팔레오",
+    "halal": "할랄",
+    "kosher": "코셔",
+    "allergies": "알레르기 (쉼표로 구분)",
+    "allergiesExample": "예: 땅콩, 해산물",
+    "dislikedFoods": "싫어하는 음식 (쉼표로 구분)",
+    "dislikedFoodsExample": "예: 버섯, 올리브",
+    "createPlan": "계획 만들기",
+    "updatePlan": "계획 업데이트",
+    "dietPlanDetails": "식단 계획 세부 정보",
+    "edit": "편집",
+    "startPlan": "계획 시작",
+    "resume": "재개",
+    "pause": "일시 중지",
+    "markComplete": "완료로 표시",
+    "goalLabel": "목표: ",
+    "durationLabel": "기간: {{value}} 일",
+    "targetCaloriesLabel": "목표 칼로리: {{value}} kcal/일",
+    "macros": "매크로: ",
+    "proteinLabel": "단백질: {{value}} g",
+    "carbsLabel": "탄수화물: {{value}} g",
+    "fatLabel": "지방: {{value}} g",
+    "mealSchedule": "식사 일정",
+    "breakfastLabel": "아침 식사 - ",
+    "lunchLabel": "점심 식사 - ",
+    "dinnerLabel": "저녁 식사 - ",
+    "snack1Label": "간식 1 - ",
+    "snack2Label": "간식 2 - ",
+    "snack3Label": "간식 3 - ",
+    "description": "설명",
+    "noDescription": "설명을 사용할 수 없음",
+    "progress": "진행",
+    "percentComplete": "{{value}}% 완료",
+    "pausePlan": "계획 일시 중지",
+    "pausePlanConfirm": "이 계획을 일시 중지하시겠습니까?",
+    "markAsComplete": "완료로 표시",
+    "markCompleteConfirm": "이 계획을 완료로 표시하시겠습니까?",
+    "complete": "완료",
+    "weightKg": "체중 (kg)",
+    "enterWeight": "체중 입력",
+    "date": "날짜",
+    "notesOptional": "메모 (선택 사항)",
+    "addNotes": "메모 추가",
+    "addEntry": "항목 추가",
+    "planCreatedSuccess": "계획이 성공적으로 생성되었습니다!",
+    "planUpdatedSuccess": "계획이 성공적으로 업데이트되었습니다!",
+    "planDeletedSuccess": "계획이 성공적으로 삭제되었습니다!",
+    "planStartedSuccess": "계획이 성공적으로 시작되었습니다!",
+    "planPausedSuccess": "계획이 성공적으로 일시 중지되었습니다!",
+    "planResumedSuccess": "계획이 성공적으로 재개되었습니다!",
+    "planCompletedSuccess": "계획이 완료로 표시되었습니다!",
+    "weightEntryAddedSuccess": "체중 기록이 성공적으로 추가되었습니다!",
+    "failedToCreatePlan": "계획 생성 실패",
+    "failedToUpdatePlan": "계획 업데이트 실패",
+    "failedToDeletePlan": "계획 삭제 실패",
+    "failedToStartPlan": "계획 시작 실패",
+    "failedToPausePlan": "계획 일시 중지 실패",
+    "failedToResumePlan": "계획 재개 실패",
+    "failedToCompletePlan": "완료 실패",
+    "failedToAddWeightEntry": "체중 기록 추가 실패",
+    "fillRequiredFields": "필수 필드를 모두 입력해 주세요",
+    "selectGoal": "목표를 선택해 주세요",
+    "durationMin1Day": "기간은 최소 1일이어야 합니다",
+    "caloriesGreaterThan0": "칼로리는 0보다 커야 합니다",
+    "macrosAddUpCorrectly": "매크로가 올바르게 합산되어야 합니다",
+    "loadingPlans": "계획 로딩 중...",
+    "creatingPlan": "계획 생성 중...",
+    "updatingPlan": "계획 업데이트 중...",
+    "deletingPlan": "계획 삭제 중...",
+    "loadingProgress": "진행 상황 로딩 중...",
+    "premiumPlan": "프리미엄 플랜",
+    "upgradeToPremium": "프리미엄으로 업그레이드",
+    "premiumOnly": "프리미엄 전용",
+    "cancelCurrentPlan": "현재 플랜 취소",
+    "overallNutritionStatus": "전체 영양 상태",
+    "basedOnCompletedMeals": "완료된 식사 기반",
+    "macronutrientsDailyAvg": "대영양소 (일일 평균)",
+    "keyMicronutrientsDailyAvg": "주요 미량영양소 (일일 평균)",
+    "completeMealsToSeeProgress": "영양 진행 상황을 보려면 식사를 완료하세요",
+    "features": "기능",
+    "mealTracking": "식사 추적",
+    "track": "추적",
+    "mealsWaterVitaminsNutrients": "식사, 물, 비타민 및 영양소",
+    "aiMealPlans": "AI 식사 계획",
+    "ai": "AI",
+    "generateCustomWeeklyMonthlyPlans": "맞춤 주간 및 월간 계획 생성",
+    "healthConditions": "건강 상태",
+    "specializedDietaryPlans": "전문 식이 계획",
+    "quickTips": "빠른 팁",
+    "stayConsistent": "일관성을 유지하세요",
+    "trackMealsDailyBuildHabits": "매일 식사를 추적하여 건강한 습관을 구축하고 목표에 더 빨리 도달하세요.",
+    "stayHydrated": "수분 공급을 유지하세요",
+    "drinkWaterThroughoutDay": "하루 종일 물을 마시세요. 적절한 수분 공급을 보장하기 위해 섭취량을 추적하세요.",
+    "mealTrackingScreenTitle": "식사 추적",
+    "trackYourDailyNutrition": "매일 영양을 추적하세요",
+    "selectDay": "날짜 선택",
+    "selectDate": "날짜 선택",
+    "today": "오늘",
+    "tomorrow": "내일",
+    "locked": "잠김",
+    "dateLocked": "날짜가 잠겨 있습니다",
+    "dateWillBeAvailableOn": "이 날짜의 계획은 {{date}}에 사용할 수 있습니다",
+    "todaysProgress": "오늘의 진행 상황",
+    "meals": "식사",
+    "caloriesLeft": "남은 칼로리",
+    "water": "물",
+    "waterIntake": "수분 섭취",
+    "glasses": "잔",
+    "todaysMeals": "오늘의 식사",
+    "error": "오류",
+    "noMealPlanForToday": "오늘의 식사 계획이 없습니다",
+    "createAIMealPlanToGetStarted": "시작하려면 AI 식사 계획을 만드세요",
+    "generatePlan": "계획 생성",
+    "viewRecipe": "레시피 보기",
+    "keyNutrientsToday": "오늘의 주요 영양소",
+    "vitamins": "비타민",
+    "completeMealsToSeeVitaminIntake": "비타민 섭취를 보려면 식사를 완료하세요",
+    "minerals": "미네랄",
+    "completeMealsToSeeMineralIntake": "미네랄 섭취를 보려면 식사를 완료하세요",
+    "trackConsistently": "일관되게 추적",
+    "completeMealsToSeeVitaminMineralIntake": "비타민과 미네랄 섭취를 보려면 식사를 완료하세요. 연속 기록을 유지하세요!",
+    "futureDatesAreLocked": "미래 날짜는 도착할 때까지 잠겨 있습니다",
+    "aiMealPlanGenerator": "AI 식사 계획 생성기",
+    "customizeYourPerfectMealPlan": "완벽한 식사 계획을 맞춤 설정하세요",
+    "haveHealthConditions": "건강 상태가 있으신가요?",
+    "getSpecializedPlans": "당뇨병, 심장 건강, IBS 등 전문 계획을 얻으세요",
+    "planDuration": "계획 기간",
+    "weekly7Days": "주간 (7일)",
+    "monthly30Days": "월간 (30일)",
+    "fitnessGoal": "피트니스 목표",
+    "mealsPerDay": "하루 식사 수",
+    "meals": "식사",
+    "dietTypeSelectMultiple": "식단 유형 (여러 개 선택)",
+    "allergiesAndRestrictions": "알레르기 및 제한",
+    "cuisinePreferences": "요리 선호도",
+    "budgetLevel": "예산 수준",
+    "additionalPreferences": "추가 선호도",
+    "preferencesPlaceholder": "예: 30분 이내 빠른 요리를 좋아함, 매운 음식을 좋아함...",
+    "generatingPlan": "계획 생성 중...",
+    "generateAIMealPlan": "AI 식사 계획 생성",
+    "generatingMayTake90Seconds": "90초가 걸릴 수 있습니다...",
+    "aiWillCreatePersonalizedPlan": "AI가 귀하의 선호도를 기반으로 개인화된 {{duration}} 계획을 생성합니다",
+    "activePlanExists": "활성 계획이 존재합니다",
+    "cancelCurrentPlanBeforeGenerating": "이미 활성 식사 계획이 있습니다. 새로 생성하기 전에 현재 계획을 취소하세요.",
+    "selectionRequired": "선택 필요",
+    "selectAtLeastOneDietType": "적어도 하나의 식단 유형을 선택하세요",
+    "goalRequired": "목표 필요",
+    "pleaseSelectFitnessGoal": "피트니스 목표를 선택하세요",
+    "success": "성공! 🎉",
+    "mealPlanGeneratedWithMeals": "{{duration}} 식사 계획이 {{count}}개의 식사로 생성되었습니다!",
+    "generationFailed": "생성 실패",
+    "healthConditions": "건강 상태",
+    "specializedDietPlansForYourNeeds": "귀하의 필요에 맞는 전문 식단 계획",
+    "importantNotice": "중요 공지",
+    "consultHealthcareProvider": "이것들은 일반적인 지침입니다. 식단 변경 전에 항상 의료 제공자나 등록 영양사와 상담하세요.",
+    "selectYourCondition": "귀하의 상태 선택",
+    "dietPlanDetails": "식단 계획 세부 사항",
+    "keyDietaryFocus": "주요 식단 초점",
+    "foodsToAvoid": "피해야 할 음식",
+    "recommendedFoods": "추천 음식",
+    "mealSuggestions": "식사 제안",
+    "nutritionalGuidelines": "영양 지침",
+    "dailyCalories": "일일 칼로리",
+    "protein": "단백질",
+    "carbohydrates": "탄수화물",
+    "fats": "지방",
+    "specialNotes": "특별 메모",
+    "generateMealPlan": "식사 계획 생성",
+    "selectDuration": "기간 선택",
+    "generating": "생성 중...",
+    "generateDurationPlan": "{{duration}} 계획 생성",
+    "aiWillCreatePlanOptimizedFor": "AI가 {{condition}}에 최적화된 {{duration}} 계획을 생성합니다",
+    "planGeneratedWithSpecializedMeals": "{{condition}}을 위한 {{duration}} 계획이 {{count}}개의 전문 식사로 생성되었습니다!",
+    "activePlanExists": "활성 계획이 존재합니다",
+    "cancelCurrentPlanBeforeGenerating": "이미 활성 식사 계획이 있습니다. 새로 생성하기 전에 현재 계획을 취소하세요.",
+    "conditions": {
+      "diabetes": {
+        "name": "당뇨병 관리",
+        "description": "저혈당 지수, 탄수화물 섭취 통제",
+        "dietaryFocus": [
+          "저 GI 식품",
+          "섬유질이 풍부한 요리",
+          "포션 통제",
+          "정기적인 식사 시간"
+        ],
+        "avoidFoods": [
+          "달콤한 음료와 디저트",
+          "흰 빵과 쌀",
+          "가공 스낵",
+          "설탕이 많은 과일",
+          "튀긴 음식"
+        ],
+        "recommendedFoods": [
+          "통곡물 (퀴노아, 현미)",
+          "녹색 잎 채소",
+          "저지방 단백질",
+          "견과류와 씨앗",
+          "저지방 유제품"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "블루베리와 스틸컷 오트밀",
+            "그릭 요거트와 치아 씨드",
+            "야채가 들어간 계란 흰자 오믈렛"
+          ],
+          "lunch": [
+            "로스트 치킨 샐러드",
+            "통곡물 빵과 렌틸콩 수프",
+            "야채가 들어간 퀴노아 그릇"
+          ],
+          "dinner": [
+            "찐 브로콜리와 구운 연어",
+            "주키니 누들과 터키 미트볼",
+            "섞인 야채와 구운 두부"
+          ],
+          "snacks": [
+            "피넛 버터가 들어간 사과 슬라이스",
+            "후무스와 생 야채",
+            "견과류 한 줌"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 1,800-2,200칼로리",
+          "protein": "매일 칼로리의 25-30%",
+          "carbs": "45-50% (복합 탄수화물에 초점)",
+          "fats": "25-30% (건강한 지방)",
+          "specialNotes": [
+            "혈당을 정기적으로 모니터링",
+            "정해진 시간에 먹기",
+            "물로 수분 공급 유지",
+            "나트륨 섭취 제한"
+          ]
+        }
+      },
+      "heart_health": {
+        "name": "심장 건강",
+        "description": "저나트륨, 심장을 위한 건강한 지방",
+        "dietaryFocus": [
+          "오메가3 지방산",
+          "저나트륨",
+          "고섬유",
+          "저지방 단백질"
+        ],
+        "avoidFoods": [
+          "트랜스 지방과 포화 지방",
+          "고나트륨 식품",
+          "가공 육류",
+          "붉은 고기의 과도",
+          "정제 설탕"
+        ],
+        "recommendedFoods": [
+          "기름진 생선 (연어, 청어)",
+          "올리브 오일과 아보카도",
+          "통곡물",
+          "베리와 과일",
+          "견과류와 콩류"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "호두와 블루베리가 들어간 오트밀",
+            "통곡물 빵에 아보카도 토스트",
+            "시금치와 베리가 들어간 스무디"
+          ],
+          "lunch": [
+            "올리브 오일이 들어간 지중해 샐러드",
+            "퀴노아와 구운 연어",
+            "야채와 콩 수프"
+          ],
+          "dinner": [
+            "구운 야채와 구운 대구",
+            "스위트 포테이토와 치킨 브레스트",
+            "현미와 렌틸콩 카레"
+          ],
+          "snacks": ["신선한 과일", "소금 없는 아몬드", "후무스와 당근"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 2,000-2,400칼로리",
+          "protein": "매일 칼로리의 20-25%",
+          "carbs": "50-55% (통곡물에 초점)",
+          "fats": "25-30% (불포화에 초점)",
+          "specialNotes": [
+            "나트륨을 하루 1,500mg으로 제한",
+            "오메가3 섭취 증가",
+            "주에 2-3회 기름진 생선 먹기",
+            "트랜스 지방 완전히 피하기"
+          ]
+        }
+      },
+      "gluten_free": {
+        "name": "글루텐 불내성",
+        "description": "셀리악병에 안전, 글루텐 프리 옵션",
+        "dietaryFocus": [
+          "인증 글루텐 프리 곡물",
+          "자연적 통식품",
+          "라벨 읽기",
+          "교차 오염 예방"
+        ],
+        "avoidFoods": [
+          "밀, 보리, 호밀",
+          "일반 파스타와 빵",
+          "몰트 음료와 맥주",
+          "많은 가공 식품",
+          "일반 간장"
+        ],
+        "recommendedFoods": [
+          "쌀, 퀴노아, 옥수수",
+          "글루텐 프리 오트밀",
+          "신선한 과일과 야채",
+          "육류, 생선, 가금류",
+          "달걀과 유제품"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "과일이 들어간 글루텐 프리 오트밀",
+            "아몬드 밀크와 라이스크리스프",
+            "야채가 들어간 오믈렛"
+          ],
+          "lunch": [
+            "퀴노아 샐러드 그릇",
+            "라이스 페이퍼 스프링롤",
+            "콘 토르티야 타코스"
+          ],
+          "dinner": [
+            "라이스 필라프와 로스트 치킨",
+            "구운 감자와 구운 생선",
+            "라이스 누들 스튜"
+          ],
+          "snacks": [
+            "신선한 과일",
+            "피넛 버터가 들어간 라이스 크리스프",
+            "야채 스틱"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 2,000-2,500칼로리",
+          "protein": "매일 칼로리의 20-30%",
+          "carbs": "45-55% (글루텐 프리 곡물)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "항상 숨겨진 글루텐이 없는지 라벨 확인",
+            "별도의 조리 도구 사용",
+            "자연적으로 글루텐 프리 식품에 초점",
+            "비타민 B 보충 필요할 수 있음"
+          ]
+        }
+      },
+      "lactose_intolerance": {
+        "name": "유당 불내성",
+        "description": "유제품 없는 옵션",
+        "dietaryFocus": [
+          "유당 프리 제품",
+          "식물성 우유",
+          "칼슘이 풍부한 옵션",
+          "비타민 D 공급원"
+        ],
+        "avoidFoods": [
+          "일반 우유와 크림",
+          "아이스크림",
+          "대부분의 치즈",
+          "버터",
+          "일반 요거트"
+        ],
+        "recommendedFoods": [
+          "아몬드, 콩, 오트 밀크",
+          "유당 프리 유제품",
+          "녹색 잎 채소 (칼슘)",
+          "강화 식품",
+          "두부와 템페"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "아몬드 밀크와 오트밀",
+            "코코넛 요거트 스무디",
+            "아보카도 토스트"
+          ],
+          "lunch": [
+            "치즈 없는 치킨 샐러드",
+            "두부와 야채 스튜",
+            "구아카몰과 콩 버리토"
+          ],
+          "dinner": [
+            "구운 야채와 연어",
+            "유제품 없는 소스와 파스타",
+            "코코넛 밀크와 치킨 카레"
+          ],
+          "snacks": ["신선한 과일", "유제품 없는 요거트", "견과류와 씨앗"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 2,000-2,500칼로리",
+          "protein": "매일 칼로리의 20-30%",
+          "carbs": "45-55%",
+          "fats": "25-30%",
+          "specialNotes": [
+            "하루 1,000mg의 충분한 칼슘 섭취 보장",
+            "햇빛과 보충으로 비타민 D 얻기",
+            "숨겨진 유당이 없는지 라벨 확인",
+            "락타아제 효소 보충 시도"
+          ]
+        }
+      },
+      "kidney_health": {
+        "name": "신장 건강",
+        "description": "저단백질, 통제된 미네랄",
+        "dietaryFocus": ["통제된 단백질", "저칼륨", "저인", "액체 관리"],
+        "avoidFoods": [
+          "가공 육류",
+          "고칼륨 과일",
+          "유제품",
+          "통곡물 빵",
+          "진한 탄산 음료"
+        ],
+        "recommendedFoods": [
+          "저지방 단백질 (제한)",
+          "사과, 베리",
+          "콜리플라워, 양배추",
+          "흰 빵과 쌀",
+          "올리브 오일"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "젤리와 흰 토스트",
+            "제한된 우유와 라이스 크리스프",
+            "계란 흰자 오믈렛"
+          ],
+          "lunch": [
+            "흰 빵과 치킨 샌드위치",
+            "찐 야채와 쌀",
+            "작은 파스타 샐러드"
+          ],
+          "dinner": [
+            "작은 구운 생선 포션",
+            "쌀과 구운 야채",
+            "저칼륨 야채와 치킨 브레스트"
+          ],
+          "snacks": ["사과 슬라이스", "작은 베리 포션", "라이스 크리스프"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 2,000-2,400칼로리",
+          "protein": "체중 1kg당 0.6-0.8g",
+          "carbs": "50-60%",
+          "fats": "25-35%",
+          "specialNotes": [
+            "신장 기능에 따라 단백질 제한",
+            "칼륨을 최대 2,000mg으로 통제",
+            "인을 800-1,000mg으로 제한",
+            "처방에 따라 액체 섭취 통제"
+          ]
+        }
+      },
+      "ibs": {
+        "name": "IBS (저 FODMAP)",
+        "description": "장 친화적, 저 FODMAP",
+        "dietaryFocus": [
+          "저 FODMAP 식품",
+          "작은 빈번한 식사",
+          "스트레스 관리",
+          "수분 공급"
+        ],
+        "avoidFoods": [
+          "고 FODMAP 과일 (사과, 배)",
+          "양파와 마늘",
+          "밀 제품",
+          "콩류",
+          "고유당 유제품"
+        ],
+        "recommendedFoods": [
+          "바나나, 오렌지, 베리",
+          "쌀, 퀴노아, 오트밀",
+          "당근, 주키니, 시금치",
+          "치킨, 생선, 달걀",
+          "유당 프리 유제품"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "바나나가 들어간 글루텐 프리 오트밀",
+            "라이스 푸딩",
+            "시금치가 들어간 오믈렛"
+          ],
+          "lunch": [
+            "쌀과 치킨 그릇",
+            "안전한 야채와 퀴노아 샐러드",
+            "당근과 구운 생선"
+          ],
+          "dinner": [
+            "주키니와 구운 치킨",
+            "저 FODMAP 야채 스튜",
+            "완두콩과 연어"
+          ],
+          "snacks": [
+            "라이스 크리스프",
+            "작은 후무스와 당근",
+            "유당 프리 요거트"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "하루 2,000-2,400칼로리",
+          "protein": "매일 칼로리의 20-30%",
+          "carbs": "50-55% (저 FODMAP)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "작은 빈번한 식사 먹기",
+            "식품 일기 기록",
+            "FODMAP 점진적 재도입",
+            "좋은 수분 공급 유지"
+          ]
+        }
+      }
+    },
+    "weeklyPlan": "📅 주간 (7일)",
+    "monthlyPlan": "📆 월간 (30일)",
+    "generatingTimeMessage": "90초가 걸릴 수 있습니다...",
+    "errorTitle": "오류",
+    "generationErrorMessage": "식사 계획 생성 중 오류가 발생했습니다. 다시 시도해 주세요."
   },
   "sidebar": {
     "notifications": "알림",

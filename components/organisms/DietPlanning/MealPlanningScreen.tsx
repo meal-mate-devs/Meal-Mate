@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { useDietPlanningStore } from "@/hooks/useDietPlanningStore"
 import { DietPlan, dietPlanningService } from "@/lib/services/dietPlanningService"
 import { Ionicons } from "@expo/vector-icons"
@@ -22,6 +23,7 @@ import {
 
 const MealPlanningScreen = () => {
     const router = useRouter()
+    const { t } = useLanguage()
     const {
         selectedGoal,
         todayMeals,
@@ -55,8 +57,8 @@ const MealPlanningScreen = () => {
         tomorrow.setDate(tomorrow.getDate() + 1)
         const tomorrowStr = tomorrow.toISOString().split('T')[0]
 
-        if (date === today) return 'Today'
-        if (date === tomorrowStr) return 'Tomorrow'
+        if (date === today) return t('diet.today')
+        if (date === tomorrowStr) return t('diet.tomorrow')
 
         const dateObj = new Date(date)
         const options: Intl.DateTimeFormatOptions = { weekday: 'short', month: 'short', day: 'numeric' }
@@ -202,10 +204,10 @@ const MealPlanningScreen = () => {
                     <TouchableOpacity onPress={() => router.push("/health")} className="p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
-                    <Text className="text-white text-xl font-bold">Meal Tracking</Text>
+                    <Text className="text-white text-xl font-bold">{t('diet.mealTrackingScreenTitle')}</Text>
                     <View className="w-10" />
                 </View>
-                <Text className="text-gray-400 text-center">Track your daily nutrition</Text>
+                <Text className="text-gray-400 text-center">{t('diet.trackYourDailyNutrition')}</Text>
             </View>
 
             {/* Date Navigation */}
@@ -213,7 +215,7 @@ const MealPlanningScreen = () => {
                 <View className="px-4 pb-4 bg-black">
                     {activePlan.duration === 7 ? (
                         <>
-                            <Text className="text-gray-400 text-sm mb-2">Select Day</Text>
+                            <Text className="text-gray-400 text-sm mb-2">{t('diet.selectDay')}</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                                 <View className="flex-row" style={{ gap: 8 }}>
                                     {activePlan.dailyPlans.map((dayPlan, index) => {
@@ -252,7 +254,7 @@ const MealPlanningScreen = () => {
                         </>
                     ) : (
                         <>
-                            <Text className="text-gray-400 text-sm mb-2">Select Date</Text>
+                            <Text className="text-gray-400 text-sm mb-2">{t('diet.selectDate')}</Text>
                             <TouchableOpacity
                                 onPress={() => setShowCalendar(true)}
                                 className="bg-zinc-800 rounded-xl p-4 flex-row items-center justify-between"
@@ -263,7 +265,7 @@ const MealPlanningScreen = () => {
                                     {isDateLocked(selectedDate) && (
                                         <View className="ml-2 px-2 py-1 bg-zinc-700 rounded-lg flex-row items-center">
                                             <Ionicons name="lock-closed" size={12} color="gray" style={{ marginRight: 4 }} />
-                                            <Text className="text-gray-400 text-xs">Locked</Text>
+                                            <Text className="text-gray-400 text-xs">{t('diet.locked')}</Text>
                                         </View>
                                     )}
                                 </View>
@@ -284,9 +286,9 @@ const MealPlanningScreen = () => {
                                     <Ionicons name="lock-closed" size={20} color="#FACC15" />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-yellow-400 font-bold mb-1">Date Locked</Text>
+                                    <Text className="text-yellow-400 font-bold mb-1">{t('diet.dateLocked')}</Text>
                                     <Text className="text-yellow-400/80 text-sm">
-                                        This day's plan will be available on {getDayLabel(selectedDate)}
+                                        {t('diet.dateWillBeAvailableOn', { date: getDayLabel(selectedDate) })}
                                     </Text>
                                 </View>
                             </View>
@@ -324,20 +326,20 @@ const MealPlanningScreen = () => {
                                 end={{ x: 1, y: 0 }}
                                 className="p-5"
                             >
-                                <Text className="text-white text-xl font-bold mb-4">Today's Progress</Text>
+                                <Text className="text-white text-xl font-bold mb-4">{t('diet.todaysProgress')}</Text>
                                 <View className="flex-row justify-between">
                                     <View>
-                                        <Text className="text-white/80 text-sm">Meals</Text>
+                                        <Text className="text-white/80 text-sm">{t('diet.meals')}</Text>
                                         <Text className="text-white text-2xl font-bold">
                                             {stats.mealsCompleted}/{stats.totalMeals}
                                         </Text>
                                     </View>
                                     <View>
-                                        <Text className="text-white/80 text-sm">Calories Left</Text>
+                                        <Text className="text-white/80 text-sm">{t('diet.caloriesLeft')}</Text>
                                         <Text className="text-white text-2xl font-bold">{stats.caloriesRemaining}</Text>
                                     </View>
                                     <View>
-                                        <Text className="text-white/80 text-sm">Water</Text>
+                                        <Text className="text-white/80 text-sm">{t('diet.water')}</Text>
                                         <Text className="text-white text-2xl font-bold">
                                             {stats.waterIntake}/{activePlan?.dailyWaterTarget || stats.waterTarget}
                                         </Text>
@@ -350,7 +352,7 @@ const MealPlanningScreen = () => {
 
                 {/* Water Tracker */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Water Intake</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.waterIntake')}</Text>
                     {isLoading ? (
                         <View className="bg-zinc-800 rounded-3xl p-5">
                             <View className="flex-row items-center justify-between mb-4">
@@ -379,7 +381,7 @@ const MealPlanningScreen = () => {
                                         <Text className="text-white text-2xl font-bold">
                                             {stats.waterIntake}/{activePlan?.dailyWaterTarget || stats.waterTarget}
                                         </Text>
-                                        <Text className="text-gray-400 text-sm">glasses</Text>
+                                        <Text className="text-gray-400 text-sm">{t('diet.glasses')}</Text>
                                     </View>
                                 </View>
                                 <View className="flex-row items-center">
@@ -449,7 +451,7 @@ const MealPlanningScreen = () => {
 
                 {/* Today's Meal Plan */}
                 <View className="mb-8">
-                    <Text className="text-white text-lg font-bold mb-3">Today's Meals</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.todaysMeals')}</Text>
 
                     {/* Loading State - Skeleton Loader */}
                     {isLoading && (
@@ -488,7 +490,7 @@ const MealPlanningScreen = () => {
                         <View className="bg-red-900/20 border border-red-500/30 rounded-3xl p-5">
                             <View className="flex-row items-center mb-2">
                                 <Ionicons name="alert-circle" size={24} color="#EF4444" />
-                                <Text className="text-red-400 font-bold ml-2">Error</Text>
+                                <Text className="text-red-400 font-bold ml-2">{t('diet.error')}</Text>
                             </View>
                             <Text className="text-red-300 text-sm mb-3">{error}</Text>
                             <TouchableOpacity
@@ -505,10 +507,10 @@ const MealPlanningScreen = () => {
                         <View className="bg-zinc-800 rounded-3xl p-8 items-center">
                             <Ionicons name="restaurant-outline" size={48} color="#52525b" />
                             <Text className="text-gray-400 text-center mt-4 mb-2 text-base font-semibold">
-                                No meal plan for today
+                                {t('diet.noMealPlanForToday')}
                             </Text>
                             <Text className="text-gray-500 text-center text-sm mb-4">
-                                Create an AI meal plan to get started
+                                {t('diet.createAIMealPlanToGetStarted')}
                             </Text>
                             <TouchableOpacity
                                 onPress={() => router.push("/diet-plan/ai-meal-plan" as any)}
@@ -523,7 +525,7 @@ const MealPlanningScreen = () => {
                                 >
                                     <View className="flex-row items-center">
                                         <Ionicons name="sparkles" size={18} color="white" />
-                                        <Text className="text-white font-semibold ml-2">Generate Plan</Text>
+                                        <Text className="text-white font-semibold ml-2">{t('diet.generatePlan')}</Text>
                                     </View>
                                 </LinearGradient>
                             </TouchableOpacity>
@@ -628,7 +630,7 @@ const MealPlanningScreen = () => {
                                                     color="white"
                                                 />
                                                 <Text className="text-white text-center font-bold ml-2">
-                                                    View Recipe
+                                                    {t('diet.viewRecipe')}
                                                 </Text>
                                             </View>
                                         </LinearGradient>
@@ -642,12 +644,12 @@ const MealPlanningScreen = () => {
                 {/* Key Vitamins & Minerals */}
                 {todayMeals.length > 0 && (
                     <View className="mb-6">
-                        <Text className="text-white text-lg font-bold mb-3">Key Nutrients Today</Text>
+                        <Text className="text-white text-lg font-bold mb-3">{t('diet.keyNutrientsToday')}</Text>
                         <View className="bg-zinc-800 rounded-3xl p-5">
                             <Text className="text-gray-400 text-xs mb-4">Based on completed meals</Text>
 
                             {/* Vitamins */}
-                            <Text className="text-white font-semibold mb-3">Vitamins</Text>
+                            <Text className="text-white font-semibold mb-3">{t('diet.vitamins')}</Text>
                             {nutrition.vitamins.length > 0 ? (
                                 nutrition.vitamins.map((vitamin, idx) => {
                                     const percentage = Math.min((vitamin.amount / vitamin.target) * 100, 100)
@@ -669,13 +671,13 @@ const MealPlanningScreen = () => {
                                     )
                                 })
                             ) : (
-                                <Text className="text-gray-500 text-sm">Complete meals to see vitamin intake</Text>
+                                <Text className="text-gray-500 text-sm">{t('diet.completeMealsToSeeVitaminIntake')}</Text>
                             )}
 
                             <View className="h-px bg-zinc-700 my-4" />
 
                             {/* Minerals */}
-                            <Text className="text-white font-semibold mb-3">Minerals</Text>
+                            <Text className="text-white font-semibold mb-3">{t('diet.minerals')}</Text>
                             {nutrition.minerals.length > 0 ? (
                                 nutrition.minerals.map((mineral, idx) => {
                                     const percentage = Math.min((mineral.amount / mineral.target) * 100, 100)
@@ -697,7 +699,7 @@ const MealPlanningScreen = () => {
                                     )
                                 })
                             ) : (
-                                <Text className="text-gray-500 text-sm">Complete meals to see mineral intake</Text>
+                                <Text className="text-gray-500 text-sm">{t('diet.completeMealsToSeeMineralIntake')}</Text>
                             )}
                         </View>
                     </View>
@@ -711,9 +713,9 @@ const MealPlanningScreen = () => {
                                 <Ionicons name="bulb-outline" size={18} color="#FACC15" />
                             </View>
                             <View className="flex-1">
-                                <Text className="text-white font-semibold mb-1">Track Consistently</Text>
+                                <Text className="text-white font-semibold mb-1">{t('diet.trackConsistently')}</Text>
                                 <Text className="text-gray-400 text-sm">
-                                    Complete meals to see your vitamin & mineral intake. Keep your streak going!
+                                    {t('diet.completeMealsToSeeVitaminMineralIntake')}
                                 </Text>
                             </View>
                         </View>
@@ -740,7 +742,7 @@ const MealPlanningScreen = () => {
                             className="bg-zinc-900 rounded-3xl p-6 mx-4 w-11/12"
                         >
                             <View className="flex-row items-center justify-between mb-4">
-                                <Text className="text-white text-lg font-bold">Select Date</Text>
+                                <Text className="text-white text-lg font-bold">{t('diet.selectDate')}</Text>
                                 <TouchableOpacity onPress={() => setShowCalendar(false)}>
                                     <Ionicons name="close" size={24} color="white" />
                                 </TouchableOpacity>
@@ -775,7 +777,7 @@ const MealPlanningScreen = () => {
                                 <View className="flex-row items-center">
                                     <Ionicons name="information-circle" size={20} color="#FACC15" />
                                     <Text className="text-gray-400 text-sm ml-2">
-                                        Future dates are locked until they arrive
+                                        {t('diet.futureDatesAreLocked')}
                                     </Text>
                                 </View>
                             </View>

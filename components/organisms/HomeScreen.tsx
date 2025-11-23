@@ -22,7 +22,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFavoritesStore } from '../../hooks/useFavoritesStore';
 import { useProfileStore } from '../../hooks/useProfileStore';
 import Dialog from '../atoms/Dialog';
-import RecipeSkeleton from '../atoms/RecipeSkeleton';
 import HomeHeader from '../molecules/HomeHeader';
 import ProfileSidebar from '../molecules/ProfileSidebar';
 
@@ -577,10 +576,47 @@ const HomeScreen: React.FC = () => {
                     showsVerticalScrollIndicator={false}
                 >
                     {isLoadingRecipes ? (
-                        <View className="px-4">
-                            <RecipeSkeleton />
-                            <RecipeSkeleton />
-                            <RecipeSkeleton />
+                        <View>
+                            {/* Recipe Cards Skeleton */}
+                            {[1, 2, 3, 4, 5].map((i) => (
+                                <View key={i} className="bg-zinc-800 rounded-3xl mb-4 overflow-hidden border border-zinc-700">
+                                    {/* Image skeleton */}
+                                    <View className="w-full h-48 bg-zinc-700" />
+
+                                    {/* Content skeleton */}
+                                    <View className="p-4">
+                                        {/* Header with title and premium badge */}
+                                        <View className="flex-row items-start justify-between mb-3">
+                                            <View className="flex-1 mr-3">
+                                                <View className="w-3/4 h-6 bg-zinc-700 rounded mb-2" />
+                                            </View>
+                                            <View className="w-16 h-6 bg-zinc-700 rounded-full" />
+                                        </View>
+
+                                        {/* Description skeleton - 2 lines */}
+                                        <View className="mb-4">
+                                            <View className="w-full h-4 bg-zinc-700 rounded mb-2" />
+                                            <View className="w-4/5 h-4 bg-zinc-700 rounded" />
+                                        </View>
+
+                                        {/* Meta info skeleton */}
+                                        <View className="flex-row gap-4">
+                                            <View className="flex-row items-center">
+                                                <View className="w-4 h-4 bg-zinc-700 rounded mr-2" />
+                                                <View className="w-12 h-4 bg-zinc-700 rounded" />
+                                            </View>
+                                            <View className="flex-row items-center">
+                                                <View className="w-4 h-4 bg-zinc-700 rounded mr-2" />
+                                                <View className="w-10 h-4 bg-zinc-700 rounded" />
+                                            </View>
+                                            <View className="flex-row items-center">
+                                                <View className="w-4 h-4 bg-zinc-700 rounded mr-2" />
+                                                <View className="w-16 h-4 bg-zinc-700 rounded" />
+                                            </View>
+                                        </View>
+                                    </View>
+                                </View>
+                            ))}
                         </View>
                     ) : filteredRecipes.length === 0 ? (
                         <View className="flex-1 items-center justify-center py-20">

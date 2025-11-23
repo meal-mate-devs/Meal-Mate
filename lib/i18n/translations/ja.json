@@ -464,6 +464,634 @@
     "noBannedRecipesOrCourses": "禁止されたレシピやコースはありません",
     "pleaseSelectReasonOrDescribe": "理由を選択するか、懸念事項を説明してください"
   },
+  "diet": {
+    "screenTitle": "食事計画",
+    "myPlans": "マイプラン",
+    "discover": "発見",
+    "progress": "進捗",
+    "noPlansYet": "まだ食事計画がありません",
+    "createFirstPlan": "健康的な旅を始めるために、最初の個人向け食事計画を作成しましょう！",
+    "createDietPlan": "食事計画を作成",
+    "active": "アクティブ",
+    "completed": "完了",
+    "paused": "一時停止",
+    "viewDetails": "詳細を表示",
+    "editPlan": "計画を編集",
+    "deletePlan": "計画を削除",
+    "kcalPerDay": "kcal/日",
+    "days": "日",
+    "deleteDietPlan": "食事計画を削除",
+    "deletePlanConfirm": "この計画を削除してもよろしいですか？ この操作は元に戻せません。",
+    "delete": "削除",
+    "discoverDietPlans": "食事計画を発見",
+    "findPerfectPlan": "目標にぴったりの計画を見つける",
+    "allPlans": "すべての計画",
+    "weightLoss": "体重減少",
+    "muscleGain": "筋肉増強",
+    "maintenance": "維持",
+    "health": "健康",
+    "searchDietPlans": "食事計画を検索...",
+    "premium": "プレミアム",
+    "free": "無料",
+    "startPlan": "計画を開始",
+    "noPlansFound": "計画が見つかりません",
+    "tryAdjustingFilters": "フィルターを調整してみてください",
+    "noActivePlan": "アクティブな計画なし",
+    "startPlanToTrack": "進捗を追跡するために食事計画を開始する",
+    "browsePlans": "計画を閲覧",
+    "currentPlanProgress": "現在の計画の進捗",
+    "dayOf": "{{total}}日中の{{current}}日目",
+    "caloriesToday": "今日のカロリー",
+    "target": "目標: {{value}}",
+    "protein": "タンパク質",
+    "carbs": "炭水化物",
+    "fat": "脂質",
+    "weightProgress": "体重の進捗",
+    "current": "現在: {{value}} kg",
+    "targetWeight": "目標: {{value}} kg",
+    "startWeight": "開始: {{value}} kg",
+    "kg": "kg",
+    "addWeightEntry": "体重記録を追加",
+    "weeklyOverview": "週間概要",
+    "mon": "月",
+    "tue": "火",
+    "wed": "水",
+    "thu": "木",
+    "fri": "金",
+    "sat": "土",
+    "sun": "日",
+    "todaysMeals": "今日の食事",
+    "breakfast": "朝食",
+    "lunch": "昼食",
+    "dinner": "夕食",
+    "snacks": "間食",
+    "completed": "完了",
+    "pending": "保留中",
+    "achievements": "実績",
+    "dayStreak": "連続日数",
+    "mealsLogged": "記録された食事",
+    "weightLost": "減量した体重",
+    "createNewDietPlan": "新しい食事計画を作成",
+    "basicInformation": "基本情報",
+    "planName": "計画名",
+    "enterPlanName": "計画名を入力",
+    "goal": "目標",
+    "durationDays": "期間 (日)",
+    "enterDuration": "期間を入力",
+    "targetCalories": "目標カロリー (毎日)",
+    "enterTargetCalories": "目標カロリーを入力",
+    "next": "次へ",
+    "back": "戻る",
+    "macronutrientDistribution": "マクロ栄養素分布",
+    "proteinG": "タンパク質 (g)",
+    "enterProteinTarget": "タンパク質目標を入力",
+    "carbsG": "炭水化物 (g)",
+    "enterCarbsTarget": "炭水化物目標を入力",
+    "fatG": "脂質 (g)",
+    "enterFatTarget": "脂質目標を入力",
+    "total": "合計: {{value}} kcal",
+    "proteinPercent": "タンパク質: {{value}}%",
+    "carbsPercent": "炭水化物: {{value}}%",
+    "fatPercent": "脂質: {{value}}%",
+    "mealPlanning": "食事計画",
+    "mealsPerDay": "1日の食事回数",
+    "breakfastTime": "朝食時間",
+    "lunchTime": "昼食時間",
+    "dinnerTime": "夕食時間",
+    "snack1Time": "間食1時間",
+    "snack2Time": "間食2時間",
+    "snack3Time": "間食3時間",
+    "dietaryPreferences": "食事嗜好",
+    "dietaryRestrictions": "食事制限",
+    "none": "なし",
+    "vegetarian": "ベジタリアン",
+    "vegan": "ビーガン",
+    "glutenFree": "グルテンフリー",
+    "dairyFree": "乳製品フリー",
+    "keto": "ケト",
+    "paleo": "パレオ",
+    "halal": "ハラル",
+    "kosher": "コーシャー",
+    "allergies": "アレルギー (カンマ区切り)",
+    "allergiesExample": "例: ピーナッツ、海産物",
+    "dislikedFoods": "嫌いな食べ物 (カンマ区切り)",
+    "dislikedFoodsExample": "例: きのこ、オリーブ",
+    "createPlan": "計画を作成",
+    "updatePlan": "計画を更新",
+    "dietPlanDetails": "食事計画の詳細",
+    "edit": "編集",
+    "startPlan": "計画を開始",
+    "resume": "再開",
+    "pause": "一時停止",
+    "markComplete": "完了としてマーク",
+    "goalLabel": "目標: ",
+    "durationLabel": "期間: {{value}} 日",
+    "targetCaloriesLabel": "目標カロリー: {{value}} kcal/日",
+    "macros": "マクロ: ",
+    "proteinLabel": "タンパク質: {{value}} g",
+    "carbsLabel": "炭水化物: {{value}} g",
+    "fatLabel": "脂質: {{value}} g",
+    "mealSchedule": "食事スケジュール",
+    "breakfastLabel": "朝食 - ",
+    "lunchLabel": "昼食 - ",
+    "dinnerLabel": "夕食 - ",
+    "snack1Label": "間食1 - ",
+    "snack2Label": "間食2 - ",
+    "snack3Label": "間食3 - ",
+    "description": "説明",
+    "noDescription": "説明は利用できません",
+    "progress": "進捗",
+    "percentComplete": "{{value}}% 完了",
+    "pausePlan": "計画を一時停止",
+    "pausePlanConfirm": "この計画を一時停止してもよろしいですか？",
+    "markAsComplete": "完了としてマーク",
+    "markCompleteConfirm": "この計画を完了としてマークしてもよろしいですか？",
+    "complete": "完了",
+    "weightKg": "体重 (kg)",
+    "enterWeight": "体重を入力",
+    "date": "日付",
+    "notesOptional": "メモ (オプション)",
+    "addNotes": "メモを追加",
+    "addEntry": "エントリを追加",
+    "planCreatedSuccess": "計画が正常に作成されました！",
+    "planUpdatedSuccess": "計画が正常に更新されました！",
+    "planDeletedSuccess": "計画が正常に削除されました！",
+    "planStartedSuccess": "計画が正常に開始されました！",
+    "planPausedSuccess": "計画が正常に一時停止されました！",
+    "planResumedSuccess": "計画が正常に再開されました！",
+    "planCompletedSuccess": "計画が完了としてマークされました！",
+    "weightEntryAddedSuccess": "体重記録が正常に追加されました！",
+    "failedToCreatePlan": "計画の作成に失敗しました",
+    "failedToUpdatePlan": "計画の更新に失敗しました",
+    "failedToDeletePlan": "計画の削除に失敗しました",
+    "failedToStartPlan": "計画の開始に失敗しました",
+    "failedToPausePlan": "計画の一時停止に失敗しました",
+    "failedToResumePlan": "計画の再開に失敗しました",
+    "failedToCompletePlan": "完了に失敗しました",
+    "failedToAddWeightEntry": "体重記録の追加に失敗しました",
+    "fillRequiredFields": "必須フィールドをすべて入力してください",
+    "selectGoal": "目標を選択してください",
+    "durationMin1Day": "期間は最低1日である必要があります",
+    "caloriesGreaterThan0": "カロリーは0より大きい必要があります",
+    "macrosAddUpCorrectly": "マクロが正しく合計される必要があります",
+    "loadingPlans": "計画を読み込み中...",
+    "creatingPlan": "計画を作成中...",
+    "updatingPlan": "計画を更新中...",
+    "deletingPlan": "計画を削除中...",
+    "loadingProgress": "進捗を読み込み中...",
+    "premiumPlan": "プレミアムプラン",
+    "upgradeToPremium": "プレミアムにアップグレード",
+    "premiumOnly": "プレミアムのみ",
+    "cancelCurrentPlan": "現在のプランをキャンセル",
+    "overallNutritionStatus": "全体的な栄養状態",
+    "basedOnCompletedMeals": "完了した食事に基づく",
+    "macronutrientsDailyAvg": "マクロ栄養素（日平均）",
+    "keyMicronutrientsDailyAvg": "主要ミクロ栄養素（日平均）",
+    "completeMealsToSeeProgress": "栄養進捗を見るために食事を完了してください",
+    "features": "機能",
+    "mealTracking": "食事追跡",
+    "track": "追跡",
+    "mealsWaterVitaminsNutrients": "食事、水分、ビタミン、栄養素",
+    "aiMealPlans": "AI食事プラン",
+    "ai": "AI",
+    "generateCustomWeeklyMonthlyPlans": "カスタム週間・月間プランを生成",
+    "healthConditions": "健康状態",
+    "specializedDietaryPlans": "専門的な食事プラン",
+    "quickTips": "クイックTips",
+    "stayConsistent": "一貫性を保つ",
+    "trackMealsDailyBuildHabits": "毎日の食事を追跡して健康的な習慣を築き、目標に早く到達しましょう。",
+    "stayHydrated": "水分補給を保つ",
+    "drinkWaterThroughoutDay": "一日中水分補給をしましょう。適切な水分補給を確保するために摂取量を追跡してください。",
+    "mealTrackingScreenTitle": "食事追跡",
+    "trackYourDailyNutrition": "毎日の栄養を追跡しましょう",
+    "selectDay": "日を選択",
+    "selectDate": "日付を選択",
+    "today": "今日",
+    "tomorrow": "明日",
+    "locked": "ロック中",
+    "dateLocked": "日付がロックされています",
+    "dateWillBeAvailableOn": "この日のプランは{{date}}に利用可能になります",
+    "todaysProgress": "今日の進捗",
+    "meals": "食事",
+    "caloriesLeft": "残りカロリー",
+    "water": "水",
+    "waterIntake": "水分摂取",
+    "glasses": "杯",
+    "todaysMeals": "今日の食事",
+    "error": "エラー",
+    "noMealPlanForToday": "今日の食事プランがありません",
+    "createAIMealPlanToGetStarted": "AI食事プランを作成して始めましょう",
+    "generatePlan": "プランを生成",
+    "viewRecipe": "レシピを見る",
+    "keyNutrientsToday": "今日の主要栄養素",
+    "vitamins": "ビタミン",
+    "completeMealsToSeeVitaminIntake": "ビタミン摂取を見るには食事を完了してください",
+    "minerals": "ミネラル",
+    "completeMealsToSeeMineralIntake": "ミネラル摂取を見るには食事を完了してください",
+    "trackConsistently": "一貫して追跡",
+    "completeMealsToSeeVitaminMineralIntake": "ビタミンとミネラルの摂取を見るには食事を完了してください。連続記録を維持しましょう！",
+    "futureDatesAreLocked": "未来の日付は到着するまでロックされています",
+    "aiMealPlanGenerator": "AI食事プランビルダー",
+    "customizeYourPerfectMealPlan": "完璧な食事プランをカスタマイズしましょう",
+    "haveHealthConditions": "健康状態がありますか？",
+    "getSpecializedPlans": "糖尿病、心臓の健康、IBSなど専門的なプランを取得",
+    "planDuration": "プラン期間",
+    "weekly7Days": "週次（7日間）",
+    "monthly30Days": "月次（30日間）",
+    "fitnessGoal": "フィットネス目標",
+    "mealsPerDay": "1日の食事数",
+    "meals": "食事",
+    "dietTypeSelectMultiple": "食事タイプ（複数選択）",
+    "allergiesAndRestrictions": "アレルギーと制限",
+    "cuisinePreferences": "料理の好み",
+    "budgetLevel": "予算レベル",
+    "additionalPreferences": "追加の好み",
+    "preferencesPlaceholder": "例：30分以内の速い料理が好き、辛い料理が好き...",
+    "generatingPlan": "プランを生成中...",
+    "generateAIMealPlan": "AI食事プランを生成",
+    "generatingMayTake90Seconds": "90秒かかる場合があります...",
+    "aiWillCreatePersonalizedPlan": "AIがあなたの好みに基づいてパーソナライズされた{{duration}}プランを作成します",
+    "activePlanExists": "アクティブプランが存在します",
+    "cancelCurrentPlanBeforeGenerating": "既にアクティブな食事プランがあります。新しいものを生成する前に現在のプランをキャンセルしてください。",
+    "selectionRequired": "選択が必要です",
+    "selectAtLeastOneDietType": "少なくとも1つの食事タイプを選択してください",
+    "goalRequired": "目標が必要です",
+    "pleaseSelectFitnessGoal": "フィットネス目標を選択してください",
+    "success": "成功！🎉",
+    "mealPlanGeneratedWithMeals": "{{duration}}食事プランが{{count}}食で生成されました！",
+    "generationFailed": "生成に失敗しました",
+    "healthConditions": "健康状態",
+    "specializedDietPlansForYourNeeds": "あなたのニーズに合わせた専門的な食事プラン",
+    "importantNotice": "重要なお知らせ",
+    "consultHealthcareProvider": "これらは一般的なガイドラインです。食事の変更を行う前に、常に医療提供者または登録栄養士に相談してください。",
+    "selectYourCondition": "あなたの状態を選択",
+    "dietPlanDetails": "食事プランの詳細",
+    "keyDietaryFocus": "主要な食事の焦点",
+    "foodsToAvoid": "避けるべき食品",
+    "recommendedFoods": "推奨食品",
+    "mealSuggestions": "食事の提案",
+    "nutritionalGuidelines": "栄養ガイドライン",
+    "dailyCalories": "1日のカロリー",
+    "protein": "タンパク質",
+    "carbohydrates": "炭水化物",
+    "fats": "脂質",
+    "specialNotes": "特別な注意事項",
+    "generateMealPlan": "食事プランを生成",
+    "selectDuration": "期間を選択",
+    "generating": "生成中...",
+    "generateDurationPlan": "{{duration}}プランを生成",
+    "aiWillCreatePlanOptimizedFor": "AIが{{condition}}向けに最適化された{{duration}}プランを作成します",
+    "planGeneratedWithSpecializedMeals": "{{condition}}向けの{{duration}}プランが{{count}}の専門的な食事で生成されました！",
+    "activePlanExists": "アクティブプランが存在します",
+    "cancelCurrentPlanBeforeGenerating": "既にアクティブな食事プランがあります。新しいものを生成する前に現在のプランをキャンセルしてください。",
+    "conditions": {
+      "diabetes": {
+        "name": "糖尿病管理",
+        "description": "低グリセミック指数、炭水化物の制御された摂取",
+        "dietaryFocus": [
+          "低GI食品",
+          "繊維質豊富な料理",
+          "ポーションコントロール",
+          "定期的な食事時間"
+        ],
+        "avoidFoods": [
+          "甘い飲み物とデザート",
+          "白パンと米",
+          "加工されたスナック",
+          "糖分の多い果物",
+          "揚げ物"
+        ],
+        "recommendedFoods": [
+          "全粒穀物（キヌア、玄米）",
+          "緑の葉野菜",
+          "低脂肪タンパク質",
+          "ナッツと種子",
+          "低脂肪乳製品"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "ブルーベリーとスチールカットオーツ",
+            "ギリシャヨーグルトとチアシード",
+            "野菜入り卵白オムレツ"
+          ],
+          "lunch": [
+            "ローストチキンサラダ",
+            "全粒穀物パン付きレンズ豆スープ",
+            "野菜入りキヌアボウル"
+          ],
+          "dinner": [
+            "蒸しブロッコリ付き焼きサーモン",
+            "ズッキーニヌードル付きターキーミートボール",
+            "ミックス野菜付き焼き豆腐"
+          ],
+          "snacks": [
+            "ピーナッツバター付きリンゴスライス",
+            "フムス付き生野菜",
+            "ナッツのハンドフル"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日1,800-2,200カロリー",
+          "protein": "毎日のカロリーの25-30%",
+          "carbs": "45-50%（複合炭水化物に焦点）",
+          "fats": "25-30%（健康的な脂肪）",
+          "specialNotes": [
+            "血糖値を定期的に監視する",
+            "一定の時間に食べる",
+            "水で水分補給を維持する",
+            "ナトリウム摂取を制限する"
+          ]
+        }
+      },
+      "heart_health": {
+        "name": "心臓の健康",
+        "description": "低ナトリウム、心臓のための健康的な脂肪",
+        "dietaryFocus": [
+          "オメガ3脂肪酸",
+          "低ナトリウム",
+          "高繊維",
+          "低脂肪タンパク質"
+        ],
+        "avoidFoods": [
+          "トランス脂肪と飽和脂肪",
+          "高ナトリウム食品",
+          "加工肉",
+          "赤肉の過剰",
+          "精製糖"
+        ],
+        "recommendedFoods": [
+          "脂の多い魚（サーモン、サバ）",
+          "オリーブオイルとアボカド",
+          "全粒穀物",
+          "ベリーと果物",
+          "ナッツと豆類"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "クルミとブルーベリー付きオーツ",
+            "全粒穀物パンにアボカドトースト",
+            "ほうれん草とベリーのスムージー"
+          ],
+          "lunch": [
+            "オリーブオイル付き地中海サラダ",
+            "キヌア付き焼きサーモン",
+            "野菜と豆スープ"
+          ],
+          "dinner": [
+            "ロースト野菜付き焼きタラ",
+            "スイートポテト付きチキンブレスト",
+            "玄米付きレンズ豆カレー"
+          ],
+          "snacks": ["新鮮な果物", "塩なしアーモンド", "フムス付きニンジン"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日2,000-2,400カロリー",
+          "protein": "毎日のカロリーの20-25%",
+          "carbs": "50-55%（全粒穀物に焦点）",
+          "fats": "25-30%（不飽和に焦点）",
+          "specialNotes": [
+            "ナトリウムを1日1,500mgに制限",
+            "オメガ3摂取を増やす",
+            "週に2-3回脂の多い魚を食べる",
+            "トランス脂肪を完全に避ける"
+          ]
+        }
+      },
+      "gluten_free": {
+        "name": "グルテン不耐性",
+        "description": "セリアック病に安全、グルテンフリーオプション",
+        "dietaryFocus": [
+          "認定グルテンフリー穀物",
+          "自然な全食品",
+          "ラベル読み取り",
+          "クロスコンタミネーション予防"
+        ],
+        "avoidFoods": [
+          "小麦、大麦、ライ麦",
+          "通常のパスタとパン",
+          "モルト飲料とビール",
+          "多くの加工食品",
+          "通常の醤油"
+        ],
+        "recommendedFoods": [
+          "米、キヌア、トウモロコシ",
+          "グルテンフリーオーツ",
+          "新鮮な果物と野菜",
+          "肉、魚、鶏肉",
+          "卵と乳製品"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "果物付きグルテンフリーオーツ",
+            "アーモンドミルク付きライスクリスプ",
+            "野菜入りオムレツ"
+          ],
+          "lunch": [
+            "キヌアサラダボウル",
+            "ライスペーパースプリングロール",
+            "コーントルティーヤタコス"
+          ],
+          "dinner": [
+            "ライスピラフ付きローストチキン",
+            "焼きポテト付き焼き魚",
+            "ライスヌードルシチュー"
+          ],
+          "snacks": [
+            "新鮮な果物",
+            "ピーナッツバター付きライスクリスプ",
+            "野菜スティック"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日2,000-2,500カロリー",
+          "protein": "毎日のカロリーの20-30%",
+          "carbs": "45-55%（グルテンフリー穀物）",
+          "fats": "25-30%",
+          "specialNotes": [
+            "常に隠れたグルテンがないかラベルを確認",
+            "別々の調理器具を使用",
+            "自然にグルテンフリーな食品に焦点",
+            "ビタミンB添加が必要な場合あり"
+          ]
+        }
+      },
+      "lactose_intolerance": {
+        "name": "乳糖不耐性",
+        "description": "乳製品なしのオプション",
+        "dietaryFocus": [
+          "乳糖フリー製品",
+          "植物性ミルク",
+          "カルシウム豊富なオプション",
+          "ビタミンD源"
+        ],
+        "avoidFoods": [
+          "通常のミルクとクリーム",
+          "アイスクリーム",
+          "ほとんどのチーズ",
+          "バター",
+          "通常のヨーグルト"
+        ],
+        "recommendedFoods": [
+          "アーモンド、大豆、オーツミルク",
+          "乳糖フリー乳製品",
+          "緑の葉野菜（カルシウム）",
+          "強化食品",
+          "豆腐とテンペ"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "アーモンドミルク付きオーツ",
+            "ココナッツヨーグルトスムージー",
+            "アボカドトースト"
+          ],
+          "lunch": [
+            "チーズなしチキンサラダ",
+            "豆腐付き野菜シチュー",
+            "ワカモレ付き豆ブリト"
+          ],
+          "dinner": [
+            "ローストサーモン付き野菜",
+            "乳製品なしソース付きパスタ",
+            "ココナッツミルク付きチキンカレー"
+          ],
+          "snacks": ["新鮮な果物", "乳製品なしヨーグルト", "ナッツと種子"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日2,000-2,500カロリー",
+          "protein": "毎日のカロリーの20-30%",
+          "carbs": "45-55%",
+          "fats": "25-30%",
+          "specialNotes": [
+            "1日1,000mgの十分なカルシウム摂取を確保",
+            "太陽と添加からビタミンDを得る",
+            "隠れた乳糖がないかラベルを確認",
+            "ラクターゼ酵素添加を試す"
+          ]
+        }
+      },
+      "kidney_health": {
+        "name": "腎臓の健康",
+        "description": "低タンパク質、制御されたミネラル",
+        "dietaryFocus": [
+          "制御されたタンパク質",
+          "低カリウム",
+          "低リン",
+          "液体管理"
+        ],
+        "avoidFoods": [
+          "加工肉",
+          "高カリウム果物",
+          "乳製品",
+          "全粒穀物パン",
+          "濃い炭酸飲料"
+        ],
+        "recommendedFoods": [
+          "低脂肪タンパク質（制限付き）",
+          "リンゴ、ベリー",
+          "カリフラワー、キャベツ",
+          "白パンと米",
+          "オリーブオイル"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "ジャム付き白トースト",
+            "制限付きミルク付きライスクリスプ",
+            "卵白オムレツ"
+          ],
+          "lunch": [
+            "白パン付きチキンサンドイッチ",
+            "蒸し野菜付き米",
+            "小さなパスタサラダ"
+          ],
+          "dinner": [
+            "小さなロースト魚ポーション",
+            "米付きロースト野菜",
+            "低カリウム野菜付きチキンブレスト"
+          ],
+          "snacks": [
+            "リンゴスライス",
+            "小さなベリーポーション",
+            "ライスクリスプ"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日2,000-2,400カロリー",
+          "protein": "体重1kgあたり0.6-0.8g",
+          "carbs": "50-60%",
+          "fats": "25-35%",
+          "specialNotes": [
+            "腎機能に基づいてタンパク質を制限",
+            "カリウムを最大2,000mgに制御",
+            "リンを800-1,000mgに制限",
+            "処方に基づいて液体摂取を制御"
+          ]
+        }
+      },
+      "ibs": {
+        "name": "IBS（低FODMAP）",
+        "description": "腸に優しい、低FODMAP",
+        "dietaryFocus": [
+          "低FODMAP食品",
+          "小さな頻繁な食事",
+          "ストレス管理",
+          "水分補給"
+        ],
+        "avoidFoods": [
+          "高FODMAP果物（リンゴ、ナシ）",
+          "玉ねぎとにんにく",
+          "小麦製品",
+          "豆類",
+          "高乳糖乳製品"
+        ],
+        "recommendedFoods": [
+          "バナナ、オレンジ、ベリー",
+          "米、キヌア、オーツ",
+          "ニンジン、ズッキーニ、ほうれん草",
+          "チキン、魚、卵",
+          "乳糖フリー乳製品"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "バナナ付きグルテンフリーオーツ",
+            "ライスプディング",
+            "ほうれん草入りオムレツ"
+          ],
+          "lunch": [
+            "米とチキンボウル",
+            "安全な野菜付きキヌアサラダ",
+            "ニンジン付き焼き魚"
+          ],
+          "dinner": [
+            "ズッキーニ付き焼きチキン",
+            "低FODMAP野菜シチュー",
+            "インゲン豆付きサーモン"
+          ],
+          "snacks": [
+            "ライスクリスプ",
+            "小さなフムス付きニンジン",
+            "乳糖フリーヨーグルト"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1日2,000-2,400カロリー",
+          "protein": "毎日のカロリーの20-30%",
+          "carbs": "50-55%（低FODMAP）",
+          "fats": "25-30%",
+          "specialNotes": [
+            "小さな頻繁な食事を食べる",
+            "食品日記をつける",
+            "FODMAPを徐々に再導入",
+            "良好な水分補給を維持"
+          ]
+        }
+      }
+    },
+    "weeklyPlan": "📅 週次（7日間）",
+    "monthlyPlan": "📆 月次（30日間）",
+    "generatingTimeMessage": "90秒かかる場合があります...",
+    "errorTitle": "エラー",
+    "generationErrorMessage": "食事プランの作成中にエラーが発生しました。もう一度お試しください。"
+  },
   "sidebar": {
     "notifications": "通知",
     "notificationsDesc": "更新とアラート",

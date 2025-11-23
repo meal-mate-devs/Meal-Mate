@@ -464,6 +464,638 @@
     "noBannedRecipesOrCourses": "Nessuna ricetta o corso bannato",
     "pleaseSelectReasonOrDescribe": "Seleziona un motivo o descrivi la tua preoccupazione"
   },
+  "diet": {
+    "screenTitle": "Pianificazione Dietetica",
+    "myPlans": "I Miei Piani",
+    "discover": "Scopri",
+    "progress": "Progresso",
+    "noPlansYet": "Nessun Piano Dietetico Ancora",
+    "createFirstPlan": "Crea il tuo primo piano dietetico personalizzato per iniziare il tuo viaggio salutare!",
+    "createDietPlan": "Crea Piano Dietetico",
+    "active": "Attivo",
+    "completed": "Completato",
+    "paused": "In Pausa",
+    "viewDetails": "Visualizza Dettagli",
+    "editPlan": "Modifica Piano",
+    "deletePlan": "Elimina Piano",
+    "kcalPerDay": "kcal/giorno",
+    "days": "giorni",
+    "deleteDietPlan": "Elimina Piano Dietetico",
+    "deletePlanConfirm": "Sei sicuro di voler eliminare questo piano? Questa azione non può essere annullata.",
+    "delete": "Elimina",
+    "discoverDietPlans": "Scopri Piani Dietetici",
+    "findPerfectPlan": "Trova il piano perfetto per i tuoi obiettivi",
+    "allPlans": "Tutti i Piani",
+    "weightLoss": "Perdita di Peso",
+    "muscleGain": "Guadagno Muscolare",
+    "maintenance": "Manutenzione",
+    "health": "Salute",
+    "searchDietPlans": "Cerca piani dietetici...",
+    "premium": "Premium",
+    "free": "Gratuito",
+    "startPlan": "Inizia Piano",
+    "noPlansFound": "Nessun Piano Trovato",
+    "tryAdjustingFilters": "Prova a regolare i tuoi filtri",
+    "noActivePlan": "Nessun Piano Attivo",
+    "startPlanToTrack": "Inizia un piano dietetico per tracciare i tuoi progressi",
+    "browsePlans": "Sfoglia Piani",
+    "currentPlanProgress": "Progresso Piano Attuale",
+    "dayOf": "Giorno {{current}} di {{total}}",
+    "caloriesToday": "Calorie Oggi",
+    "target": "Obiettivo: {{value}}",
+    "protein": "Proteine",
+    "carbs": "Carboidrati",
+    "fat": "Grassi",
+    "weightProgress": "Progresso Peso",
+    "current": "Attuale: {{value}} kg",
+    "targetWeight": "Obiettivo: {{value}} kg",
+    "startWeight": "Inizio: {{value}} kg",
+    "kg": "kg",
+    "addWeightEntry": "Aggiungi Voce Peso",
+    "weeklyOverview": "Panoramica Settimanale",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Gio",
+    "fri": "Ven",
+    "sat": "Sab",
+    "sun": "Dom",
+    "todaysMeals": "Pasti di Oggi",
+    "breakfast": "Colazione",
+    "lunch": "Pranzo",
+    "dinner": "Cena",
+    "snacks": "Spuntini",
+    "completed": "Completato",
+    "pending": "In Attesa",
+    "achievements": "Risultati",
+    "dayStreak": "Serie Giorni",
+    "mealsLogged": "Pasti Registrati",
+    "weightLost": "Peso Perso",
+    "createNewDietPlan": "Crea Nuovo Piano Dietetico",
+    "basicInformation": "Informazioni Base",
+    "planName": "Nome Piano",
+    "enterPlanName": "Inserisci nome piano",
+    "goal": "Obiettivo",
+    "durationDays": "Durata (giorni)",
+    "enterDuration": "Inserisci durata",
+    "targetCalories": "Calorie Target (giornaliere)",
+    "enterTargetCalories": "Inserisci calorie target",
+    "next": "Avanti",
+    "back": "Indietro",
+    "macronutrientDistribution": "Distribuzione Macronutrienti",
+    "proteinG": "Proteine (g)",
+    "enterProteinTarget": "Inserisci obiettivo proteine",
+    "carbsG": "Carboidrati (g)",
+    "enterCarbsTarget": "Inserisci obiettivo carboidrati",
+    "fatG": "Grassi (g)",
+    "enterFatTarget": "Inserisci obiettivo grassi",
+    "total": "Totale: {{value}} kcal",
+    "proteinPercent": "Proteine: {{value}}%",
+    "carbsPercent": "Carboidrati: {{value}}%",
+    "fatPercent": "Grassi: {{value}}%",
+    "mealPlanning": "Pianificazione Pasti",
+    "mealsPerDay": "Pasti al Giorno",
+    "breakfastTime": "Ora Colazione",
+    "lunchTime": "Ora Pranzo",
+    "dinnerTime": "Ora Cena",
+    "snack1Time": "Ora Spuntino 1",
+    "snack2Time": "Ora Spuntino 2",
+    "snack3Time": "Ora Spuntino 3",
+    "dietaryPreferences": "Preferenze Dietetiche",
+    "dietaryRestrictions": "Restrizioni Dietetiche",
+    "none": "Nessuna",
+    "vegetarian": "Vegetariano",
+    "vegan": "Vegano",
+    "glutenFree": "Senza Glutine",
+    "dairyFree": "Senza Latticini",
+    "keto": "Cheto",
+    "paleo": "Paleo",
+    "halal": "Halal",
+    "kosher": "Kosher",
+    "allergies": "Allergie (separate da virgola)",
+    "allergiesExample": "es. arachidi, frutti di mare",
+    "dislikedFoods": "Cibi Non Graditi (separati da virgola)",
+    "dislikedFoodsExample": "es. funghi, olive",
+    "createPlan": "Crea Piano",
+    "updatePlan": "Aggiorna Piano",
+    "dietPlanDetails": "Dettagli Piano Dietetico",
+    "edit": "Modifica",
+    "startPlan": "Inizia Piano",
+    "resume": "Riprendi",
+    "pause": "Pausa",
+    "markComplete": "Segna Completato",
+    "goalLabel": "Obiettivo: ",
+    "durationLabel": "Durata: {{value}} giorni",
+    "targetCaloriesLabel": "Calorie Target: {{value}} kcal/giorno",
+    "macros": "Macro: ",
+    "proteinLabel": "Proteine: {{value}} g",
+    "carbsLabel": "Carboidrati: {{value}} g",
+    "fatLabel": "Grassi: {{value}} g",
+    "mealSchedule": "Orario Pasti",
+    "breakfastLabel": "Colazione - ",
+    "lunchLabel": "Pranzo - ",
+    "dinnerLabel": "Cena - ",
+    "snack1Label": "Spuntino 1 - ",
+    "snack2Label": "Spuntino 2 - ",
+    "snack3Label": "Spuntino 3 - ",
+    "description": "Descrizione",
+    "noDescription": "Nessuna descrizione disponibile",
+    "progress": "Progresso",
+    "percentComplete": "{{value}}% Completato",
+    "pausePlan": "Metti in Pausa Piano",
+    "pausePlanConfirm": "Sei sicuro di voler mettere in pausa questo piano?",
+    "markAsComplete": "Segna come Completato",
+    "markCompleteConfirm": "Sei sicuro di voler segnare questo piano come completato?",
+    "complete": "Completa",
+    "weightKg": "Peso (kg)",
+    "enterWeight": "Inserisci il tuo peso",
+    "date": "Data",
+    "notesOptional": "Note (opzionale)",
+    "addNotes": "Aggiungi note",
+    "addEntry": "Aggiungi Voce",
+    "planCreatedSuccess": "Piano creato con successo!",
+    "planUpdatedSuccess": "Piano aggiornato con successo!",
+    "planDeletedSuccess": "Piano eliminato con successo!",
+    "planStartedSuccess": "Piano avviato con successo!",
+    "planPausedSuccess": "Piano messo in pausa con successo!",
+    "planResumedSuccess": "Piano ripreso con successo!",
+    "planCompletedSuccess": "Piano segnato come completato!",
+    "weightEntryAddedSuccess": "Voce peso aggiunta con successo!",
+    "failedToCreatePlan": "Creazione piano fallita",
+    "failedToUpdatePlan": "Aggiornamento piano fallito",
+    "failedToDeletePlan": "Eliminazione piano fallita",
+    "failedToStartPlan": "Avvio piano fallito",
+    "failedToPausePlan": "Pausa piano fallita",
+    "failedToResumePlan": "Ripresa piano fallita",
+    "failedToCompletePlan": "Completamento fallito",
+    "failedToAddWeightEntry": "Aggiunta voce peso fallita",
+    "fillRequiredFields": "Si prega di compilare tutti i campi richiesti",
+    "selectGoal": "Si prega di selezionare un obiettivo",
+    "durationMin1Day": "La durata deve essere di almeno 1 giorno",
+    "caloriesGreaterThan0": "Le calorie devono essere maggiori di 0",
+    "macrosAddUpCorrectly": "Le macro devono sommare correttamente",
+    "loadingPlans": "Caricamento piani...",
+    "creatingPlan": "Creazione piano...",
+    "updatingPlan": "Aggiornamento piano...",
+    "deletingPlan": "Eliminazione piano...",
+    "loadingProgress": "Caricamento progresso...",
+    "premiumPlan": "Piano Premium",
+    "upgradeToPremium": "Aggiorna a Premium",
+    "premiumOnly": "Solo Premium",
+    "cancelCurrentPlan": "Annulla Piano Attuale",
+    "overallNutritionStatus": "Stato Nutrizionale Generale",
+    "basedOnCompletedMeals": "Basato sui pasti completati",
+    "macronutrientsDailyAvg": "Macronutrienti (Media Giornaliera)",
+    "keyMicronutrientsDailyAvg": "Micronutrienti Chiave (Media Giornaliera)",
+    "completeMealsToSeeProgress": "Completa i pasti per vedere i tuoi progressi nutrizionali",
+    "features": "Caratteristiche",
+    "mealTracking": "Monitoraggio Pasti",
+    "track": "Traccia",
+    "mealsWaterVitaminsNutrients": "Pasti, acqua, vitamine e nutrienti",
+    "aiMealPlans": "Piani Alimentari IA",
+    "ai": "IA",
+    "generateCustomWeeklyMonthlyPlans": "Genera piani personalizzati settimanali e mensili",
+    "healthConditions": "Condizioni di Salute",
+    "specializedDietaryPlans": "Piani dietetici specializzati",
+    "quickTips": "Consigli Rapidi",
+    "stayConsistent": "Rimani Coerente",
+    "trackMealsDailyBuildHabits": "Traccia i tuoi pasti giornalmente per costruire abitudini sane e raggiungere i tuoi obiettivi più velocemente.",
+    "stayHydrated": "Rimani Idratato",
+    "drinkWaterThroughoutDay": "Bevi acqua durante tutto il giorno. Traccia il tuo consumo per garantire un'idratazione adeguata.",
+    "mealTrackingScreenTitle": "Monitoraggio Pasti",
+    "trackYourDailyNutrition": "Traccia la tua nutrizione giornaliera",
+    "selectDay": "Seleziona Giorno",
+    "selectDate": "Seleziona Data",
+    "today": "Oggi",
+    "tomorrow": "Domani",
+    "locked": "Bloccato",
+    "dateLocked": "Data Bloccata",
+    "dateWillBeAvailableOn": "Il piano per questo giorno sarà disponibile il {{date}}",
+    "todaysProgress": "Progresso di Oggi",
+    "meals": "Pasti",
+    "caloriesLeft": "Calorie Rimanenti",
+    "water": "Acqua",
+    "waterIntake": "Assunzione Acqua",
+    "glasses": "bicchieri",
+    "todaysMeals": "Pasti di Oggi",
+    "error": "Errore",
+    "noMealPlanForToday": "Nessun piano pasti per oggi",
+    "createAIMealPlanToGetStarted": "Crea un piano pasti IA per iniziare",
+    "generatePlan": "Genera Piano",
+    "viewRecipe": "Visualizza Ricetta",
+    "keyNutrientsToday": "Nutrienti Chiave Oggi",
+    "vitamins": "Vitamine",
+    "completeMealsToSeeVitaminIntake": "Completa i pasti per vedere l'assunzione di vitamine",
+    "minerals": "Minerali",
+    "completeMealsToSeeMineralIntake": "Completa i pasti per vedere l'assunzione di minerali",
+    "trackConsistently": "Traccia Coerentemente",
+    "completeMealsToSeeVitaminMineralIntake": "Completa i pasti per vedere il tuo apporto di vitamine e minerali. Mantieni la tua serie!",
+    "futureDatesAreLocked": "Le date future sono bloccate fino al loro arrivo",
+    "aiMealPlanGenerator": "Generatore di Piani Pasti IA",
+    "customizeYourPerfectMealPlan": "Personalizza il tuo piano pasti perfetto",
+    "haveHealthConditions": "Hai Condizioni di Salute?",
+    "getSpecializedPlans": "Ottieni piani specializzati per diabete, salute cardiaca, IBS e altro",
+    "planDuration": "Durata Piano",
+    "weekly7Days": "Settimanale (7 giorni)",
+    "monthly30Days": "Mensile (30 giorni)",
+    "fitnessGoal": "Obiettivo Fitness",
+    "mealsPerDay": "Pasti al Giorno",
+    "meals": "pasti",
+    "dietTypeSelectMultiple": "Tipo di Dieta (Selezione Multipla)",
+    "allergiesAndRestrictions": "Allergie e Restrizioni",
+    "cuisinePreferences": "Preferenze Culinarie",
+    "budgetLevel": "Livello Budget",
+    "additionalPreferences": "Preferenze Aggiuntive",
+    "preferencesPlaceholder": "Es.: Preferisco pasti veloci sotto i 30 minuti, amo il cibo piccante...",
+    "generatingPlan": "Generazione Piano...",
+    "generateAIMealPlan": "Genera Piano Pasti IA",
+    "generatingMayTake90Seconds": "Potrebbe richiedere fino a 90 secondi...",
+    "aiWillCreatePersonalizedPlan": "L'IA creerà un piano {{duration}} personalizzato basato sulle tue preferenze",
+    "activePlanExists": "Esiste un Piano Attivo",
+    "cancelCurrentPlanBeforeGenerating": "Hai già un piano pasti attivo. Per favore annulla il tuo piano attuale prima di generarne uno nuovo.",
+    "selectionRequired": "Selezione Richiesta",
+    "selectAtLeastOneDietType": "Per favore seleziona almeno un tipo di dieta",
+    "goalRequired": "Obiettivo Richiesto",
+    "pleaseSelectFitnessGoal": "Per favore seleziona un obiettivo fitness",
+    "success": "Successo! 🎉",
+    "mealPlanGeneratedWithMeals": "Il tuo piano pasti {{duration}} è stato generato con {{count}} pasti!",
+    "generationFailed": "Generazione Fallita",
+    "healthConditions": "Condizioni di Salute",
+    "specializedDietPlansForYourNeeds": "Piani dietetici specializzati per le tue esigenze",
+    "importantNotice": "Avviso Importante",
+    "consultHealthcareProvider": "Questi piani sono linee guida generali. Consulta sempre il tuo fornitore di assistenza sanitaria o dietista registrato prima di apportare modifiche dietetiche.",
+    "selectYourCondition": "Seleziona la Tua Condizione",
+    "dietPlanDetails": "Dettagli Piano Dietetico",
+    "keyDietaryFocus": "Focus Dietetico Chiave",
+    "foodsToAvoid": "Alimenti da Evitare",
+    "recommendedFoods": "Alimenti Raccomandati",
+    "mealSuggestions": "Suggerimenti Pasti",
+    "nutritionalGuidelines": "Linee Guida Nutrizionali",
+    "dailyCalories": "Calorie Giornaliere",
+    "protein": "Proteina",
+    "carbohydrates": "Carboidrati",
+    "fats": "Grassi",
+    "specialNotes": "Note Speciali",
+    "generateMealPlan": "Genera Piano Pasti",
+    "selectDuration": "Seleziona Durata",
+    "generating": "Generazione...",
+    "generateDurationPlan": "Genera Piano {{duration}}",
+    "aiWillCreatePlanOptimizedFor": "L'IA creerà un piano {{duration}} ottimizzato per {{condition}}",
+    "planGeneratedWithSpecializedMeals": "Il tuo piano {{duration}} per {{condition}} è stato generato con {{count}} pasti specializzati!",
+    "activePlanExists": "Piano Attivo Esiste",
+    "cancelCurrentPlanBeforeGenerating": "Hai già un piano pasti attivo. Annulla il tuo piano attuale prima di generarne uno nuovo.",
+    "conditions": {
+      "diabetes": {
+        "name": "Gestione Diabete",
+        "description": "Basso indice glicemico, apporto carboidrati controllato",
+        "dietaryFocus": [
+          "Alimenti IG bassi",
+          "Pasti ricchi di fibre",
+          "Controllo porzioni",
+          "Orari pasti regolari"
+        ],
+        "avoidFoods": [
+          "Bevande zuccherate e dessert",
+          "Pane bianco e riso",
+          "Snack trasformati",
+          "Frutti ricchi di zucchero",
+          "Cibi fritti"
+        ],
+        "recommendedFoods": [
+          "Cereali integrali (quinoa, riso integrale)",
+          "Verdure a foglia verde",
+          "Proteine magre",
+          "Noci e semi",
+          "Latticini a basso contenuto di grassi"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Fiocchi d'avena tagliati all'acciaio con bacche",
+            "Yogurt greco con semi di chia",
+            "Frittata con albumi e verdure"
+          ],
+          "lunch": [
+            "Insalata di pollo grigliato",
+            "Zuppa di lenticchie con pane integrale",
+            "Ciotola di quinoa con verdure"
+          ],
+          "dinner": [
+            "Salmone al forno con broccoli al vapore",
+            "Polpette di tacchino con noodles di zucchine",
+            "Tofu saltato con verdure miste"
+          ],
+          "snacks": [
+            "Fette di mela con burro di mandorle",
+            "Verdure crude con hummus",
+            "Una manciata di noci"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1.800-2.200 al giorno",
+          "protein": "25-30% delle calorie giornaliere",
+          "carbs": "45-50% (focus su carboidrati complessi)",
+          "fats": "25-30% (grassi sani)",
+          "specialNotes": [
+            "Monitora regolarmente i livelli di zucchero nel sangue",
+            "Mangia a orari consistenti",
+            "Rimani idratato con acqua",
+            "Limita l'assunzione di sodio"
+          ]
+        }
+      },
+      "heart_health": {
+        "name": "Salute Cardiaca",
+        "description": "Basso contenuto di sodio, grassi salutari per il cuore",
+        "dietaryFocus": [
+          "Acidi grassi omega-3",
+          "Basso contenuto di sodio",
+          "Ricco di fibre",
+          "Proteine magre"
+        ],
+        "avoidFoods": [
+          "Grassi trans e saturi",
+          "Alimenti ricchi di sodio",
+          "Carni trasformate",
+          "Carne rossa eccessiva",
+          "Zuccheri raffinati"
+        ],
+        "recommendedFoods": [
+          "Pesce grasso (salmone, sgombro)",
+          "Olio d'oliva e avocado",
+          "Cereali integrali",
+          "Bacche e frutta",
+          "Noci e legumi"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Fiocchi d'avena con noci e mirtilli",
+            "Toast all'avocado su cereale integrale",
+            "Frullato con spinaci e bacche"
+          ],
+          "lunch": [
+            "Insalata mediterranea con olio d'oliva",
+            "Salmone grigliato con quinoa",
+            "Zuppa di fagioli e verdure"
+          ],
+          "dinner": [
+            "Merluzzo al forno con verdure arrostite",
+            "Petto di pollo con patata dolce",
+            "Curry di lenticchie con riso integrale"
+          ],
+          "snacks": [
+            "Frutta fresca",
+            "Mandorle non salate",
+            "Carote con hummus"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2.000-2.400 al giorno",
+          "protein": "20-25% delle calorie giornaliere",
+          "carbs": "50-55% (focus su cereali integrali)",
+          "fats": "25-30% (enfasi su insaturi)",
+          "specialNotes": [
+            "Limita il sodio a 1.500 mg al giorno",
+            "Aumenta l'assunzione di omega-3",
+            "Mangia pesce grasso 2-3 volte a settimana",
+            "Evita completamente i grassi trans"
+          ]
+        }
+      },
+      "gluten_free": {
+        "name": "Intolleranza al Glutine",
+        "description": "Sicuro per celiaci, opzioni senza glutine",
+        "dietaryFocus": [
+          "Cereali certificati senza glutine",
+          "Cibi integrali naturali",
+          "Lettura etichette",
+          "Prevenzione contaminazione crociata"
+        ],
+        "avoidFoods": [
+          "Grano, orzo, segale",
+          "Pasta e pane regolari",
+          "Birra e bevande di malto",
+          "Molti alimenti trasformati",
+          "Salsa di soia (regolare)"
+        ],
+        "recommendedFoods": [
+          "Riso, quinoa, mais",
+          "Avena senza glutine",
+          "Frutta e verdure fresche",
+          "Carne, pesce, pollame",
+          "Uova e latticini"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Fiocchi d'avena senza glutine con frutta",
+            "Cereali di riso con latte di mandorle",
+            "Uova strapazzate con verdure"
+          ],
+          "lunch": [
+            "Ciotola insalata di quinoa",
+            "Involtini primavera di carta di riso",
+            "Tacos tortilla di mais"
+          ],
+          "dinner": [
+            "Pollo grigliato con pilaf di riso",
+            "Pesce al forno con patate arrostite",
+            "Saltato con noodles di riso"
+          ],
+          "snacks": [
+            "Frutta fresca",
+            "Gallette di riso con burro di arachidi",
+            "Bastoncini di verdure"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2.000-2.500 al giorno",
+          "protein": "20-30% delle calorie giornaliere",
+          "carbs": "45-55% (cereali senza glutine)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Controlla sempre le etichette per glutine nascosto",
+            "Usa utensili da cucina separati",
+            "Concentrati su alimenti naturalmente senza glutine",
+            "Potrebbe richiedere integratori di vitamina B"
+          ]
+        }
+      },
+      "lactose_intolerance": {
+        "name": "Intolleranza al Lattosio",
+        "description": "Alternative senza latticini",
+        "dietaryFocus": [
+          "Prodotti senza lattosio",
+          "Latte a base vegetale",
+          "Alternative ricche di calcio",
+          "Fonti di vitamina D"
+        ],
+        "avoidFoods": [
+          "Latte e panna regolari",
+          "Gelato",
+          "La maggior parte dei formaggi",
+          "Burro",
+          "Yogurt (regolare)"
+        ],
+        "recommendedFoods": [
+          "Latte di mandorla, soia, avena",
+          "Latticini senza lattosio",
+          "Verdure a foglia verde (calcio)",
+          "Prodotti fortificati",
+          "Tofu e tempeh"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Fiocchi d'avena con latte di mandorla",
+            "Frullato con yogurt di cocco",
+            "Toast all'avocado"
+          ],
+          "lunch": [
+            "Insalata di pollo (senza formaggio)",
+            "Saltato di verdure con tofu",
+            "Burrito di fagioli con guacamole"
+          ],
+          "dinner": [
+            "Salmone grigliato con verdure",
+            "Pasta con salsa senza latticini",
+            "Curry di pollo con latte di cocco"
+          ],
+          "snacks": ["Frutta fresca", "Yogurt senza latticini", "Noci e semi"]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2.000-2.500 al giorno",
+          "protein": "20-30% delle calorie giornaliere",
+          "carbs": "45-55%",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Assicura apporto adeguato di calcio (1.000 mg/giorno)",
+            "Ottieni vitamina D dal sole e integratori",
+            "Leggi etichette per lattosio nascosto",
+            "Prova integratori di enzima lattasi"
+          ]
+        }
+      },
+      "kidney_health": {
+        "name": "Salute Renale",
+        "description": "Basso contenuto proteico, minerali controllati",
+        "dietaryFocus": [
+          "Proteina controllata",
+          "Basso contenuto di potassio",
+          "Basso contenuto di fosforo",
+          "Gestione fluidi"
+        ],
+        "avoidFoods": [
+          "Carni trasformate",
+          "Frutti ricchi di potassio",
+          "Prodotti lattiero-caseari",
+          "Pane integrale",
+          "Cola scure"
+        ],
+        "recommendedFoods": [
+          "Proteine magre (limitate)",
+          "Mele, bacche",
+          "Cavolfiore, cavolo",
+          "Pane bianco e riso",
+          "Olio d'oliva"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Toast bianco con marmellata",
+            "Cereali di riso con latte limitato",
+            "Frittata con albumi"
+          ],
+          "lunch": [
+            "Panino al pollo (pane bianco)",
+            "Riso con verdure al vapore",
+            "Piccola insalata di pasta"
+          ],
+          "dinner": [
+            "Piccola porzione di pesce grigliato",
+            "Verdure saltate con riso",
+            "Petto di pollo con verdure a basso contenuto di K"
+          ],
+          "snacks": [
+            "Fette di mela",
+            "Piccole porzioni di bacche",
+            "Gallette di riso"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2.000-2.400 al giorno",
+          "protein": "0.6-0.8g per kg di peso corporeo",
+          "carbs": "50-60%",
+          "fats": "25-35%",
+          "specialNotes": [
+            "Limita proteina basata su funzione renale",
+            "Monitora potassio (massimo 2.000 mg)",
+            "Limita fosforo (800-1.000 mg)",
+            "Controlla assunzione fluidi secondo prescrizione"
+          ]
+        }
+      },
+      "ibs": {
+        "name": "IBS (Basso FODMAP)",
+        "description": "Amichevole per l'intestino, basso FODMAP",
+        "dietaryFocus": [
+          "Alimenti bassi in FODMAP",
+          "Piccoli pasti frequenti",
+          "Gestione stress",
+          "Idratazione"
+        ],
+        "avoidFoods": [
+          "Frutti ricchi di FODMAP (mele, pere)",
+          "Cipolle e aglio",
+          "Prodotti di grano",
+          "Legumi",
+          "Latticini ricchi di lattosio"
+        ],
+        "recommendedFoods": [
+          "Banane, arance, bacche",
+          "Riso, quinoa, avena",
+          "Carote, zucchine, spinaci",
+          "Pollo, pesce, uova",
+          "Latticini senza lattosio"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Fiocchi d'avena senza glutine con banana",
+            "Pappa di riso",
+            "Uova strapazzate con spinaci"
+          ],
+          "lunch": [
+            "Ciotola di pollo e riso",
+            "Insalata di quinoa con verdure sicure",
+            "Pesce grigliato con carote"
+          ],
+          "dinner": [
+            "Pollo al forno con zucchine",
+            "Saltato con verdure basse in FODMAP",
+            "Salmone con fagiolini"
+          ],
+          "snacks": [
+            "Gallette di riso",
+            "Carote con hummus (piccolo)",
+            "Yogurt senza lattosio"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2.000-2.400 al giorno",
+          "protein": "20-30% delle calorie giornaliere",
+          "carbs": "50-55% (basso FODMAP)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Mangia piccoli pasti frequenti",
+            "Tieni diario alimentare",
+            "Reintroduci FODMAP gradualmente",
+            "Rimani ben idratato"
+          ]
+        }
+      }
+    },
+    "weeklyPlan": "📅 Settimanale (7 giorni)",
+    "monthlyPlan": "📆 Mensile (30 giorni)",
+    "generatingTimeMessage": "Questo potrebbe richiedere fino a 90 secondi...",
+    "errorTitle": "Errore",
+    "generationErrorMessage": "Errore nella generazione del piano pasti. Riprova."
+  },
   "sidebar": {
     "notifications": "Notifiche",
     "notificationsDesc": "Aggiornamenti e Avvisi",

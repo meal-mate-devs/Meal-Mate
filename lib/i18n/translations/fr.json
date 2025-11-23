@@ -464,6 +464,642 @@
     "noBannedRecipesOrCourses": "Aucune recette ou cours banni",
     "pleaseSelectReasonOrDescribe": "Veuillez sélectionner une raison ou décrire votre préoccupation"
   },
+  "diet": {
+    "screenTitle": "Planification Alimentaire",
+    "myPlans": "Mes Plans",
+    "discover": "Découvrir",
+    "progress": "Progrès",
+    "noPlansYet": "Aucun Plan Alimentaire Encore",
+    "createFirstPlan": "Créez votre premier plan alimentaire personnalisé pour commencer votre voyage sain !",
+    "createDietPlan": "Créer un Plan Alimentaire",
+    "active": "Actif",
+    "completed": "Terminé",
+    "paused": "En Pause",
+    "viewDetails": "Voir les Détails",
+    "editPlan": "Modifier le Plan",
+    "deletePlan": "Supprimer le Plan",
+    "kcalPerDay": "kcal/jour",
+    "days": "jours",
+    "deleteDietPlan": "Supprimer le Plan Alimentaire",
+    "deletePlanConfirm": "Êtes-vous sûr de vouloir supprimer ce plan ? Cette action ne peut pas être annulée.",
+    "delete": "Supprimer",
+    "discoverDietPlans": "Découvrir les Plans Alimentaires",
+    "findPerfectPlan": "Trouvez le plan parfait pour vos objectifs",
+    "allPlans": "Tous les Plans",
+    "weightLoss": "Perte de Poids",
+    "muscleGain": "Gain Musculaire",
+    "maintenance": "Maintenance",
+    "health": "Santé",
+    "searchDietPlans": "Rechercher des plans alimentaires...",
+    "premium": "Premium",
+    "free": "Gratuit",
+    "startPlan": "Commencer le Plan",
+    "noPlansFound": "Aucun Plan Trouvé",
+    "tryAdjustingFilters": "Essayez d'ajuster vos filtres",
+    "noActivePlan": "Aucun Plan Actif",
+    "startPlanToTrack": "Commencez un plan alimentaire pour suivre vos progrès",
+    "browsePlans": "Parcourir les Plans",
+    "currentPlanProgress": "Progrès du Plan Actuel",
+    "dayOf": "Jour {{current}} sur {{total}}",
+    "caloriesToday": "Calories Aujourd'hui",
+    "target": "Objectif : {{value}}",
+    "protein": "Protéines",
+    "carbs": "Glucides",
+    "fat": "Lipides",
+    "weightProgress": "Progrès du Poids",
+    "current": "Actuel : {{value}} kg",
+    "targetWeight": "Objectif : {{value}} kg",
+    "startWeight": "Départ : {{value}} kg",
+    "kg": "kg",
+    "addWeightEntry": "Ajouter une Entrée de Poids",
+    "weeklyOverview": "Aperçu Hebdomadaire",
+    "mon": "Lun",
+    "tue": "Mar",
+    "wed": "Mer",
+    "thu": "Jeu",
+    "fri": "Ven",
+    "sat": "Sam",
+    "sun": "Dim",
+    "todaysMeals": "Repas d'Aujourd'hui",
+    "breakfast": "Petit-déjeuner",
+    "lunch": "Déjeuner",
+    "dinner": "Dîner",
+    "snacks": "Collations",
+    "completed": "Terminé",
+    "pending": "En Attente",
+    "achievements": "Réalisations",
+    "dayStreak": "Série de Jours",
+    "mealsLogged": "Repas Enregistrés",
+    "weightLost": "Poids Perdu",
+    "createNewDietPlan": "Créer un Nouveau Plan Alimentaire",
+    "basicInformation": "Informations de Base",
+    "planName": "Nom du Plan",
+    "enterPlanName": "Entrez le nom du plan",
+    "goal": "Objectif",
+    "durationDays": "Durée (jours)",
+    "enterDuration": "Entrez la durée",
+    "targetCalories": "Calories Cibles (quotidiennes)",
+    "enterTargetCalories": "Entrez les calories cibles",
+    "next": "Suivant",
+    "back": "Retour",
+    "macronutrientDistribution": "Distribution des Macronutriments",
+    "proteinG": "Protéines (g)",
+    "enterProteinTarget": "Entrez l'objectif protéique",
+    "carbsG": "Glucides (g)",
+    "enterCarbsTarget": "Entrez l'objectif glucidique",
+    "fatG": "Lipides (g)",
+    "enterFatTarget": "Entrez l'objectif lipidique",
+    "total": "Total : {{value}} kcal",
+    "proteinPercent": "Protéines : {{value}}%",
+    "carbsPercent": "Glucides : {{value}}%",
+    "fatPercent": "Lipides : {{value}}%",
+    "mealPlanning": "Planification des Repas",
+    "mealsPerDay": "Repas par Jour",
+    "breakfastTime": "Heure du Petit-déjeuner",
+    "lunchTime": "Heure du Déjeuner",
+    "dinnerTime": "Heure du Dîner",
+    "snack1Time": "Heure de Collation 1",
+    "snack2Time": "Heure de Collation 2",
+    "snack3Time": "Heure de Collation 3",
+    "dietaryPreferences": "Préférences Alimentaires",
+    "dietaryRestrictions": "Restrictions Alimentaires",
+    "none": "Aucune",
+    "vegetarian": "Végétarien",
+    "vegan": "Végan",
+    "glutenFree": "Sans Gluten",
+    "dairyFree": "Sans Lait",
+    "keto": "Keto",
+    "paleo": "Paléo",
+    "halal": "Halal",
+    "kosher": "Casher",
+    "allergies": "Allergies (séparées par virgule)",
+    "allergiesExample": "ex., arachides, fruits de mer",
+    "dislikedFoods": "Aliments Non Aimés (séparés par virgule)",
+    "dislikedFoodsExample": "ex., champignons, olives",
+    "createPlan": "Créer le Plan",
+    "updatePlan": "Mettre à Jour le Plan",
+    "dietPlanDetails": "Détails du Plan Alimentaire",
+    "edit": "Modifier",
+    "startPlan": "Commencer le Plan",
+    "resume": "Reprendre",
+    "pause": "Pause",
+    "markComplete": "Marquer Terminé",
+    "goalLabel": "Objectif : ",
+    "durationLabel": "Durée : {{value}} jours",
+    "targetCaloriesLabel": "Calories Cibles : {{value}} kcal/jour",
+    "macros": "Macros : ",
+    "proteinLabel": "Protéines : {{value}} g",
+    "carbsLabel": "Glucides : {{value}} g",
+    "fatLabel": "Lipides : {{value}} g",
+    "mealSchedule": "Horaire des Repas",
+    "breakfastLabel": "Petit-déjeuner - ",
+    "lunchLabel": "Déjeuner - ",
+    "dinnerLabel": "Dîner - ",
+    "snack1Label": "Collation 1 - ",
+    "snack2Label": "Collation 2 - ",
+    "snack3Label": "Collation 3 - ",
+    "description": "Description",
+    "noDescription": "Aucune description disponible",
+    "progress": "Progrès",
+    "percentComplete": "{{value}}% Terminé",
+    "pausePlan": "Mettre en Pause le Plan",
+    "pausePlanConfirm": "Êtes-vous sûr de vouloir mettre ce plan en pause ?",
+    "markAsComplete": "Marquer comme Terminé",
+    "markCompleteConfirm": "Êtes-vous sûr de vouloir marquer ce plan comme terminé ?",
+    "complete": "Terminer",
+    "weightKg": "Poids (kg)",
+    "enterWeight": "Entrez votre poids",
+    "date": "Date",
+    "notesOptional": "Notes (optionnel)",
+    "addNotes": "Ajoutez des notes",
+    "addEntry": "Ajouter une Entrée",
+    "planCreatedSuccess": "Plan créé avec succès !",
+    "planUpdatedSuccess": "Plan mis à jour avec succès !",
+    "planDeletedSuccess": "Plan supprimé avec succès !",
+    "planStartedSuccess": "Plan commencé avec succès !",
+    "planPausedSuccess": "Plan mis en pause avec succès !",
+    "planResumedSuccess": "Plan repris avec succès !",
+    "planCompletedSuccess": "Plan marqué comme terminé !",
+    "weightEntryAddedSuccess": "Entrée de poids ajoutée avec succès !",
+    "failedToCreatePlan": "Échec de la création du plan",
+    "failedToUpdatePlan": "Échec de la mise à jour du plan",
+    "failedToDeletePlan": "Échec de la suppression du plan",
+    "failedToStartPlan": "Échec du démarrage du plan",
+    "failedToPausePlan": "Échec de la mise en pause du plan",
+    "failedToResumePlan": "Échec de la reprise du plan",
+    "failedToCompletePlan": "Échec du marquage comme terminé",
+    "failedToAddWeightEntry": "Échec de l'ajout de l'entrée de poids",
+    "fillRequiredFields": "Veuillez remplir tous les champs requis",
+    "selectGoal": "Veuillez sélectionner un objectif",
+    "durationMin1Day": "La durée doit être d'au moins 1 jour",
+    "caloriesGreaterThan0": "Les calories doivent être supérieures à 0",
+    "macrosAddUpCorrectly": "Les macros doivent s'additionner correctement",
+    "loadingPlans": "Chargement des plans...",
+    "creatingPlan": "Création du plan...",
+    "updatingPlan": "Mise à jour du plan...",
+    "deletingPlan": "Suppression du plan...",
+    "loadingProgress": "Chargement du progrès...",
+    "premiumPlan": "Plan Premium",
+    "upgradeToPremium": "Passer à Premium",
+    "premiumOnly": "Premium Uniquement",
+    "cancelCurrentPlan": "Annuler le Plan Actuel",
+    "overallNutritionStatus": "État Nutritionnel Global",
+    "basedOnCompletedMeals": "Basé sur les repas terminés",
+    "macronutrientsDailyAvg": "Macronutriments (Moyenne Quotidienne)",
+    "keyMicronutrientsDailyAvg": "Micronutriments Clés (Moyenne Quotidienne)",
+    "completeMealsToSeeProgress": "Terminez les repas pour voir vos progrès nutritionnels",
+    "features": "Fonctionnalités",
+    "mealTracking": "Suivi des Repas",
+    "track": "Suivre",
+    "mealsWaterVitaminsNutrients": "Repas, eau, vitamines et nutriments",
+    "aiMealPlans": "Plans de Repas IA",
+    "ai": "IA",
+    "generateCustomWeeklyMonthlyPlans": "Générer des plans personnalisés hebdomadaires et mensuels",
+    "healthConditions": "Conditions de Santé",
+    "specializedDietaryPlans": "Plans alimentaires spécialisés",
+    "quickTips": "Conseils Rapides",
+    "stayConsistent": "Restez Cohérent",
+    "trackMealsDailyBuildHabits": "Suivez vos repas quotidiennement pour développer des habitudes saines et atteindre vos objectifs plus rapidement.",
+    "stayHydrated": "Restez Hydraté",
+    "drinkWaterThroughoutDay": "Buvez de l'eau tout au long de la journée. Suivez votre consommation pour assurer une hydratation appropriée.",
+    "mealTrackingScreenTitle": "Suivi des Repas",
+    "trackYourDailyNutrition": "Suivez votre nutrition quotidienne",
+    "selectDay": "Sélectionner le Jour",
+    "selectDate": "Sélectionner la Date",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "locked": "Verrouillé",
+    "dateLocked": "Date Verrouillée",
+    "dateWillBeAvailableOn": "Le plan de cette journée sera disponible le {{date}}",
+    "todaysProgress": "Progrès d'Aujourd'hui",
+    "meals": "Repas",
+    "caloriesLeft": "Calories Restantes",
+    "water": "Eau",
+    "waterIntake": "Consommation d'Eau",
+    "glasses": "verres",
+    "todaysMeals": "Repas d'Aujourd'hui",
+    "error": "Erreur",
+    "noMealPlanForToday": "Aucun plan de repas pour aujourd'hui",
+    "createAIMealPlanToGetStarted": "Créez un plan de repas IA pour commencer",
+    "generatePlan": "Générer le Plan",
+    "viewRecipe": "Voir la Recette",
+    "keyNutrientsToday": "Nutriments Clés Aujourd'hui",
+    "vitamins": "Vitamines",
+    "completeMealsToSeeVitaminIntake": "Complétez les repas pour voir l'apport en vitamines",
+    "minerals": "Minéraux",
+    "completeMealsToSeeMineralIntake": "Complétez les repas pour voir l'apport en minéraux",
+    "trackConsistently": "Suivez Consistamment",
+    "completeMealsToSeeVitaminMineralIntake": "Complétez les repas pour voir votre apport en vitamines et minéraux. Gardez votre série !",
+    "futureDatesAreLocked": "Les dates futures sont verrouillées jusqu'à leur arrivée",
+    "aiMealPlanGenerator": "Générateur de Plans de Repas IA",
+    "customizeYourPerfectMealPlan": "Personnalisez votre plan de repas parfait",
+    "haveHealthConditions": "Avez-vous des Conditions de Santé ?",
+    "getSpecializedPlans": "Obtenez des plans spécialisés pour le diabète, la santé cardiaque, le SCI et plus",
+    "planDuration": "Durée du Plan",
+    "weekly7Days": "Hebdomadaire (7 jours)",
+    "monthly30Days": "Mensuel (30 jours)",
+    "fitnessGoal": "Objectif Fitness",
+    "mealsPerDay": "Repas par Jour",
+    "meals": "repas",
+    "dietTypeSelectMultiple": "Type de Régime (Sélection Multiple)",
+    "allergiesAndRestrictions": "Allergies et Restrictions",
+    "cuisinePreferences": "Préférences Culinaires",
+    "budgetLevel": "Niveau Budgétaire",
+    "additionalPreferences": "Préférences Supplémentaires",
+    "preferencesPlaceholder": "Ex. : Je préfère les repas rapides de moins de 30 minutes, j'adore la nourriture épicée...",
+    "generatingPlan": "Génération du Plan...",
+    "generateAIMealPlan": "Générer un Plan de Repas IA",
+    "generatingMayTake90Seconds": "Cela peut prendre jusqu'à 90 secondes...",
+    "aiWillCreatePersonalizedPlan": "L'IA créera un plan {{duration}} personnalisé basé sur vos préférences",
+    "activePlanExists": "Un Plan Actif Existe",
+    "cancelCurrentPlanBeforeGenerating": "Vous avez déjà un plan de repas actif. Veuillez annuler votre plan actuel avant d'en générer un nouveau.",
+    "selectionRequired": "Sélection Requise",
+    "selectAtLeastOneDietType": "Veuillez sélectionner au moins un type de régime",
+    "goalRequired": "Objectif Requis",
+    "pleaseSelectFitnessGoal": "Veuillez sélectionner un objectif fitness",
+    "success": "Succès ! 🎉",
+    "mealPlanGeneratedWithMeals": "Votre plan de repas {{duration}} a été généré avec {{count}} repas !",
+    "generationFailed": "Échec de la Génération",
+    "healthConditions": "Conditions de Santé",
+    "specializedDietPlansForYourNeeds": "Plans diététiques spécialisés pour vos besoins",
+    "importantNotice": "Avis Important",
+    "consultHealthcareProvider": "Ces plans sont des guides généraux. Consultez toujours votre fournisseur de soins de santé ou diététiste enregistré avant d'apporter des changements alimentaires.",
+    "selectYourCondition": "Sélectionnez Votre Condition",
+    "dietPlanDetails": "Détails du Plan Diététique",
+    "keyDietaryFocus": "Focus Diététique Clé",
+    "foodsToAvoid": "Aliments à Éviter",
+    "recommendedFoods": "Aliments Recommandés",
+    "mealSuggestions": "Suggestions de Repas",
+    "nutritionalGuidelines": "Directives Nutritionnelles",
+    "dailyCalories": "Calories Quotidiennes",
+    "protein": "Protéine",
+    "carbohydrates": "Glucides",
+    "fats": "Lipides",
+    "specialNotes": "Notes Spéciales",
+    "generateMealPlan": "Générer un Plan de Repas",
+    "selectDuration": "Sélectionner la Durée",
+    "generating": "Génération...",
+    "generateDurationPlan": "Générer un Plan {{duration}}",
+    "aiWillCreatePlanOptimizedFor": "L'IA créera un plan {{duration}} optimisé pour {{condition}}",
+    "planGeneratedWithSpecializedMeals": "Votre plan {{duration}} pour {{condition}} a été généré avec {{count}} repas spécialisés !",
+    "activePlanExists": "Plan Actif Existe",
+    "cancelCurrentPlanBeforeGenerating": "Vous avez déjà un plan de repas actif. Veuillez annuler votre plan actuel avant d'en générer un nouveau.",
+    "conditions": {
+      "diabetes": {
+        "name": "Gestion du Diabète",
+        "description": "Indice glycémique bas, apport en glucides contrôlé",
+        "dietaryFocus": [
+          "Aliments IG bas",
+          "Repas riches en fibres",
+          "Contrôle des portions",
+          "Horaires de repas réguliers"
+        ],
+        "avoidFoods": [
+          "Boissons sucrées et desserts",
+          "Pain blanc et riz",
+          "Collations transformées",
+          "Fruits riches en sucre",
+          "Aliments frits"
+        ],
+        "recommendedFoods": [
+          "Grains entiers (quinoa, riz brun)",
+          "Légumes verts feuillus",
+          "Protéines maigres",
+          "Noix et graines",
+          "Produits laitiers faibles en gras"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Flocons d'avoine coupés à l'acier avec baies",
+            "Yaourt grec avec graines de chia",
+            "Omelette aux blancs d'œufs avec légumes"
+          ],
+          "lunch": [
+            "Salade de poulet grillé",
+            "Soupe de lentilles avec pain complet",
+            "Bol de quinoa avec légumes"
+          ],
+          "dinner": [
+            "Saumon au four avec brocoli vapeur",
+            "Boulettes de dinde avec nouilles de courgette",
+            "Tofu sauté avec légumes mélangés"
+          ],
+          "snacks": [
+            "Tranches de pomme avec beurre d'amande",
+            "Légumes crus avec houmous",
+            "Poignée de noix"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "1 800-2 200 par jour",
+          "protein": "25-30% des calories quotidiennes",
+          "carbs": "45-50% (accent sur glucides complexes)",
+          "fats": "25-30% (graisses saines)",
+          "specialNotes": [
+            "Surveillez régulièrement la glycémie",
+            "Mangez à heures fixes",
+            "Restez hydraté avec de l'eau",
+            "Limitez l'apport en sodium"
+          ]
+        }
+      },
+      "heart_health": {
+        "name": "Santé Cardiaque",
+        "description": "Faible en sodium, graisses saines pour le cœur",
+        "dietaryFocus": [
+          "Acides gras oméga-3",
+          "Faible en sodium",
+          "Riche en fibres",
+          "Protéines maigres"
+        ],
+        "avoidFoods": [
+          "Graisses trans et saturées",
+          "Aliments riches en sodium",
+          "Viandes transformées",
+          "Viande rouge excessive",
+          "Sucres raffinés"
+        ],
+        "recommendedFoods": [
+          "Poisson gras (saumon, maquereau)",
+          "Huile d'olive et avocats",
+          "Grains entiers",
+          "Baies et fruits",
+          "Noix et légumineuses"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Flocons d'avoine avec noix et myrtilles",
+            "Toast à l'avocat sur grain entier",
+            "Smoothie avec épinards et baies"
+          ],
+          "lunch": [
+            "Salade méditerranéenne avec huile d'olive",
+            "Saumon grillé avec quinoa",
+            "Soupe de haricots et légumes"
+          ],
+          "dinner": [
+            "Morue au four avec légumes rôtis",
+            "Blanc de poulet avec patate douce",
+            "Curry de lentilles avec riz brun"
+          ],
+          "snacks": [
+            "Fruit frais",
+            "Amandes non salées",
+            "Carottes avec houmous"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2 000-2 400 par jour",
+          "protein": "20-25% des calories quotidiennes",
+          "carbs": "50-55% (accent sur grains entiers)",
+          "fats": "25-30% (accent sur insaturés)",
+          "specialNotes": [
+            "Limitez le sodium à 1 500 mg par jour",
+            "Augmentez l'apport en oméga-3",
+            "Mangez du poisson gras 2-3 fois par semaine",
+            "Évitez complètement les graisses trans"
+          ]
+        }
+      },
+      "gluten_free": {
+        "name": "Intolérance au Gluten",
+        "description": "Sécurisé pour cœliaques, options sans gluten",
+        "dietaryFocus": [
+          "Grains certifiés sans gluten",
+          "Aliments entiers naturels",
+          "Lecture d'étiquettes",
+          "Prévention de contamination croisée"
+        ],
+        "avoidFoods": [
+          "Blé, orge, seigle",
+          "Pâtes et pain réguliers",
+          "Bière et boissons de malt",
+          "Beaucoup d'aliments transformés",
+          "Sauce soja (régulière)"
+        ],
+        "recommendedFoods": [
+          "Riz, quinoa, maïs",
+          "Avoine sans gluten",
+          "Fruits et légumes frais",
+          "Viande, poisson, volaille",
+          "Œufs et produits laitiers"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Flocons d'avoine sans gluten avec fruit",
+            "Céréales de riz avec lait d'amande",
+            "Œufs brouillés avec légumes"
+          ],
+          "lunch": [
+            "Bol de salade de quinoa",
+            "Rouleaux de printemps au papier de riz",
+            "Tacos à la tortilla de maïs"
+          ],
+          "dinner": [
+            "Poulet grillé avec pilaf de riz",
+            "Poisson au four avec pommes de terre rôties",
+            "Sauté avec nouilles de riz"
+          ],
+          "snacks": [
+            "Fruit frais",
+            "Gâteaux de riz avec beurre de cacahuète",
+            "Bâtonnets de légumes"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2 000-2 500 par jour",
+          "protein": "20-30% des calories quotidiennes",
+          "carbs": "45-55% (grains sans gluten)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Vérifiez toujours les étiquettes pour gluten caché",
+            "Utilisez des ustensiles de cuisine séparés",
+            "Concentrez-vous sur aliments naturellement sans gluten",
+            "Peut nécessiter suppléments de vitamine B"
+          ]
+        }
+      },
+      "lactose_intolerance": {
+        "name": "Intolérance au Lactose",
+        "description": "Alternatives sans produits laitiers",
+        "dietaryFocus": [
+          "Produits sans lactose",
+          "Lait à base de plantes",
+          "Alternatives riches en calcium",
+          "Sources de vitamine D"
+        ],
+        "avoidFoods": [
+          "Lait et crème réguliers",
+          "Glace",
+          "La plupart des fromages",
+          "Beurre",
+          "Yaourt (régulier)"
+        ],
+        "recommendedFoods": [
+          "Lait d'amande, soja, avoine",
+          "Produits laitiers sans lactose",
+          "Légumes verts feuillus (calcium)",
+          "Produits fortifiés",
+          "Tofu et tempeh"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Flocons d'avoine avec lait d'amande",
+            "Smoothie avec yaourt de coco",
+            "Toast à l'avocat"
+          ],
+          "lunch": [
+            "Salade de poulet (sans fromage)",
+            "Sauté de légumes avec tofu",
+            "Burrito aux haricots avec guacamole"
+          ],
+          "dinner": [
+            "Saumon grillé avec légumes",
+            "Pâtes avec sauce sans produits laitiers",
+            "Curry de poulet avec lait de coco"
+          ],
+          "snacks": [
+            "Fruit frais",
+            "Yaourt sans produits laitiers",
+            "Noix et graines"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2 000-2 500 par jour",
+          "protein": "20-30% des calories quotidiennes",
+          "carbs": "45-55%",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Assurez apport adéquat en calcium (1 000 mg/jour)",
+            "Obtenez vitamine D du soleil et suppléments",
+            "Lisez étiquettes pour lactose caché",
+            "Essayez suppléments d'enzyme lactase"
+          ]
+        }
+      },
+      "kidney_health": {
+        "name": "Santé Rénale",
+        "description": "Faible en protéines, minéraux contrôlés",
+        "dietaryFocus": [
+          "Protéine contrôlée",
+          "Faible en potassium",
+          "Faible en phosphore",
+          "Gestion des fluides"
+        ],
+        "avoidFoods": [
+          "Viandes transformées",
+          "Fruits riches en potassium",
+          "Produits laitiers",
+          "Pain complet",
+          "Colas foncées"
+        ],
+        "recommendedFoods": [
+          "Protéines maigres (limitées)",
+          "Pommes, baies",
+          "Chou-fleur, chou",
+          "Pain blanc et riz",
+          "Huile d'olive"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Toast blanc avec confiture",
+            "Céréales de riz avec lait limité",
+            "Omelette aux blancs d'œufs"
+          ],
+          "lunch": [
+            "Sandwich au poulet (pain blanc)",
+            "Riz avec légumes vapeur",
+            "Petite salade de pâtes"
+          ],
+          "dinner": [
+            "Petite portion de poisson grillé",
+            "Légumes sautés avec riz",
+            "Blanc de poulet avec légumes faibles en K"
+          ],
+          "snacks": [
+            "Tranches de pomme",
+            "Petites portions de baies",
+            "Gâteaux de riz"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2 000-2 400 par jour",
+          "protein": "0.6-0.8g par kg de poids corporel",
+          "carbs": "50-60%",
+          "fats": "25-35%",
+          "specialNotes": [
+            "Limitez protéine selon fonction rénale",
+            "Surveillez potassium (maximum 2 000 mg)",
+            "Limitez phosphore (800-1 000 mg)",
+            "Contrôlez apport en fluides selon prescription"
+          ]
+        }
+      },
+      "ibs": {
+        "name": "SII (Faible FODMAP)",
+        "description": "Amical pour l'intestin, faible FODMAP",
+        "dietaryFocus": [
+          "Aliments faibles en FODMAP",
+          "Petits repas fréquents",
+          "Gestion du stress",
+          "Hydratation"
+        ],
+        "avoidFoods": [
+          "Fruits riches en FODMAP (pommes, poires)",
+          "Oignons et ail",
+          "Produits de blé",
+          "Légumineuses",
+          "Produits laitiers riches en lactose"
+        ],
+        "recommendedFoods": [
+          "Bananes, oranges, baies",
+          "Riz, quinoa, avoine",
+          "Carottes, courgette, épinards",
+          "Poulet, poisson, œufs",
+          "Produits laitiers sans lactose"
+        ],
+        "mealSuggestions": {
+          "breakfast": [
+            "Flocons d'avoine sans gluten avec banane",
+            "Bouillie de riz",
+            "Œufs brouillés avec épinards"
+          ],
+          "lunch": [
+            "Bol de poulet et riz",
+            "Salade de quinoa avec légumes sûrs",
+            "Poisson grillé avec carottes"
+          ],
+          "dinner": [
+            "Poulet au four avec courgette",
+            "Sauté avec légumes faibles en FODMAP",
+            "Saumon avec haricots verts"
+          ],
+          "snacks": [
+            "Gâteaux de riz",
+            "Carottes avec houmous (petit)",
+            "Yaourt sans lactose"
+          ]
+        },
+        "nutritionalGuidelines": {
+          "calories": "2 000-2 400 par jour",
+          "protein": "20-30% des calories quotidiennes",
+          "carbs": "50-55% (faible FODMAP)",
+          "fats": "25-30%",
+          "specialNotes": [
+            "Mangez petits repas fréquents",
+            "Tenez journal alimentaire",
+            "Réintroduisez FODMAPs progressivement",
+            "Restez bien hydraté"
+          ]
+        }
+      }
+    },
+    "weeklyPlan": "📅 Hebdomadaire (7 jours)",
+    "monthlyPlan": "📆 Mensuel (30 jours)",
+    "generatingTimeMessage": "Cela peut prendre jusqu'à 90 secondes...",
+    "errorTitle": "Erreur",
+    "generationErrorMessage": "Échec de génération du plan de repas. Veuillez réessayer."
+  },
   "sidebar": {
     "notifications": "Notifications",
     "notificationsDesc": "Mises à jour et Alertes",
