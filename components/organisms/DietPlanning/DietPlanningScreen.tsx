@@ -9,7 +9,7 @@ import { useFocusEffect } from "@react-navigation/native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import React, { useEffect, useState } from "react"
-import { ActivityIndicator, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 const DietPlanningScreen = () => {
     const router = useRouter()
@@ -247,16 +247,13 @@ const DietPlanningScreen = () => {
 
             {/* Header */}
             <View style={{ paddingTop: 38, backgroundColor: "black" }} className="px-4 pb-4">
-                <View className="flex-row items-center justify-between mb-2">
-                    <TouchableOpacity onPress={() => router.back()} className="p-2 rounded-full">
+                <View className="flex-row items-center justify-center mb-2 relative">
+                    <TouchableOpacity onPress={() => router.back()} className="absolute left-0 p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
                     <Text className="text-white text-xl font-bold">Diet Planning</Text>
-                    <TouchableOpacity>
-                        <Ionicons name="settings-outline" size={24} color="#FACC15" />
-                    </TouchableOpacity>
                 </View>
-                <Text className="text-gray-400 text-center">Personalized nutrition for healthy living</Text>
+                <Text className="text-gray-400 text-center">Personalize nutrition for healthy living</Text>
             </View>
 
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
@@ -401,7 +398,7 @@ const DietPlanningScreen = () => {
                         <Text className="text-white text-xl font-bold mb-4">Active Meal Plan</Text>
                         <View className="overflow-hidden rounded-3xl">
                             <LinearGradient
-                                colors={["#10B981", "#059669"]}
+                                colors={["#047857", "#065f46"]}
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 className="p-5"
@@ -427,11 +424,17 @@ const DietPlanningScreen = () => {
                                             {activePlan.targetCalories.toLocaleString()} cal/day • {activePlan.macroTargets.protein}g protein
                                         </Text>
                                     </View>
-                                    <View className="w-14 h-14 bg-white/20 rounded-full items-center justify-center">
-                                        <Text className="text-3xl">
-                                            {activePlan.goalType === 'lose' ? '🔥' :
-                                                activePlan.goalType === 'gain' ? '💪' : '⚖️'}
-                                        </Text>
+                                    <View className="flex-col">
+                                        <TouchableOpacity onPress={handleDeletePlan} style={{ backgroundColor: 'rgba(202, 42, 17, 1)' }} className="rounded-full px-3 py-1.5 flex-row items-center mb-3">
+                                            <Ionicons name="trash" size={14} color="#edededff" />
+                                            <Text className="text-white text-sm font-bold ml-2">Cancel Plan</Text>
+                                        </TouchableOpacity>
+                                        <View className="w-12 h-10 bg-white/20 rounded-full items-center justify-center ml-11">
+                                            <Text className="text-2xl">
+                                                {activePlan.goalType === 'lose' ? '🔥' :
+                                                    activePlan.goalType === 'gain' ? '💪' : '⚖️'}
+                                            </Text>
+                                        </View>
                                     </View>
                                 </View>
                                 <View className="h-px bg-white/20 my-3" />
@@ -456,30 +459,6 @@ const DietPlanningScreen = () => {
                                 </View>
                             </LinearGradient>
                         </View>
-
-                        {/* Cancel Plan Button */}
-                        <TouchableOpacity
-                            onPress={handleDeletePlan}
-                            disabled={isDeletingPlan}
-                            className="mt-3 mb-6 bg-red-900/20 border border-red-500/30 rounded-2xl p-4"
-                            activeOpacity={0.7}
-                        >
-                            <View className="flex-row items-center justify-center">
-                                {isDeletingPlan ? (
-                                    <ActivityIndicator color="#EF4444" size="small" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="close-circle-outline" size={20} color="#EF4444" />
-                                        <Text className="text-red-400 font-semibold ml-2">
-                                            Cancel Current Plan
-                                        </Text>
-                                    </>
-                                )}
-                            </View>
-                            <Text className="text-red-400/60 text-xs text-center mt-1">
-                                You'll need to cancel before generating a new plan
-                            </Text>
-                        </TouchableOpacity>
                     </View>
                 )}
 
@@ -491,15 +470,17 @@ const DietPlanningScreen = () => {
                             <Text className="text-white text-xl font-bold mb-4">Today's Overview</Text>
                             <View className="flex-row flex-wrap justify-between">
                                 {quickStats.map((stat, index) => (
-                                    <View key={index} className="w-[48%] bg-zinc-800 rounded-2xl p-4 mb-3">
-                                        <View
-                                            className="w-10 h-10 rounded-full items-center justify-center mb-3"
-                                            style={{ backgroundColor: `${stat.color}20` }}
-                                        >
-                                            <Ionicons name={stat.icon as any} size={20} color={stat.color} />
+                                    <View key={index} className="w-[49%] bg-zinc-800 rounded-2xl p-3 mb-2">
+                                        <View className="flex-row items-center mb-2">
+                                            <View
+                                                className="w-9 h-9 rounded-full items-center justify-center mr-2"
+                                                style={{ backgroundColor: `${stat.color}20` }}
+                                            >
+                                                <Ionicons name={stat.icon as any} size={18} color={stat.color} />
+                                            </View>
+                                            <Text className="text-white text-xl font-bold">{stat.value}</Text>
                                         </View>
-                                        <Text className="text-gray-400 text-xs mb-1">{stat.label}</Text>
-                                        <Text className="text-white text-2xl font-bold">{stat.value}</Text>
+                                        <Text className="text-gray-400 text-xs">{stat.label}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -577,7 +558,7 @@ const DietPlanningScreen = () => {
                             >
                                 <View className="overflow-hidden rounded-3xl">
                                     <LinearGradient
-                                        colors={["#FACC15", "#F97316"]}
+                                        colors={["#EAB308", "#EA580C"]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         className="p-5"
@@ -613,7 +594,7 @@ const DietPlanningScreen = () => {
                             >
                                 <View className="overflow-hidden rounded-3xl">
                                     <LinearGradient
-                                        colors={["#8B5CF6", "#6366F1"]}
+                                        colors={["#7C3AED", "#4F46E5"]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         className="p-5"
@@ -648,7 +629,7 @@ const DietPlanningScreen = () => {
                             >
                                 <View className="overflow-hidden rounded-3xl">
                                     <LinearGradient
-                                        colors={["#10B981", "#059669"]}
+                                        colors={["#047857", "#065f46"]}
                                         start={{ x: 0, y: 0 }}
                                         end={{ x: 1, y: 0 }}
                                         className="p-5"

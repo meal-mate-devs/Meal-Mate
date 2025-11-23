@@ -19,6 +19,7 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useDietPlanningStore } from '../../hooks/useDietPlanningStore';
 import { useFavoritesStore } from '../../hooks/useFavoritesStore';
 import { useProfileStore } from '../../hooks/useProfileStore';
 import Dialog from '../atoms/Dialog';
@@ -74,14 +75,11 @@ const HomeScreen: React.FC = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     
     // Animation state
-    const [isScrolledUp, setIsScrolledUp] = useState(false);
-    const scrollY = useRef(new Animated.Value(0)).current;
-    const [cardsAnimatedOpacity] = useState(() => new Animated.Value(1));
-    const [cardsAnimatedHeight] = useState(() => new Animated.Value(180));
     const progressAnimation = useRef(new Animated.Value(0)).current;
     
     // Profile and pantry/grocery data
     const { profileData, subscribe } = useProfileStore();
+    const { streakData, getTodayStats } = useDietPlanningStore();
     const [localUserData, setLocalUserData] = useState(profileData);
     const [pantryData, setPantryData] = useState({ active: 0, expiring: 0, expired: 0, total: 0 });
     const [groceryData, setGroceryData] = useState({ total: 0, pending: 0, purchased: 0, urgent: 0, overdue: 0 });
@@ -104,9 +102,6 @@ const HomeScreen: React.FC = () => {
     const [generalErrorMessage, setGeneralErrorMessage] = useState('')
     const [showGeneralSuccessDialog, setShowGeneralSuccessDialog] = useState(false)
     const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
-
-    // Track previous scroll position
-    const prevScrollY = useRef(0);
 
     // Subscribe to profile updates
     useEffect(() => {
@@ -152,11 +147,6 @@ const HomeScreen: React.FC = () => {
                 duration: 1000,
                 useNativeDriver: false,
             }).start();
-
-            // Reset scroll animations
-            cardsAnimatedOpacity.setValue(1);
-            cardsAnimatedHeight.setValue(180);
-            setIsScrolledUp(false);
 
             // Fetch data
             loadRecipes();
@@ -395,49 +385,6 @@ const HomeScreen: React.FC = () => {
         return 'https://via.placeholder.com/400x200?text=No+Image';
     };
 
-    // Track previous scroll position for direction detection
-    const prevScrollY2 = useRef(0);
-
-    const handleScroll = Animated.event(
-        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-        {
-            useNativeDriver: false,
-            listener: (event: any) => {
-                const currentScrollY = event.nativeEvent.contentOffset.y;
-                const isScrollingUp = currentScrollY > prevScrollY2.current;
-                const isScrollingDown = currentScrollY < prevScrollY2.current;
-                
-                // Hide cards when scrolling up past threshold
-                const shouldHideFromUp = isScrollingUp && currentScrollY > 50;
-                // Show cards immediately when scrolling down (regardless of position)
-                const shouldShowFromDown = isScrollingDown;
-                
-                const shouldHide = shouldHideFromUp && !shouldShowFromDown;
-                
-                if (shouldHide !== isScrolledUp) {
-                    setIsScrolledUp(shouldHide);
-                    
-                    // Smooth animation for cards only with height collapse
-                    Animated.parallel([
-                        Animated.timing(cardsAnimatedOpacity, {
-                            toValue: shouldHide ? 0 : 1,
-                            duration: 800,
-                            useNativeDriver: false,
-                        }),
-                        Animated.timing(cardsAnimatedHeight, {
-                            toValue: shouldHide ? 0 : 180, // Approximate height of cards container
-                            duration: 800,
-                            useNativeDriver: false,
-                        })
-                    ]).start();
-                }
-                
-                // Update previous scroll position
-                prevScrollY2.current = currentScrollY;
-            }
-        }
-    );
-
     return (
         <LinearGradient
             colors={["#09090b", "#18181b"]}
@@ -456,122 +403,83 @@ const HomeScreen: React.FC = () => {
                     />
                 </View>
 
-            {/* Animated Cards Container */}
-            <Animated.View 
-                className="px-4"
-                style={{
-                    opacity: cardsAnimatedOpacity,
-                    height: cardsAnimatedHeight,
-                    overflow: 'hidden'
-                }}
-            >
+            {/* Stats Container */}
+            <View className="px-4">
                 <View className="py-4">
-                {/* Health Card */}
-                <TouchableOpacity
-                    className="mb-3 w-full max-w-md"
-                    onPress={() => router.push('/health')}
-                    activeOpacity={0.8}
-                >
-                    <View className="rounded-2xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
-                        <View className="p-2">
-                            <View className="flex-row items-center justify-between mb-1">
-                                <Text className="ml-1 text-white text-xs font-semibold">Calories</Text>
-                                <View className="flex-row items-center">
-                                    <Text className="text-gray-400 text-xs mr-1">
-                                        {Math.round((1850 / 2400) * 100)}%
-                                    </Text>
-                                    <Ionicons name="chevron-forward" size={8} color="#9CA3AF" />
-                                </View>
-                            </View>
-                            <View className="ml-1 flex-row items-end mb-1">
-                                <Text className="text-white text-lg font-bold">1,850</Text>
-                                <Text className="text-gray-400 text-xs ml-1">/ 2,400</Text>
-                            </View>
-                            <View className="ml-1 bg-zinc-700/60 h-2 rounded-full overflow-hidden w-full">
-                                <Animated.View
-                                    className="h-2 rounded-full"
-                                    style={{
-                                        width: progressAnimation.interpolate({
-                                            inputRange: [0, 1],
-                                            outputRange: ['0%', '100%'],
-                                        }),
-                                    }}
-                                >
-                                    <LinearGradient
-                                        colors={['#FACC15', '#F97316']}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        className="h-full w-full rounded-full"
-                                    />
-                                </Animated.View>
-                            </View>
-                        </View>
-                    </View>
-                </TouchableOpacity>
-
-                {/* Pantry and Grocery Cards */}
+                {/* Square Stats Grid */}
                 <View className="flex-row justify-between mb-4">
+                    {/* Pantry Square */}
                     <TouchableOpacity
-                        className="flex-1 mr-2"
+                        className="w-[18%] mb-2"
                         onPress={() => router.push('/recipe/pantry')}
                         activeOpacity={0.8}
                     >
-                        <View className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
-                            <View className="p-3">
-                                <View className="flex-row items-center justify-between mb-2">
-                                    <Text className="text-white text-sm font-semibold">Pantry</Text>
-                                    <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
+                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
+                            <View className="items-center">
+                                <Ionicons name="basket-outline" size={16} color="#10B981" />
+                                <Text className="text-white text-sm font-bold">{pantryData.total}</Text>
+                            </View>
+                            {pantryData.expiring > 0 && (
+                                <View className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full items-center justify-center">
+                                    <Text className="text-black text-xs font-bold">{pantryData.expiring}</Text>
                                 </View>
-                                <View className="flex-row h-2 rounded-full overflow-hidden bg-zinc-700/60 mb-2">
-                                    {pantryData.total > 0 && (
-                                        <>
-                                            <View className="bg-green-500" style={{ width: `${(pantryData.active / pantryData.total) * 100}%`, height: '100%' }} />
-                                            <View className="bg-yellow-500" style={{ width: `${(pantryData.expiring / pantryData.total) * 100}%`, height: '100%' }} />
-                                            <View className="bg-red-500" style={{ width: `${(pantryData.expired / pantryData.total) * 100}%`, height: '100%' }} />
-                                        </>
-                                    )}
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Grocery Square */}
+                    <TouchableOpacity
+                        className="w-[18%] mb-2"
+                        onPress={() => router.push('/settings/grocery-list')}
+                        activeOpacity={0.8}
+                    >
+                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
+                            <View className="items-center">
+                                <Ionicons name="cart-outline" size={16} color="#3B82F6" />
+                                <Text className="text-white text-sm font-bold">{groceryData.total}</Text>
+                            </View>
+                            {groceryData.pending > 0 && (
+                                <View className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full items-center justify-center">
+                                    <Text className="text-white text-xs font-bold">{groceryData.pending}</Text>
                                 </View>
-                                <View className="flex-row justify-between">
-                                    <Text className="text-yellow-400 text-xs">{pantryData.expiring} Expiring</Text>
-                                </View>
+                            )}
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* Health/Calories Square */}
+                    <TouchableOpacity
+                        className="w-[18%] mb-2"
+                        onPress={() => router.push('/health')}
+                        activeOpacity={0.8}
+                    >
+                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
+                            <View className="items-center">
+                                <Ionicons name="fitness-outline" size={16} color="#F97316" />
+                                <Text className="text-white text-sm font-bold">1,850</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
 
+                    {/* Streak Square */}
                     <TouchableOpacity
-                        className="flex-1 ml-2"
-                        onPress={() => router.push('/settings/grocery-list')}
+                        className="w-[18%] mb-2"
+                        onPress={() => router.push('/diet-plan')}
                         activeOpacity={0.8}
                     >
-                        <View className="rounded-xl overflow-hidden border border-zinc-700/50 bg-zinc-800">
-                            <View className="p-3">
-                                <View className="flex-row items-center justify-between mb-2">
-                                    <Text className="text-white text-sm font-semibold">Grocery</Text>
-                                    <Ionicons name="chevron-forward" size={12} color="#9CA3AF" />
-                                </View>
-                                <View className="flex-row h-2 rounded-full overflow-hidden bg-zinc-700/60 mb-2">
-                                    {groceryData.total > 0 && (
-                                        <>
-                                            <View className="bg-blue-500" style={{ width: `${(groceryData.pending / groceryData.total) * 100}%`, height: '100%' }} />
-                                            <View className="bg-green-500" style={{ width: `${(groceryData.purchased / groceryData.total) * 100}%`, height: '100%' }} />
-                                        </>
-                                    )}
-                                </View>
-                                <View className="flex-row justify-between">
-                                    <Text className="text-blue-400 text-xs">{groceryData.pending} Pending</Text>
-                                </View>
+                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
+                            <View className="items-center">
+                                <Ionicons name="trophy-outline" size={16} color="#FACC15" />
+                                <Text className="text-white text-sm font-bold">{streakData.currentStreak}</Text>
                             </View>
                         </View>
                     </TouchableOpacity>
                 </View>
                 </View>
-            </Animated.View>
+            </View>
 
             {/* Recipes ScrollView - Food Explorer Style */}
             <ScrollView 
                 className="flex-1 px-4"
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
             >
                 {isLoadingRecipes ? (

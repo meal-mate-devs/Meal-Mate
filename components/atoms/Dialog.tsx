@@ -340,7 +340,7 @@ const Dialog = ({
                 };
             case 'error':
                 return {
-                    icon: 'skull-outline',
+                    icon: 'skull',
                     iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-off',
                     gradientColors: ['#F87171', '#DC2626'] as readonly [ColorValue, ColorValue],
@@ -356,7 +356,7 @@ const Dialog = ({
                 };
             case 'loading':
                 return {
-                    icon: 'bowl-mix',
+                    icon: 'bowl',
                     iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-drumstick',
                     // Changed to match your app's yellow-orange theme
@@ -365,8 +365,8 @@ const Dialog = ({
                 };
             case 'confirm':
                 return {
-                    icon: 'trash',
-                    iconLibrary: 'FontAwesome5',
+                    icon: 'alert-circle',
+                    iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-off',
                     gradientColors: ['#F87171', '#DC2626'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
@@ -615,12 +615,12 @@ const Dialog = ({
             return (
                 <View style={styles.iconContainer}>
                     <LinearGradient
-                        colors={['#3B82F6', '#2563EB']}
+                        colors={['#DC2626', '#EF4444']}
                         style={styles.iconBackground}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                     >
-                        <MaterialCommunityIcons name="help-circle" size={32} color="#FFFFFF" />
+                        <MaterialCommunityIcons name="alert-circle" size={32} color="#FFFFFF" />
                     </LinearGradient>
                 </View>
             );
