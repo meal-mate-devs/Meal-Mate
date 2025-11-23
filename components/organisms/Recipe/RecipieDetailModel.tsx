@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { GeneratedRecipe } from "@/lib/types/recipeGeneration"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
@@ -16,13 +17,14 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
     const [isReading, setIsReading] = useState<boolean>(false)
     const [currentStep, setCurrentStep] = useState<number>(0)
     const [scaledServings, setScaledServings] = useState<number>(recipe?.servings || 4)
+    const { t } = useLanguage()
 
     if (!recipe) return <></>
 
     const handleStartReading = (): void => {
         setIsReading(true)
         setCurrentStep(0)
-        Alert.alert("Voice Reading", "Recipe instructions will be read aloud step by step")
+        Alert.alert(t("recipe.voiceReading"), t("recipe.voiceReadingDescription"))
     }
 
     const handleStopReading = (): void => {
@@ -36,7 +38,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
         } else {
             setIsReading(false)
             setCurrentStep(0)
-            Alert.alert("Recipe Complete!", "You've finished all the steps. Enjoy your meal!")
+            Alert.alert(t("recipe.recipeCompleteTitle"), t("recipe.recipeCompleteMessage"))
         }
     }
 
@@ -61,7 +63,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                     <TouchableOpacity onPress={onClose}>
                         <Ionicons name="close" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text className="text-white text-lg font-bold">Recipe Details</Text>
+                    <Text className="text-white text-lg font-bold">{t("recipe.details")}</Text>
                     <TouchableOpacity>
                         <Ionicons name="share-outline" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
@@ -71,7 +73,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                     <View className="relative">
                         <Image source={{ uri: recipe.image }} className="w-full h-64" resizeMode="cover" />
                         <View className="absolute bottom-4 left-4 bg-black bg-opacity-70 rounded-full px-3 py-1">
-                            <Text className="text-yellow-400 text-sm font-bold">✨ AI Generated</Text>
+                            <Text className="text-yellow-400 text-sm font-bold">{t("recipe.aiGenerated")}</Text>
                         </View>
                     </View>
 
@@ -82,28 +84,28 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                         <View className="flex-row justify-between bg-zinc-800 rounded-lg p-4 mb-6">
                             <View className="items-center">
                                 <Ionicons name="time-outline" size={20} color="#FBBF24" />
-                                <Text className="text-white text-xs mt-1">Total Time</Text>
+                                <Text className="text-white text-xs mt-1">{t("recipe.totalTime")}</Text>
                                 <Text className="text-white font-bold">{recipe.cookTime + recipe.prepTime} min</Text>
                             </View>
                             <View className="items-center">
                                 <Ionicons name="people-outline" size={20} color="#FBBF24" />
-                                <Text className="text-white text-xs mt-1">Servings</Text>
+                                <Text className="text-white text-xs mt-1">{t("recipe.servings")}</Text>
                                 <Text className="text-white font-bold">{scaledServings}</Text>
                             </View>
                             <View className="items-center">
                                 <Ionicons name="speedometer-outline" size={20} color="#FBBF24" />
-                                <Text className="text-white text-xs mt-1">Difficulty</Text>
+                                <Text className="text-white text-xs mt-1">{t("recipe.difficulty")}</Text>
                                 <Text className="text-white font-bold">{recipe.difficulty}</Text>
                             </View>
                             <View className="items-center">
                                 <Ionicons name="restaurant-outline" size={20} color="#FBBF24" />
-                                <Text className="text-white text-xs mt-1">Cuisine</Text>
+                                <Text className="text-white text-xs mt-1">{t("recipe.cuisine")}</Text>
                                 <Text className="text-white font-bold">{recipe.cuisine}</Text>
                             </View>
                         </View>
 
                         <View className="bg-zinc-800 rounded-xl p-4 mb-6 border border-zinc-700">
-                            <Text className="text-white font-bold mb-3">Adjust Portions</Text>
+                            <Text className="text-white font-bold mb-3">{t("recipe.adjustPortions")}</Text>
                             <View className="flex-row items-center justify-between">
                                 <TouchableOpacity
                                     className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
@@ -111,7 +113,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                                 >
                                     <Ionicons name="remove" size={20} color="#FFFFFF" />
                                 </TouchableOpacity>
-                                <Text className="text-white text-xl font-bold">{scaledServings} servings</Text>
+                                <Text className="text-white text-xl font-bold">{scaledServings} {t("recipe.servings")}</Text>
                                 <TouchableOpacity
                                     className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
                                     onPress={() => setScaledServings(Math.min(12, scaledServings + 1))}
@@ -122,7 +124,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                         </View>
 
                         <View className="bg-zinc-800 rounded-xl p-4 mb-6 border border-zinc-700">
-                            <Text className="text-white font-bold mb-3">Voice Assistant</Text>
+                            <Text className="text-white font-bold mb-3">{t("recipe.voiceAssistant")}</Text>
                             <View className="flex-row justify-between">
                                 <TouchableOpacity
                                     className="flex-1 mr-2 rounded-xl overflow-hidden"
@@ -136,7 +138,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                                     >
                                         <View className="flex-row items-center justify-center">
                                             <Ionicons name={isReading ? "stop" : "play"} size={16} color="#FFFFFF" />
-                                            <Text className="text-white font-bold ml-2">{isReading ? "Stop Reading" : "Read Aloud"}</Text>
+                                            <Text className="text-white font-bold ml-2">{isReading ? t("recipe.stopReading") : t("recipe.readAloud")}</Text>
                                         </View>
                                     </LinearGradient>
                                 </TouchableOpacity>
@@ -158,13 +160,13 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                             </View>
                             {isReading && (
                                 <Text className="text-yellow-400 text-sm mt-2 text-center">
-                                    Step {currentStep + 1} of {recipe.instructions.length}
+                                    {t("recipe.stepOf", { current: currentStep + 1, total: recipe.instructions.length })}
                                 </Text>
                             )}
                         </View>
 
                         <View className="mb-6">
-                            <Text className="text-white text-xl font-bold mb-4">Ingredients</Text>
+                            <Text className="text-white text-xl font-bold mb-4">{t("recipe.ingredients")}</Text>
                             {recipe.ingredients.map((ingredient) => (
                                 <View key={ingredient.id} className="flex-row items-center mb-3 bg-zinc-800 rounded-lg p-3">
                                     <View className="w-3 h-3 rounded-full bg-yellow-400 mr-3" />
@@ -179,7 +181,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                             ))}
                         </View>
                         <View className="mb-6">
-                            <Text className="text-white text-xl font-bold mb-4">Instructions</Text>
+                            <Text className="text-white text-xl font-bold mb-4">{t("recipe.instructions")}</Text>
                             {recipe.instructions.map((instruction, index) => (
                                 <View
                                     key={instruction.id}
@@ -224,28 +226,28 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                         </View>
 
                         <View className="bg-zinc-800 rounded-xl p-4 mb-6">
-                            <Text className="text-white font-bold mb-3">Nutrition (per serving)</Text>
+                            <Text className="text-white font-bold mb-3">{t("recipe.nutritionPerServing")}</Text>
                             <View className="flex-row justify-between">
                                 <View className="items-center">
-                                    <Text className="text-yellow-400 text-sm">Calories</Text>
+                                    <Text className="text-yellow-400 text-sm">{t("recipe.calories")}</Text>
                                     <Text className="text-white font-bold">
                                         {Math.round((recipe.nutritionInfo.calories * scaledServings) / recipe.servings)}
                                     </Text>
                                 </View>
                                 <View className="items-center">
-                                    <Text className="text-yellow-400 text-sm">Protein</Text>
+                                    <Text className="text-yellow-400 text-sm">{t("recipe.protein")}</Text>
                                     <Text className="text-white font-bold">
                                         {Math.round((recipe.nutritionInfo.protein * scaledServings) / recipe.servings)}g
                                     </Text>
                                 </View>
                                 <View className="items-center">
-                                    <Text className="text-yellow-400 text-sm">Carbs</Text>
+                                    <Text className="text-yellow-400 text-sm">{t("recipe.carbs")}</Text>
                                     <Text className="text-white font-bold">
                                         {Math.round((recipe.nutritionInfo.carbs * scaledServings) / recipe.servings)}g
                                     </Text>
                                 </View>
                                 <View className="items-center">
-                                    <Text className="text-yellow-400 text-sm">Fat</Text>
+                                    <Text className="text-yellow-400 text-sm">{t("recipe.fat")}</Text>
                                     <Text className="text-white font-bold">
                                         {Math.round((recipe.nutritionInfo.fat * scaledServings) / recipe.servings)}g
                                     </Text>
@@ -255,7 +257,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
 
                         {recipe.tips.length > 0 && (
                             <View className="bg-zinc-800 rounded-xl p-4 mb-6">
-                                <Text className="text-white font-bold mb-3">💡 Chef's Tips</Text>
+                                <Text className="text-white font-bold mb-3">{t("recipe.chefsTips")}</Text>
                                 {recipe.tips.map((tip, index) => (
                                     <Text key={index} className="text-zinc-300 mb-2">
                                         • {tip}
@@ -266,7 +268,7 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
 
                         {recipe.substitutions.length > 0 && (
                             <View className="bg-zinc-800 rounded-xl p-4 mb-6">
-                                <Text className="text-white font-bold mb-3">🔄 Ingredient Substitutions</Text>
+                                <Text className="text-white font-bold mb-3">{t("recipe.ingredientSubstitutions")}</Text>
                                 {recipe.substitutions.map((sub, index) => (
                                     <View key={index} className="mb-3 p-3 bg-zinc-700 rounded-lg">
                                         <Text className="text-white font-bold">
@@ -284,17 +286,17 @@ export default function RecipeDetailModal({ visible, recipe, onClose }: RecipeDe
                 <View className="flex-row justify-between items-center p-4 border-t border-zinc-800">
                     <TouchableOpacity className="flex-row items-center">
                         <Ionicons name="heart-outline" size={24} color="#FFFFFF" />
-                        <Text className="text-white ml-2">Like</Text>
+                        <Text className="text-white ml-2">{t("recipe.like")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity className="flex-row items-center">
                         <Ionicons name="bookmark-outline" size={24} color="#FFFFFF" />
-                        <Text className="text-white ml-2">Save Recipe</Text>
+                        <Text className="text-white ml-2">{t("recipe.saveRecipe")}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity className="flex-row items-center">
                         <Ionicons name="people-outline" size={24} color="#FFFFFF" />
-                        <Text className="text-white ml-2">Share</Text>
+                        <Text className="text-white ml-2">{t("recipe.share")}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

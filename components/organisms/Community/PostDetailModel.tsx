@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import CommunityAPI from "@/lib/services/community.service"
 import { Post } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
@@ -15,6 +16,7 @@ interface PostDetailModelProps {
 }
 
 export default function PostDetailModel({ visible, post, onClose, currentUserId }: PostDetailModelProps): JSX.Element {
+    const { t } = useLanguage();
     const [isLiked, setIsLiked] = useState<boolean>(false)
     const [isSaved, setIsSaved] = useState<boolean>(false)
     const [likes, setLikes] = useState<number>(0)
@@ -64,7 +66,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
             console.log('Error liking post:', error)
             setIsLiked(!isLiked)
             setLikes(isLiked ? likes + 1 : likes - 1)
-            Alert.alert('Error', 'Failed to update like status')
+            Alert.alert(t('community.createPost.error'), t('community.postDetail.failedToLike'))
         }
     }
 
@@ -78,7 +80,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
             console.log('Error saving post:', error)
             setIsSaved(!isSaved)
             setSaves(isSaved ? saves + 1 : saves - 1)
-            Alert.alert('Error', 'Failed to save post')
+            Alert.alert(t('community.createPost.error'), t('community.postDetail.failedToSave'))
         }
     }
 
@@ -103,7 +105,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                     <TouchableOpacity onPress={onClose}>
                         <Ionicons name="close" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
-                    <Text className="text-white text-lg font-bold">Recipe Details</Text>
+                    <Text className="text-white text-lg font-bold">{t('recipe.details')}</Text>
                     <TouchableOpacity onPress={handleShare}>
                         <Ionicons name="share-outline" size={24} color="#FFFFFF" />
                     </TouchableOpacity>
@@ -130,28 +132,28 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
                             {post.recipeDetails.cookTime && (
                                 <View className="items-center">
                                     <Ionicons name="time-outline" size={24} color="#FBBF24" />
-                                    <Text className="text-white text-xs mt-1">Cook Time</Text>
+                                    <Text className="text-white text-xs mt-1">{t('community.postDetail.cookTime')}</Text>
                                     <Text className="text-white font-bold">{post.recipeDetails.cookTime}</Text>
                                 </View>
                             )}
                             {post.recipeDetails.servings && (
                                 <View className="items-center">
                                     <Ionicons name="people-outline" size={24} color="#FBBF24" />
-                                    <Text className="text-white text-xs mt-1">Servings</Text>
+                                    <Text className="text-white text-xs mt-1">{t('community.postDetail.servings')}</Text>
                                     <Text className="text-white font-bold">{post.recipeDetails.servings}</Text>
                                 </View>
                             )}
                             {post.recipeDetails.difficulty && (
                                 <View className="items-center">
                                     <Ionicons name="speedometer-outline" size={24} color="#FBBF24" />
-                                    <Text className="text-white text-xs mt-1">Difficulty</Text>
+                                    <Text className="text-white text-xs mt-1">{t('community.postDetail.difficulty')}</Text>
                                     <Text className="text-white font-bold">{post.recipeDetails.difficulty}</Text>
                                 </View>
                             )}
                             {post.recipeDetails.category && (
                                 <View className="items-center">
                                     <Ionicons name="restaurant-outline" size={24} color="#FBBF24" />
-                                    <Text className="text-white text-xs mt-1">Category</Text>
+                                    <Text className="text-white text-xs mt-1">{t('community.postDetail.category')}</Text>
                                     <Text className="text-white font-bold">{post.recipeDetails.category}</Text>
                                 </View>
                             )}
@@ -159,7 +161,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
                         {post.recipeDetails.ingredients && post.recipeDetails.ingredients.length > 0 && (
                             <View className="mb-6">
-                                <Text className="text-white text-xl font-bold mb-4">Ingredients</Text>
+                                <Text className="text-white text-xl font-bold mb-4">{t('community.postDetail.ingredients')}</Text>
                                 {post.recipeDetails.ingredients.map((ingredient, index) => (
                                     <View key={index} className="flex-row items-center mb-3 bg-zinc-800 rounded-lg p-3">
                                         <View className="w-3 h-3 rounded-full bg-yellow-400 mr-3" />
@@ -171,7 +173,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
                         {post.recipeDetails.instructions && post.recipeDetails.instructions.length > 0 && (
                             <View className="mb-6">
-                                <Text className="text-white text-xl font-bold mb-4">Instructions</Text>
+                                <Text className="text-white text-xl font-bold mb-4">{t('community.postDetail.instructions')}</Text>
                                 {post.recipeDetails.instructions.map((instruction, index) => (
                                     <View key={index} className="flex-row mb-4 bg-zinc-800 rounded-lg p-4">
                                         <View className="w-8 h-8 rounded-full bg-yellow-400 items-center justify-center mr-3">
@@ -185,7 +187,7 @@ export default function PostDetailModel({ visible, post, onClose, currentUserId 
 
                         {post.recipeDetails.tags && post.recipeDetails.tags.length > 0 && (
                             <View className="mb-6">
-                                <Text className="text-white text-xl font-bold mb-4">Tags</Text>
+                                <Text className="text-white text-xl font-bold mb-4">{t('community.postDetail.tags')}</Text>
                                 <View className="flex-row flex-wrap">
                                     {post.recipeDetails.tags.map((tag, index) => (
                                         <View key={index} className="bg-yellow-400 rounded-full px-3 py-1 mr-2 mb-2">

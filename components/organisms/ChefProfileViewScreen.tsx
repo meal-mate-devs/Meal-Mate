@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import * as chefService from "@/lib/api/chefService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
@@ -116,7 +117,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [expandedCourseData, setExpandedCourseData] = useState<any>(null)
   const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
   const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(false)
-  
+  const { t } = useLanguage()
+''
   // Recipe/Course specific report and rate dialogs
   const [showRecipeReportDialog, setShowRecipeReportDialog] = useState(false)
   const [showRecipeRatingDialog, setShowRecipeRatingDialog] = useState(false)
@@ -130,15 +132,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const [courseReportDescription, setCourseReportDescription] = useState("")
   const [courseRating, setCourseRating] = useState(0)
   const [courseRatingFeedback, setCourseRatingFeedback] = useState("")
-  
+
   // Expandable units and descriptions state
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
-  
+
   // Subscribe confirmation dialog
   const [showSubscribeDialog, setShowSubscribeDialog] = useState(false)
   const [subscribeAction, setSubscribeAction] = useState<'subscribe' | 'unsubscribe'>('subscribe')
-  
+
   // Success and error dialogs
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [showErrorDialog, setShowErrorDialog] = useState(false)
@@ -191,7 +193,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     try {
       console.log('📊 Loading fresh chef profile with stats:', chef.id)
       const freshChefData = await chefService.getChefById(chef.id)
-      
+
       // Update chef stats with fresh data from backend using setState to trigger re-render
       if (freshChefData.stats) {
         setChefStats({
@@ -271,11 +273,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           console.log('Failed to parse error JSON:', parseError);
         }
       }
-      
+
       // Return the original message if no parsing needed
       return error.message;
     }
-    
+
     return 'An unexpected error occurred. Please try again.';
   }
 
@@ -316,11 +318,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const handleSubmitReport = async () => {
     const finalReason = customReason.trim() || reportReason
     if (!finalReason) {
-      setErrorMessage('Please select a reason or describe your concern')
+      setErrorMessage(t('chef.pleaseSelectReasonOrDescribe'))
       setShowErrorDialog(true)
       return
     }
-    
+
     setIsReporting(true)
     try {
       await chefService.reportChef(chef.id, finalReason, reportDescription)
@@ -350,7 +352,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       setShowErrorDialog(true)
       return
     }
-    
+
     setIsRating(true)
     try {
       const result = await chefService.rateChef(chef.id, userRating, userFeedback)
@@ -378,13 +380,13 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     try {
       setIsLoadingRecipeDetails(true)
       setExpandedRecipeId(recipe.id)
-      
+
       console.log('👁️ Fetching recipe details for view:', recipe.id)
       const fullRecipe = await chefService.getRecipeById(recipe.id)
-      
+
       console.log('✅ Full recipe fetched:', fullRecipe.title)
       setExpandedRecipeData(fullRecipe)
-      
+
       // Track view count (only for other users viewing, not chef's own content)
       if (fullRecipe.authorId && fullRecipe.authorId !== chef.id) {
         console.log('📊 Tracking recipe view for:', recipe.id)
@@ -406,13 +408,13 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     try {
       setIsLoadingCourseDetails(true)
       setExpandedCourseId(course.id)
-      
+
       console.log('👁️ Fetching course details for view:', course.id)
       const fullCourse = await chefService.getCourseById(course.id)
-      
+
       console.log('✅ Full course fetched:', fullCourse.title)
       setExpandedCourseData(fullCourse)
-      
+
       // Track view count (only for other users viewing, not chef's own content)
       const courseChefId = (fullCourse as any).chefId || (fullCourse as any).authorId
       if (courseChefId && courseChefId !== chef.id) {
@@ -435,10 +437,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
       console.log('No instructions available for recipe')
       return
     }
-    
+
     setExpandedRecipeId(null)
     setExpandedRecipeData(null)
-    
+
     // Navigate to cooking screen with recipe data
     router.push({
       pathname: '/recipe/cooking' as any,
@@ -452,7 +454,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
   const handleShareRecipe = async (recipe: any): Promise<void> => {
     let recipeText = `🍽️ ${recipe.title}\n\n`
     recipeText += `📝 ${recipe.description || 'Delicious recipe from Meal Mate'}\n\n`
-    
+
     // Add timing information
     recipeText += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
     recipeText += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
@@ -572,62 +574,62 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     }
     const imageUri = getImageUrl(recipe.image)
     return (
-    <TouchableOpacity 
-      style={styles.contentCard} 
-      activeOpacity={0.7}
-      onPress={() => handleViewRecipe(recipe)}
-    >
-      <Image source={{ uri: imageUri }} style={styles.contentImage} />
-      <View style={styles.contentInfo}>
-        <View style={styles.contentHeader}>
-          <Text style={styles.contentTitle} numberOfLines={2}>
-            {recipe.title}
+      <TouchableOpacity
+        style={styles.contentCard}
+        activeOpacity={0.7}
+        onPress={() => handleViewRecipe(recipe)}
+      >
+        <Image source={{ uri: imageUri }} style={styles.contentImage} />
+        <View style={styles.contentInfo}>
+          <View style={styles.contentHeader}>
+            <Text style={styles.contentTitle} numberOfLines={2}>
+              {recipe.title}
+            </Text>
+            {recipe.isPremium && (
+              <View style={styles.premiumBadge}>
+                <Ionicons name="diamond" size={12} color="#FACC15" />
+                <Text style={styles.premiumText}>Premium</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.contentDescription} numberOfLines={2}>
+            {recipe.description}
           </Text>
-          {recipe.isPremium && (
-            <View style={styles.premiumBadge}>
-              <Ionicons name="diamond" size={12} color="#FACC15" />
-              <Text style={styles.premiumText}>Premium</Text>
+
+          <View style={styles.contentMeta}>
+            <View style={styles.metaBadge}>
+              <Ionicons name="time-outline" size={14} color="#94A3B8" />
+              <Text style={styles.metaText}>{recipe.cookTime}</Text>
             </View>
-          )}
-        </View>
-        
-        <Text style={styles.contentDescription} numberOfLines={2}>
-          {recipe.description}
-        </Text>
-        
-        <View style={styles.contentMeta}>
-          <View style={styles.metaBadge}>
-            <Ionicons name="time-outline" size={14} color="#94A3B8" />
-            <Text style={styles.metaText}>{recipe.cookTime}</Text>
+            <View style={styles.metaBadge}>
+              <Ionicons name="star" size={14} color="#FACC15" />
+              <Text style={styles.metaText}>{(recipe.rating || 0).toFixed(1)}</Text>
+            </View>
           </View>
-          <View style={styles.metaBadge}>
-            <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{(recipe.rating || 0).toFixed(1)}</Text>
+
+          <View style={styles.contentActions}>
+            <TouchableOpacity
+              style={styles.contentActionButton}
+              onPress={() => {
+                setShowRecipeReportDialog(true)
+              }}
+            >
+              <Ionicons name="flag-outline" size={16} color="#EF4444" />
+              <Text style={[styles.contentActionText, { color: "#EF4444" }]}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.contentActionButton, styles.rateActionButton]}
+              onPress={() => {
+                setShowRecipeRatingDialog(true)
+              }}
+            >
+              <Ionicons name="star-outline" size={16} color="#FACC15" />
+              <Text style={[styles.contentActionText, { color: "#FACC15" }]}>Rate</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        
-        <View style={styles.contentActions}>
-          <TouchableOpacity 
-            style={styles.contentActionButton}
-            onPress={() => {
-              setShowRecipeReportDialog(true)
-            }}
-          >
-            <Ionicons name="flag-outline" size={16} color="#EF4444" />
-            <Text style={[styles.contentActionText, { color: "#EF4444" }]}>Report</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.contentActionButton, styles.rateActionButton]}
-            onPress={() => {
-              setShowRecipeRatingDialog(true)
-            }}
-          >
-            <Ionicons name="star-outline" size={16} color="#FACC15" />
-            <Text style={[styles.contentActionText, { color: "#FACC15" }]}>Rate</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
     )
   }
 
@@ -641,84 +643,84 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
     }
     const courseData = course as any
     const imageUri = getImageUrl(courseData.coverImage || courseData.image)
-    
+
     // Calculate duration display
     const durationDisplay = courseData.durationValue && courseData.durationUnit
       ? `${courseData.durationValue} ${courseData.durationUnit}`
       : courseData.totalDuration
         ? `${courseData.totalDuration} min`
         : courseData.duration || 'Self-paced'
-    
+
     return (
-    <TouchableOpacity 
-      style={styles.contentCard} 
-      activeOpacity={0.7}
-      onPress={() => handleViewCourse(course)}
-    >
-      <Image source={{ uri: imageUri }} style={styles.contentImage} />
-      <View style={styles.contentInfo}>
-        <View style={styles.contentHeader}>
-          <Text style={styles.contentTitle} numberOfLines={2}>
-            {course.title}
+      <TouchableOpacity
+        style={styles.contentCard}
+        activeOpacity={0.7}
+        onPress={() => handleViewCourse(course)}
+      >
+        <Image source={{ uri: imageUri }} style={styles.contentImage} />
+        <View style={styles.contentInfo}>
+          <View style={styles.contentHeader}>
+            <Text style={styles.contentTitle} numberOfLines={2}>
+              {course.title}
+            </Text>
+            {course.isPremium && (
+              <View style={styles.premiumBadge}>
+                <Ionicons name="diamond" size={12} color="#FACC15" />
+                <Text style={styles.premiumText}>Premium</Text>
+              </View>
+            )}
+          </View>
+
+          <Text style={styles.contentDescription} numberOfLines={2}>
+            {course.description}
           </Text>
-          {course.isPremium && (
-            <View style={styles.premiumBadge}>
-              <Ionicons name="diamond" size={12} color="#FACC15" />
-              <Text style={styles.premiumText}>Premium</Text>
-            </View>
-          )}
-        </View>
-        
-        <Text style={styles.contentDescription} numberOfLines={2}>
-          {course.description}
-        </Text>
-        
-        <View style={styles.contentMeta}>
-          <View style={styles.metaBadge}>
-            <Ionicons name="time-outline" size={14} color="#94A3B8" />
-            <Text style={styles.metaText}>{durationDisplay}</Text>
-          </View>
-          {course.rating && (
+
+          <View style={styles.contentMeta}>
             <View style={styles.metaBadge}>
-              <Ionicons name="star" size={14} color="#FACC15" />
-              <Text style={styles.metaText}>{(course.rating || 0).toFixed(1)}</Text>
+              <Ionicons name="time-outline" size={14} color="#94A3B8" />
+              <Text style={styles.metaText}>{durationDisplay}</Text>
             </View>
-          )}
-          <View style={styles.metaBadge}>
-            <Ionicons name="school-outline" size={14} color="#8B5CF6" />
-            <Text style={styles.metaText}>{course.skillLevel}</Text>
+            {course.rating && (
+              <View style={styles.metaBadge}>
+                <Ionicons name="star" size={14} color="#FACC15" />
+                <Text style={styles.metaText}>{(course.rating || 0).toFixed(1)}</Text>
+              </View>
+            )}
+            <View style={styles.metaBadge}>
+              <Ionicons name="school-outline" size={14} color="#8B5CF6" />
+              <Text style={styles.metaText}>{course.skillLevel}</Text>
+            </View>
+          </View>
+
+          <View style={styles.contentActions}>
+            <TouchableOpacity
+              style={styles.contentActionButton}
+              onPress={() => {
+                setShowCourseReportDialog(true)
+              }}
+            >
+              <Ionicons name="flag-outline" size={16} color="#EF4444" />
+              <Text style={[styles.contentActionText, { color: "#EF4444" }]}>Report</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.contentActionButton, styles.rateActionButton]}
+              onPress={() => {
+                setShowCourseRatingDialog(true)
+              }}
+            >
+              <Ionicons name="star-outline" size={16} color="#FACC15" />
+              <Text style={[styles.contentActionText, { color: "#FACC15" }]}>Rate</Text>
+            </TouchableOpacity>
           </View>
         </View>
-        
-        <View style={styles.contentActions}>
-          <TouchableOpacity 
-            style={styles.contentActionButton}
-            onPress={() => {
-              setShowCourseReportDialog(true)
-            }}
-          >
-            <Ionicons name="flag-outline" size={16} color="#EF4444" />
-            <Text style={[styles.contentActionText, { color: "#EF4444" }]}>Report</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.contentActionButton, styles.rateActionButton]}
-            onPress={() => {
-              setShowCourseRatingDialog(true)
-            }}
-          >
-            <Ionicons name="star-outline" size={16} color="#FACC15" />
-            <Text style={[styles.contentActionText, { color: "#FACC15" }]}>Rate</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
     )
   }
 
   return (
-    <Modal 
-      visible={visible} 
-      animationType="slide" 
+    <Modal
+      visible={visible}
+      animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
@@ -729,7 +731,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Chef Profile</Text>
+            <Text style={styles.headerTitle}>{t("chef.profileTitle")}</Text>
             <View style={styles.headerSpacer} />
           </View>
 
@@ -738,11 +740,13 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             <View style={styles.profileHeader}>
               <View style={styles.profileTopSection}>
                 {/* Avatar on left */}
-                <Image 
-                  source={{ uri: typeof chef.avatar === 'string' 
-                    ? chef.avatar 
-                    : (chef.avatar as any)?.url || 'https://via.placeholder.com/150' }} 
-                  style={styles.chefAvatar} 
+                <Image
+                  source={{
+                    uri: typeof chef.avatar === 'string'
+                      ? chef.avatar
+                      : (chef.avatar as any)?.url || 'https://via.placeholder.com/150'
+                  }}
+                  style={styles.chefAvatar}
                 />
 
                 {/* Info on right */}
@@ -788,7 +792,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                             isSubscribed && styles.subscribedButtonText,
                           ]}
                         >
-                          {isSubscribed ? "Subscribed" : "Subscribe"}
+                          {isSubscribed ? t("chef.subscribed") : t("chef.subscribe")}
                         </Text>
                       </>
                     )}
@@ -805,8 +809,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
               {/* Stats Grid */}
               <View style={styles.statsCard}>
-                <Text style={styles.statsSectionTitle}>Performance Statistics</Text>
-                
+                <Text style={styles.statsSectionTitle}>{t('chef.performanceStatistics')}</Text>
+
                 <View style={styles.statsGrid}>
                   <View style={styles.statGridItem}>
                     <View style={[styles.statIconCircle, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
@@ -815,7 +819,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {(chefStats?.freeRecipesCount || 0) + (chefStats?.premiumRecipesCount || 0)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Recipes</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalRecipes')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -825,7 +829,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.coursesCount || 0}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Courses</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalCourses')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -835,7 +839,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.totalStudents || chef.subscribers}
                     </Text>
-                    <Text style={styles.statGridLabel}>Subscribers</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.subscribers')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -845,7 +849,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chefStats?.averageRating?.toFixed(1) || chef.rating.toFixed(1)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Avg Rating</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.avgRating')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -853,10 +857,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Ionicons name="heart-outline" size={15} color="#EC4899" />
                     </View>
                     <Text style={styles.statGridValue}>
-                      {(chef.stats?.premiumRecipesCount || 0) + 
-                       (chef.courses?.filter(c => c.isPremium).length || 0)}
+                      {(chef.stats?.premiumRecipesCount || 0) +
+                        (chef.courses?.filter(c => c.isPremium).length || 0)}
                     </Text>
-                    <Text style={styles.statGridLabel}>Premium Items</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.premiumItems')}</Text>
                   </View>
 
                   <View style={styles.statGridItem}>
@@ -866,7 +870,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <Text style={styles.statGridValue}>
                       {chef.stats?.totalRatings || 0}
                     </Text>
-                    <Text style={styles.statGridLabel}>Total Ratings</Text>
+                    <Text style={styles.statGridLabel}>{t('chef.totalRatings')}</Text>
                   </View>
                 </View>
               </View>
@@ -879,7 +883,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   activeOpacity={0.7}
                 >
                   <Ionicons name="flag-outline" size={20} color="#EF4444" />
-                  <Text style={styles.actionButtonText}>Report</Text>
+                  <Text style={styles.actionButtonText}>{t("chef.report")}</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -889,7 +893,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 >
                   <Ionicons name="star-outline" size={20} color="#FACC15" />
                   <Text style={[styles.actionButtonText, styles.rateButtonText]}>
-                    Rate Chef
+                    {t("chef.rate")} {t("chef.chef")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -910,7 +914,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 <Text
                   style={[styles.tabText, activeTab === "recipes" && styles.activeTabText]}
                 >
-                  Recipes
+                  {t("tabs.recipes")}
                 </Text>
               </TouchableOpacity>
 
@@ -927,7 +931,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 <Text
                   style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}
                 >
-                  Courses
+                  {t("chef.courses")}
                 </Text>
               </TouchableOpacity>
 
@@ -947,7 +951,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     activeTab === "restricted" && styles.activeTabText,
                   ]}
                 >
-                  Restricted
+                  {t("chef.restricted")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1004,11 +1008,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   <View style={styles.sectionContainer}>
                     <View style={styles.sectionHeaderBar}>
                       <Ionicons name="lock-closed" size={20} color="#F59E0B" />
-                      <Text style={styles.sectionHeaderText}>Restricted Content</Text>
+                      <Text style={styles.sectionHeaderText}>{t('chef.restrictedContent')}</Text>
                       <View style={styles.sectionBadge}>
                         <Text style={styles.sectionBadgeText}>
-                          {recipes.filter((r) => r.isRestricted && !r.isBanned).length + 
-                           courses.filter((c) => c.isRestricted && !c.isBanned).length}
+                          {recipes.filter((r) => r.isRestricted && !r.isBanned).length +
+                            courses.filter((c) => c.isRestricted && !c.isBanned).length}
                         </Text>
                       </View>
                     </View>
@@ -1018,9 +1022,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       courses.filter((c) => c.isRestricted && !c.isBanned).length === 0 && (
                         <View style={styles.emptyState}>
                           <Ionicons name="lock-closed-outline" size={48} color="#475569" />
-                          <Text style={styles.emptyStateText}>No Restricted Content</Text>
+                          <Text style={styles.emptyStateText}>{t('chef.noRestrictedContent')}</Text>
                           <Text style={styles.emptyStateSubtext}>
-                            No restricted recipes or courses
+                            {t('chef.noRestrictedRecipesOrCourses')}
                           </Text>
                         </View>
                       )}
@@ -1030,11 +1034,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                   <View style={[styles.sectionContainer, { marginTop: 20 }]}>
                     <View style={styles.sectionHeaderBar}>
                       <Ionicons name="ban" size={20} color="#EF4444" />
-                      <Text style={styles.sectionHeaderText}>Banned Content</Text>
+                      <Text style={styles.sectionHeaderText}>{t('chef.bannedContent')}</Text>
                       <View style={[styles.sectionBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
                         <Text style={[styles.sectionBadgeText, { color: '#EF4444' }]}>
-                          {recipes.filter((r) => r.isBanned).length + 
-                           courses.filter((c) => c.isBanned).length}
+                          {recipes.filter((r) => r.isBanned).length +
+                            courses.filter((c) => c.isBanned).length}
                         </Text>
                       </View>
                     </View>
@@ -1044,9 +1048,9 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       courses.filter((c) => c.isBanned).length === 0 && (
                         <View style={styles.emptyState}>
                           <Ionicons name="checkmark-circle-outline" size={48} color="#22C55E" />
-                          <Text style={styles.emptyStateText}>No Banned Content</Text>
+                          <Text style={styles.emptyStateText}>{t('chef.noBannedContent')}</Text>
                           <Text style={styles.emptyStateSubtext}>
-                            No banned recipes or courses
+                            {t('chef.noBannedRecipesOrCourses')}
                           </Text>
                         </View>
                       )}
@@ -1067,15 +1071,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setReportDescription("")
           setCustomReason("")
         }}
-        title="Report Chef Profile"
+        title={t('chef.reportChefProfile')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this chef..."
+              placeholder={t('chef.typeReasonChef')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1088,11 +1092,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               }}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
-          
-          <ScrollView 
-            style={styles.reasonScrollView} 
+
+          <ScrollView
+            style={styles.reasonScrollView}
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
@@ -1138,7 +1142,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCustomReason("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1148,7 +1152,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               {isReporting ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={styles.submitButtonText}>Submit Report</Text>
+                <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -1163,11 +1167,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setUserRating(0)
           setUserFeedback("")
         }}
-        title="Rate This Chef"
+        title={t('chef.rateThisChef')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1184,10 +1188,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your experience..."
+            placeholder={t('chef.shareExperience')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1205,7 +1209,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setUserFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSubmitRating}
@@ -1215,7 +1219,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             {isRating ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+              <Text style={[styles.submitButtonText, userRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1229,15 +1233,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setRecipeReportReason("")
           setRecipeReportDescription("")
         }}
-        title="Report Recipe"
+        title={t('chef.reportRecipe')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this recipe..."
+              placeholder={t('chef.typeReason')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1245,11 +1249,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               onChangeText={setRecipeReportDescription}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
-          
-          <ScrollView 
-            style={styles.reasonScrollView} 
+
+          <ScrollView
+            style={styles.reasonScrollView}
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
@@ -1294,7 +1298,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setRecipeReportDescription("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1306,7 +1310,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setRecipeReportDescription("")
               }}
             >
-              <Text style={styles.submitButtonText}>Submit Report</Text>
+              <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -1320,11 +1324,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setRecipeRating(0)
           setRecipeRatingFeedback("")
         }}
-        title="Rate This Recipe"
+        title={t('chef.rateRecipe')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1341,10 +1345,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your thoughts about this recipe..."
+            placeholder={t('chef.shareThoughtsRecipe')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1362,7 +1366,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setRecipeRatingFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1375,7 +1379,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             disabled={recipeRating === 0}
             style={[styles.dialogButton, styles.submitButton, recipeRating === 0 && styles.disabledButton]}
           >
-            <Text style={[styles.submitButtonText, recipeRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            <Text style={[styles.submitButtonText, recipeRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
           </TouchableOpacity>
         </View>
       </CustomDialog>
@@ -1388,15 +1392,15 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setCourseReportReason("")
           setCourseReportDescription("")
         }}
-        title="Report Course"
+        title={t('chef.reportCourse')}
         height={550}
       >
         <>
           <View style={styles.reportTopSection}>
-            <Text style={styles.dialogLabel}>Describe Your Concern:</Text>
+            <Text style={styles.dialogLabel}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={[styles.textInput, styles.reportTextBox]}
-              placeholder="Type your reason for reporting this course..."
+              placeholder={t('chef.typeReasonCourse')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
@@ -1404,11 +1408,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               onChangeText={setCourseReportDescription}
             />
 
-            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>Or Select Common Reason:</Text>
+            <Text style={[styles.dialogLabel, styles.reasonsLabel]}>{t('chef.orSelectReason')}</Text>
           </View>
-          
-          <ScrollView 
-            style={styles.reasonScrollView} 
+
+          <ScrollView
+            style={styles.reasonScrollView}
             showsVerticalScrollIndicator={true}
             nestedScrollEnabled={true}
           >
@@ -1453,7 +1457,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCourseReportDescription("")
               }}
             >
-              <Text style={styles.cancelButtonText}>Cancel</Text>
+              <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.dialogButton, styles.submitButton]}
@@ -1465,7 +1469,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 setCourseReportDescription("")
               }}
             >
-              <Text style={styles.submitButtonText}>Submit Report</Text>
+              <Text style={styles.submitButtonText}>{t('chef.submitReport')}</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -1479,11 +1483,11 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           setCourseRating(0)
           setCourseRatingFeedback("")
         }}
-        title="Rate This Course"
+        title={t('chef.rateCourse')}
         height={400}
       >
         <View style={styles.dialogContent}>
-          <Text style={styles.dialogLabel}>Select Your Rating:</Text>
+          <Text style={styles.dialogLabel}>{t('chef.selectRating')}</Text>
           <View style={styles.ratingStars}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -1500,10 +1504,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             ))}
           </View>
 
-          <Text style={styles.dialogLabel}>Feedback (Optional):</Text>
+          <Text style={styles.dialogLabel}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={styles.textInput}
-            placeholder="Share your thoughts about this course..."
+            placeholder={t('chef.shareThoughtsCourse')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -1521,7 +1525,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               setCourseRatingFeedback("")
             }}
           >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
+            <Text style={styles.cancelButtonText}>{t('chef.cancel')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1534,7 +1538,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             disabled={courseRating === 0}
             style={[styles.dialogButton, styles.submitButton, courseRating === 0 && styles.disabledButton]}
           >
-            <Text style={[styles.submitButtonText, courseRating === 0 && styles.disabledButtonText]}>Submit Rating</Text>
+            <Text style={[styles.submitButtonText, courseRating === 0 && styles.disabledButtonText]}>{t('chef.submitRating')}</Text>
           </TouchableOpacity>
         </View>
       </CustomDialog>
@@ -1546,7 +1550,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
             {/* Modal Header */}
             <View
               style={{
-                paddingTop: insets.top-8,
+                paddingTop: insets.top - 8,
                 paddingBottom: 12,
                 borderBottomWidth: 1,
                 borderBottomColor: "rgba(255, 255, 255, 0.08)",
@@ -1565,18 +1569,18 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                 >
                   <Ionicons name="close" size={22} color="#FACC15" />
                 </TouchableOpacity>
-                
+
                 <Text className="text-white text-lg font-bold flex-1 text-center">
                   Recipe Details
                 </Text>
-                
+
                 <View className="w-10" />
               </View>
             </View>
 
             {/* Modal Content */}
-            <ScrollView 
-              className="flex-1" 
+            <ScrollView
+              className="flex-1"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             >
@@ -1702,9 +1706,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     {expandedRecipeData.ingredients?.map((ingredient: any, index: number) => (
                       <View
                         key={`modal-ingredient-${expandedRecipeData.id}-${index}`}
-                        className={`py-2 ${
-                          index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
-                        }`}
+                        className={`py-2 ${index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
+                          }`}
                       >
                         <View className="flex-row items-start">
                           <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
@@ -1797,7 +1800,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
                       <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                     </View>
-                    <View 
+                    <View
                       className="rounded-2xl p-6 shadow-xl"
                       style={{
                         backgroundColor: "rgba(250, 204, 21, 0.1)",
@@ -1808,9 +1811,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       {expandedRecipeData.tips.map((tip: string, index: number) => (
                         <View
                           key={`modal-tip-${expandedRecipeData.id}-${index}`}
-                          className={`flex-row items-start ${
-                            index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
-                          }`}
+                          className={`flex-row items-start ${index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                            }`}
                         >
                           <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
                             <Ionicons name="star" size={14} color="#FCD34D" />
@@ -1840,9 +1842,8 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                       {expandedRecipeData.substitutions.map((sub: any, index: number) => (
                         <View
                           key={`modal-substitution-${expandedRecipeData.id}-${index}`}
-                          className={`${
-                            index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
-                          }`}
+                          className={`${index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
+                            }`}
                         >
                           <View className="flex-row items-center mb-3">
                             <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
@@ -1890,18 +1891,18 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
               >
                 <Ionicons name="close" size={22} color="#FACC15" />
               </TouchableOpacity>
-              
+
               <Text className="text-white text-lg font-bold flex-1 text-center">
                 Course Details
               </Text>
-              
+
               <View className="w-10" />
             </View>
           </View>
 
           {/* Modal Content */}
-          <ScrollView 
-            className="flex-1" 
+          <ScrollView
+            className="flex-1"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           >
@@ -1921,10 +1922,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     <View className="flex-row items-center">
                       <Ionicons name="time-outline" size={14} color="#10B981" />
                       <Text className="text-emerald-300 ml-1 text-xs font-semibold">
-                        {expandedCourseData.durationValue && expandedCourseData.durationUnit 
-                          ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}` 
-                          : expandedCourseData.totalDuration 
-                            ? `${expandedCourseData.totalDuration} min` 
+                        {expandedCourseData.durationValue && expandedCourseData.durationUnit
+                          ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}`
+                          : expandedCourseData.totalDuration
+                            ? `${expandedCourseData.totalDuration} min`
                             : 'Self-paced'}
                       </Text>
                     </View>
@@ -2007,7 +2008,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                     {expandedCourseData.units.map((unit: any, unitIndex: number) => {
                       const unitId = `${expandedCourseData.id}-${unitIndex}`
                       const isExpanded = expandedUnits.has(unitId)
-                      
+
                       return (
                         <View
                           key={`modal-unit-${expandedCourseData.id}-${unitIndex}`}
@@ -2039,10 +2040,10 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
                                   )}
                                 </View>
                                 <View className="ml-3">
-                                  <Ionicons 
-                                    name={isExpanded ? "chevron-up" : "chevron-down"} 
-                                    size={24} 
-                                    color="#F59E0B" 
+                                  <Ionicons
+                                    name={isExpanded ? "chevron-up" : "chevron-down"}
+                                    size={24}
+                                    color="#F59E0B"
                                   />
                                 </View>
                               </View>
@@ -2051,100 +2052,100 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
 
                           {/* Unit Content Area - Only Visible When Expanded */}
                           {isExpanded && (
-                              <View className="p-5">
-                                {unit.content && (
-                                  <View className="mb-4">
-                                    <Text className="text-zinc-200 text-base leading-6 mb-1">
-                                      {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) 
-                                        ? unit.content 
-                                        : unit.content.length > 100 
-                                          ? `${unit.content.substring(0, 100)}...` 
-                                          : unit.content}
-                                    </Text>
-                                    {unit.content.length > 100 && (
-                                      <TouchableOpacity 
-                                        onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
-                                        className="self-start"
-                                      >
-                                        <Text className="text-amber-400 text-sm font-semibold">
-                                          {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
-                                        </Text>
-                                      </TouchableOpacity>
-                                    )}
-                                  </View>
-                                )}
+                            <View className="p-5">
+                              {unit.content && (
+                                <View className="mb-4">
+                                  <Text className="text-zinc-200 text-base leading-6 mb-1">
+                                    {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`)
+                                      ? unit.content
+                                      : unit.content.length > 100
+                                        ? `${unit.content.substring(0, 100)}...`
+                                        : unit.content}
+                                  </Text>
+                                  {unit.content.length > 100 && (
+                                    <TouchableOpacity
+                                      onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
+                                      className="self-start"
+                                    >
+                                      <Text className="text-amber-400 text-sm font-semibold">
+                                        {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
+                                      </Text>
+                                    </TouchableOpacity>
+                                  )}
+                                </View>
+                              )}
 
-                                {/* Learning Steps Section */}
-                                {unit.steps && unit.steps.length > 0 && (
-                                  <View className="mb-4">
-                                    <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
-                                    <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
-                                      {unit.steps.map((step: string, stepIndex: number) => (
-                                        <Text 
-                                          key={`step-${unitIndex}-${stepIndex}`}
-                                          className="text-zinc-200 text-base leading-6 mb-1"
-                                        >
-                                          {stepIndex + 1}. {step}
-                                        </Text>
-                                      ))}
-                                    </View>
-                                  </View>
-                                )}
-
-                                {/* Common Errors Section */}
-                                {unit.commonErrors && unit.commonErrors.length > 0 && (
-                                  <View className="mb-4">
-                                    <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
-                                    {unit.commonErrors.map((error: string, errorIndex: number) => (
-                                      <Text 
-                                        key={`error-${unitIndex}-${errorIndex}`}
-                                        className="text-zinc-200 text-base leading-6"
+                              {/* Learning Steps Section */}
+                              {unit.steps && unit.steps.length > 0 && (
+                                <View className="mb-4">
+                                  <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
+                                  <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
+                                    {unit.steps.map((step: string, stepIndex: number) => (
+                                      <Text
+                                        key={`step-${unitIndex}-${stepIndex}`}
+                                        className="text-zinc-200 text-base leading-6 mb-1"
                                       >
-                                        • {error}
+                                        {stepIndex + 1}. {step}
                                       </Text>
                                     ))}
                                   </View>
-                                )}
+                                </View>
+                              )}
 
-                                {/* Tips Section */}
-                                {unit.tips && unit.tips.length > 0 && (
-                                  <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
-                                    <View className="flex-row items-center mb-3">
-                                      <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
-                                        <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
-                                      </View>
-                                      <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
-                                    </View>
-                                    <View className="ml-11">
-                                      {unit.tips.map((tip: string, tipIndex: number) => (
-                                        <Text 
-                                          key={`tip-${unitIndex}-${tipIndex}`}
-                                          className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
-                                        >
-                                          💡 {tip}
-                                        </Text>
-                                      ))}
-                                    </View>
-                                  </View>
-                                )}
+                              {/* Common Errors Section */}
+                              {unit.commonErrors && unit.commonErrors.length > 0 && (
+                                <View className="mb-4">
+                                  <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
+                                  {unit.commonErrors.map((error: string, errorIndex: number) => (
+                                    <Text
+                                      key={`error-${unitIndex}-${errorIndex}`}
+                                      className="text-zinc-200 text-base leading-6"
+                                    >
+                                      • {error}
+                                    </Text>
+                                  ))}
+                                </View>
+                              )}
 
-                                {/* Video Section */}
-                                {unit.videoUrl && (
-                                  <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
-                                    <View className="flex-row items-center">
-                                      <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
-                                        <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
-                                      </View>
-                                      <View className="flex-1">
-                                        <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
-                                        <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
-                                      </View>
-                                      <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                              {/* Tips Section */}
+                              {unit.tips && unit.tips.length > 0 && (
+                                <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
+                                  <View className="flex-row items-center mb-3">
+                                    <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
+                                      <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
                                     </View>
+                                    <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
                                   </View>
-                                )}
-                              </View>
-                            )}
+                                  <View className="ml-11">
+                                    {unit.tips.map((tip: string, tipIndex: number) => (
+                                      <Text
+                                        key={`tip-${unitIndex}-${tipIndex}`}
+                                        className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
+                                      >
+                                        💡 {tip}
+                                      </Text>
+                                    ))}
+                                  </View>
+                                </View>
+                              )}
+
+                              {/* Video Section */}
+                              {unit.videoUrl && (
+                                <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
+                                  <View className="flex-row items-center">
+                                    <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
+                                      <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
+                                    </View>
+                                    <View className="flex-1">
+                                      <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
+                                      <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
+                                    </View>
+                                    <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                                  </View>
+                                </View>
+                              )}
+                            </View>
+                          )}
                         </View>
                       )
                     })}
@@ -2155,7 +2156,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </ScrollView>
         </View>
       )}
-      
+
       {/* Success Dialog */}
       <CustomDialog
         visible={showSuccessDialog}
@@ -2205,7 +2206,7 @@ const ChefProfileViewScreen: React.FC<ChefProfileViewScreenProps> = ({
           </TouchableOpacity>
         </View>
       </CustomDialog>
-      
+
     </Modal>
   )
 }
