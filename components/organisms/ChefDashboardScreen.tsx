@@ -4720,7 +4720,7 @@ const RecipeUploadModal: React.FC<{
     }
 
     // 4. Category validation
-    if (!recipeData.category || recipeData.category === 'Other') {
+    if (!recipeData.category) {
       setErrorMessage("Please select a valid recipe category")
       setShowErrorDialog(true)
       return
@@ -5830,7 +5830,7 @@ const CourseCreationModal: React.FC<{
     }
 
     // 4. Category validation
-    if (!courseData.category.trim() || courseData.category === 'Other') {
+    if (!courseData.category.trim()) {
       setErrorMessage("Please select a valid course category")
       setShowErrorDialog(true)
       return
