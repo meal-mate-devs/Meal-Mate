@@ -762,7 +762,7 @@ const HealthConditionsScreen = () => {
                                 <TouchableOpacity
                                     onPress={async () => {
                                         if (!selectedCondition) {
-                                            console.error('No condition selected')
+                                            console.log('No condition selected')
                                             setShowGeneratePlanModal(false)
                                             return
                                         }
@@ -815,7 +815,7 @@ const HealthConditionsScreen = () => {
                                                 setShowDialog(true)
                                             }
                                         } catch (error: any) {
-                                            console.error('Error generating plan:', error)
+                                            console.log('Error generating plan:', error)
                                             setDialogType('error')
                                             setDialogTitle('Error')
                                             setDialogMessage(error.message || 'Failed to generate meal plan. Please try again.')

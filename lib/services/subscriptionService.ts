@@ -20,7 +20,7 @@ class SubscriptionService {
             console.log('Fetched subscription plans:', response);
             return response;
         } catch (error) {
-            console.error('Failed to fetch subscription plans:', error);
+            console.log('Failed to fetch subscription plans:', error);
             throw error;
         }
     }
@@ -34,7 +34,7 @@ class SubscriptionService {
             );
             return response;
         } catch (error) {
-            console.error('Failed to create subscription:', error);
+            console.log('Failed to create subscription:', error);
             throw error;
         }
     }
@@ -46,7 +46,7 @@ class SubscriptionService {
             );
             return response;
         } catch (error) {
-            console.error('Failed to fetch current subscription:', error);
+            console.log('Failed to fetch current subscription:', error);
             throw error;
         }
     }
@@ -59,7 +59,7 @@ class SubscriptionService {
             );
             return response;
         } catch (error) {
-            console.error('Failed to cancel subscription:', error);
+            console.log('Failed to cancel subscription:', error);
             throw error;
         }
     }
@@ -68,7 +68,7 @@ class SubscriptionService {
             const response = await this.getCurrentSubscription();
             return response.isPro;
         } catch (error) {
-            console.error('Failed to check premium status:', error);
+            console.log('Failed to check premium status:', error);
             return false;
         }
     }
@@ -80,7 +80,7 @@ class SubscriptionService {
             }
             return null;
         } catch (error) {
-            console.error('Failed to get subscription expiry:', error);
+            console.log('Failed to get subscription expiry:', error);
             return null;
         }
     }

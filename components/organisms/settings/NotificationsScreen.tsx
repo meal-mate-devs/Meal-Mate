@@ -324,7 +324,7 @@ const NotificationsScreen: React.FC = () => {
                 console.log('✅ Comprehensive checks completed:', result)
                 await fetchNotifications()
               } else {
-                console.error('❌ Comprehensive checks failed:', result.error)
+                console.log('❌ Comprehensive checks failed:', result.error)
               }
             }}
             className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 flex-row items-center justify-center"

@@ -30,7 +30,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 await setBadgeCount(count);
             }
         } catch (error) {
-            console.error('Error fetching unread count:', error);
+            console.log('Error fetching unread count:', error);
         }
     };
 
@@ -43,7 +43,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
                 setExpoPushToken(token);
                 // Register token with backend
                 apiClient.post('/notifications/register-token', { token })
-                    .catch(error => console.error('Error registering token:', error));
+                    .catch(error => console.log('Error registering token:', error));
             }
         });
 

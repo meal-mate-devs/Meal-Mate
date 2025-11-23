@@ -136,7 +136,7 @@ const HomeScreen: React.FC = () => {
             setRecipes(sortedRecipes)
             console.log('✅ Loaded', sortedRecipes.length, 'recipes (sorted by latest)')
         } catch (error) {
-            console.error('❌ Failed to load recipes:', error)
+            console.log('❌ Failed to load recipes:', error)
         } finally {
             setIsLoadingRecipes(false)
         }

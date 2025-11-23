@@ -26,6 +26,7 @@ export default function IngredientScannerDialog({
     detectedIngredientsWithConfidence,
     isScanning,
     scanProgress,
+    scanCompleted,
     showDialog,
     dialogConfig,
     scanWithCamera,
@@ -43,10 +44,18 @@ export default function IngredientScannerDialog({
 
   // Reset ingredients when dialog is closed
   useEffect(() => {
+    console.log('IngredientScannerDialog state changed:', {
+      visible,
+      isScanning,
+      scanCompleted,
+      detectedIngredientsLength: detectedIngredients.length,
+      detectedIngredients,
+      condition: scanCompleted && detectedIngredients.length === 0
+    });
     if (!visible) {
       resetIngredients();
     }
-  }, [visible]);
+  }, [visible, isScanning, scanCompleted, detectedIngredients]);
 
   const handleAddCustomIngredient = (): void => {
     Alert.prompt("Add Ingredient", "Enter ingredient name:", (text) => {
@@ -177,7 +186,67 @@ export default function IngredientScannerDialog({
           </View>
         ) : (
           <View className="flex-1 items-center justify-center space-y-6">
-            {isScanning ? (
+            {(() => {
+              console.log('IngredientScannerDialog render state:', {
+                scanCompleted,
+                detectedIngredientsLength: detectedIngredients.length,
+                isScanning,
+                condition: scanCompleted && detectedIngredients.length === 0
+              });
+              return scanCompleted && detectedIngredients.length === 0 ? (
+                <View className="items-center">
+                  <View className="w-24 h-24 rounded-full bg-red-500 items-center justify-center mb-4">
+                    <Ionicons name="eye-off" size={48} color="#FFFFFF" />
+                  </View>
+                  <Text className="text-white text-xl font-bold mb-2">No Ingredients Detected</Text>
+                  <Text className="text-zinc-400 text-center text-sm mb-6">
+                    We couldn't identify any ingredients in the image.{'\n'}Try taking a clearer photo or add ingredients manually.
+                  </Text>
+                  <View className="space-y-3 w-full">
+                    <TouchableOpacity
+                      className="flex-row items-center bg-zinc-800 rounded-xl p-4"
+                      onPress={() => handleStartScan("camera")}
+                    >
+                      <View className="w-12 h-12 bg-yellow-400 rounded-full items-center justify-center mr-4">
+                        <Ionicons name="camera" size={24} color="#000000" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-white font-bold text-lg">Try Again with Camera</Text>
+                        <Text className="text-zinc-400 text-sm">Take a new photo</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className="flex-row items-center bg-zinc-800 rounded-xl p-4"
+                      onPress={() => handleStartScan("gallery")}
+                    >
+                      <View className="w-12 h-12 bg-blue-500 rounded-full items-center justify-center mr-4">
+                        <Ionicons name="images" size={24} color="#FFFFFF" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-white font-bold text-lg">Try Different Photo</Text>
+                        <Text className="text-zinc-400 text-sm">Choose another image</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      className="flex-row items-center bg-zinc-800 rounded-xl p-4"
+                      onPress={handleAddCustomIngredient}
+                    >
+                      <View className="w-12 h-12 bg-green-500 rounded-full items-center justify-center mr-4">
+                        <Ionicons name="create" size={24} color="#FFFFFF" />
+                      </View>
+                      <View className="flex-1">
+                        <Text className="text-white font-bold text-lg">Add Manually</Text>
+                        <Text className="text-zinc-400 text-sm">Enter ingredient name manually</Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#FFFFFF" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : isScanning ? (
               <View className="items-center">
                 <View className="w-24 h-24 rounded-full bg-yellow-400 items-center justify-center mb-4">
                   <Ionicons name="scan" size={48} color="#000000" />
@@ -237,7 +306,8 @@ export default function IngredientScannerDialog({
                   </TouchableOpacity>
                 </View>
               </>
-            )}
+            );
+            })()}
           </View>
         )}
       </View>

@@ -91,7 +91,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
             token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
             console.log('Push token:', token);
         } catch (error) {
-            console.error('Error getting push token:', error);
+            console.log('Error getting push token:', error);
         }
     } else {
         console.log('Must use physical device for Push Notifications');

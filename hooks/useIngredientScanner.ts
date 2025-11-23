@@ -58,6 +58,11 @@ interface UseIngredientScannerResult {
   scanProgress: number;
 
   /**
+   * Whether a scan has been completed (to distinguish from initial state)
+   */
+  scanCompleted: boolean;
+
+  /**
    * Dialog visibility state
    */
   showDialog: boolean;
@@ -134,6 +139,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
   const [detectedIngredientsWithConfidence, setDetectedIngredientsWithConfidence] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
+  const [scanCompleted, setScanCompleted] = useState(false);
   const [showDialog, setShowDialog] = useState(false);
   const [dialogConfig, setDialogConfig] = useState({
     type: 'error' as 'success' | 'error' | 'warning' | 'info' | 'confirm',
@@ -344,11 +350,14 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
           }
           return updatedIngredients;
         });
+
+        setScanCompleted(true);
       } else {
         // For empty results, we need to set empty arrays and call the callback
         console.log("No ingredients detected in the scanned image");
         setDetectedIngredientsWithConfidence([]);
         setDetectedIngredients([]);
+        setScanCompleted(true);
         if (options.onIngredientsDetected) {
           options.onIngredientsDetected([]);
         }
@@ -445,6 +454,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
   const resetIngredients = (): void => {
     setDetectedIngredientsWithConfidence([]);
     setDetectedIngredients([]);
+    setScanCompleted(false);
     options.onIngredientsDetected?.([]);
   };
 
@@ -453,6 +463,7 @@ export function useIngredientScanner(options: UseIngredientScannerOptions = {}):
     detectedIngredientsWithConfidence,
     isScanning,
     scanProgress,
+    scanCompleted,
     showDialog,
     dialogConfig,
     setDetectedIngredients,

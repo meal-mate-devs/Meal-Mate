@@ -95,7 +95,7 @@ class SafeGoogleAuth {
       
       console.log('Google Sign-In: Configuration completed successfully');
     } catch (error) {
-      console.error('Google Sign-In: Configuration failed:', error);
+      console.log('Google Sign-In: Configuration failed:', error);
       throw error;
     }
   }
@@ -130,7 +130,7 @@ class SafeGoogleAuth {
         idToken: result.data?.idToken
       };
     } catch (error: any) {
-      console.error('Google Sign-In error:', error);
+      console.log('Google Sign-In error:', error);
       
       if (error.code === this.statusCodes.SIGN_IN_CANCELLED) {
         return {
@@ -240,7 +240,7 @@ export const configureGoogleSignIn = (webClientId?: string) => {
                    '230655221183-5n78pgvp7ubplngladbmmhepebqrlqgf.apps.googleusercontent.com'; // Fallback to your known client ID
   
   if (!clientId) {
-    console.error('Google Sign-In: No client ID found in any source');
+    console.log('Google Sign-In: No client ID found in any source');
     throw new Error('Google Web Client ID is required for configuration. Please set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in your .env file');
   }
   
