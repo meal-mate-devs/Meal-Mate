@@ -28,7 +28,7 @@ export const configureGoogleSignIn = () => {
 
     console.log('Google Sign-In configured successfully');
   } catch (error) {
-    console.error('Failed to configure Google Sign-In:', error);
+    console.log('Failed to configure Google Sign-In:', error);
     throw error;
   }
 };

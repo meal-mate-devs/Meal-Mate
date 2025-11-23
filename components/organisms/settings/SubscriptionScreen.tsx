@@ -55,7 +55,7 @@ const SubscriptionScreen: React.FC = () => {
       const plansResponse = await subscriptionService.getPlans()
       setAvailablePlans(plansResponse.plans)
     } catch (error) {
-      console.error('Failed to load plans:', error)
+      console.log('Failed to load plans:', error)
       setErrorMessage('Failed to load subscription plans')
       setShowErrorDialog(true)
     } finally {
@@ -100,7 +100,7 @@ const SubscriptionScreen: React.FC = () => {
         setShowSuccessDialog(true)
       }
     } catch (error: any) {
-      console.error('Subscription error:', error)
+      console.log('Subscription error:', error)
       setErrorMessage(error?.message || "Failed to process subscription")
       setShowErrorDialog(true)
     } finally {
@@ -127,7 +127,7 @@ const SubscriptionScreen: React.FC = () => {
       await refreshProfile()
       setShowCancelSuccessDialog(true)
     } catch (error: any) {
-      console.error('Cancel subscription error:', error)
+      console.log('Cancel subscription error:', error)
       setErrorMessage(error?.message || "Failed to cancel subscription")
       setShowErrorDialog(true)
     } finally {

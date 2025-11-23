@@ -291,9 +291,9 @@ const NotificationsScreen: React.FC = () => {
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
-            <Text className="text-white text-xl font-bold">Notifications</Text>
+            <Text className="text-white text-xl font-bold justify-center">Notifications</Text>
             <TouchableOpacity onPress={markAllAsRead}>
-              <Text className="text-orange-500 font-semibold">Mark All Read</Text>
+              <Text className="text-orange-500 font-semibold">All Read</Text>
             </TouchableOpacity>
           </View>
           <Text className="text-gray-400 text-center">
