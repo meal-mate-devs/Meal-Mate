@@ -8,8 +8,8 @@ import { Ionicons } from "@expo/vector-icons"
 import { useFocusEffect } from "@react-navigation/native"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import React, { useEffect, useState } from "react"
-import { SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import React, { useCallback, useEffect, useState } from "react"
+import { RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 const DietPlanningScreen = () => {
     const router = useRouter()
@@ -23,9 +23,12 @@ const DietPlanningScreen = () => {
     } = useDietPlanningStore()
 
     const [activePlan, setActivePlan] = useState<DietPlan | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
+    const [isLoadingPlan, setIsLoadingPlan] = useState(true)
+    const [isLoadingStats, setIsLoadingStats] = useState(true)
+    const [isLoadingNutrition, setIsLoadingNutrition] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isDeletingPlan, setIsDeletingPlan] = useState(false)
+    const [refreshing, setRefreshing] = useState(false)
 
     // Dialog states
     const [showDialog, setShowDialog] = useState(false)
@@ -37,18 +40,22 @@ const DietPlanningScreen = () => {
     // Fetch active plan from backend
     useEffect(() => {
         fetchActivePlan()
+        loadStatsData()
+        loadNutritionData()
     }, [])
 
     // Refresh data when screen comes into focus (after generating new plan)
     useFocusEffect(
         React.useCallback(() => {
             fetchActivePlan()
+            loadStatsData()
+            loadNutritionData()
         }, [])
     )
 
     const fetchActivePlan = async () => {
         try {
-            setIsLoading(true)
+            setIsLoadingPlan(true)
             setError(null)
             const response = await dietPlanningService.getActivePlan()
             setActivePlan(response.plan)
@@ -88,9 +95,49 @@ const DietPlanningScreen = () => {
                 setError(error.message || 'Failed to load diet plan')
             }
         } finally {
-            setIsLoading(false)
+            setIsLoadingPlan(false)
         }
     }
+
+    const loadStatsData = async () => {
+        try {
+            setIsLoadingStats(true)
+            // Stats data is derived from the store, so we just need to wait a bit
+            // The actual data comes from getTodayStats() which uses the store
+            await new Promise(resolve => setTimeout(resolve, 100))
+        } catch (error) {
+            console.log('Error loading stats:', error)
+        } finally {
+            setIsLoadingStats(false)
+        }
+    }
+
+    const loadNutritionData = async () => {
+        try {
+            setIsLoadingNutrition(true)
+            // Nutrition data is calculated from activePlan, so we just need to wait a bit
+            await new Promise(resolve => setTimeout(resolve, 100))
+        } catch (error) {
+            console.log('Error loading nutrition:', error)
+        } finally {
+            setIsLoadingNutrition(false)
+        }
+    }
+
+    const onRefresh = useCallback(async () => {
+        setRefreshing(true)
+        try {
+            await Promise.all([
+                fetchActivePlan(),
+                loadStatsData(),
+                loadNutritionData()
+            ])
+        } catch (error) {
+            console.log('Error refreshing data:', error)
+        } finally {
+            setRefreshing(false)
+        }
+    }, [])
 
     const handleDeletePlan = async () => {
         if (!activePlan) return
@@ -256,84 +303,21 @@ const DietPlanningScreen = () => {
                 <Text className="text-gray-400 text-center">Personalize nutrition for healthy living</Text>
             </View>
 
-            <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
-
-                {/* Loading State - Skeleton Loader */}
-                {isLoading && (
-                    <>
-                        {/* Active Plan Skeleton */}
-                        <View className="mb-6">
-                            <View className="w-40 h-7 bg-zinc-800 rounded mb-4" />
-                            <View className="bg-zinc-800 rounded-3xl p-5">
-                                <View className="flex-row items-center justify-between mb-3">
-                                    <View className="flex-1">
-                                        <View className="flex-row items-center mb-2">
-                                            <View className="w-16 h-6 bg-zinc-700 rounded-full mr-2" />
-                                            <View className="w-20 h-6 bg-zinc-700 rounded-full" />
-                                        </View>
-                                        <View className="w-48 h-6 bg-zinc-700 rounded mb-2" />
-                                        <View className="w-40 h-4 bg-zinc-700 rounded" />
-                                    </View>
-                                    <View className="w-14 h-14 bg-zinc-700 rounded-full" />
-                                </View>
-                                <View className="h-px bg-zinc-700 my-3" />
-                                <View className="flex-row items-center justify-between">
-                                    <View>
-                                        <View className="w-20 h-3 bg-zinc-700 rounded mb-2" />
-                                        <View className="w-24 h-5 bg-zinc-700 rounded" />
-                                    </View>
-                                    <View className="bg-zinc-700 h-2 rounded-full flex-1 mx-4" />
-                                    <View className="w-12 h-4 bg-zinc-700 rounded" />
-                                </View>
-                            </View>
-                        </View>
-
-                        {/* Today's Overview Skeleton */}
-                        <View className="mb-6">
-                            <View className="w-40 h-7 bg-zinc-800 rounded mb-4" />
-                            <View className="flex-row flex-wrap justify-between">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <View key={i} className="bg-zinc-800 rounded-2xl p-4 mb-3" style={{ width: '48%' }}>
-                                        <View className="flex-row items-center justify-between mb-3">
-                                            <View className="w-10 h-10 bg-zinc-700 rounded-full" />
-                                            <View className="w-12 h-5 bg-zinc-700 rounded" />
-                                        </View>
-                                        <View className="w-20 h-4 bg-zinc-700 rounded" />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Quick Actions Skeleton */}
-                        <View className="mb-6">
-                            <View className="w-32 h-7 bg-zinc-800 rounded mb-4" />
-                            <View className="flex-row space-x-3">
-                                {[1, 2].map((i) => (
-                                    <View key={i} className="flex-1 h-14 bg-zinc-800 rounded-xl" />
-                                ))}
-                            </View>
-                        </View>
-
-                        {/* Nutrition Targets Skeleton */}
-                        <View className="mb-6">
-                            <View className="w-40 h-7 bg-zinc-800 rounded mb-4" />
-                            <View className="bg-zinc-800 rounded-3xl p-5">
-                                {[1, 2, 3].map((i) => (
-                                    <View key={i} className="mb-4">
-                                        <View className="flex-row items-center justify-between mb-2">
-                                            <View className="w-20 h-4 bg-zinc-700 rounded" />
-                                            <View className="w-24 h-4 bg-zinc-700 rounded" />
-                                        </View>
-                                        <View className="bg-zinc-700 h-2 rounded-full" />
-                                    </View>
-                                ))}
-                            </View>
-                        </View>
-                    </>
-                )}
+            <ScrollView 
+                className="flex-1 px-4" 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        tintColor="#8B5CF6"
+                        colors={["#8B5CF6"]}
+                    />
+                }
+            >
 
                 {/* Error State */}
-                {error && !isLoading && (
+                {error && (
                     <View className="mb-6 bg-red-900/20 border border-red-500/30 rounded-3xl p-5">
                         <View className="flex-row items-center mb-2">
                             <Ionicons name="alert-circle" size={24} color="#EF4444" />
@@ -350,7 +334,7 @@ const DietPlanningScreen = () => {
                 )}
 
                 {/* No Active Plan - Empty State */}
-                {!isLoading && !error && !activePlan && (
+                {!isLoadingPlan && !error && !activePlan && (
                     <View className="mb-6">
                         <Text className="text-white text-xl font-bold mb-4">Active Meal Plan</Text>
                         <View className="bg-zinc-800 rounded-3xl p-8 items-center">
@@ -393,7 +377,7 @@ const DietPlanningScreen = () => {
                 )}
 
                 {/* Active Meal Plan - Show when plan exists */}
-                {!isLoading && !error && activePlan && (
+                {!isLoadingPlan && !error && activePlan && (
                     <View className="mb-6">
                         <Text className="text-white text-xl font-bold mb-4">Active Meal Plan</Text>
                         <View className="overflow-hidden rounded-3xl">
@@ -462,34 +446,106 @@ const DietPlanningScreen = () => {
                     </View>
                 )}
 
+                {/* Active Plan Loading Skeleton */}
+                {isLoadingPlan && !error && (
+                    <View className="mb-6">
+                        <View className="w-40 h-7 bg-zinc-800 rounded mb-4" />
+                        <View className="bg-zinc-800 rounded-3xl p-5">
+                            <View className="flex-row items-center justify-between mb-3">
+                                <View className="flex-1">
+                                    <View className="flex-row items-center mb-2">
+                                        <View className="w-16 h-6 bg-zinc-700 rounded-full mr-2" />
+                                        <View className="w-20 h-6 bg-zinc-700 rounded-full" />
+                                    </View>
+                                    <View className="w-48 h-6 bg-zinc-700 rounded mb-2" />
+                                    <View className="w-40 h-4 bg-zinc-700 rounded" />
+                                </View>
+                                <View className="w-14 h-14 bg-zinc-700 rounded-full" />
+                            </View>
+                            <View className="h-px bg-zinc-700 my-3" />
+                            <View className="flex-row items-center justify-between">
+                                <View>
+                                    <View className="w-20 h-3 bg-zinc-700 rounded mb-2" />
+                                    <View className="w-24 h-5 bg-zinc-700 rounded" />
+                                </View>
+                                <View className="bg-zinc-700 h-2 rounded-full flex-1 mx-4" />
+                                <View className="w-12 h-4 bg-zinc-700 rounded" />
+                            </View>
+                        </View>
+                    </View>
+                )}
+
                 {/* Only show these sections when there's an active plan */}
-                {!isLoading && !error && activePlan && (
+                {!isLoadingPlan && !error && activePlan && (
                     <>
                         {/* Today's Overview (Quick Stats - 4 Cards) */}
                         <View className="mb-6">
                             <Text className="text-white text-xl font-bold mb-4">Today's Overview</Text>
-                            <View className="flex-row flex-wrap justify-between">
-                                {quickStats.map((stat, index) => (
-                                    <View key={index} className="w-[49%] bg-zinc-800 rounded-2xl p-3 mb-2">
-                                        <View className="flex-row items-center mb-2">
-                                            <View
-                                                className="w-9 h-9 rounded-full items-center justify-center mr-2"
-                                                style={{ backgroundColor: `${stat.color}20` }}
-                                            >
-                                                <Ionicons name={stat.icon as any} size={18} color={stat.color} />
+                            {isLoadingStats ? (
+                                <View className="flex-row flex-wrap justify-between">
+                                    {[1, 2, 3, 4].map((i) => (
+                                        <View key={i} className="w-[49%] bg-zinc-800 rounded-2xl p-3 mb-2">
+                                            <View className="flex-row items-center mb-2">
+                                                <View className="w-9 h-9 bg-zinc-700 rounded-full mr-2" />
+                                                <View className="w-12 h-5 bg-zinc-700 rounded" />
                                             </View>
-                                            <Text className="text-white text-xl font-bold">{stat.value}</Text>
+                                            <View className="w-20 h-4 bg-zinc-700 rounded" />
                                         </View>
-                                        <Text className="text-gray-400 text-xs">{stat.label}</Text>
-                                    </View>
-                                ))}
-                            </View>
+                                    ))}
+                                </View>
+                            ) : (
+                                <View className="flex-row flex-wrap justify-between">
+                                    {quickStats.map((stat, index) => (
+                                        <View key={index} className="w-[49%] bg-zinc-800 rounded-2xl p-3 mb-2">
+                                            <View className="flex-row items-center mb-2">
+                                                <View
+                                                    className="w-9 h-9 rounded-full items-center justify-center mr-2"
+                                                    style={{ backgroundColor: `${stat.color}20` }}
+                                                >
+                                                    <Ionicons name={stat.icon as any} size={18} color={stat.color} />
+                                                </View>
+                                                <Text className="text-white text-xl font-bold">{stat.value}</Text>
+                                            </View>
+                                            <Text className="text-gray-400 text-xs">{stat.label}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
                         </View>
                         {/* Overall Nutrition Breakdown */}
                         <View className="mb-6">
                             <Text className="text-white text-xl font-bold mb-4">Overall Nutrition Status</Text>
                             <View className="bg-zinc-800 rounded-3xl p-5">
-                                {overallNutrition.hasData ? (
+                                {isLoadingNutrition ? (
+                                    <>
+                                        <View className="w-48 h-4 bg-zinc-700 rounded mb-4" />
+                                        <View className="mb-4">
+                                            <View className="w-40 h-5 bg-zinc-700 rounded mb-3" />
+                                            {[1, 2, 3].map((i) => (
+                                                <View key={i} className="mb-3">
+                                                    <View className="flex-row items-center justify-between mb-1">
+                                                        <View className="w-20 h-4 bg-zinc-700 rounded" />
+                                                        <View className="w-24 h-4 bg-zinc-700 rounded" />
+                                                    </View>
+                                                    <View className="bg-zinc-700 h-2 rounded-full" />
+                                                </View>
+                                            ))}
+                                        </View>
+                                        <View className="h-px bg-zinc-700 my-4" />
+                                        <View>
+                                            <View className="w-48 h-5 bg-zinc-700 rounded mb-3" />
+                                            {[1, 2, 3, 4].map((i) => (
+                                                <View key={i} className="flex-row items-center justify-between mb-3">
+                                                    <View className="w-24 h-4 bg-zinc-700 rounded flex-1 mr-4" />
+                                                    <View className="flex-row items-center">
+                                                        <View className="bg-zinc-700 h-2 rounded-full w-20 mr-2" />
+                                                        <View className="w-10 h-4 bg-zinc-700 rounded" />
+                                                    </View>
+                                                </View>
+                                            ))}
+                                        </View>
+                                    </>
+                                ) : overallNutrition.hasData ? (
                                     <>
                                         <Text className="text-gray-400 text-sm mb-4">Based on completed meals</Text>
 
@@ -546,142 +602,143 @@ const DietPlanningScreen = () => {
                             </View>
                         </View>
 
-                        {/* Main Features */}
-                        <View className="mb-6">
-                            <Text className="text-white text-xl font-bold mb-4">Features</Text>
-
-                            {/* Meal Planning */}
-                            <TouchableOpacity
-                                onPress={() => router.push("/diet-plan/meal-planning" as any)}
-                                className="mb-4"
-                                activeOpacity={0.8}
-                            >
-                                <View className="overflow-hidden rounded-3xl">
-                                    <LinearGradient
-                                        colors={["#EAB308", "#EA580C"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        className="p-5"
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center flex-1">
-                                                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
-                                                    <Ionicons name="calendar-outline" size={28} color="white" />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <View className="flex-row items-center mb-1">
-                                                        <Text className="text-white text-lg font-bold mr-2">Meal Tracking</Text>
-                                                        <View className="bg-white/30 px-2 py-1 rounded-full">
-                                                            <Text className="text-white text-xs font-bold">Track</Text>
-                                                        </View>
-                                                    </View>
-                                                    <Text className="text-white/80 text-sm">
-                                                        Meals, water, vitamins & nutrients
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                            <Ionicons name="chevron-forward" size={24} color="white" />
-                                        </View>
-                                    </LinearGradient>
-                                </View>
-                            </TouchableOpacity>
-
-                            {/* AI Meal Plan Generator */}
-                            <TouchableOpacity
-                                onPress={() => router.push("/diet-plan/ai-meal-plan" as any)}
-                                className="mb-4"
-                                activeOpacity={0.8}
-                            >
-                                <View className="overflow-hidden rounded-3xl">
-                                    <LinearGradient
-                                        colors={["#7C3AED", "#4F46E5"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        className="p-5"
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center flex-1">
-                                                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
-                                                    <Ionicons name="sparkles-outline" size={28} color="white" />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <View className="flex-row items-center mb-1">
-                                                        <Text className="text-white text-lg font-bold mr-2">AI Meal Plans</Text>
-                                                        <View className="bg-white/30 px-2 py-1 rounded-full">
-                                                            <Text className="text-white text-xs font-bold">AI</Text>
-                                                        </View>
-                                                    </View>
-                                                    <Text className="text-white/80 text-sm">
-                                                        Generate custom weekly & monthly plans
-                                                    </Text>
-                                                </View>
-                                            </View>
-                                            <Ionicons name="chevron-forward" size={24} color="white" />
-                                        </View>
-                                    </LinearGradient>
-                                </View>
-                            </TouchableOpacity>
-
-                            {/* Health Conditions */}
-                            <TouchableOpacity
-                                onPress={() => router.push("/diet-plan/health-conditions" as any)}
-                                activeOpacity={0.8}
-                            >
-                                <View className="overflow-hidden rounded-3xl">
-                                    <LinearGradient
-                                        colors={["#047857", "#065f46"]}
-                                        start={{ x: 0, y: 0 }}
-                                        end={{ x: 1, y: 0 }}
-                                        className="p-5"
-                                    >
-                                        <View className="flex-row items-center justify-between">
-                                            <View className="flex-row items-center flex-1">
-                                                <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
-                                                    <Ionicons name="medical-outline" size={28} color="white" />
-                                                </View>
-                                                <View className="flex-1">
-                                                    <Text className="text-white text-lg font-bold mb-1">Health Conditions</Text>
-                                                    <Text className="text-white/80 text-sm">Specialized dietary plans</Text>
-                                                </View>
-                                            </View>
-                                            <Ionicons name="chevron-forward" size={24} color="white" />
-                                        </View>
-                                    </LinearGradient>
-                                </View>
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Nutrition Tips Section */}
-                        <View className="mb-8">
-                            <Text className="text-white text-xl font-bold mb-4">Quick Tips</Text>
-                            <View className="bg-zinc-800 rounded-2xl p-5">
-                                <View className="flex-row items-start mb-3">
-                                    <View className="w-8 h-8 rounded-full bg-green-900/30 items-center justify-center mr-3">
-                                        <Ionicons name="bulb-outline" size={18} color="#10B981" />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-white font-semibold mb-1">Stay Consistent</Text>
-                                        <Text className="text-gray-400 text-sm">
-                                            Track your meals daily to build healthy habits and reach your goals faster.
-                                        </Text>
-                                    </View>
-                                </View>
-                                <View className="h-px bg-zinc-700 my-3" />
-                                <View className="flex-row items-start">
-                                    <View className="w-8 h-8 rounded-full bg-blue-900/30 items-center justify-center mr-3">
-                                        <Ionicons name="water-outline" size={18} color="#3B82F6" />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="text-white font-semibold mb-1">Stay Hydrated</Text>
-                                        <Text className="text-gray-400 text-sm">
-                                            Drink water throughout the day. Track your intake to ensure proper hydration.
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
-                        </View>
                     </>
                 )}
+
+                {/* Main Features - Always Visible */}
+                <View className="mb-6">
+                    <Text className="text-white text-xl font-bold mb-4">Features</Text>
+
+                    {/* Meal Planning */}
+                    <TouchableOpacity
+                        onPress={() => router.push("/diet-plan/meal-planning" as any)}
+                        className="mb-4"
+                        activeOpacity={0.8}
+                    >
+                        <View className="overflow-hidden rounded-3xl">
+                            <LinearGradient
+                                colors={["#EAB308", "#EA580C"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                className="p-5"
+                            >
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center flex-1">
+                                        <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
+                                            <Ionicons name="calendar-outline" size={28} color="white" />
+                                        </View>
+                                        <View className="flex-1">
+                                            <View className="flex-row items-center mb-1">
+                                                <Text className="text-white text-lg font-bold mr-2">Meal Tracking</Text>
+                                                <View className="bg-white/30 px-2 py-1 rounded-full">
+                                                    <Text className="text-white text-xs font-bold">Track</Text>
+                                                </View>
+                                            </View>
+                                            <Text className="text-white/80 text-sm">
+                                                Meals, water, vitamins & nutrients
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <Ionicons name="chevron-forward" size={24} color="white" />
+                                </View>
+                            </LinearGradient>
+                        </View>
+                    </TouchableOpacity>
+
+                    {/* AI Meal Plan Generator */}
+                    <TouchableOpacity
+                        onPress={() => router.push("/diet-plan/ai-meal-plan" as any)}
+                        className="mb-4"
+                        activeOpacity={0.8}
+                    >
+                        <View className="overflow-hidden rounded-3xl">
+                            <LinearGradient
+                                colors={["#7C3AED", "#4F46E5"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                className="p-5"
+                        >
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center flex-1">
+                                    <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
+                                        <Ionicons name="sparkles-outline" size={28} color="white" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <View className="flex-row items-center mb-1">
+                                            <Text className="text-white text-lg font-bold mr-2">AI Meal Plans</Text>
+                                            <View className="bg-white/30 px-2 py-1 rounded-full">
+                                                <Text className="text-white text-xs font-bold">AI</Text>
+                                            </View>
+                                        </View>
+                                        <Text className="text-white/80 text-sm">
+                                            Generate custom weekly & monthly plans
+                                        </Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={24} color="white" />
+                            </View>
+                        </LinearGradient>
+                    </View>
+                </TouchableOpacity>
+
+                {/* Health Conditions */}
+                <TouchableOpacity
+                    onPress={() => router.push("/diet-plan/health-conditions" as any)}
+                    activeOpacity={0.8}
+                >
+                    <View className="overflow-hidden rounded-3xl">
+                        <LinearGradient
+                            colors={["#047857", "#065f46"]}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            className="p-5"
+                        >
+                            <View className="flex-row items-center justify-between">
+                                <View className="flex-row items-center flex-1">
+                                    <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
+                                        <Ionicons name="medical-outline" size={28} color="white" />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text className="text-white text-lg font-bold mb-1">Health Conditions</Text>
+                                        <Text className="text-white/80 text-sm">Specialized dietary plans</Text>
+                                    </View>
+                                </View>
+                                <Ionicons name="chevron-forward" size={24} color="white" />
+                            </View>
+                        </LinearGradient>
+                    </View>
+                </TouchableOpacity>
+            </View>
+
+            {/* Nutrition Tips Section - Always Visible */}
+            <View className="mb-8">
+                <Text className="text-white text-xl font-bold mb-4">Quick Tips</Text>
+                <View className="bg-zinc-800 rounded-2xl p-5">
+                    <View className="flex-row items-start mb-3">
+                        <View className="w-8 h-8 rounded-full bg-green-900/30 items-center justify-center mr-3">
+                            <Ionicons name="bulb-outline" size={18} color="#10B981" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white font-semibold mb-1">Stay Consistent</Text>
+                            <Text className="text-gray-400 text-sm">
+                                Track your meals daily to build healthy habits and reach your goals faster.
+                            </Text>
+                        </View>
+                    </View>
+                    <View className="h-px bg-zinc-700 my-3" />
+                    <View className="flex-row items-start">
+                        <View className="w-8 h-8 rounded-full bg-blue-900/30 items-center justify-center mr-3">
+                            <Ionicons name="water-outline" size={18} color="#3B82F6" />
+                        </View>
+                        <View className="flex-1">
+                            <Text className="text-white font-semibold mb-1">Stay Hydrated</Text>
+                            <Text className="text-gray-400 text-sm">
+                                Drink water throughout the day. Track your intake to ensure proper hydration.
+                            </Text>
+                        </View>
+                    </View>
+                </View>
+            </View>
             </ScrollView>
 
             {/* Dialog Component */}

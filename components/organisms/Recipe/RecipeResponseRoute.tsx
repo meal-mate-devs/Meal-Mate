@@ -200,18 +200,18 @@ export default function RecipeResponseRoute(): JSX.Element {
 
       const response = await recipeGenerationService.generateRecipe(request)
 
-      // 🔧 PRODUCTION FIX: Ensure recipe has a unique ID
+      // Ensure recipe has a unique ID
       if (!response.recipe.id) {
         response.recipe.id = `recipe_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       }
 
-      // 🔧 PRODUCTION FIX: Ensure all ingredients have IDs
+      // Ensure all ingredients have IDs
       response.recipe.ingredients = response.recipe.ingredients.map((ingredient, index) => ({
         ...ingredient,
         id: ingredient.id || `ing_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`
       }));
 
-      // 🔧 PRODUCTION FIX: Ensure all instructions have IDs  
+      // Ensure all instructions have IDs  
       response.recipe.instructions = response.recipe.instructions.map((instruction, index) => ({
         ...instruction,
         id: instruction.id || `inst_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 5)}`

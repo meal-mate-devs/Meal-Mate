@@ -79,7 +79,7 @@ const HomeScreen: React.FC = () => {
     
     // Profile and pantry/grocery data
     const { profileData, subscribe } = useProfileStore();
-    const { streakData, getTodayStats } = useDietPlanningStore();
+    const { streakData, getTodayStats, todayCaloriesConsumed } = useDietPlanningStore();
     const [localUserData, setLocalUserData] = useState(profileData);
     const [pantryData, setPantryData] = useState({ active: 0, expiring: 0, expired: 0, total: 0 });
     const [groceryData, setGroceryData] = useState({ total: 0, pending: 0, purchased: 0, urgent: 0, overdue: 0 });
@@ -160,7 +160,15 @@ const HomeScreen: React.FC = () => {
     };
 
     const handleEditProfile = () => {
-        router.push('/profile');
+        if (!router) {
+            console.log('Router not available');
+            return;
+        }
+        try {
+            router.push('/profile');
+        } catch (error) {
+            console.log('Navigation error:', error);
+        }
     };
 
     const fetchPantryData = async () => {
@@ -228,13 +236,17 @@ const HomeScreen: React.FC = () => {
         
         setExpandedRecipeId(null)
         setExpandedRecipeData(null)
-        
-        router.push({
-            pathname: '/recipe/cooking' as any,
-            params: {
-                recipe: JSON.stringify(recipe)
-            }
-        })
+
+        try {
+            router.push({
+                pathname: '/recipe/cooking' as any,
+                params: {
+                    recipe: JSON.stringify(recipe)
+                }
+            })
+        } catch (error) {
+            console.log('Navigation error:', error);
+        }
     }
 
     // Handle Share Recipe
@@ -404,76 +416,95 @@ const HomeScreen: React.FC = () => {
                 </View>
 
             {/* Stats Container */}
-            <View className="px-4">
-                <View className="py-4">
-                {/* Square Stats Grid */}
-                <View className="flex-row justify-between mb-4">
-                    {/* Pantry Square */}
-                    <TouchableOpacity
-                        className="w-[18%] mb-2"
-                        onPress={() => router.push('/recipe/pantry')}
-                        activeOpacity={0.8}
-                    >
-                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
-                            <View className="items-center">
-                                <Ionicons name="basket-outline" size={16} color="#10B981" />
-                                <Text className="text-white text-sm font-bold">{pantryData.total}</Text>
-                            </View>
-                            {pantryData.expiring > 0 && (
-                                <View className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-500 rounded-full items-center justify-center">
-                                    <Text className="text-black text-xs font-bold">{pantryData.expiring}</Text>
+            <View className="px-4 mt-4 mb-2">
+                <View className="rounded-3xl p-2 shadow-lg bg-zinc-800" style={{ borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
+                    <View className="flex-row items-center justify-between ml-6 mr-6">
+                        <View className="items-center">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    try {
+                                        router.push('/recipe/pantry');
+                                    } catch (error) {
+                                        console.log('Navigation error:', error);
+                                    }
+                                }}
+                                activeOpacity={0.8}
+                                className="items-center"
+                            >
+                                <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}>
+                                    <Ionicons name="basket-outline" size={16} color="#22C55E" />
                                 </View>
-                            )}
+                                <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{pantryData.total}</Text>
+                                <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Pantry</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
 
-                    {/* Grocery Square */}
-                    <TouchableOpacity
-                        className="w-[18%] mb-2"
-                        onPress={() => router.push('/settings/grocery-list')}
-                        activeOpacity={0.8}
-                    >
-                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
-                            <View className="items-center">
-                                <Ionicons name="cart-outline" size={16} color="#3B82F6" />
-                                <Text className="text-white text-sm font-bold">{groceryData.total}</Text>
-                            </View>
-                            {groceryData.pending > 0 && (
-                                <View className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full items-center justify-center">
-                                    <Text className="text-white text-xs font-bold">{groceryData.pending}</Text>
+                        <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                        <View className="items-center">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    try {
+                                        router.push('/settings/grocery-list');
+                                    } catch (error) {
+                                        console.log('Navigation error:', error);
+                                    }
+                                }}
+                                activeOpacity={0.8}
+                                className="items-center"
+                            >
+                                <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)' }}>
+                                    <Ionicons name="cart-outline" size={16} color="#3B82F6" />
                                 </View>
-                            )}
+                                <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{groceryData.total}</Text>
+                                <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Grocery</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
 
-                    {/* Health/Calories Square */}
-                    <TouchableOpacity
-                        className="w-[18%] mb-2"
-                        onPress={() => router.push('/health')}
-                        activeOpacity={0.8}
-                    >
-                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
-                            <View className="items-center">
-                                <Ionicons name="fitness-outline" size={16} color="#F97316" />
-                                <Text className="text-white text-sm font-bold">1,850</Text>
-                            </View>
-                        </View>
-                    </TouchableOpacity>
+                        <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
-                    {/* Streak Square */}
-                    <TouchableOpacity
-                        className="w-[18%] mb-2"
-                        onPress={() => router.push('/diet-plan')}
-                        activeOpacity={0.8}
-                    >
-                        <View className="aspect-square rounded-xl border border-zinc-700 bg-zinc-800 items-center justify-center">
-                            <View className="items-center">
-                                <Ionicons name="trophy-outline" size={16} color="#FACC15" />
-                                <Text className="text-white text-sm font-bold">{streakData.currentStreak}</Text>
-                            </View>
+                        <View className="items-center">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    try {
+                                        router.push('/health');
+                                    } catch (error) {
+                                        console.log('Navigation error:', error);
+                                    }
+                                }}
+                                activeOpacity={0.8}
+                                className="items-center"
+                            >
+                                <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(249, 115, 22, 0.1)' }}>
+                                    <Ionicons name="fitness-outline" size={16} color="#F97316" />
+                                </View>
+                                <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{todayCaloriesConsumed}</Text>
+                                <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Calories</Text>
+                            </TouchableOpacity>
                         </View>
-                    </TouchableOpacity>
-                </View>
+
+                        <View className="w-px h-12" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+                        <View className="items-center">
+                            <TouchableOpacity
+                                onPress={() => {
+                                    try {
+                                        router.push('/diet-plan');
+                                    } catch (error) {
+                                        console.log('Navigation error:', error);
+                                    }
+                                }}
+                                activeOpacity={0.8}
+                                className="items-center"
+                            >
+                                <View className="w-8 h-8 rounded-lg items-center justify-center mb-1 shadow-sm" style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}>
+                                    <Ionicons name="trophy-outline" size={16} color="#FACC15" />
+                                </View>
+                                <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{streakData.currentStreak}</Text>
+                                <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Streak</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
                 </View>
             </View>
 
@@ -919,27 +950,32 @@ const styles = StyleSheet.create({
     managementCard: {
         backgroundColor: '#27272A',
         borderRadius: 16,
-        marginBottom: 16,
+        marginBottom: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
     },
     managementCardImage: {
         width: '100%',
-        height: 200,
+        height: 140,
         resizeMode: 'cover',
     },
     managementCardContent: {
-        padding: 16,
+        padding: 12,
     },
     managementCardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     managementCardTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: 'bold',
         color: '#FFFFFF',
         flex: 1,
@@ -960,23 +996,23 @@ const styles = StyleSheet.create({
         color: '#FACC15',
     },
     managementCardDescription: {
-        fontSize: 14,
+        fontSize: 13,
         color: '#9CA3AF',
-        marginBottom: 12,
-        lineHeight: 20,
+        marginBottom: 8,
+        lineHeight: 18,
     },
     managementCardMeta: {
         flexDirection: 'row',
-        gap: 16,
+        gap: 12,
         flexWrap: 'wrap',
     },
     metaItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 3,
     },
     metaText: {
-        fontSize: 13,
+        fontSize: 12,
         color: '#9CA3AF',
         fontWeight: '500',
     },
