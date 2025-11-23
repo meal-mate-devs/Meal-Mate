@@ -29,6 +29,7 @@ const NotificationsScreen: React.FC = () => {
     markAsRead: markAsReadAPI,
     deleteNotifications: deleteNotificationAPI,
     sendTestNotification,
+    runComprehensiveChecks,
   } = useNotifications()
 
   const [filter, setFilter] = useState<string>("all")
@@ -312,6 +313,28 @@ const NotificationsScreen: React.FC = () => {
             <MaterialIcons name="notification-add" size={20} color="#f97316" />
             <Text className="text-orange-400 font-semibold ml-2">Send Test Notification</Text>
           </TouchableOpacity>
+        </View>
+
+        {/* Comprehensive Check Button */}
+        <View className="px-4 pb-4">
+          <TouchableOpacity
+            onPress={async () => {
+              const result = await runComprehensiveChecks()
+              if (result.success) {
+                console.log('✅ Comprehensive checks completed:', result)
+                await fetchNotifications()
+              } else {
+                console.error('❌ Comprehensive checks failed:', result.error)
+              }
+            }}
+            className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 flex-row items-center justify-center"
+          >
+            <MaterialIcons name="refresh" size={20} color="#3b82f6" />
+            <Text className="text-blue-400 font-semibold ml-2">Run Status Checks</Text>
+          </TouchableOpacity>
+          <Text className="text-gray-500 text-xs text-center mt-1">
+            Check pantry expiry, grocery deadlines, and status changes
+          </Text>
         </View>
 
         {/* Filter Tabs */}

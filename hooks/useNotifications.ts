@@ -51,7 +51,7 @@ export function useNotifications() {
                 setExpoPushToken(token);
                 // Register token with backend
                 apiClient.post('/notifications/register-token', { token })
-                    .catch(error => console.error('Error registering token:', error));
+                    .catch(error => console.log('Error registering token:', error));
             }
         });
 
@@ -99,7 +99,7 @@ export function useNotifications() {
                 console.log('❌ API returned success=false');
             }
         } catch (error) {
-            console.error('❌ Error fetching notifications:', error);
+            console.log('❌ Error fetching notifications:', error);
         } finally {
             setLoading(false);
         }
@@ -113,7 +113,7 @@ export function useNotifications() {
                 setPreferences((response as any).preferences);
             }
         } catch (error) {
-            console.error('Error fetching preferences:', error);
+            console.log('Error fetching preferences:', error);
         }
     };
 
@@ -127,7 +127,7 @@ export function useNotifications() {
             }
             return false;
         } catch (error) {
-            console.error('Error updating preferences:', error);
+            console.log('Error updating preferences:', error);
             return false;
         }
     };
@@ -162,7 +162,7 @@ export function useNotifications() {
             }
             return false;
         } catch (error) {
-            console.error('Error marking as read:', error);
+            console.log('Error marking as read:', error);
             return false;
         }
     };
@@ -197,7 +197,7 @@ export function useNotifications() {
             }
             return false;
         } catch (error) {
-            console.error('Error deleting notifications:', error);
+            console.log('Error deleting notifications:', error);
             return false;
         }
     };
@@ -212,7 +212,7 @@ export function useNotifications() {
             console.log('🔔 Test notification success:', success);
             return success;
         } catch (error) {
-            console.error('❌ Error sending test notification:', error);
+            console.log('❌ Error sending test notification:', error);
             return false;
         }
     };
@@ -241,7 +241,7 @@ export function useNotifications() {
             const response = await apiClient.post('/notifications/check-pantry', {});
             return (response as any).success;
         } catch (error) {
-            console.error('Error checking pantry expiry:', error);
+            console.log('Error checking pantry expiry:', error);
             return false;
         }
     };
@@ -251,8 +251,18 @@ export function useNotifications() {
             const response = await apiClient.post('/notifications/check-grocery', {});
             return (response as any).success;
         } catch (error) {
-            console.error('Error checking grocery deadlines:', error);
+            console.log('Error checking grocery deadlines:', error);
             return false;
+        }
+    };
+
+    const runComprehensiveChecks = async () => {
+        try {
+            const response = await apiClient.post('/notifications/check-comprehensive', {});
+            return (response as any);
+        } catch (error) {
+            console.log('Error running comprehensive checks:', error);
+            return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
         }
     };
 
@@ -269,6 +279,7 @@ export function useNotifications() {
         deleteNotifications,
         sendTestNotification,
         checkPantryExpiry,
-        checkGroceryDeadlines
+        checkGroceryDeadlines,
+        runComprehensiveChecks
     };
 }
