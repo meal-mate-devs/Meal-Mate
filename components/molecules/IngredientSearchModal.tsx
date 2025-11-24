@@ -10,6 +10,7 @@ interface IngredientSearchModalProps {
   visible: boolean;
   onClose: () => void;
   onIngredientsSelected: (ingredients: string[]) => void;
+  isPro?: boolean;
 }
 
 interface IngredientItem {
@@ -22,7 +23,8 @@ const { width } = Dimensions.get("window");
 export default function IngredientSearchModal({
   visible,
   onClose,
-  onIngredientsSelected
+  onIngredientsSelected,
+  isPro = false
 }: IngredientSearchModalProps) {
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
@@ -286,7 +288,7 @@ export default function IngredientSearchModal({
               </View>
               <Text style={styles.noIngredientsTitle}>No Ingredients Detected</Text>
               <Text style={styles.noIngredientsText}>
-                We couldn't identify any ingredients in the image. Try taking a clearer photo or add ingredients manually.
+                We couldn&apos;t identify any ingredients in the image. Try taking a clearer photo or add ingredients manually.
               </Text>
               <View style={styles.retryButtonsContainer}>
                 <TouchableOpacity
@@ -380,25 +382,29 @@ export default function IngredientSearchModal({
                 </Text>
                 <View style={styles.optionButtonsContainer}>
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
-                    onPress={handleCamera}
-                    disabled={showManualInput}
+                    style={[styles.optionButton, (showManualInput || !isPro) && styles.disabledButton]}
+                    onPress={isPro ? handleCamera : undefined}
+                    disabled={showManualInput || !isPro}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(250, 204, 21, 0.2)" }]}>
-                      <Ionicons name="camera" size={22} color="#FACC15" />
+                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(250, 204, 21, 0.2)" : "rgba(156, 163, 175, 0.2)" }]}>
+                      <Ionicons name="camera" size={22} color={isPro ? "#FACC15" : "#9CA3AF"} />
                     </View>
-                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Camera</Text>
+                    <Text style={[styles.optionText, (showManualInput || !isPro) && styles.disabledText]}>
+                      {isPro ? "Camera" : "Pro feature"}
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
-                    onPress={handleGallery}
-                    disabled={showManualInput}
+                    style={[styles.optionButton, (showManualInput || !isPro) && styles.disabledButton]}
+                    onPress={isPro ? handleGallery : undefined}
+                    disabled={showManualInput || !isPro}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(59, 130, 246, 0.2)" }]}>
-                      <Ionicons name="images" size={22} color="#3B82F6" />
+                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(59, 130, 246, 0.2)" : "rgba(156, 163, 175, 0.2)" }]}>
+                      <Ionicons name="images" size={22} color={isPro ? "#3B82F6" : "#9CA3AF"} />
                     </View>
-                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Gallery</Text>
+                    <Text style={[styles.optionText, (showManualInput || !isPro) && styles.disabledText]}>
+                      {isPro ? "Gallery" : "Pro feature"}
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity

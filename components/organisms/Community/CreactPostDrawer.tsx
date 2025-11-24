@@ -293,22 +293,30 @@ export default function CreatePostDrawer({
     }
 
     return (
-        <Modal visible={visible} animationType="slide" transparent={false} statusBarTranslucent={false}>
-            <KeyboardAvoidingView 
-                behavior={Platform.OS === "ios" ? "padding" : "height"} 
-                style={{ flex: 1, backgroundColor: '#18181b' }}
-                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
-            >
-                <View className="bg-zinc-900" style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 44 : 25 }}>
-                    <View className="flex-row justify-between items-center p-4 border-b border-zinc-800">
-                        <TouchableOpacity onPress={handleClose}>
-                            <Ionicons name="close" size={24} color="#FFFFFF" />
-                        </TouchableOpacity>
-                        <Text className="text-white text-lg font-bold">Create Post</Text>
-                        <TouchableOpacity onPress={handleCreatePost}>
-                            <Text className="text-yellow-400 font-bold text-lg">Post</Text>
-                        </TouchableOpacity>
-                    </View>
+        <Modal 
+            visible={visible} 
+            animationType="slide" 
+            transparent={false} 
+            statusBarTranslucent={false}
+            style={{ margin: 0 }}
+            presentationStyle="fullScreen"
+        >
+            <View style={{ flex: 1, backgroundColor: '#18181b' }}>
+                <KeyboardAvoidingView 
+                    behavior={Platform.OS === "ios" ? "padding" : "height"} 
+                    style={{ flex: 1 }}
+                    keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
+                >
+                    <View className="bg-zinc-900" style={{ flex: 1, paddingTop: Platform.OS === 'ios' ? 44 : 25 }}>
+                        <View className="flex-row justify-between items-center p-4 border-b border-zinc-800">
+                            <TouchableOpacity onPress={handleClose}>
+                                <Ionicons name="close" size={24} color="#FFFFFF" />
+                            </TouchableOpacity>
+                            <Text className="text-white text-lg font-bold">Create Post</Text>
+                            <TouchableOpacity onPress={handleCreatePost}>
+                                <Text className="text-yellow-400 font-bold text-lg">Post</Text>
+                            </TouchableOpacity>
+                        </View>
 
 
                             <ScrollView
@@ -558,55 +566,56 @@ export default function CreatePostDrawer({
                             </View>
 
                         </ScrollView>
-                </View>
 
-                {/* Image Picker Modal */}
-                    <Modal
-                        animationType="slide"
-                        transparent={true}
-                        visible={showImagePicker}
-                        onRequestClose={() => setShowImagePicker(false)}
-                    >
-                        <View className="flex-1 justify-end bg-black/50">
-                            <View className="bg-white rounded-t-xl p-6">
-                                <Text className="text-lg font-semibold text-center mb-6 text-gray-800">
-                                    Add Image
-                                </Text>
+                        {/* Image Picker Modal */}
+                        <Modal
+                            animationType="slide"
+                            transparent={true}
+                            visible={showImagePicker}
+                            onRequestClose={() => setShowImagePicker(false)}
+                        >
+                            <View className="flex-1 justify-end bg-black/50">
+                                <View className="bg-white rounded-t-xl p-6">
+                                    <Text className="text-lg font-semibold text-center mb-6 text-gray-800">
+                                        Add Image
+                                    </Text>
 
-                                <TouchableOpacity
-                                    onPress={pickImageFromCamera}
-                                    className="bg-green-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
-                                >
-                                    <Text className="text-white font-medium text-lg">Take Photo</Text>
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={pickImageFromCamera}
+                                        className="bg-green-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                    >
+                                        <Text className="text-white font-medium text-lg">Take Photo</Text>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    onPress={pickImageFromGallery}
-                                    className="bg-blue-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
-                                >
-                                    <Text className="text-white font-medium text-lg">Choose from Gallery</Text>
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={pickImageFromGallery}
+                                        className="bg-blue-500 rounded-xl p-4 mb-3 flex-row items-center justify-center"
+                                    >
+                                        <Text className="text-white font-medium text-lg">Choose from Gallery</Text>
+                                    </TouchableOpacity>
 
-                                <TouchableOpacity
-                                    onPress={() => setShowImagePicker(false)}
-                                    className="bg-gray-200 rounded-xl p-4 flex-row items-center justify-center"
-                                >
-                                    <Text className="text-gray-700 font-medium text-lg">Cancel</Text>
-                                </TouchableOpacity>
+                                    <TouchableOpacity
+                                        onPress={() => setShowImagePicker(false)}
+                                        className="bg-gray-200 rounded-xl p-4 flex-row items-center justify-center"
+                                    >
+                                        <Text className="text-gray-700 font-medium text-lg">Cancel</Text>
+                                    </TouchableOpacity>
+                                </View>
                             </View>
-                        </View>
-                    </Modal>
+                        </Modal>
 
-                    {/* Dialog for posting status */}
-                    <Dialog
-                        visible={dialogVisible}
-                        type={dialogType}
-                        title={dialogTitle}
-                        message={dialogMessage}
-                        onClose={() => setDialogVisible(false)}
-                        autoClose={dialogType !== 'loading'}
-                    />
-            </KeyboardAvoidingView>
+                        {/* Dialog for posting status */}
+                        <Dialog
+                            visible={dialogVisible}
+                            type={dialogType}
+                            title={dialogTitle}
+                            message={dialogMessage}
+                            onClose={() => setDialogVisible(false)}
+                            autoClose={dialogType !== 'loading'}
+                        />
+                    </View>
+                </KeyboardAvoidingView>
+            </View>
         </Modal>
     )
 }

@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuthContext } from "@/context/authContext"
 import { PantryItem, pantryService } from "@/lib/services/pantryService"
 import type {
     GeneratedRecipe,
@@ -22,6 +23,8 @@ import VoiceControl from "./VoiceControl"
 
 export default function RecipeGenerationScreen(): JSX.Element {
     const router = useRouter()
+    const { profile } = useAuthContext()
+    const isPro = profile?.isPro || false
     const [filters, setFilters] = useState<RecipeFilters>({
         cuisines: [],
         categories: [],
@@ -50,6 +53,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const [showIngredientsAddedDialog, setShowIngredientsAddedDialog] = useState<boolean>(false)
     const [showSelectionRequiredDialog, setShowSelectionRequiredDialog] = useState<boolean>(false)
     const [showErrorDialog, setShowErrorDialog] = useState<boolean>(false)
+    const [showProUpgradeDialog, setShowProUpgradeDialog] = useState<boolean>(false)
     const [dialogMessage, setDialogMessage] = useState<string>("")
 
     // Load pantry ingredients on component mount
@@ -381,10 +385,17 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
                         <TouchableOpacity
                             className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[160px] relative"
-                            onPress={() => setShowIngredientScanner(true)}
+                            onPress={() => {
+                                if (isPro) {
+                                    setShowIngredientScanner(true)
+                                } else {
+                                    setShowProUpgradeDialog(true)
+                                }
+                            }}
+                            disabled={!isPro}
                         >
-                            <Ionicons name="camera-outline" size={18} color="#FBBF24" />
-                            <Text className="text-white ml-2 text-sm font-medium">Scan Ingredients</Text>
+                            <Ionicons name="camera-outline" size={18} color={isPro ? "#FBBF24" : "#6B7280"} />
+                            <Text className={`ml-2 text-sm font-medium ${isPro ? "text-white" : "text-zinc-500"}`}>Scan Ingredients</Text>
                             <View className="bg-yellow-400 rounded-full px-2 py-1 ml-2">
                                 <Text className="text-black text-xs font-bold">PRO</Text>
                             </View>
@@ -525,7 +536,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
                             />
                         </View>
                         <Text className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                            Specify what you'd like to cook and we'll create that recipe using your available ingredients. Leave empty for ingredient-based suggestions.
+                            Specify what you&apos;d like to cook and we&apos;ll create that recipe using your available ingredients. Leave empty for ingredient-based suggestions.
                         </Text>
                     </View>
                 </View>
@@ -638,6 +649,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 visible={showIngredientScanner}
                 onClose={() => setShowIngredientScanner(false)}
                 onIngredientsSelected={handleIngredientsDetected}
+                isPro={isPro}
             />
 
             <VoiceControl
@@ -683,6 +695,21 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 onConfirm={() => handleNoIngredientsDialog('add')}
                 confirmText="Add to Pantry"
                 cancelText="Cancel"
+                showCancelButton={true}
+            />
+
+            <Dialog
+                visible={showProUpgradeDialog}
+                type="warning"
+                title="Pro Feature"
+                message="Scan ingredients using camera or gallery is a premium feature. Upgrade to Pro to unlock this functionality and many more advanced features!"
+                onClose={() => setShowProUpgradeDialog(false)}
+                onConfirm={() => {
+                    setShowProUpgradeDialog(false)
+                    router.push('/(protected)/(tabs)/(hidden)/settings/subscription')
+                }}
+                confirmText="Upgrade to Pro"
+                cancelText="Maybe Later"
                 showCancelButton={true}
             />
             </View>
