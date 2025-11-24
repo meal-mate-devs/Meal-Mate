@@ -285,11 +285,6 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
         // Check if we have ingredients (either from pantry or manual selection)
         const availableIngredients = filters.ingredients.length > 0 ? filters.ingredients : pantryIngredients
-        if (availableIngredients.length === 0) {
-            setDialogMessage("Please add ingredients to your pantry or select ingredients manually to generate recipes.")
-            setShowErrorDialog(true)
-            return
-        }
 
         // Navigate immediately to response screen with the recipe data
         console.log('Starting recipe generation flow - navigating to response screen')

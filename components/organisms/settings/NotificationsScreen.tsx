@@ -301,20 +301,6 @@ const NotificationsScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Test Notification Button */}
-        <View className="px-4 pb-2">
-          <TouchableOpacity
-            onPress={async () => {
-              await sendTestNotification()
-              await fetchNotifications()
-            }}
-            className="bg-orange-500/20 border border-orange-500/30 rounded-xl p-3 flex-row items-center justify-center"
-          >
-            <MaterialIcons name="notification-add" size={20} color="#f97316" />
-            <Text className="text-orange-400 font-semibold ml-2">Send Test Notification</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Comprehensive Check Button */}
         <View className="px-4 pb-4">
           <TouchableOpacity
