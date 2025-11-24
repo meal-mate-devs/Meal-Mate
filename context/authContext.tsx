@@ -3,15 +3,15 @@ import { auth } from '@/lib/config/clientApp';
 import { subscriptionService } from '@/lib/services/subscriptionService';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signInWithCredential,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -44,6 +44,8 @@ type Profile = {
   isProfileComplete: boolean;
   isChef: 'no' | 'yes' | 'banned';
   isPro: boolean;
+  isGoogleUser?: boolean;
+  hasPassword?: boolean;
   // Subscription fields
   stripeCustomerId?: string | null;
   subscriptionId?: string | null;
@@ -480,6 +482,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
               firstName: userCredential.user.displayName?.split(' ')[0] || '',
               lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
               isGoogleUser: true,
+              hasPassword: false,
               isChef: 'no'
             }),
           });
@@ -514,7 +517,9 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           },
           isProfileComplete: false, // Mark as incomplete since we don't have all required fields
           isChef: 'no',
-          isPro: false
+          isPro: false,
+          isGoogleUser: true,
+          hasPassword: false
         };
 
         console.log('Using basic profile for Google user:', basicProfile);
@@ -537,11 +542,17 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   // Enhanced logout function that handles Google sign-out
   const logout = async () => {
     try {
-      // Check if user is signed in to Google and sign out
-      const isGoogleUser = await isGoogleSignedIn();
-      if (isGoogleUser) {
-        console.log('Signing out from Google...');
-        await signOutFromGoogle();
+      // Try to sign out from Google, but don't let it block the logout
+      try {
+        const isGoogleUser = await isGoogleSignedIn();
+        if (isGoogleUser) {
+          console.log('Signing out from Google...');
+          await signOutFromGoogle();
+          console.log('Google sign-out successful');
+        }
+      } catch (googleError) {
+        console.log('Google sign-out failed, but continuing with app sign-out:', googleError);
+        // Continue with Firebase sign-out even if Google sign-out fails
       }
 
       // Sign out from Firebase
@@ -550,6 +561,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       console.log('User signed out successfully');
     } catch (error) {
       console.log('Error signing out:', error);
+      // Even if Firebase sign-out fails, try to clear local state
       throw error;
     }
   };

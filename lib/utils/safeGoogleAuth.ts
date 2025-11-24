@@ -121,6 +121,14 @@ class SafeGoogleAuth {
       console.log('Google Sign-In: Checking Play Services...');
       await this.GoogleSignin.hasPlayServices();
       
+      // Sign out first to force account picker to show
+      console.log('Google Sign-In: Signing out to show account picker...');
+      try {
+        await this.GoogleSignin.signOut();
+      } catch (signOutError) {
+        console.log('Google Sign-In: Sign out before sign-in not needed or failed (this is okay):', signOutError);
+      }
+      
       console.log('Google Sign-In: Starting sign-in process...');
       const result = await this.GoogleSignin.signIn();
       

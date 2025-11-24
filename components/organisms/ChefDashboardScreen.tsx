@@ -927,29 +927,6 @@ const ChefDashboardScreen: React.FC = () => {
     </View>
   )
 
-  const renderProfileButton = () => (
-    <View style={styles.profileButtonContainer}>
-      <TouchableOpacity
-        style={styles.profileButton}
-        onPress={async () => {
-          // Reload chef data before showing profile
-          await Promise.all([
-            fetchUserRecipes(),
-            fetchUserCourses(),
-            fetchChefStatsAndFeedback(),
-            refreshProfile()
-          ])
-          setShowProfileModal(true)
-        }}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="person-circle-outline" size={22} color="#06B6D4" />
-        <Text style={styles.profileButtonText}>View My Profile</Text>
-        <Ionicons name="chevron-forward" size={20} color="#06B6D4" />
-      </TouchableOpacity>
-    </View>
-  )
-
   // Create sections for FlatList
   const getSections = () => {
     const sections = [
@@ -964,7 +941,6 @@ const ChefDashboardScreen: React.FC = () => {
       );
     } else {
       sections.push(
-        { type: 'profileButton', data: [{}], id: 'profile-button' },
         { type: 'chefActions', data: [{}], id: 'chef-actions' },
         { type: 'contentManagement', data: [{}], id: 'content-management-chef' }
       );
@@ -987,8 +963,6 @@ const ChefDashboardScreen: React.FC = () => {
         return renderLatestRecipes();
       case 'latestCourses':
         return renderLatestCourses();
-      case 'profileButton':
-        return renderProfileButton();
       case 'chefActions':
         return renderChefActions();
       case 'contentSwitch':
@@ -1749,22 +1723,64 @@ const ChefDashboardScreen: React.FC = () => {
 
   const renderChefActions = () => (
     <View style={styles.actionsContainer}>
-      <TouchableOpacity
-        style={[styles.actionButton, { backgroundColor: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.2)' }]}
-        onPress={() => setShowRecipeModal(true)}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="restaurant-outline" size={20} color="#22C55E" />
-        <Text style={[styles.actionText, { color: "#22C55E" }]}>Upload Recipe</Text>
-      </TouchableOpacity>
+      {/* First Row: View Profile and Monetization */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.2)' }]}
+          onPress={async () => {
+            // Reload chef data before showing profile
+            await Promise.all([
+              fetchUserRecipes(),
+              fetchUserCourses(),
+              fetchChefStatsAndFeedback(),
+              refreshProfile()
+            ])
+            setShowProfileModal(true)
+          }}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="person-circle-outline" size={20} color="#06B6D4" />
+          <Text style={[styles.actionText, { color: "#06B6D4" }]}>View Profile</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: 'rgba(135, 250, 21, 0.1)', borderColor: 'rgba(135, 250, 21, 0.2)' }]}
+          onPress={() => router.push('/(protected)/chef-monetization')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="cash-outline" size={20} color="#a6fa15ee" />
+          <Text style={[styles.actionText, { color: "#a6fa15ee" }]}>Monetization</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Second Row: Upload Recipe and Create Course */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: 'rgba(34, 197, 94, 0.1)', borderColor: 'rgba(34, 197, 94, 0.2)' }]}
+          onPress={() => setShowRecipeModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="restaurant-outline" size={20} color="#22C55E" />
+          <Text style={[styles.actionText, { color: "#22C55E" }]}>Upload Recipe</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.actionButton, { backgroundColor: 'rgba(246, 196, 59, 0.1)', borderColor: 'rgba(246, 196, 59, 0.2)' }]}
+          onPress={() => setShowCourseModal(true)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="school-outline" size={20} color="#f6c43bfb" />
+          <Text style={[styles.actionText, { color: "#f6c43bfb" }]}>Create Course</Text>
+        </TouchableOpacity>
+      </View>
 
       <TouchableOpacity
-        style={[styles.actionButton, { backgroundColor: 'rgba(246, 196, 59, 0.18)', borderColor: 'rgba(246, 196, 59, 0.2)' }]}
-        onPress={() => setShowCourseModal(true)}
+        style={[styles.actionButton, { backgroundColor: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }]}
+        onPress={handleOpenStripeDashboard}
         activeOpacity={0.7}
       >
-        <Ionicons name="school-outline" size={20} color="#f6c43bfb" />
-        <Text style={[styles.actionText, { color: "#f6c43bfb" }]}>Create Course</Text>
+        <Ionicons name="card-outline" size={20} color="#6366F1" />
+        <Text style={[styles.actionText, { color: "#6366F1" }]}>Stripe Dashboard</Text>
       </TouchableOpacity>
     </View>
   )
@@ -2693,6 +2709,9 @@ const ChefDashboardScreen: React.FC = () => {
       // Refresh profile to get updated isChef status
       await refreshProfile()
       
+      // Initiate Stripe onboarding
+      await handleStripeOnboarding()
+      
       setShowSuccessDialog(true)
       setIsRegisteringChef(false)
     } catch (error: any) {
@@ -2700,6 +2719,72 @@ const ChefDashboardScreen: React.FC = () => {
       setRegErrorMessage(error.message || 'Failed to register as chef. Please try again.')
       setShowRegErrorDialog(true)
       setIsRegisteringChef(false)
+    }
+  }
+
+  // Stripe onboarding handler
+  const handleStripeOnboarding = async () => {
+    try {
+      const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
+      
+      // Create account link for onboarding
+      const response = await stripeConnectService.createAccountLink()
+      
+      if (response.success && response.url) {
+        // Open Stripe onboarding in browser
+        const { Linking } = await import('react-native')
+        const canOpen = await Linking.canOpenURL(response.url)
+        
+        if (canOpen) {
+          await Linking.openURL(response.url)
+          console.log('✅ Opened Stripe onboarding URL')
+        } else {
+          console.log('⚠️ Cannot open Stripe onboarding URL')
+        }
+      }
+    } catch (error: any) {
+      console.log('❌ Stripe onboarding error:', error)
+      // Don't fail registration if Stripe onboarding fails
+      // Chef can set it up later from their dashboard
+    }
+  }
+
+  // Open Stripe Dashboard
+  const handleOpenStripeDashboard = async () => {
+    try {
+      const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
+      
+      // First check account status
+      const status = await stripeConnectService.checkAccountStatus()
+      
+      if (!status.onboardingComplete) {
+        // If onboarding not complete, redirect to onboarding
+        const response = await stripeConnectService.createAccountLink()
+        if (response.success && response.url) {
+          const { Linking } = await import('react-native')
+          const canOpen = await Linking.canOpenURL(response.url)
+          if (canOpen) {
+            await Linking.openURL(response.url)
+            console.log('✅ Opened Stripe onboarding URL')
+          }
+        }
+      } else {
+        // If onboarding complete, open dashboard
+        const dashboardResponse = await stripeConnectService.getDashboardLink()
+        if (dashboardResponse.success && dashboardResponse.url) {
+          const { Linking } = await import('react-native')
+          const canOpen = await Linking.canOpenURL(dashboardResponse.url)
+          if (canOpen) {
+            await Linking.openURL(dashboardResponse.url)
+            console.log('✅ Opened Stripe Express Dashboard')
+          }
+        }
+      }
+    } catch (error: any) {
+      console.log('❌ Error opening Stripe dashboard:', error)
+      // Show error dialog
+      setRegErrorMessage('Failed to open Stripe dashboard. Please try again.')
+      setShowRegErrorDialog(true)
     }
   }
 
@@ -7083,6 +7168,10 @@ const styles = StyleSheet.create({
   actionsContainer: {
     paddingHorizontal: 24,
     marginBottom: 20,
+    flexDirection: "column",
+    gap: 12,
+  },
+  actionRow: {
     flexDirection: "row",
     gap: 12,
   },
