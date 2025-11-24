@@ -1774,14 +1774,6 @@ const ChefDashboardScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        style={[styles.actionButton, { backgroundColor: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }]}
-        onPress={handleOpenStripeDashboard}
-        activeOpacity={0.7}
-      >
-        <Ionicons name="card-outline" size={20} color="#6366F1" />
-        <Text style={[styles.actionText, { color: "#6366F1" }]}>Stripe Dashboard</Text>
-      </TouchableOpacity>
     </View>
   )
 
