@@ -1,4 +1,4 @@
-import { FontAwesome5, MaterialCommunityIcons } from '@expo/vector-icons';
+import { FontAwesome5, Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -13,7 +13,7 @@ import {
     View
 } from 'react-native';
 
-type DialogType = 'success' | 'error' | 'warning' | 'loading' | 'confirm' | 'info';
+type DialogType = 'success' | 'error' | 'warning' | 'loading' | 'confirm' | 'info' | 'withdraw';
 
 interface DialogProps {
     visible: boolean;
@@ -94,7 +94,7 @@ const Dialog = ({
                 startSuccessAnimation();
             } else if (type === 'error') {
                 startErrorAnimation();
-            } else if (type === 'warning') {
+            } else if (type === 'warning' || type === 'withdraw') {
                 startWarningAnimation();
             }
         } else {
@@ -348,7 +348,7 @@ const Dialog = ({
                 };
             case 'warning':
                 return {
-                    icon: 'fire',
+                    icon: 'alert-circle',
                     iconLibrary: 'MaterialCommunityIcons',
                     foodIcon: 'food-hot-dog',
                     gradientColors: ['#FBBF24', '#D97706'] as readonly [ColorValue, ColorValue],
@@ -377,6 +377,14 @@ const Dialog = ({
                     iconLibrary: 'FontAwesome5',
                     foodIcon: 'food-apple',
                     gradientColors: ['#3B82F6', '#1D4ED8'] as readonly [ColorValue, ColorValue],
+                    iconColor: 'white'
+                };
+            case 'withdraw':
+                return {
+                    icon: 'help-circle',
+                    iconLibrary: 'Ionicons',
+                    foodIcon: 'wallet-outline',
+                    gradientColors: ['#FBBF24', '#D97706'] as readonly [ColorValue, ColorValue],
                     iconColor: 'white'
                 };
             default:
@@ -582,8 +590,7 @@ const Dialog = ({
                             styles.foodCircle,
                             {
                                 transform: [
-                                    { scale: foodScale },
-                                    { rotate: plateRotation }
+                                    { scale: foodScale }
                                 ]
                             }
                         ]}
@@ -605,7 +612,54 @@ const Dialog = ({
                             { opacity: iconOpacity }
                         ]}
                     >
-                        <FontAwesome5 name={icon} size={18} color="#FFFFFF" />
+                        <Ionicons name={icon as any} size={18} color="#FFFFFF" />
+                    </Animated.View>
+                </View>
+            );
+        }
+        
+        if (type === 'withdraw') {
+            return (
+                <View style={styles.iconContainer}>
+                    {/* Plate with warning gradient */}
+                    <View style={styles.plateContainer}>
+                        <LinearGradient
+                            colors={['rgba(251, 191, 36, 0.3)', 'rgba(217, 119, 6, 0.1)']}
+                            style={styles.plateGradient}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        />
+                    </View>
+                    
+                    {/* Wallet with caution */}
+                    <Animated.View 
+                        style={[
+                            styles.foodCircle,
+                            {
+                                transform: [
+                                    { scale: foodScale }
+                                ]
+                            }
+                        ]}
+                    >
+                        <LinearGradient
+                            colors={gradientColors}
+                            style={styles.iconBackground}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                        >
+                            <MaterialCommunityIcons name={foodIcon as any} size={26} color={iconColor} />
+                        </LinearGradient>
+                    </Animated.View>
+                    
+                    {/* Question mark overlay */}
+                    <Animated.View 
+                        style={[
+                            styles.checkmarkOverlay,
+                            { opacity: iconOpacity }
+                        ]}
+                    >
+                        <Ionicons name={icon as any} size={18} color="#FFFFFF" />
                     </Animated.View>
                 </View>
             );

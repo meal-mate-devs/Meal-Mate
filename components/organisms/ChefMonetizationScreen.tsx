@@ -14,7 +14,7 @@ import {
     TouchableOpacity,
     View
 } from 'react-native';
-import CustomDialog from '../atoms/CustomDialog';
+import Dialog from '../atoms/Dialog';
 
 interface MonetizationStats {
     premiumRecipes: {
@@ -278,7 +278,7 @@ export default function ChefMonetizationScreen() {
         
         // Check if amount is valid
         if (!withdrawalAmount || isNaN(amount) || amount <= 0) {
-            showDialog('Invalid Amount', <Text>Please enter a valid withdrawal amount.</Text>, undefined, undefined, 'OK');
+            showDialog('Invalid Amount', <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Please enter a valid withdrawal amount.</Text>, undefined, undefined, 'OK');
             return;
         }
 
@@ -286,7 +286,7 @@ export default function ChefMonetizationScreen() {
         if (amount > stats.availableBalance) {
             showDialog(
                 'Insufficient Balance',
-                <Text>You cannot withdraw more than your available balance of ${stats.availableBalance.toFixed(2)}.</Text>,
+                <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>You cannot withdraw more than your available balance of ${stats.availableBalance.toFixed(2)}.</Text>,
                 undefined,
                 undefined,
                 'OK'
@@ -298,7 +298,7 @@ export default function ChefMonetizationScreen() {
         if (amount < MINIMUM_WITHDRAWAL) {
             showDialog(
                 'Below Minimum',
-                <Text>Minimum withdrawal amount is ${MINIMUM_WITHDRAWAL}.</Text>,
+                <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Minimum withdrawal amount is ${MINIMUM_WITHDRAWAL}.</Text>,
                 undefined,
                 undefined,
                 'OK'
@@ -310,7 +310,7 @@ export default function ChefMonetizationScreen() {
         if (!stripeStatus.hasAccount || !stripeStatus.payoutsEnabled) {
             showDialog(
                 'Setup Required',
-                <Text>Please complete your Stripe account setup from the Chef Dashboard before you can withdraw funds.</Text>,
+                <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>Please complete your Stripe account setup from the Chef Dashboard before you can withdraw funds.</Text>,
                 () => router.back(),
                 undefined,
                 'Go to Dashboard',
@@ -322,7 +322,7 @@ export default function ChefMonetizationScreen() {
         // Confirm withdrawal
         showDialog(
             'Confirm Withdrawal',
-            <Text>You are about to withdraw ${amount.toFixed(2)} to your connected Stripe account.{'\n\n'}This action cannot be undone.</Text>,
+            <Text style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: 32 }}>You are about to withdraw <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>${amount.toFixed(2)}</Text> to your connected Stripe account.{'\n\n'}This action cannot be undone.</Text>,
             async () => {
                 setIsWithdrawing(true);
                 try {
@@ -335,7 +335,7 @@ export default function ChefMonetizationScreen() {
                         
                         showDialog(
                             'Withdrawal Successful! 🎉',
-                            <Text>${response.withdrawalAmount?.toFixed(2)} has been transferred to your Stripe account.{'\n\n'}Transfer ID: ${response.transferId}</Text>,
+                            <Text style={{ color: '#FFFFFF' }}>${response.withdrawalAmount?.toFixed(2)} has been transferred to your Stripe account.{'\n\n'}Transfer ID: ${response.transferId}</Text>,
                             () => fetchStripeStatus(),
                             undefined,
                             'Great!'
@@ -352,13 +352,13 @@ export default function ChefMonetizationScreen() {
                             errorMessage = `Minimum withdrawal amount is $${MINIMUM_WITHDRAWAL}.`;
                         }
 
-                        showDialog('Withdrawal Failed', <Text>{errorMessage}</Text>, undefined, undefined, 'OK');
+                        showDialog('Withdrawal Failed', <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{errorMessage}</Text>, undefined, undefined, 'OK');
                     }
                 } catch (error: any) {
                     console.log('❌ [FRONTEND] Withdrawal error:', error);
                     showDialog(
                         'Error',
-                        <Text>An unexpected error occurred. Please try again later.</Text>,
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>An unexpected error occurred. Please try again later.</Text>,
                         undefined,
                         undefined,
                         'OK'
@@ -506,32 +506,31 @@ export default function ChefMonetizationScreen() {
                     )}
                 </View>
 
-                {/* Withdrawal Amount Input */}
-                {stats.availableBalance >= MINIMUM_WITHDRAWAL && (
-                    <View style={styles.withdrawalInputContainer}>
-                        <Text style={styles.withdrawalInputLabel}>Withdrawal Amount ($)</Text>
-                        <TextInput
-                            style={styles.withdrawalInput}
-                            value={withdrawalAmount}
-                            onChangeText={(text: string) => {
-                                // Only allow numbers and decimal point
-                                const cleanedText = text.replace(/[^0-9.]/g, '');
-                                // Ensure only one decimal point
-                                const parts = cleanedText.split('.');
-                                const formattedText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText;
-                                setWithdrawalAmount(formattedText);
-                            }}
-                            placeholder={`Min. $${MINIMUM_WITHDRAWAL} - Max. $${stats.availableBalance.toFixed(2)}`}
-                            placeholderTextColor="#64748B"
-                            keyboardType="decimal-pad"
-                            maxLength={10}
-                        />
-                        {withdrawalAmount && (
-                            <Text style={styles.withdrawalAmountHint}>
-                                You'll receive: ${(parseFloat(withdrawalAmount) || 0).toFixed(2)}
-                            </Text>
-                        )}
-                    </View>
+                {stripeStatus.hasAccount && stripeStatus.payoutsEnabled && stats.availableBalance >= MINIMUM_WITHDRAWAL && (
+                <View style={styles.withdrawalInputContainer}>
+                    <Text style={styles.withdrawalInputLabel}>Withdrawal Amount ($)</Text>
+                    <TextInput
+                        style={styles.withdrawalInput}
+                        value={withdrawalAmount}
+                        onChangeText={(text: string) => {
+                            // Only allow numbers and decimal point
+                            const cleanedText = text.replace(/[^0-9.]/g, '');
+                            // Ensure only one decimal point
+                            const parts = cleanedText.split('.');
+                            const formattedText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText;
+                            setWithdrawalAmount(formattedText);
+                        }}
+                        placeholder={`Min. $${MINIMUM_WITHDRAWAL} - Max. $${stats.availableBalance.toFixed(2)}`}
+                        placeholderTextColor="#64748B"
+                        keyboardType="decimal-pad"
+                        maxLength={10}
+                    />
+                    {withdrawalAmount && (
+                        <Text style={styles.withdrawalAmountHint}>
+                            You'll receive: ${(parseFloat(withdrawalAmount) || 0).toFixed(2)}
+                        </Text>
+                    )}
+                </View>
                 )}
 
                 {/* Action Buttons Row */}
@@ -541,10 +540,10 @@ export default function ChefMonetizationScreen() {
                         style={[
                             styles.withdrawButton,
                             styles.earningsButtonFlex,
-                            (!withdrawalAmount || parseFloat(withdrawalAmount) < MINIMUM_WITHDRAWAL || parseFloat(withdrawalAmount) > stats.availableBalance || isWithdrawing) && styles.withdrawButtonDisabled
+                            (!withdrawalAmount || parseFloat(withdrawalAmount) <= 0 || parseFloat(withdrawalAmount) > stats.availableBalance || parseFloat(withdrawalAmount) < MINIMUM_WITHDRAWAL || !stripeStatus.hasAccount || !stripeStatus.payoutsEnabled) && styles.withdrawButtonDisabled
                         ]}
                         onPress={handleWithdraw}
-                        disabled={!withdrawalAmount || parseFloat(withdrawalAmount) < MINIMUM_WITHDRAWAL || parseFloat(withdrawalAmount) > stats.availableBalance || isWithdrawing}
+                        disabled={!withdrawalAmount || parseFloat(withdrawalAmount) <= 0 || parseFloat(withdrawalAmount) > stats.availableBalance || parseFloat(withdrawalAmount) < MINIMUM_WITHDRAWAL || !stripeStatus.hasAccount || !stripeStatus.payoutsEnabled || isWithdrawing}
                     >
                         {isWithdrawing ? (
                             <ActivityIndicator size="small" color="#FFFFFF" />
@@ -593,57 +592,27 @@ export default function ChefMonetizationScreen() {
             </LinearGradient>
 
             {/* Withdrawal Dialog */}
-            <CustomDialog
+            <Dialog
                 visible={showWithdrawalDialog}
+                type="withdraw"
+                title={withdrawalDialogContent.title}
+                message={withdrawalDialogContent.content}
                 onClose={() => {
                     setShowWithdrawalDialog(false);
                     withdrawalDialogContent.onCancel?.();
                 }}
-                title={withdrawalDialogContent.title}
-            >
-                <View style={{ padding: 20 }}>
-                    {withdrawalDialogContent.content}
-                    <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 20 }}>
-                        {withdrawalDialogContent.cancelText && (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setShowWithdrawalDialog(false);
-                                    withdrawalDialogContent.onCancel?.();
-                                }}
-                                style={{
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 8,
-                                    borderRadius: 6,
-                                    borderWidth: 1,
-                                    borderColor: '#64748B'
-                                }}
-                            >
-                                <Text style={{ color: '#64748B', fontWeight: '500' }}>
-                                    {withdrawalDialogContent.cancelText}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                        {withdrawalDialogContent.confirmText && (
-                            <TouchableOpacity
-                                onPress={() => {
-                                    setShowWithdrawalDialog(false);
-                                    withdrawalDialogContent.onConfirm?.();
-                                }}
-                                style={{
-                                    paddingHorizontal: 16,
-                                    paddingVertical: 8,
-                                    borderRadius: 6,
-                                    backgroundColor: '#FACC15'
-                                }}
-                            >
-                                <Text style={{ color: '#0F172A', fontWeight: '600' }}>
-                                    {withdrawalDialogContent.confirmText}
-                                </Text>
-                            </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-            </CustomDialog>
+                onConfirm={() => {
+                    setShowWithdrawalDialog(false);
+                    withdrawalDialogContent.onConfirm?.();
+                }}
+                onCancel={() => {
+                    setShowWithdrawalDialog(false);
+                    withdrawalDialogContent.onCancel?.();
+                }}
+                confirmText={withdrawalDialogContent.confirmText}
+                cancelText={withdrawalDialogContent.cancelText}
+                showCancelButton={!!withdrawalDialogContent.cancelText}
+            />
         </View>
     );
 
