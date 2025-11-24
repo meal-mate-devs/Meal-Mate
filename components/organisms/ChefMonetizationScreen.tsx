@@ -23,6 +23,11 @@ interface MonetizationStats {
         totalViews: number;
     };
     totalEarnings: number;
+    withdrawnEarnings: number;
+    availableBalance: number;
+    activeSubscribers: number;
+    lastWithdrawalAmount: number;
+    lastWithdrawalAt: string | null;
 }
 
 export default function ChefMonetizationScreen() {
@@ -31,7 +36,12 @@ export default function ChefMonetizationScreen() {
     const [stats, setStats] = useState<MonetizationStats>({
         premiumRecipes: { count: 0, totalViews: 0 },
         premiumCourses: { count: 0, totalViews: 0 },
-        totalEarnings: 0
+        totalEarnings: 0,
+        withdrawnEarnings: 0,
+        availableBalance: 0,
+        activeSubscribers: 0,
+        lastWithdrawalAmount: 0,
+        lastWithdrawalAt: null
     });
     const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -40,7 +50,12 @@ export default function ChefMonetizationScreen() {
 
     const fetchMonetizationStats = async () => {
         try {
-            if (!profile?.firebaseUid) return;
+            if (!profile?.firebaseUid) {
+                console.log('⚠️ [FRONTEND] No firebaseUid available');
+                return;
+            }
+
+            console.log('📡 [FRONTEND] Fetching monetization stats for user:', profile.firebaseUid);
 
             const response = await fetch(`${API_BASE_URL}/chef/monetization-stats`, {
                 method: 'GET',
@@ -50,16 +65,34 @@ export default function ChefMonetizationScreen() {
                 }
             });
 
+            console.log('📡 [FRONTEND] API response status:', response.status);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('📊 [FRONTEND] Received monetization data:', data);
+
                 setStats({
                     premiumRecipes: data.stats.premiumRecipes || { count: 0, totalViews: 0 },
                     premiumCourses: data.stats.premiumCourses || { count: 0, totalViews: 0 },
-                    totalEarnings: data.stats.totalEarnings || 0
+                    totalEarnings: data.stats.totalEarnings || 0,
+                    withdrawnEarnings: data.stats.withdrawnEarnings || 0,
+                    availableBalance: data.stats.availableBalance || 0,
+                    activeSubscribers: data.stats.activeSubscribers || 0,
+                    lastWithdrawalAmount: data.stats.lastWithdrawalAmount || 0,
+                    lastWithdrawalAt: data.stats.lastWithdrawalAt || null
                 });
+
+                console.log('💰 [FRONTEND] Updated stats state:', {
+                    totalEarnings: data.stats.totalEarnings || 0,
+                    availableBalance: data.stats.availableBalance || 0,
+                    activeSubscribers: data.stats.activeSubscribers || 0
+                });
+            } else {
+                const errorData = await response.json();
+                console.error('❌ [FRONTEND] API error:', errorData);
             }
         } catch (error) {
-            console.error('Error fetching monetization stats:', error);
+            console.error('❌ [FRONTEND] Error fetching monetization stats:', error);
         } finally {
             setIsLoading(false);
             setRefreshing(false);
@@ -67,10 +100,12 @@ export default function ChefMonetizationScreen() {
     };
 
     useEffect(() => {
+        console.log('📱 [FRONTEND] ChefMonetizationScreen mounted - fetching initial stats');
         fetchMonetizationStats();
     }, [profile]);
 
     const onRefresh = () => {
+        console.log('🔄 [FRONTEND] Refresh button pressed - triggering earnings calculation');
         setRefreshing(true);
         fetchMonetizationStats();
     };
@@ -128,12 +163,44 @@ export default function ChefMonetizationScreen() {
             >
                 <View style={styles.statHeader}>
                     <Ionicons name="cash-outline" size={32} color="#FACC15" />
-                    <Text style={styles.statTitle}>Total Earnings</Text>
+                    <Text style={styles.statTitle}>Earnings Dashboard</Text>
                 </View>
 
                 <View style={styles.earningsContainer}>
-                    <Text style={styles.earningsAmount}>${stats.totalEarnings.toFixed(2)}</Text>
+                    <Text style={styles.earningsAmount}>${stats.availableBalance.toFixed(2)}</Text>
                     <Text style={styles.earningsLabel}>Available Balance</Text>
+                </View>
+
+                <View style={styles.earningsBreakdown}>
+                    <View style={styles.earningsRow}>
+                        <Text style={styles.earningsBreakdownLabel}>Total Earned:</Text>
+                        <Text style={styles.earningsBreakdownValue}>${stats.totalEarnings.toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.earningsRow}>
+                        <Text style={styles.earningsBreakdownLabel}>Withdrawn:</Text>
+                        <Text style={styles.earningsBreakdownValue}>${stats.withdrawnEarnings.toFixed(2)}</Text>
+                    </View>
+                    <View style={styles.earningsRow}>
+                        <Text style={styles.earningsBreakdownLabel}>Active Subscribers:</Text>
+                        <Text style={styles.earningsBreakdownValue}>{stats.activeSubscribers}</Text>
+                    </View>
+                    {stats.lastWithdrawalAt && (
+                        <View style={styles.lastWithdrawalSection}>
+                            <View style={styles.earningsRow}>
+                                <Text style={styles.earningsBreakdownLabel}>Last Withdrawal:</Text>
+                                <Text style={styles.earningsBreakdownValue}>${stats.lastWithdrawalAmount.toFixed(2)}</Text>
+                            </View>
+                            <Text style={styles.lastWithdrawalDate}>
+                                {new Date(stats.lastWithdrawalAt).toLocaleDateString('en-US', { 
+                                    year: 'numeric', 
+                                    month: 'short', 
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                })}
+                            </Text>
+                        </View>
+                    )}
                 </View>
 
                 <TouchableOpacity 
@@ -144,7 +211,7 @@ export default function ChefMonetizationScreen() {
                     }}
                 >
                     <Ionicons name="wallet-outline" size={16} color="#FFFFFF" />
-                    <Text style={styles.withdrawButtonText}>Withdraw</Text>
+                    <Text style={styles.withdrawButtonText}>Withdraw Funds</Text>
                 </TouchableOpacity>
             </LinearGradient>
         </View>
@@ -211,16 +278,11 @@ export default function ChefMonetizationScreen() {
                         />
                     }
                 >
-                    {/* Overview Card */}
-                    <View style={styles.overviewCard}>
-                        <View style={styles.overviewHeader}>
-                            <Ionicons name="stats-chart" size={24} color="#FACC15" />
-                            <Text style={styles.overviewTitle}>Premium Content Overview</Text>
-                        </View>
-                        <Text style={styles.overviewSubtitle}>
-                            Track your premium recipes and courses performance
-                        </Text>
-                    </View>
+                    {/* Earnings Dashboard Card - Moved to Top */}
+                    {renderEarningsCard()}
+
+                    {/* Premium Content Overview - Simplified heading */}
+                    <Text style={styles.overviewTitle}>Premium Content Overview</Text>
 
                     {/* Premium Recipes Stats */}
                     {renderStatCard(
@@ -240,17 +302,15 @@ export default function ChefMonetizationScreen() {
                         ['rgba(246, 196, 59, 0.15)', 'rgba(246, 196, 59, 0.05)']
                     )}
 
-                    {/* Total Earnings Card */}
-                    {renderEarningsCard()}
-
-                    {/* Info Card */}
+                    {/* Earnings Info Card */}
                     <View style={styles.infoCard}>
-                        <Ionicons name="information-circle-outline" size={20} color="#60A5FA" />
+                        <Ionicons name="cash-outline" size={20} color="#8B5CF6" />
                         <View style={styles.infoTextContainer}>
-                            <Text style={styles.infoTitle}>How Views Work</Text>
+                            <Text style={styles.infoTitle}>How Earnings Work</Text>
                             <Text style={styles.infoText}>
-                                Views are counted each time a user opens your premium recipe or course.
-                                Higher views can help you understand content popularity.
+                                Earnings are calculated from our Pro subscribers ($8.33/month or $100/year). 
+                                We reserve 70% of subscription revenue for premium creators. Your share is based 
+                                on your premium content views: Earnings = Pool × (Your Views / Total Platform Views).
                             </Text>
                         </View>
                     </View>
@@ -321,29 +381,13 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 20
     },
-    overviewCard: {
-        backgroundColor: 'rgba(250, 204, 21, 0.1)',
-        borderRadius: 16,
-        padding: 12,
-        marginTop: 12,
-        borderWidth: 1,
-        borderColor: 'rgba(250, 204, 21, 0.2)'
-    },
-    overviewHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-        marginBottom: 6
-    },
     overviewTitle: {
-        fontSize: 16,
+        fontSize: 20,
         fontWeight: '700',
-        color: '#F1F5F9'
-    },
-    overviewSubtitle: {
-        fontSize: 13,
-        color: '#94A3B8',
-        marginTop: 2
+        color: '#F1F5F9',
+        marginTop: 14,
+        marginBottom: 8,
+        letterSpacing: 0.5
     },
     statCard: {
         marginTop: 12,
@@ -446,6 +490,40 @@ const styles = StyleSheet.create({
     earningsLabel: {
         fontSize: 12,
         color: '#94A3B8'
+    },
+    earningsBreakdown: {
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        borderRadius: 8,
+        padding: 10,
+        marginTop: 8,
+        marginBottom: 12,
+        gap: 6
+    },
+    earningsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+    },
+    earningsBreakdownLabel: {
+        fontSize: 12,
+        color: '#94A3B8'
+    },
+    earningsBreakdownValue: {
+        fontSize: 12,
+        fontWeight: '600',
+        color: '#F1F5F9'
+    },
+    lastWithdrawalSection: {
+        marginTop: 4,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(255, 255, 255, 0.1)'
+    },
+    lastWithdrawalDate: {
+        fontSize: 10,
+        color: '#64748B',
+        marginTop: 2,
+        textAlign: 'right'
     },
     withdrawButton: {
         flexDirection: 'row',
