@@ -1773,6 +1773,15 @@ const ChefDashboardScreen: React.FC = () => {
           <Text style={[styles.actionText, { color: "#f6c43bfb" }]}>Create Course</Text>
         </TouchableOpacity>
       </View>
+
+      <TouchableOpacity
+        style={[styles.actionButton, { backgroundColor: 'rgba(99, 102, 241, 0.1)', borderColor: 'rgba(99, 102, 241, 0.2)' }]}
+        onPress={handleOpenStripeDashboard}
+        activeOpacity={0.7}
+      >
+        <Ionicons name="card-outline" size={20} color="#6366F1" />
+        <Text style={[styles.actionText, { color: "#6366F1" }]}>Stripe Dashboard</Text>
+      </TouchableOpacity>
     </View>
   )
 
@@ -2700,6 +2709,9 @@ const ChefDashboardScreen: React.FC = () => {
       // Refresh profile to get updated isChef status
       await refreshProfile()
       
+      // Initiate Stripe onboarding
+      await handleStripeOnboarding()
+      
       setShowSuccessDialog(true)
       setIsRegisteringChef(false)
     } catch (error: any) {
@@ -2707,6 +2719,72 @@ const ChefDashboardScreen: React.FC = () => {
       setRegErrorMessage(error.message || 'Failed to register as chef. Please try again.')
       setShowRegErrorDialog(true)
       setIsRegisteringChef(false)
+    }
+  }
+
+  // Stripe onboarding handler
+  const handleStripeOnboarding = async () => {
+    try {
+      const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
+      
+      // Create account link for onboarding
+      const response = await stripeConnectService.createAccountLink()
+      
+      if (response.success && response.url) {
+        // Open Stripe onboarding in browser
+        const { Linking } = await import('react-native')
+        const canOpen = await Linking.canOpenURL(response.url)
+        
+        if (canOpen) {
+          await Linking.openURL(response.url)
+          console.log('✅ Opened Stripe onboarding URL')
+        } else {
+          console.log('⚠️ Cannot open Stripe onboarding URL')
+        }
+      }
+    } catch (error: any) {
+      console.log('❌ Stripe onboarding error:', error)
+      // Don't fail registration if Stripe onboarding fails
+      // Chef can set it up later from their dashboard
+    }
+  }
+
+  // Open Stripe Dashboard
+  const handleOpenStripeDashboard = async () => {
+    try {
+      const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
+      
+      // First check account status
+      const status = await stripeConnectService.checkAccountStatus()
+      
+      if (!status.onboardingComplete) {
+        // If onboarding not complete, redirect to onboarding
+        const response = await stripeConnectService.createAccountLink()
+        if (response.success && response.url) {
+          const { Linking } = await import('react-native')
+          const canOpen = await Linking.canOpenURL(response.url)
+          if (canOpen) {
+            await Linking.openURL(response.url)
+            console.log('✅ Opened Stripe onboarding URL')
+          }
+        }
+      } else {
+        // If onboarding complete, open dashboard
+        const dashboardResponse = await stripeConnectService.getDashboardLink()
+        if (dashboardResponse.success && dashboardResponse.url) {
+          const { Linking } = await import('react-native')
+          const canOpen = await Linking.canOpenURL(dashboardResponse.url)
+          if (canOpen) {
+            await Linking.openURL(dashboardResponse.url)
+            console.log('✅ Opened Stripe Express Dashboard')
+          }
+        }
+      }
+    } catch (error: any) {
+      console.log('❌ Error opening Stripe dashboard:', error)
+      // Show error dialog
+      setRegErrorMessage('Failed to open Stripe dashboard. Please try again.')
+      setShowRegErrorDialog(true)
     }
   }
 

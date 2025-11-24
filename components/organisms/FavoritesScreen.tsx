@@ -487,7 +487,7 @@ const FavoritesScreen: React.FC = () => {
                         </Text>
 
                         {/* Recipe Stats - Recipe Response Style */}
-                        <View className="flex-row items-center flex-row">
+                        <View className="flex-row items-center">
                           <View
                             className="rounded-full px-2 py-1 mr-2 mb-2"
                             style={{
