@@ -19,6 +19,7 @@ import {
 } from "react-native"
 
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import CommunityAPI from "@/lib/services/community.service"
 import CustomDialog from "../../atoms/CustomDialog"
 import EmptyState from "../../atoms/EmptyState"
@@ -31,6 +32,7 @@ import PostDetailModel from "./PostDetailModel"
 
 
 export default function CommunityScreen(): JSX.Element {
+    const { t } = useLanguage()
     const { user, profile } = useAuthContext()
     const [posts, setPosts] = useState<Post[]>([])
     const [loading, setLoading] = useState<boolean>(true)
@@ -390,7 +392,7 @@ export default function CommunityScreen(): JSX.Element {
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
                     <View className="pt-16 px-4 pb-4">
                         <View className="flex-row justify-between items-center">
-                            <Text className="text-white text-2xl font-bold">Meal Mate Community</Text>
+                            <Text className="text-white text-2xl font-bold">{t('community.screenTitle')}</Text>
                             <TouchableOpacity
                                 className="bg-zinc-800 rounded-full p-2 border border-zinc-700"
                                 onPress={() => setShowLeaderboard(true)}
@@ -406,7 +408,7 @@ export default function CommunityScreen(): JSX.Element {
                     >
                         <View className="flex-row items-center">
                             <Image source={currentUser.avatar} className="w-10 h-10 rounded-full border border-yellow-400" />
-                            <Text className="text-zinc-400 ml-3 flex-1">Share your recipe or cooking tip...</Text>
+                            <Text className="text-zinc-400 ml-3 flex-1">{t('community.sharePlaceholder')}</Text>
                             <Ionicons name="camera-outline" size={20} color="#FBBF24" />
                         </View>
                     </TouchableOpacity>

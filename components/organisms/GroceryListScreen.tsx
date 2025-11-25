@@ -1,6 +1,7 @@
 import Dialog from "@/components/atoms/Dialog";
 import ErrorDisplay from "@/components/atoms/ErrorDisplay";
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation";
+import { useLanguage } from "@/context/LanguageContext";
 import { useNotifications } from "@/hooks/useNotifications";
 import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/services/groceryService";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
@@ -9,18 +10,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    Share,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -88,19 +89,6 @@ const getDaysUntil = (value: Date | string) => {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 };
 
-const getPurchaseStatus = (daysUntil: number) => {
-  if (daysUntil < 0) {
-    return { text: "Past planned date", color: "#F87171" };
-  }
-  if (daysUntil === 0) {
-    return { text: "Buy today", color: "#FACC15" };
-  }
-  if (daysUntil === 1) {
-    return { text: "Buy tomorrow", color: "#FACC15" };
-  }
-  return { text: `Buy in ${daysUntil} days`, color: "#94A3B8" };
-};
-
 const DEFAULT_PURCHASE_DATE = () => new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
 const DEFAULT_EXPIRY_DATE = () => new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
@@ -123,9 +111,23 @@ const createInitialPurchaseForm = (): PurchaseFormData => ({
 const GroceryListScreen: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
-  
+  const { t } = useLanguage();
+
   // Notification hook for checking deadlines
   const { checkGroceryDeadlines } = useNotifications();
+
+  const getPurchaseStatus = (daysUntil: number) => {
+    if (daysUntil < 0) {
+      return { text: t('grocery.pastPlannedDate'), color: "#F87171" };
+    }
+    if (daysUntil === 0) {
+      return { text: t('grocery.buyToday'), color: "#FACC15" };
+    }
+    if (daysUntil === 1) {
+      return { text: t('grocery.buyTomorrow'), color: "#FACC15" };
+    }
+    return { text: t('grocery.buyInDays', { days: daysUntil }), color: "#94A3B8" };
+  };
 
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [cachedGroceryItems, setCachedGroceryItems] = useState<GroceryItem[]>(LOCAL_FALLBACK_ITEMS);
@@ -158,8 +160,8 @@ const GroceryListScreen: React.FC = () => {
     confirmText: 'OK',
     cancelText: 'Cancel',
     showCancelButton: false,
-    onConfirm: () => {},
-    onCancel: () => {},
+    onConfirm: () => { },
+    onCancel: () => { },
   });
 
   const filteredItems = useMemo(() => {
@@ -212,8 +214,8 @@ const GroceryListScreen: React.FC = () => {
     confirmText = 'OK',
     cancelText = 'Cancel',
     showCancelButton = false,
-    onConfirm = () => {},
-    onCancel = () => {}
+    onConfirm = () => { },
+    onCancel = () => { }
   ) => {
     setDialogConfig({
       type,
@@ -236,8 +238,8 @@ const GroceryListScreen: React.FC = () => {
     if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout')) {
       return {
         type: 'network' as const,
-        title: 'Connection Problem',
-        message: 'We couldn’t refresh your grocery list. Check your connection and try again.',
+        title: t('grocery.connectionProblemTitle'),
+        message: t('grocery.connectionProblemMessage'),
         canRetry: true,
       };
     }
@@ -292,8 +294,8 @@ const GroceryListScreen: React.FC = () => {
       } else {
         const enhancedError = {
           ...analyzeError(new Error('API returned success: false')),
-          title: 'Failed to update groceries',
-          message: 'We couldn’t refresh your grocery list. Try again or show local items instead.',
+          title: t('grocery.failedToUpdateGroceries'),
+          message: t('grocery.refreshFailedMessage'),
         };
         setErrorDetails(enhancedError);
       }
@@ -304,10 +306,10 @@ const GroceryListScreen: React.FC = () => {
         errorInfo.type === 'auth'
           ? errorInfo
           : {
-              ...errorInfo,
-              title: 'Failed to update groceries',
-              message: 'We couldn’t refresh your grocery list. Try again or show local items instead.',
-            };
+            ...errorInfo,
+            title: t('grocery.failedToUpdateGroceries'),
+            message: t('grocery.refreshFailedMessage'),
+          };
       setErrorDetails(enhancedError);
     } finally {
       setIsLoading(false);
@@ -328,13 +330,13 @@ const GroceryListScreen: React.FC = () => {
 
   const handleAddItem = useCallback(async () => {
     if (!newItemForm.name.trim()) {
-      showCustomDialog('warning', 'Missing name', 'Please enter the item name before saving.', 'OK', '', false, hideDialog);
+      showCustomDialog('warning', t('grocery.missingNameTitle'), t('grocery.missingNameMessage'), 'OK', '', false, hideDialog);
       return;
     }
 
     const parsedQuantity = Number(newItemForm.quantity);
     if (Number.isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      showCustomDialog('warning', 'Invalid quantity', 'Enter a valid quantity greater than zero.', 'OK', '', false, hideDialog);
+      showCustomDialog('warning', t('grocery.invalidQuantityTitle'), t('grocery.invalidQuantityMessage'), 'OK', '', false, hideDialog);
       return;
     }
 
@@ -358,7 +360,7 @@ const GroceryListScreen: React.FC = () => {
       setErrorDetails(null);
       setShowAddModal(false);
       resetAddForm();
-      
+
       // Check grocery deadlines after adding item
       checkGroceryDeadlines().catch(err => console.log('Error checking grocery deadlines:', err));
     } catch (err) {
@@ -371,12 +373,12 @@ const GroceryListScreen: React.FC = () => {
 
   const handleDeleteItem = useCallback(async (id: string) => {
     showCustomDialog(
-      'confirm', 
-      'Remove item', 
-      'Are you sure you want to remove this grocery item?', 
-      'Remove', 
-      'Cancel', 
-      true, 
+      'confirm',
+      t('grocery.removeItemTitle'),
+      t('grocery.removeItemMessage'),
+      t('grocery.removeItemConfirm'),
+      t('common.cancel'),
+      true,
       async () => {
         hideDialog(); // Close dialog first
         try {
@@ -387,10 +389,10 @@ const GroceryListScreen: React.FC = () => {
             setCachedGroceryItems(updated);
             return updated;
           });
-          showCustomDialog('success', 'Success', 'Item removed successfully.', 'OK', '', false, hideDialog);
+          showCustomDialog('success', t('common.success'), t('grocery.itemRemoved'), 'OK', '', false, hideDialog);
         } catch (err) {
           console.log('Failed to delete grocery item:', err);
-          showCustomDialog('error', 'Error', 'Failed to delete grocery item. Please try again.', 'OK', '', false, hideDialog);
+          showCustomDialog('error', t('common.error'), t('grocery.deleteFailed'), 'OK', '', false, hideDialog);
         } finally {
           setIsSyncing(false);
         }
@@ -431,22 +433,22 @@ const GroceryListScreen: React.FC = () => {
       };
 
       console.log("Completing purchase for item:", selectedPurchaseItem.name);
-  await groceryService.markAsPurchased(selectedPurchaseItem.id, purchaseData);
+      await groceryService.markAsPurchased(selectedPurchaseItem.id, purchaseData);
 
-  // Remove from grocery list
+      // Remove from grocery list
       setGroceryItems((prev) => {
         const updated = prev.filter((item) => item.id !== selectedPurchaseItem.id);
         setCachedGroceryItems(updated);
         return updated;
       });
-      
-      showCustomDialog('success', 'Purchase completed', `${selectedPurchaseItem.name} has been marked as purchased and added to your pantry.`, 'OK', '', false, hideDialog);
+
+      showCustomDialog('success', t('grocery.purchaseCompletedTitle'), `${selectedPurchaseItem.name} ${t('grocery.purchaseCompletedMessage')}`, 'OK', '', false, hideDialog);
       setShowPurchaseModal(false);
       setSelectedPurchaseItem(null);
       resetPurchaseForm();
     } catch (error) {
       console.log("Failed to complete purchase:", error);
-      showCustomDialog('error', 'Purchase failed', 'Unable to complete the purchase. Please try again.', 'OK', '', false, hideDialog);
+      showCustomDialog('error', t('grocery.purchaseFailedTitle'), t('grocery.purchaseFailedMessage'), 'OK', '', false, hideDialog);
     } finally {
       setIsSyncing(false);
     }
@@ -455,7 +457,7 @@ const GroceryListScreen: React.FC = () => {
   const handleShareList = useCallback(async () => {
     const unpurchasedItems = groceryItems.filter((item) => !item.isPurchased);
     if (unpurchasedItems.length === 0) {
-      showCustomDialog('info', 'Nothing to share', 'Your grocery list is empty. Add some items first!', 'OK', '', false, hideDialog);
+      showCustomDialog('info', t('grocery.nothingToShareTitle'), t('grocery.nothingToShareMessage'), 'OK', '', false, hideDialog);
       return;
     }
 
@@ -473,7 +475,7 @@ const GroceryListScreen: React.FC = () => {
       });
     } catch (error) {
       console.log("Unable to share grocery list", error);
-      showCustomDialog('error', 'Unable to share', 'Please try again later.', 'OK', '', false, hideDialog);
+      showCustomDialog('error', t('grocery.shareFailedTitle'), t('grocery.shareFailedMessage'), 'OK', '', false, hideDialog);
     }
   }, [groceryItems]);
 
@@ -504,9 +506,9 @@ const GroceryListScreen: React.FC = () => {
   // Tab bar for filtering items by status
   const renderTabBar = () => {
     const tabs = [
-      { id: "all", name: "All", count: filteredItems.length, color: "#6B7280", icon: "apps-outline" },
-      { id: "urgent", name: "Urgent", count: urgentCount, color: "#F59E0B", icon: "alert-circle-outline" },
-      { id: "normal", name: "Normal", count: normalCount, color: "#FACC15", icon: "time-outline" },
+      { id: "all", name: t('grocery.statusAll'), count: filteredItems.length, color: "#6B7280", icon: "apps-outline" },
+      { id: "urgent", name: t('grocery.statusUrgent'), count: urgentCount, color: "#F59E0B", icon: "alert-circle-outline" },
+      { id: "normal", name: t('grocery.statusNormal'), count: normalCount, color: "#FACC15", icon: "time-outline" },
     ];
 
     return (
@@ -681,7 +683,7 @@ const GroceryListScreen: React.FC = () => {
           >
             <Ionicons name="close-outline" size={28} color="white" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Add New Item</Text>
+          <Text style={styles.modalTitle}>{t('grocery.addItem')}</Text>
         </View>
 
         <View style={styles.modalContentWrapper}>
@@ -697,135 +699,135 @@ const GroceryListScreen: React.FC = () => {
               onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
               keyboardShouldPersistTaps="handled"
             >
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Item Name *</Text>
-              <View style={styles.inputContainer}>
-                <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
-                <TextInput
-                  style={styles.textInput}
-                  value={newItemForm.name}
-                  onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, name: text }))}
-                  placeholder="Enter item name"
-                  placeholderTextColor="#64748B"
-                  returnKeyType="next"
-                />
-              </View>
-            </View>
-
-            <View style={styles.formRow}>
-              <View style={[styles.formField, { flex: 1 }]}>
-                <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>{t('grocery.itemName')} *</Text>
                 <View style={styles.inputContainer}>
-                  <Ionicons name="cube-outline" size={18} color="#FACC15" />
+                  <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
                   <TextInput
                     style={styles.textInput}
-                    value={newItemForm.quantity}
-                    onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, quantity: text }))}
-                    placeholder="0"
+                    value={newItemForm.name}
+                    onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, name: text }))}
+                    placeholder={t('grocery.itemNamePlaceholder')}
                     placeholderTextColor="#64748B"
-                    keyboardType="numeric"
-                    returnKeyType="done"
+                    returnKeyType="next"
                   />
-                  <TouchableOpacity
-                    style={styles.unitButton}
-                    onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
-                  >
-                    <Text style={styles.unitButtonText}>
-                      {newItemForm.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
-                    </Text>
-                  </TouchableOpacity>
-
-                  {isUnitDropdownOpen && (
-                    <View style={styles.unitDropdown}>
-                      <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        style={styles.unitDropdownScroll}
-                        contentContainerStyle={styles.unitDropdownScrollContent}
-                        nestedScrollEnabled={true}
-                      >
-                        {UNITS.map((unit) => (
-                          <TouchableOpacity
-                            key={unit}
-                            style={[
-                              styles.unitDropdownItem,
-                              newItemForm.unit === unit && styles.unitDropdownItemSelected
-                            ]}
-                            onPress={() => {
-                              setNewItemForm(prev => ({ ...prev, unit }));
-                              setIsUnitDropdownOpen(false);
-                            }}
-                          >
-                            <Text style={[
-                              styles.unitDropdownItemText,
-                              newItemForm.unit === unit && styles.unitDropdownItemTextSelected
-                            ]}>
-                              {unit}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  )}
                 </View>
               </View>
-            </View>
 
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Urgency Level</Text>
-              <View style={styles.categorySelection}>
-                <TouchableOpacity
-                  onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "normal" }))}
-                  style={[
-                    styles.categoryOption,
-                    newItemForm.urgency === "normal" && styles.selectedCategoryOption,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="time-outline" size={20} color="#FACC15" />
-                  <Text style={[styles.categoryOptionText, newItemForm.urgency === "normal" && styles.selectedCategoryOptionText]}>
-                    Normal
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "urgent" }))}
-                  style={[
-                    styles.categoryOption,
-                    newItemForm.urgency === "urgent" && styles.selectedCategoryOption,
-                  ]}
-                  activeOpacity={0.7}
-                >
-                  <Ionicons name="alert-circle" size={20} color="#FACC15" />
-                  <Text style={[styles.categoryOptionText, newItemForm.urgency === "urgent" && styles.selectedCategoryOptionText]}>
-                    Urgent
-                  </Text>
-                </TouchableOpacity>
+              <View style={styles.formRow}>
+                <View style={[styles.formField, { flex: 1 }]}>
+                  <Text style={styles.fieldLabel}>{t('grocery.quantityUnit')} *</Text>
+                  <View style={styles.inputContainer}>
+                    <Ionicons name="cube-outline" size={18} color="#FACC15" />
+                    <TextInput
+                      style={styles.textInput}
+                      value={newItemForm.quantity}
+                      onChangeText={(text) => setNewItemForm((prev) => ({ ...prev, quantity: text }))}
+                      placeholder="0"
+                      placeholderTextColor="#64748B"
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                    />
+                    <TouchableOpacity
+                      style={styles.unitButton}
+                      onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
+                    >
+                      <Text style={styles.unitButtonText}>
+                        {newItemForm.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
+                      </Text>
+                    </TouchableOpacity>
+
+                    {isUnitDropdownOpen && (
+                      <View style={styles.unitDropdown}>
+                        <ScrollView
+                          showsVerticalScrollIndicator={false}
+                          style={styles.unitDropdownScroll}
+                          contentContainerStyle={styles.unitDropdownScrollContent}
+                          nestedScrollEnabled={true}
+                        >
+                          {UNITS.map((unit) => (
+                            <TouchableOpacity
+                              key={unit}
+                              style={[
+                                styles.unitDropdownItem,
+                                newItemForm.unit === unit && styles.unitDropdownItemSelected
+                              ]}
+                              onPress={() => {
+                                setNewItemForm(prev => ({ ...prev, unit }));
+                                setIsUnitDropdownOpen(false);
+                              }}
+                            >
+                              <Text style={[
+                                styles.unitDropdownItemText,
+                                newItemForm.unit === unit && styles.unitDropdownItemTextSelected
+                              ]}>
+                                {unit}
+                              </Text>
+                            </TouchableOpacity>
+                          ))}
+                        </ScrollView>
+                      </View>
+                    )}
+                  </View>
+                </View>
               </View>
-            </View>
 
-            <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Purchase Date</Text>
-              <TouchableOpacity
-                style={styles.dateInput}
-                onPress={() => setShowPurchaseDatePicker(true)}
-                activeOpacity={0.7}
-              >
-                <Ionicons name="calendar-outline" size={18} color="#FACC15" />
-                <Text style={styles.dateText}>{formatDisplayDate(newItemForm.purchaseDate)}</Text>
-                <Ionicons name="chevron-down" size={18} color="#64748B" />
-              </TouchableOpacity>
-              {showPurchaseDatePicker && (
-                <DateTimePicker
-                  value={newItemForm.purchaseDate}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handlePurchaseDateChange}
-                  minimumDate={new Date()}
-                  themeVariant="dark"
-                />
-              )}
-            </View>
-          </ScrollView>
-        </TouchableOpacity>
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>{t('grocery.urgencyLevel')}</Text>
+                <View style={styles.categorySelection}>
+                  <TouchableOpacity
+                    onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "normal" }))}
+                    style={[
+                      styles.categoryOption,
+                      newItemForm.urgency === "normal" && styles.selectedCategoryOption,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="time-outline" size={20} color="#FACC15" />
+                    <Text style={[styles.categoryOptionText, newItemForm.urgency === "normal" && styles.selectedCategoryOptionText]}>
+                      {t('grocery.urgencyNormal')}
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setNewItemForm((prev) => ({ ...prev, urgency: "urgent" }))}
+                    style={[
+                      styles.categoryOption,
+                      newItemForm.urgency === "urgent" && styles.selectedCategoryOption,
+                    ]}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="alert-circle" size={20} color="#FACC15" />
+                    <Text style={[styles.categoryOptionText, newItemForm.urgency === "urgent" && styles.selectedCategoryOptionText]}>
+                      {t('grocery.urgencyUrgent')}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              <View style={styles.formField}>
+                <Text style={styles.fieldLabel}>{t('grocery.purchaseDate')}</Text>
+                <TouchableOpacity
+                  style={styles.dateInput}
+                  onPress={() => setShowPurchaseDatePicker(true)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="calendar-outline" size={18} color="#FACC15" />
+                  <Text style={styles.dateText}>{formatDisplayDate(newItemForm.purchaseDate)}</Text>
+                  <Ionicons name="chevron-down" size={18} color="#64748B" />
+                </TouchableOpacity>
+                {showPurchaseDatePicker && (
+                  <DateTimePicker
+                    value={newItemForm.purchaseDate}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    onChange={handlePurchaseDateChange}
+                    minimumDate={new Date()}
+                    themeVariant="dark"
+                  />
+                )}
+              </View>
+            </ScrollView>
+          </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
 
@@ -837,7 +839,7 @@ const GroceryListScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="close-circle" size={20} color="#94A3B8" />
-          <Text style={styles.secondaryActionText}>Cancel</Text>
+          <Text style={styles.secondaryActionText}>{t('common.cancel')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={handleAddItem}
@@ -845,7 +847,7 @@ const GroceryListScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="add-circle" size={20} color="#FACC15" />
-          <Text style={styles.primaryActionText}>Add</Text>
+          <Text style={styles.primaryActionText}>{t('grocery.addItem')}</Text>
         </TouchableOpacity>
       </View>
     </Modal>
@@ -862,314 +864,314 @@ const GroceryListScreen: React.FC = () => {
         <StatusBar barStyle="light-content" />
         <View style={styles.container}>
 
-      {/* Error State */}
-      {errorDetails && (
-        <ErrorDisplay
-          errorDetails={errorDetails}
-          onRetry={errorDetails.canRetry ? () => loadGroceryItems() : undefined}
-          secondaryActionLabel={cachedGroceryItems.length > 0 ? "Show local items" : "Dismiss"}
-          onSecondaryAction={() => {
-            setErrorDetails(null);
+          {/* Error State */}
+          {errorDetails && (
+            <ErrorDisplay
+              errorDetails={errorDetails}
+              onRetry={errorDetails.canRetry ? () => loadGroceryItems() : undefined}
+              secondaryActionLabel={cachedGroceryItems.length > 0 ? "Show local items" : "Dismiss"}
+              onSecondaryAction={() => {
+                setErrorDetails(null);
 
-            if (cachedGroceryItems.length > 0) {
-              setGroceryItems(cachedGroceryItems);
-            } else {
-              setGroceryItems(LOCAL_FALLBACK_ITEMS);
-              setCachedGroceryItems(LOCAL_FALLBACK_ITEMS);
-            }
-          }}
-        />
-      )}
-
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => {
-              router.push('/(protected)/(tabs)/home')
-            }}
-            style={styles.backButton}
-            activeOpacity={0.7}
-          >
-            <View style={styles.backButtonInner}>
-              <Ionicons name="arrow-back" size={20} color="#FACC15" />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.titleSection}>
-            <Text style={styles.headerTitle}>Grocery List</Text>
-            <Text style={styles.headerSubtitle}>Plan your purchases</Text>
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setShowAddModal(true)}
-            style={styles.headerAddButton}
-            activeOpacity={0.7}
-          >
-            <LinearGradient
-              colors={["#FACC15", "#F97316"]}
-              style={styles.headerAddButtonGradient}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
-              <Ionicons name="add" size={24} color="white" />
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchRow}>
-        <View style={styles.searchContainer}>
-          <View className="bg-zinc-800" style={styles.searchBlur}>
-            <Ionicons name="search" size={20} color="#94A3B8" />
-            <TextInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Search grocery items..."
-              placeholderTextColor="#64748B"
-              style={styles.searchInput}
+                if (cachedGroceryItems.length > 0) {
+                  setGroceryItems(cachedGroceryItems);
+                } else {
+                  setGroceryItems(LOCAL_FALLBACK_ITEMS);
+                  setCachedGroceryItems(LOCAL_FALLBACK_ITEMS);
+                }
+              }}
             />
-            {searchQuery.length > 0 && (
+          )}
+
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
               <TouchableOpacity
-                onPress={() => setSearchQuery("")}
-                style={styles.clearSearchButton}
+                onPress={() => {
+                  router.push('/(protected)/(tabs)/home')
+                }}
+                style={styles.backButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="arrow-back" size={20} color="#FACC15" />
+                </View>
               </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
 
-      {/* Tab Bar */}
-      {renderTabBar()}
-
-      {/* Grocery List */}
-      <FlatList
-        data={filteredItems}
-        renderItem={renderGroceryItem}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          isLoading ? (
-            <View style={styles.inlineLoaderContainer}>
-              <PantryLoadingAnimation message="Loading your grocery list..." />
-            </View>
-          ) : (
-            <View style={styles.emptyState}>
-              <View style={styles.emptyStateIcon}>
-                <Ionicons name="bag-outline" size={80} color="#94A3B8" />
+              <View style={styles.titleSection}>
+                <Text style={styles.headerTitle}>{t('grocery.title')}</Text>
+                <Text style={styles.headerSubtitle}>{t('grocery.subtitle')}</Text>
               </View>
-              <Text style={styles.emptyStateTitle}>No items in your list</Text>
-              <Text style={styles.emptyStateSubtitle}>
-                Add items to your grocery list to keep track of what you need to buy
-              </Text>
-            </View>
-          )
-        }
-      />
 
-      {/* Add Item Modal */}
-      {renderAddItemModal()}
-
-      {/* Purchase Item Modal */}
-      <Modal
-        visible={showPurchaseModal}
-        animationType="slide"
-        presentationStyle="fullScreen"
-        onRequestClose={() => setShowPurchaseModal(false)}
-      >
-        <View style={styles.modalContainer}>
-          <KeyboardAvoidingView
-            style={styles.keyboardAvoidingContainer}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-          >
-            <StatusBar barStyle="light-content" />
-            <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
-
-            <View style={styles.modalHeader}>
               <TouchableOpacity
-                onPress={() => setShowPurchaseModal(false)}
-                style={styles.closeButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={() => setShowAddModal(true)}
+                style={styles.headerAddButton}
+                activeOpacity={0.7}
               >
-                <Ionicons name="close-outline" size={28} color="white" />
+                <LinearGradient
+                  colors={["#FACC15", "#F97316"]}
+                  style={styles.headerAddButtonGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <Ionicons name="add" size={24} color="white" />
+                </LinearGradient>
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Complete Purchase</Text>
             </View>
+          </View>
 
-            <View style={styles.modalContentWrapper}>
-              <ScrollView
-                style={styles.modalContent}
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
-              >
-                <View style={styles.purchaseItemSummary}>
-                  <View style={styles.purchaseItemIcon}>
-                    <Ionicons name="bag-outline" size={24} color="#FACC15" />
-                  </View>
-                  <View style={styles.purchaseItemDetails}>
-                    <Text style={styles.purchaseItemName}>{selectedPurchaseItem?.name}</Text>
-                    <Text style={styles.purchaseItemMeta}>
-                      {selectedPurchaseItem?.quantity} {selectedPurchaseItem?.unit} • {selectedPurchaseItem?.urgency === 'urgent' ? 'Urgent' : 'Normal'}
-                    </Text>
-                  </View>
-                </View>
-
-                <View style={styles.formRow}>
-                  <View style={[styles.formField, { flex: 1 }]}>
-                    <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
-                    <View style={styles.inputContainer}>
-                      <Ionicons name="cube-outline" size={18} color="#FACC15" />
-                      <TextInput
-                        style={styles.textInput}
-                        value={purchaseForm.quantity}
-                        onChangeText={(text) => setPurchaseForm((prev) => ({ ...prev, quantity: text }))}
-                        placeholder="0"
-                        placeholderTextColor="#64748B"
-                        keyboardType="numeric"
-                        returnKeyType="done"
-                      />
-                      <TouchableOpacity
-                        style={styles.unitButton}
-                        onPress={() => setIsPurchaseUnitDropdownOpen(!isPurchaseUnitDropdownOpen)}
-                      >
-                        <Text style={styles.unitButtonText}>
-                          {purchaseForm.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
-                        </Text>
-                      </TouchableOpacity>
-
-                      {isPurchaseUnitDropdownOpen && (
-                        <View style={styles.unitDropdown}>
-                          <ScrollView
-                            showsVerticalScrollIndicator={false}
-                            style={styles.unitDropdownScroll}
-                            contentContainerStyle={styles.unitDropdownScrollContent}
-                            nestedScrollEnabled={true}
-                          >
-                            {UNITS.map((unit) => (
-                              <TouchableOpacity
-                                key={unit}
-                                style={[
-                                  styles.unitDropdownItem,
-                                  purchaseForm.unit === unit && styles.unitDropdownItemSelected
-                                ]}
-                                onPress={() => {
-                                  setPurchaseForm(prev => ({ ...prev, unit }));
-                                  setIsPurchaseUnitDropdownOpen(false);
-                                }}
-                              >
-                                <Text
-                                  style={[
-                                    styles.unitDropdownItemText,
-                                    purchaseForm.unit === unit && styles.unitDropdownItemTextSelected,
-                                  ]}
-                                >
-                                  {unit}
-                                </Text>
-                              </TouchableOpacity>
-                            ))}
-                          </ScrollView>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                </View>
-
-                <View style={styles.formField}>
-                  <Text style={styles.fieldLabel}>Category</Text>
-                  <View style={styles.categorySelection}>
-                    {CATEGORIES.map((category) => (
-                      <TouchableOpacity
-                        key={category.id}
-                        onPress={() => setPurchaseForm((prev) => ({ ...prev, categoryId: category.id }))}
-                        style={[
-                          styles.categoryOption,
-                          purchaseForm.categoryId === category.id && styles.selectedCategoryOption,
-                        ]}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name={category.icon} size={20} color={purchaseForm.categoryId === category.id ? "#FACC15" : category.color} />
-                        <Text style={[styles.categoryOptionText, purchaseForm.categoryId === category.id && styles.selectedCategoryOptionText]}>
-                          {category.name}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-
-                <View style={styles.formField}>
-                  <Text style={styles.fieldLabel}>Expiry Date</Text>
+          {/* Search Bar */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchContainer}>
+              <View className="bg-zinc-800" style={styles.searchBlur}>
+                <Ionicons name="search" size={20} color="#94A3B8" />
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={t('grocery.searchPlaceholder')}
+                  placeholderTextColor="#64748B"
+                  style={styles.searchInput}
+                />
+                {searchQuery.length > 0 && (
                   <TouchableOpacity
-                    onPress={() => setShowExpiryDatePicker(true)}
-                    style={styles.dateInput}
+                    onPress={() => setSearchQuery("")}
+                    style={styles.clearSearchButton}
                     activeOpacity={0.7}
                   >
-                    <Ionicons name="calendar-outline" size={20} color="#94A3B8" />
-                    <Text style={styles.dateText}>
-                      {formatDisplayDate(purchaseForm.expiryDate)}
-                    </Text>
-                    <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                    <Ionicons name="close-circle" size={20} color="#94A3B8" />
                   </TouchableOpacity>
-                  {showExpiryDatePicker && (
-                    <DateTimePicker
-                      value={purchaseForm.expiryDate}
-                      mode="date"
-                      display="default"
-                      onChange={handleExpiryDateChange}
-                      style={styles.dateTimePicker}
-                    />
-                  )}
-                </View>
-              </ScrollView>
+                )}
+              </View>
             </View>
-          </KeyboardAvoidingView>
-
-          {/* Bottom Action Buttons - Fixed Position */}
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              onPress={() => setShowPurchaseModal(false)}
-              style={[styles.actionButton, styles.secondaryAction]}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="close-circle" size={20} color="#94A3B8" />
-              <Text style={styles.secondaryActionText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={handleCompletePurchase}
-              style={[styles.actionButton, styles.primaryAction]}
-              activeOpacity={0.7}
-              disabled={isSyncing}
-            >
-              <Ionicons name="checkmark-circle" size={20} color="#FACC15" />
-              <Text style={styles.primaryActionText}>
-                {isSyncing ? "Processing..." : "Confirm Purchase"}
-              </Text>
-            </TouchableOpacity>
           </View>
-        </View>
-      </Modal>
 
-      {/* Custom Dialog */}
-      <Dialog
-        visible={showDialog}
-        type={dialogConfig.type}
-        title={dialogConfig.title}
-        message={dialogConfig.message}
-        onConfirm={dialogConfig.onConfirm}
-        onCancel={dialogConfig.onCancel}
-        confirmText={dialogConfig.confirmText}
-        cancelText={dialogConfig.cancelText}
-        showCancelButton={dialogConfig.showCancelButton}
-        onClose={hideDialog}
-      />
-      </View>
-    </SafeAreaView>
+          {/* Tab Bar */}
+          {renderTabBar()}
+
+          {/* Grocery List */}
+          <FlatList
+            data={filteredItems}
+            renderItem={renderGroceryItem}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              isLoading ? (
+                <View style={styles.inlineLoaderContainer}>
+                  <PantryLoadingAnimation message="Loading your grocery list..." />
+                </View>
+              ) : (
+                <View style={styles.emptyState}>
+                  <View style={styles.emptyStateIcon}>
+                    <Ionicons name="bag-outline" size={80} color="#94A3B8" />
+                  </View>
+                  <Text style={styles.emptyStateTitle}>{t('grocery.noItems')}</Text>
+                  <Text style={styles.emptyStateSubtitle}>
+                    {t('grocery.noItemsMessage')}
+                  </Text>
+                </View>
+              )
+            }
+          />
+
+          {/* Add Item Modal */}
+          {renderAddItemModal()}
+
+          {/* Purchase Item Modal */}
+          <Modal
+            visible={showPurchaseModal}
+            animationType="slide"
+            presentationStyle="fullScreen"
+            onRequestClose={() => setShowPurchaseModal(false)}
+          >
+            <View style={styles.modalContainer}>
+              <KeyboardAvoidingView
+                style={styles.keyboardAvoidingContainer}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+                keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+              >
+                <StatusBar barStyle="light-content" />
+                <View className="bg-zinc-900" style={StyleSheet.absoluteFill} />
+
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity
+                    onPress={() => setShowPurchaseModal(false)}
+                    style={styles.closeButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-outline" size={28} color="white" />
+                  </TouchableOpacity>
+                  <Text style={styles.modalTitle}>{t('grocery.completePurchase')}</Text>
+                </View>
+
+                <View style={styles.modalContentWrapper}>
+                  <ScrollView
+                    style={styles.modalContent}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    <View style={styles.purchaseItemSummary}>
+                      <View style={styles.purchaseItemIcon}>
+                        <Ionicons name="bag-outline" size={24} color="#FACC15" />
+                      </View>
+                      <View style={styles.purchaseItemDetails}>
+                        <Text style={styles.purchaseItemName}>{selectedPurchaseItem?.name}</Text>
+                        <Text style={styles.purchaseItemMeta}>
+                          {selectedPurchaseItem?.quantity} {selectedPurchaseItem?.unit} • {selectedPurchaseItem?.urgency === 'urgent' ? t('grocery.urgencyUrgent') : t('grocery.urgencyNormal')}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <View style={styles.formRow}>
+                      <View style={[styles.formField, { flex: 1 }]}>
+                        <Text style={styles.fieldLabel}>{t('grocery.quantityUnit')} *</Text>
+                        <View style={styles.inputContainer}>
+                          <Ionicons name="cube-outline" size={18} color="#FACC15" />
+                          <TextInput
+                            style={styles.textInput}
+                            value={purchaseForm.quantity}
+                            onChangeText={(text) => setPurchaseForm((prev) => ({ ...prev, quantity: text }))}
+                            placeholder="0"
+                            placeholderTextColor="#64748B"
+                            keyboardType="numeric"
+                            returnKeyType="done"
+                          />
+                          <TouchableOpacity
+                            style={styles.unitButton}
+                            onPress={() => setIsPurchaseUnitDropdownOpen(!isPurchaseUnitDropdownOpen)}
+                          >
+                            <Text style={styles.unitButtonText}>
+                              {purchaseForm.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
+                            </Text>
+                          </TouchableOpacity>
+
+                          {isPurchaseUnitDropdownOpen && (
+                            <View style={styles.unitDropdown}>
+                              <ScrollView
+                                showsVerticalScrollIndicator={false}
+                                style={styles.unitDropdownScroll}
+                                contentContainerStyle={styles.unitDropdownScrollContent}
+                                nestedScrollEnabled={true}
+                              >
+                                {UNITS.map((unit) => (
+                                  <TouchableOpacity
+                                    key={unit}
+                                    style={[
+                                      styles.unitDropdownItem,
+                                      purchaseForm.unit === unit && styles.unitDropdownItemSelected
+                                    ]}
+                                    onPress={() => {
+                                      setPurchaseForm(prev => ({ ...prev, unit }));
+                                      setIsPurchaseUnitDropdownOpen(false);
+                                    }}
+                                  >
+                                    <Text
+                                      style={[
+                                        styles.unitDropdownItemText,
+                                        purchaseForm.unit === unit && styles.unitDropdownItemTextSelected,
+                                      ]}
+                                    >
+                                      {unit}
+                                    </Text>
+                                  </TouchableOpacity>
+                                ))}
+                              </ScrollView>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+
+                    <View style={styles.formField}>
+                      <Text style={styles.fieldLabel}>{t('grocery.category')}</Text>
+                      <View style={styles.categorySelection}>
+                        {CATEGORIES.map((category) => (
+                          <TouchableOpacity
+                            key={category.id}
+                            onPress={() => setPurchaseForm((prev) => ({ ...prev, categoryId: category.id }))}
+                            style={[
+                              styles.categoryOption,
+                              purchaseForm.categoryId === category.id && styles.selectedCategoryOption,
+                            ]}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name={category.icon} size={20} color={purchaseForm.categoryId === category.id ? "#FACC15" : category.color} />
+                            <Text style={[styles.categoryOptionText, purchaseForm.categoryId === category.id && styles.selectedCategoryOptionText]}>
+                              {t(`grocery.categories.${category.id}`)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </View>
+
+                    <View style={styles.formField}>
+                      <Text style={styles.fieldLabel}>{t('grocery.expiryDate')}</Text>
+                      <TouchableOpacity
+                        onPress={() => setShowExpiryDatePicker(true)}
+                        style={styles.dateInput}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="calendar-outline" size={20} color="#94A3B8" />
+                        <Text style={styles.dateText}>
+                          {formatDisplayDate(purchaseForm.expiryDate)}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+                      </TouchableOpacity>
+                      {showExpiryDatePicker && (
+                        <DateTimePicker
+                          value={purchaseForm.expiryDate}
+                          mode="date"
+                          display="default"
+                          onChange={handleExpiryDateChange}
+                          style={styles.dateTimePicker}
+                        />
+                      )}
+                    </View>
+                  </ScrollView>
+                </View>
+              </KeyboardAvoidingView>
+
+              {/* Bottom Action Buttons - Fixed Position */}
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  onPress={() => setShowPurchaseModal(false)}
+                  style={[styles.actionButton, styles.secondaryAction]}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="close-circle" size={20} color="#94A3B8" />
+                  <Text style={styles.secondaryActionText}>{t('common.cancel')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleCompletePurchase}
+                  style={[styles.actionButton, styles.primaryAction]}
+                  activeOpacity={0.7}
+                  disabled={isSyncing}
+                >
+                  <Ionicons name="checkmark-circle" size={20} color="#FACC15" />
+                  <Text style={styles.primaryActionText}>
+                    {isSyncing ? t('common.processing') : t('grocery.confirmPurchase')}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Custom Dialog */}
+          <Dialog
+            visible={showDialog}
+            type={dialogConfig.type}
+            title={dialogConfig.title}
+            message={dialogConfig.message}
+            onConfirm={dialogConfig.onConfirm}
+            onCancel={dialogConfig.onCancel}
+            confirmText={dialogConfig.confirmText}
+            cancelText={dialogConfig.cancelText}
+            showCancelButton={dialogConfig.showCancelButton}
+            onClose={hideDialog}
+          />
+        </View>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
@@ -1313,13 +1315,13 @@ const styles = StyleSheet.create({
 
   // Items list
   itemsList: {
-      flex: 1,
-    },
+    flex: 1,
+  },
   listContent: {
-      paddingHorizontal: 20,
-      paddingTop: 0,
-      paddingBottom: 30,
-    },
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 30,
+  },
   inlineLoaderContainer: {
     paddingVertical: 60,
     alignItems: "center",
@@ -1354,24 +1356,24 @@ const styles = StyleSheet.create({
   // Grocery item styles
   groceryItem: {
     flexDirection: "row",
-      alignItems: "center",
-      marginBottom: 16,
-      borderRadius: 16,
-      overflow: "hidden",
-      elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 3 },
-      shadowOpacity: 0.2,
-      shadowRadius: 5,
-      alignSelf: 'stretch',
+    alignItems: "center",
+    marginBottom: 16,
+    borderRadius: 16,
+    overflow: "hidden",
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    alignSelf: 'stretch',
   },
   itemBlur: {
-      borderWidth: 1,
-      borderColor: "rgba(255, 255, 255, 0.08)",
-      borderRadius: 16,
-      padding: 16,
-      flex: 1,
-    },
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+    borderRadius: 16,
+    padding: 16,
+    flex: 1,
+  },
   itemContent: {
     position: 'absolute',
     left: 0,
@@ -1384,97 +1386,97 @@ const styles = StyleSheet.create({
     borderColor: "rgba(255, 255, 255, 0.06)",
   },
   itemBackground: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      top: 0,
-      bottom: 0,
-      backgroundColor: "rgba(40, 40, 40, 0.3)",
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: "rgba(255, 255, 255, 0.08)",
-    },
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    backgroundColor: "rgba(40, 40, 40, 0.3)",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.08)",
+  },
   itemIconContainer: {
     position: "relative",
     margin: 3,
   },
   itemIcon: {
     width: 70,
-      height: 70,
-      borderRadius: 14,
-      alignItems: "center",
-      justifyContent: "center",
+    height: 70,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
   urgentBadge: {
     position: "absolute",
-      top: -6,
-      right: -6,
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 10,
-      minWidth: 28,
-      alignItems: "center",
-      elevation: 4,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 4,
+    top: -6,
+    right: -6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    minWidth: 28,
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   urgentText: {
     color: "white",
-      fontSize: 10,
-      fontWeight: "700",
+    fontSize: 10,
+    fontWeight: "700",
   },
   itemInfo: {
     flex: 1,
-      paddingVertical: 16,
-      paddingRight: 8,
+    paddingVertical: 16,
+    paddingRight: 8,
   },
   itemTitle: {
     color: "white",
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 6,
-      letterSpacing: -0.5,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   itemDetails: {
     flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "wrap",
-      marginBottom: 6,
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: 6,
   },
   quantityBadge: {
     flexDirection: "row",
-      alignItems: "center",
-      marginRight: 16,
-      marginBottom: 4,
+    alignItems: "center",
+    marginRight: 16,
+    marginBottom: 4,
   },
   quantityValue: {
     color: "#94A3B8",
-      fontSize: 14,
-      marginLeft: 6,
-      fontWeight: "600",
+    fontSize: 14,
+    marginLeft: 6,
+    fontWeight: "600",
   },
   dateBadge: {
     flexDirection: "row",
-      alignItems: "center",
-      marginTop: 2,
+    alignItems: "center",
+    marginTop: 2,
   },
   dateValue: {
     fontSize: 12,
-      fontWeight: "600",
-      marginLeft: 4,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   itemButtons: {
     paddingHorizontal: 14,
   },
   purchaseBtn: {
     padding: 10,
-      borderRadius: 10,
+    borderRadius: 10,
   },
   deleteBtn: {
     padding: 10,
-      borderRadius: 10,
+    borderRadius: 10,
   },
 
   // Compact grocery item styles
@@ -1490,8 +1492,8 @@ const styles = StyleSheet.create({
   },
   dateTextUnderQuantity: {
     fontSize: 12,
-      fontWeight: "600",
-      marginLeft: 4,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   stackedButtonsContainer: {
     flexDirection: "column",
@@ -1500,22 +1502,22 @@ const styles = StyleSheet.create({
   },
   itemTitleCompact: {
     color: "white",
-      fontSize: 18,
-      fontWeight: "700",
-      marginBottom: 6,
-      letterSpacing: -0.5,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 6,
+    letterSpacing: -0.5,
   },
   itemDetailsCompact: {
     flexDirection: "row",
-      alignItems: "center",
-      flexWrap: "wrap",
-      marginBottom: 6,
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: 6,
   },
   quantityTextCompact: {
     color: "#94A3B8",
-      fontSize: 14,
-      marginLeft: 4,
-      fontWeight: "600",
+    fontSize: 14,
+    marginLeft: 4,
+    fontWeight: "600",
   },
   dateTextCompact: {
     fontSize: 12,
@@ -1720,12 +1722,12 @@ const styles = StyleSheet.create({
   },
   modalHeader: {
     flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 20,
-      paddingVertical: 16,
-      borderBottomWidth: 1,
-      borderBottomColor: "rgba(255, 255, 255, 0.08)",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255, 255, 255, 0.08)",
   },
   closeButton: {
     position: "absolute",
@@ -1761,44 +1763,44 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   fieldLabel: {
-      color: "white",
-      fontSize: 15,
-      fontWeight: "600",
-      marginBottom: 8,
-      letterSpacing: -0.3,
-    },
-    inputContainer: {
-      flexDirection: "row",
-      alignItems: "center",
-      backgroundColor: "rgba(255, 255, 255, 0.04)",
-      borderRadius: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
-      minHeight: 56,
-      borderWidth: 1,
-      borderColor: "rgba(255, 255, 255, 0.1)",
-    },
-    activeInputContainer: {
-      borderColor: "rgba(250, 204, 21, 0.3)",
-      backgroundColor: "rgba(255, 255, 255, 0.06)",
-    },
-    textInput: {
-      flex: 1,
-      color: "white",
-      fontSize: 15,
-      marginLeft: 12,
-      fontWeight: "500",
-      padding: 0,
-      paddingRight: 80,
-      height: 24,
-    },
-    placeholderText: {
-      flex: 1,
-      color: "#64748B",
-      fontSize: 15,
-      marginLeft: 12,
-      fontWeight: "500",
-    },
+    color: "white",
+    fontSize: 15,
+    fontWeight: "600",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.04)",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minHeight: 56,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+  },
+  activeInputContainer: {
+    borderColor: "rgba(250, 204, 21, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
+  },
+  textInput: {
+    flex: 1,
+    color: "white",
+    fontSize: 15,
+    marginLeft: 12,
+    fontWeight: "500",
+    padding: 0,
+    paddingRight: 80,
+    height: 24,
+  },
+  placeholderText: {
+    flex: 1,
+    color: "#64748B",
+    fontSize: 15,
+    marginLeft: 12,
+    fontWeight: "500",
+  },
   formRow: {
     flexDirection: "row",
     gap: 12,
@@ -1832,47 +1834,47 @@ const styles = StyleSheet.create({
     color: "white",
   },
   unitDropdown: {
-      position: "absolute",
-      top: "100%",
-      right: 0,
-      width: 160,
-      maxHeight: 180,
-      backgroundColor: "#1E1E1E",
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: "rgba(250, 204, 21, 0.3)",
-      marginTop: 5,
-      zIndex: 9999,
-      elevation: 5,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 3.84,
-    },
-    unitDropdownScroll: {
-      maxHeight: 180,
-    },
-    unitDropdownScrollContent: {
-      paddingVertical: 5,
-    },
-    unitDropdownItem: {
-      paddingVertical: 8,
-      paddingHorizontal: 16,
-      flexDirection: "row",
-      alignItems: "center",
-    },
-    unitDropdownItemSelected: {
-      backgroundColor: "rgba(250, 204, 21, 0.1)",
-    },
+    position: "absolute",
+    top: "100%",
+    right: 0,
+    width: 160,
+    maxHeight: 180,
+    backgroundColor: "#1E1E1E",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(250, 204, 21, 0.3)",
+    marginTop: 5,
+    zIndex: 9999,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+  },
+  unitDropdownScroll: {
+    maxHeight: 180,
+  },
+  unitDropdownScrollContent: {
+    paddingVertical: 5,
+  },
+  unitDropdownItem: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  unitDropdownItemSelected: {
+    backgroundColor: "rgba(250, 204, 21, 0.1)",
+  },
   unitDropdownItemText: {
-      color: "white",
-      fontSize: 14,
-      fontWeight: "500",
-    },
-    unitDropdownItemTextSelected: {
-      color: "#FACC15",
-      fontWeight: "600",
-    },
+    color: "white",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  unitDropdownItemTextSelected: {
+    color: "#FACC15",
+    fontWeight: "600",
+  },
   categorySelection: {
     flexDirection: "row",
     flexWrap: "wrap",

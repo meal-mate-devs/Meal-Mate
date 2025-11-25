@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/context/authContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { Stack, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { StatusBar } from 'react-native';
@@ -6,7 +7,7 @@ import { StatusBar } from 'react-native';
 export default function ProtectedLayout() {
   const router = useRouter();
   const { user } = useAuthContext();
-  
+
   // Protect routes from unauthenticated users
   useEffect(() => {
     if (!user) {
@@ -23,22 +24,24 @@ export default function ProtectedLayout() {
 
   return (
     <>
-      <StatusBar 
-        backgroundColor="black" 
-        barStyle="light-content" 
+      <StatusBar
+        backgroundColor="black"
+        barStyle="light-content"
         translucent={true}
       />
-      
-      <Stack 
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: '#000000' },
-          animation: 'slide_from_right',
-          animationDuration: 600,
-          presentation: 'modal',
-          gestureEnabled: false,
-        }} 
-      />
+
+      <LanguageProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: '#000000' },
+            animation: 'slide_from_right',
+            animationDuration: 600,
+            presentation: 'modal',
+            gestureEnabled: false,
+          }}
+        />
+      </LanguageProvider>
     </>
   );
 }

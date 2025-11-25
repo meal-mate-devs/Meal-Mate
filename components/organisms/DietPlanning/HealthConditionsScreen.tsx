@@ -1,6 +1,7 @@
 "use client"
 
 import Dialog from "@/components/atoms/Dialog"
+import { useLanguage } from "@/context/LanguageContext"
 import { dietPlanningService } from "@/lib/services/dietPlanningService"
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
@@ -44,6 +45,12 @@ interface HealthCondition {
 
 const HealthConditionsScreen = () => {
     const router = useRouter()
+    const { t, language } = useLanguage()
+
+    // Get condition data from translations
+    const getConditionData = (conditionId: string) => {
+        return t(`diet.conditions.${conditionId}`)
+    }
     const [selectedCondition, setSelectedCondition] = useState<HealthCondition | null>(null)
     const [showDetailModal, setShowDetailModal] = useState(false)
     const [showGeneratePlanModal, setShowGeneratePlanModal] = useState(false)
@@ -80,8 +87,8 @@ const HealthConditionsScreen = () => {
             if (response.plan) {
                 setHasExistingPlan(true)
                 setDialogType('warning')
-                setDialogTitle('Active Plan Exists')
-                setDialogMessage('You already have an active meal plan. Please cancel your current plan from the Diet Planning screen before generating a new one.')
+                setDialogTitle(t('diet.activePlanExists'))
+                setDialogMessage(t('diet.cancelCurrentPlanBeforeGenerating'))
                 setShowDialog(true)
                 setTimeout(() => router.push("/health"), 2500)
             }
@@ -95,335 +102,51 @@ const HealthConditionsScreen = () => {
     const healthConditions: HealthCondition[] = [
         {
             id: "diabetes",
-            name: "Diabetes Management",
+            name: t('diet.conditions.diabetes.name'),
             icon: "🩺",
-            description: "Low glycemic index, controlled carb intake",
+            description: t('diet.conditions.diabetes.description'),
             color: "#3B82F6",
-            dietaryFocus: ["Low GI foods", "Fiber-rich meals", "Portion control", "Regular meal timing"],
-            avoidFoods: [
-                "Sugary drinks & desserts",
-                "White bread & rice",
-                "Processed snacks",
-                "High-sugar fruits",
-                "Fried foods",
-            ],
-            recommendedFoods: [
-                "Whole grains (quinoa, brown rice)",
-                "Leafy greens & vegetables",
-                "Lean proteins",
-                "Nuts & seeds",
-                "Low-fat dairy",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "Steel-cut oatmeal with berries",
-                    "Greek yogurt with chia seeds",
-                    "Egg white scramble with vegetables",
-                ],
-                lunch: [
-                    "Grilled chicken salad",
-                    "Lentil soup with whole grain bread",
-                    "Quinoa bowl with vegetables",
-                ],
-                dinner: [
-                    "Baked salmon with steamed broccoli",
-                    "Turkey meatballs with zucchini noodles",
-                    "Stir-fried tofu with mixed vegetables",
-                ],
-                snacks: ["Apple slices with almond butter", "Raw vegetables with hummus", "Handful of nuts"],
-            },
-            nutritionalGuidelines: {
-                calories: "1,800-2,200 per day",
-                protein: "25-30% of daily calories",
-                carbs: "45-50% (focus on complex carbs)",
-                fats: "25-30% (healthy fats)",
-                specialNotes: [
-                    "Monitor blood sugar levels regularly",
-                    "Eat at consistent times",
-                    "Stay hydrated with water",
-                    "Limit sodium intake",
-                ],
-            },
+            ...getConditionData("diabetes"),
         },
         {
             id: "heart_health",
-            name: "Heart Health",
+            name: t('diet.conditions.heart_health.name'),
             icon: "❤️",
-            description: "Low sodium, heart-healthy fats",
+            description: t('diet.conditions.heart_health.description'),
             color: "#EF4444",
-            dietaryFocus: [
-                "Omega-3 fatty acids",
-                "Low sodium",
-                "High fiber",
-                "Lean proteins",
-            ],
-            avoidFoods: [
-                "Trans fats & saturated fats",
-                "High-sodium foods",
-                "Processed meats",
-                "Excessive red meat",
-                "Refined sugars",
-            ],
-            recommendedFoods: [
-                "Fatty fish (salmon, mackerel)",
-                "Olive oil & avocados",
-                "Whole grains",
-                "Berries & fruits",
-                "Nuts & legumes",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "Oatmeal with walnuts & blueberries",
-                    "Avocado toast on whole grain",
-                    "Smoothie with spinach & berries",
-                ],
-                lunch: [
-                    "Mediterranean salad with olive oil",
-                    "Grilled salmon with quinoa",
-                    "Bean and vegetable soup",
-                ],
-                dinner: [
-                    "Baked cod with roasted vegetables",
-                    "Chicken breast with sweet potato",
-                    "Lentil curry with brown rice",
-                ],
-                snacks: ["Fresh fruit", "Unsalted almonds", "Carrot sticks with hummus"],
-            },
-            nutritionalGuidelines: {
-                calories: "2,000-2,400 per day",
-                protein: "20-25% of daily calories",
-                carbs: "50-55% (whole grains focus)",
-                fats: "25-30% (emphasis on unsaturated)",
-                specialNotes: [
-                    "Limit sodium to 1,500mg daily",
-                    "Increase omega-3 intake",
-                    "Eat fatty fish 2-3 times per week",
-                    "Avoid trans fats completely",
-                ],
-            },
+            ...getConditionData("heart_health"),
         },
         {
             id: "gluten_free",
-            name: "Gluten Intolerance",
+            name: t('diet.conditions.gluten_free.name'),
             icon: "🌾",
-            description: "Celiac-safe, gluten-free options",
+            description: t('diet.conditions.gluten_free.description'),
             color: "#F59E0B",
-            dietaryFocus: [
-                "Certified gluten-free grains",
-                "Natural whole foods",
-                "Label reading",
-                "Cross-contamination prevention",
-            ],
-            avoidFoods: [
-                "Wheat, barley, rye",
-                "Regular pasta & bread",
-                "Beer & malt beverages",
-                "Many processed foods",
-                "Soy sauce (regular)",
-            ],
-            recommendedFoods: [
-                "Rice, quinoa, corn",
-                "Gluten-free oats",
-                "Fresh fruits & vegetables",
-                "Meat, fish, poultry",
-                "Eggs & dairy",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "Gluten-free oatmeal with fruit",
-                    "Rice cereal with almond milk",
-                    "Scrambled eggs with vegetables",
-                ],
-                lunch: [
-                    "Quinoa salad bowl",
-                    "Rice paper spring rolls",
-                    "Corn tortilla tacos",
-                ],
-                dinner: [
-                    "Grilled chicken with rice pilaf",
-                    "Baked fish with roasted potatoes",
-                    "Stir-fry with rice noodles",
-                ],
-                snacks: ["Fresh fruit", "Rice cakes with peanut butter", "Veggie sticks"],
-            },
-            nutritionalGuidelines: {
-                calories: "2,000-2,500 per day",
-                protein: "20-30% of daily calories",
-                carbs: "45-55% (gluten-free grains)",
-                fats: "25-30%",
-                specialNotes: [
-                    "Always check labels for hidden gluten",
-                    "Use separate cooking utensils",
-                    "Focus on naturally gluten-free foods",
-                    "May need B-vitamin supplements",
-                ],
-            },
+            ...getConditionData("gluten_free"),
         },
         {
             id: "lactose_intolerance",
-            name: "Lactose Intolerance",
+            name: t('diet.conditions.lactose_intolerance.name'),
             icon: "🥛",
-            description: "Dairy-free alternatives",
+            description: t('diet.conditions.lactose_intolerance.description'),
             color: "#8B5CF6",
-            dietaryFocus: [
-                "Lactose-free products",
-                "Plant-based milk",
-                "Calcium-rich alternatives",
-                "Vitamin D sources",
-            ],
-            avoidFoods: [
-                "Regular milk & cream",
-                "Ice cream",
-                "Most cheeses",
-                "Butter",
-                "Yogurt (regular)",
-            ],
-            recommendedFoods: [
-                "Almond, soy, oat milk",
-                "Lactose-free dairy",
-                "Leafy greens (calcium)",
-                "Fortified products",
-                "Tofu & tempeh",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "Oatmeal with almond milk",
-                    "Smoothie with coconut yogurt",
-                    "Avocado toast",
-                ],
-                lunch: [
-                    "Chicken salad (no cheese)",
-                    "Veggie stir-fry with tofu",
-                    "Bean burrito with guacamole",
-                ],
-                dinner: [
-                    "Grilled salmon with vegetables",
-                    "Pasta with dairy-free sauce",
-                    "Chicken curry with coconut milk",
-                ],
-                snacks: ["Fresh fruit", "Dairy-free yogurt", "Nuts & seeds"],
-            },
-            nutritionalGuidelines: {
-                calories: "2,000-2,500 per day",
-                protein: "20-30% of daily calories",
-                carbs: "45-55%",
-                fats: "25-30%",
-                specialNotes: [
-                    "Ensure adequate calcium intake (1,000mg/day)",
-                    "Get vitamin D from sun & supplements",
-                    "Read labels for hidden lactose",
-                    "Try lactase enzyme supplements",
-                ],
-            },
+            ...getConditionData("lactose_intolerance"),
         },
         {
             id: "kidney_health",
-            name: "Kidney Health",
+            name: t('diet.conditions.kidney_health.name'),
             icon: "🫘",
-            description: "Low protein, controlled minerals",
+            description: t('diet.conditions.kidney_health.description'),
             color: "#10B981",
-            dietaryFocus: [
-                "Controlled protein",
-                "Low potassium",
-                "Low phosphorus",
-                "Fluid management",
-            ],
-            avoidFoods: [
-                "Processed meats",
-                "High-potassium fruits",
-                "Dairy products",
-                "Whole grain bread",
-                "Dark colas",
-            ],
-            recommendedFoods: [
-                "Lean proteins (limited)",
-                "Apples, berries",
-                "Cauliflower, cabbage",
-                "White bread & rice",
-                "Olive oil",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "White toast with jam",
-                    "Rice cereal with limited milk",
-                    "Egg whites scramble",
-                ],
-                lunch: [
-                    "Chicken sandwich (white bread)",
-                    "Rice with steamed vegetables",
-                    "Small pasta salad",
-                ],
-                dinner: [
-                    "Small portion grilled fish",
-                    "Stir-fried vegetables with rice",
-                    "Chicken breast with low-K veggies",
-                ],
-                snacks: ["Apple slices", "Small portions of berries", "Rice crackers"],
-            },
-            nutritionalGuidelines: {
-                calories: "2,000-2,400 per day",
-                protein: "0.6-0.8g per kg body weight",
-                carbs: "50-60%",
-                fats: "25-35%",
-                specialNotes: [
-                    "Limit protein based on kidney function",
-                    "Monitor potassium (2,000mg max)",
-                    "Limit phosphorus (800-1,000mg)",
-                    "Control fluid intake as prescribed",
-                ],
-            },
+            ...getConditionData("kidney_health"),
         },
         {
             id: "ibs",
-            name: "IBS (Low FODMAP)",
+            name: t('diet.conditions.ibs.name'),
             icon: "🤰",
-            description: "Gut-friendly, low FODMAP",
+            description: t('diet.conditions.ibs.description'),
             color: "#EC4899",
-            dietaryFocus: ["Low FODMAP foods", "Small frequent meals", "Stress management", "Hydration"],
-            avoidFoods: [
-                "High FODMAP fruits (apples, pears)",
-                "Onions & garlic",
-                "Wheat products",
-                "Legumes",
-                "High lactose dairy",
-            ],
-            recommendedFoods: [
-                "Bananas, oranges, berries",
-                "Rice, quinoa, oats",
-                "Carrots, zucchini, spinach",
-                "Chicken, fish, eggs",
-                "Lactose-free dairy",
-            ],
-            mealSuggestions: {
-                breakfast: [
-                    "Gluten-free oats with banana",
-                    "Rice porridge",
-                    "Scrambled eggs with spinach",
-                ],
-                lunch: [
-                    "Chicken & rice bowl",
-                    "Quinoa salad with safe veggies",
-                    "Grilled fish with carrots",
-                ],
-                dinner: [
-                    "Baked chicken with zucchini",
-                    "Stir-fry with low FODMAP veggies",
-                    "Salmon with green beans",
-                ],
-                snacks: ["Rice cakes", "Carrots with hummus (small)", "Lactose-free yogurt"],
-            },
-            nutritionalGuidelines: {
-                calories: "2,000-2,400 per day",
-                protein: "20-30% of daily calories",
-                carbs: "50-55% (low FODMAP)",
-                fats: "25-30%",
-                specialNotes: [
-                    "Eat small, frequent meals",
-                    "Keep a food diary",
-                    "Reintroduce FODMAPs gradually",
-                    "Stay well hydrated",
-                ],
-            },
+            ...getConditionData("ibs"),
         },
     ]
 
@@ -442,10 +165,10 @@ const HealthConditionsScreen = () => {
                     <TouchableOpacity onPress={() => router.push("/health")} className="p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
-                    <Text className="text-white text-xl font-bold">Health Conditions</Text>
+                    <Text className="text-white text-xl font-bold">{t('diet.healthConditions')}</Text>
                     <View className="w-10" />
                 </View>
-                <Text className="text-gray-400 text-center">Specialized diet plans for your needs</Text>
+                <Text className="text-gray-400 text-center">{t('diet.specializedDietPlansForYourNeeds')}</Text>
             </View>
 
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
@@ -454,10 +177,9 @@ const HealthConditionsScreen = () => {
                     <View className="flex-row items-start">
                         <Ionicons name="information-circle" size={24} color="#3B82F6" />
                         <View className="flex-1 ml-3">
-                            <Text className="text-blue-400 font-semibold mb-1">Important Notice</Text>
+                            <Text className="text-blue-400 font-semibold mb-1">{t('diet.importantNotice')}</Text>
                             <Text className="text-blue-300/80 text-sm">
-                                These plans are general guidelines. Always consult with your healthcare provider or
-                                registered dietitian before making dietary changes.
+                                {t('diet.consultHealthcareProvider')}
                             </Text>
                         </View>
                     </View>
@@ -465,7 +187,7 @@ const HealthConditionsScreen = () => {
 
                 {/* Condition Cards */}
                 <View className="mb-8">
-                    <Text className="text-white text-xl font-bold mb-4">Select Your Condition</Text>
+                    <Text className="text-white text-xl font-bold mb-4">{t('diet.selectYourCondition')}</Text>
                     {healthConditions.map((condition) => (
                         <TouchableOpacity
                             key={condition.id}
@@ -524,7 +246,7 @@ const HealthConditionsScreen = () => {
                                 <TouchableOpacity onPress={() => setShowDetailModal(false)} className="p-2">
                                     <Ionicons name="close" size={28} color="white" />
                                 </TouchableOpacity>
-                                <Text className="text-white text-lg font-bold">Diet Plan Details</Text>
+                                <Text className="text-white text-lg font-bold">{t('diet.dietPlanDetails')}</Text>
                                 <TouchableOpacity>
                                     <Ionicons name="bookmark-outline" size={24} color="#FACC15" />
                                 </TouchableOpacity>
@@ -559,7 +281,7 @@ const HealthConditionsScreen = () => {
 
                                 {/* Dietary Focus */}
                                 <View className="mb-6">
-                                    <Text className="text-white text-lg font-bold mb-3">Key Dietary Focus</Text>
+                                    <Text className="text-white text-lg font-bold mb-3">{t('diet.keyDietaryFocus')}</Text>
                                     <View className="bg-zinc-800 rounded-2xl p-4">
                                         {selectedCondition.dietaryFocus.map((focus, index) => (
                                             <View
@@ -580,7 +302,7 @@ const HealthConditionsScreen = () => {
 
                                 {/* Foods to Avoid */}
                                 <View className="mb-6">
-                                    <Text className="text-white text-lg font-bold mb-3">Foods to Avoid</Text>
+                                    <Text className="text-white text-lg font-bold mb-3">{t('diet.foodsToAvoid')}</Text>
                                     <View className="bg-zinc-800 rounded-2xl p-4">
                                         {selectedCondition.avoidFoods.map((food, index) => (
                                             <View
@@ -601,7 +323,7 @@ const HealthConditionsScreen = () => {
 
                                 {/* Recommended Foods */}
                                 <View className="mb-6">
-                                    <Text className="text-white text-lg font-bold mb-3">Recommended Foods</Text>
+                                    <Text className="text-white text-lg font-bold mb-3">{t('diet.recommendedFoods')}</Text>
                                     <View className="bg-zinc-800 rounded-2xl p-4">
                                         {selectedCondition.recommendedFoods.map((food, index) => (
                                             <View
@@ -622,7 +344,7 @@ const HealthConditionsScreen = () => {
 
                                 {/* Meal Suggestions */}
                                 <View className="mb-6">
-                                    <Text className="text-white text-lg font-bold mb-3">Meal Suggestions</Text>
+                                    <Text className="text-white text-lg font-bold mb-3">{t('diet.mealSuggestions')}</Text>
                                     {Object.entries(selectedCondition.mealSuggestions).map(([mealType, meals]) => (
                                         <View key={mealType} className="bg-zinc-800 rounded-2xl p-4 mb-3">
                                             <Text className="text-orange-500 font-semibold mb-2 capitalize">
@@ -640,28 +362,28 @@ const HealthConditionsScreen = () => {
 
                                 {/* Nutritional Guidelines */}
                                 <View className="mb-8">
-                                    <Text className="text-white text-lg font-bold mb-3">Nutritional Guidelines</Text>
+                                    <Text className="text-white text-lg font-bold mb-3">{t('diet.nutritionalGuidelines')}</Text>
                                     <View className="bg-zinc-800 rounded-2xl p-4 mb-3">
                                         <View className="flex-row items-center justify-between py-2 border-b border-zinc-700">
-                                            <Text className="text-gray-400">Daily Calories</Text>
+                                            <Text className="text-gray-400">{t('diet.dailyCalories')}</Text>
                                             <Text className="text-white font-semibold">
                                                 {selectedCondition.nutritionalGuidelines.calories}
                                             </Text>
                                         </View>
                                         <View className="flex-row items-center justify-between py-2 border-b border-zinc-700">
-                                            <Text className="text-gray-400">Protein</Text>
+                                            <Text className="text-gray-400">{t('diet.protein')}</Text>
                                             <Text className="text-white font-semibold">
                                                 {selectedCondition.nutritionalGuidelines.protein}
                                             </Text>
                                         </View>
                                         <View className="flex-row items-center justify-between py-2 border-b border-zinc-700">
-                                            <Text className="text-gray-400">Carbohydrates</Text>
+                                            <Text className="text-gray-400">{t('diet.carbohydrates')}</Text>
                                             <Text className="text-white font-semibold">
                                                 {selectedCondition.nutritionalGuidelines.carbs}
                                             </Text>
                                         </View>
                                         <View className="flex-row items-center justify-between py-2">
-                                            <Text className="text-gray-400">Fats</Text>
+                                            <Text className="text-gray-400">{t('diet.fats')}</Text>
                                             <Text className="text-white font-semibold">
                                                 {selectedCondition.nutritionalGuidelines.fats}
                                             </Text>
@@ -670,7 +392,7 @@ const HealthConditionsScreen = () => {
 
                                     {/* Special Notes */}
                                     <View className="bg-yellow-900/20 border border-yellow-500/30 rounded-2xl p-4">
-                                        <Text className="text-yellow-500 font-semibold mb-2">Special Notes</Text>
+                                        <Text className="text-yellow-500 font-semibold mb-2">{t('diet.specialNotes')}</Text>
                                         {selectedCondition.nutritionalGuidelines.specialNotes.map((note, index) => (
                                             <View key={index} className="flex-row items-start py-1">
                                                 <Text className="text-yellow-400 mr-2">•</Text>
@@ -696,7 +418,7 @@ const HealthConditionsScreen = () => {
                                         <View className="flex-row items-center justify-center">
                                             <Ionicons name="sparkles" size={20} color="white" />
                                             <Text className="text-white text-center font-bold text-lg ml-2">
-                                                Generate Meal Plan
+                                                {t('diet.generateMealPlan')}
                                             </Text>
                                         </View>
                                     </LinearGradient>
@@ -717,7 +439,7 @@ const HealthConditionsScreen = () => {
                 <View className="flex-1 justify-end bg-black/70">
                     <View className="bg-zinc-900 rounded-t-3xl p-6">
                         <View className="flex-row items-center justify-between mb-6">
-                            <Text className="text-white text-xl font-bold">Generate Meal Plan</Text>
+                            <Text className="text-white text-xl font-bold">{t('diet.generateMealPlan')}</Text>
                             <TouchableOpacity onPress={() => setShowGeneratePlanModal(false)}>
                                 <Ionicons name="close" size={28} color="white" />
                             </TouchableOpacity>
@@ -735,7 +457,7 @@ const HealthConditionsScreen = () => {
                                     </View>
                                 </View>
 
-                                <Text className="text-white text-lg font-bold mb-3">Select Duration</Text>
+                                <Text className="text-white text-lg font-bold mb-3">{t('diet.selectDuration')}</Text>
                                 <View className="flex-row gap-3 mb-6">
                                     <TouchableOpacity
                                         onPress={() => setPlanDuration("weekly")}
@@ -804,13 +526,13 @@ const HealthConditionsScreen = () => {
                                                 setShowDetailModal(false)
 
                                                 setDialogType('success')
-                                                setDialogTitle('Success! 🎉')
-                                                setDialogMessage(`Your ${planDuration} plan for ${selectedCondition.name} has been generated with ${totalMeals} specialized meals!`)
+                                                setDialogTitle(t('diet.success'))
+                                                setDialogMessage(t('diet.planGeneratedWithSpecializedMeals', { duration: planDuration, condition: selectedCondition.name, count: totalMeals }))
                                                 setShowDialog(true)
                                                 setTimeout(() => router.push("/health"), 2500)
                                             } else {
                                                 setDialogType('error');
-                                                setDialogTitle('Generation Failed');
+                                                setDialogTitle(t('diet.generationFailed'));
                                                 setDialogMessage(response.message || 'Failed to generate meal plan');
                                                 setShowDialog(true)
                                             }
@@ -839,14 +561,14 @@ const HealthConditionsScreen = () => {
                                                 <>
                                                     <ActivityIndicator color="white" size="small" />
                                                     <Text className="text-white text-center font-bold text-lg ml-2">
-                                                        Generating...
+                                                        {t('diet.generating')}
                                                     </Text>
                                                 </>
                                             ) : (
                                                 <>
                                                     <Ionicons name="sparkles" size={24} color="white" />
                                                     <Text className="text-white text-center font-bold text-lg ml-2">
-                                                        Generate {planDuration === "weekly" ? "Weekly" : "Monthly"} Plan
+                                                        {t('diet.generateDurationPlan', { duration: planDuration })}
                                                     </Text>
                                                 </>
                                             )}
@@ -856,7 +578,7 @@ const HealthConditionsScreen = () => {
                                 <Text className="text-gray-400 text-center text-xs mt-3">
                                     {isGenerating
                                         ? 'This may take up to 90 seconds...'
-                                        : `AI will create a ${planDuration} plan optimized for ${selectedCondition.name.toLowerCase()}`
+                                        : t('diet.aiWillCreatePlanOptimizedFor', { duration: planDuration, condition: selectedCondition.name.toLowerCase() })
                                     }
                                 </Text>
                             </View>

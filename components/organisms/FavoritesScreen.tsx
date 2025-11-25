@@ -1,4 +1,5 @@
 "use client"
+import { useLanguage } from "@/context/LanguageContext"
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { router, useLocalSearchParams } from "expo-router"
@@ -23,6 +24,7 @@ const FavoritesScreen: React.FC = () => {
   const params = useLocalSearchParams()
   const insets = useSafeAreaInsets()
   const { favorites, removeFromFavorites, updateFavorite, getFavorites, refreshFavorites, isLoading, error } = useFavoritesStore()
+  const { t } = useLanguage()
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [showRemoveDialog, setShowRemoveDialog] = useState(false)
@@ -314,18 +316,16 @@ const FavoritesScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View className="flex-1 items-center">
-            <Text className="text-white text-2xl font-bold leading-tight tracking-tight">My Favorites</Text>
+            <Text className="text-white text-2xl font-bold leading-tight tracking-tight">{t('favorites.title')}</Text>
             <View className="w-8 h-0.5 rounded-full mt-2" style={{ backgroundColor: "#FACC15" }} />
             <View className="flex-row items-center mt-2">
               <Ionicons name="heart" size={16} color="#FACC15" />
-              <Text className="text-gray-300 text-sm ml-1">{displayFavorites.length} saved recipes</Text>
+              <Text className="text-gray-300 text-sm ml-1">{t('favorites.subtitle', { count: displayFavorites.length })}</Text>
             </View>
           </View>
 
           <View className="w-12" />
-        </View>
-
-        {/* 🔍 Enhanced Search Bar - Recipe Response Style */}
+        </View>        {/* 🔍 Enhanced Search Bar - Recipe Response Style */}
         <View
           className="flex-row items-center px-4 py-3 shadow-lg rounded-2xl"
           style={{
@@ -336,7 +336,7 @@ const FavoritesScreen: React.FC = () => {
         >
           <Feather name="search" size={20} color="#FACC15" />
           <TextInput
-            placeholder="Search your favorites..."
+            placeholder={t('favorites.searchPlaceholder')}
             className="ml-3 flex-1 text-white text-base"
             placeholderTextColor="#9CA3AF"
             value={searchQuery}
@@ -375,7 +375,7 @@ const FavoritesScreen: React.FC = () => {
             className="flex-1 items-center justify-center py-24"
           >
             <ActivityIndicator size="large" color="#FACC15" />
-            <Text className="text-gray-300 text-base font-medium mt-4">Loading your favorites...</Text>
+            <Text className="text-gray-300 text-base font-medium mt-4">{t('favorites.loadingMessage')}</Text>
           </View>
         ) : error ? (
           <View className="flex-1 items-center justify-center py-24">
@@ -400,7 +400,7 @@ const FavoritesScreen: React.FC = () => {
               }}
               activeOpacity={0.8}
             >
-              <Text style={{ color: "#FACC15", fontWeight: "600" }}>Try Again</Text>
+              <Text style={{ color: "#FACC15", fontWeight: "600" }}>{t('favorites.tryAgain')}</Text>
             </TouchableOpacity>
           </View>
         ) : showEmptyState ? (
@@ -420,13 +420,13 @@ const FavoritesScreen: React.FC = () => {
               </View>
             </View>
             <Text className="text-white text-4xl font-bold tracking-tight text-center leading-tight mb-4">
-              {searchQuery ? "No Recipes Found" : "No Favorite Recipes"}
+              {searchQuery ? t('favorites.noSearchResults') : t('favorites.noRecipesTitle')}
             </Text>
             <View className="w-16 h-px mb-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.4)" }} />
             <Text className="text-gray-300 text-center text-base leading-relaxed px-6 max-w-md">
               {searchQuery
-                ? "Try adjusting your search terms to find your saved recipes"
-                : "Start adding delicious recipes to your favorites to see them here"}
+                ? t('favorites.noSearchMessage')
+                : t('favorites.noRecipesMessage')}
             </Text>
             {!searchQuery && (
               <TouchableOpacity
@@ -439,7 +439,7 @@ const FavoritesScreen: React.FC = () => {
                 }}
                 activeOpacity={0.8}
               >
-                <Text style={{ color: "#FACC15", fontWeight: "600", fontSize: 16, letterSpacing: 0.5 }}>Discover Recipes</Text>
+                <Text style={{ color: "#FACC15", fontWeight: "600", fontSize: 16, letterSpacing: 0.5 }}>{t('favorites.discoverRecipes')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -485,7 +485,6 @@ const FavoritesScreen: React.FC = () => {
                         <Text className="text-gray-300 text-base mb-4 leading-relaxed" numberOfLines={isExpanded ? undefined : 2}>
                           {recipe.description || 'Delicious recipe from your favorites'}
                         </Text>
-
                         {/* Recipe Stats - Recipe Response Style */}
                         <View className="flex-row items-center">
                           <View
@@ -588,7 +587,7 @@ const FavoritesScreen: React.FC = () => {
                       hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }}
                     >
                       <Text style={{ color: "#FACC15", fontSize: 14, marginRight: 8 }}>
-                        {isExpanded ? "Show Less" : "Show More"}
+                        {isExpanded ? t('favorites.showLess') : t('favorites.showMore')}
                       </Text>
                       <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={14} color="#FACC15" />
                     </TouchableOpacity>
@@ -620,7 +619,7 @@ const FavoritesScreen: React.FC = () => {
                         <View className="mb-6">
                           <View className="flex-row items-center mb-4">
                             <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                            <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
+                            <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.nutrition')}</Text>
                             <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                           </View>
                           <View
@@ -633,25 +632,25 @@ const FavoritesScreen: React.FC = () => {
                             <View className="flex-row items-center justify-between">
                               <View className="items-center flex-1">
                                 <Text className="text-amber-400 text-xl font-bold mb-1">
-                                  {recipe.nutritionInfo.calories}
+                                  {recipe.nutritionInfo?.calories || 0}
                                 </Text>
                                 <Text className="text-gray-300 text-xs tracking-wide font-semibold">CALORIES</Text>
                               </View>
                               <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                               <View className="items-center flex-1">
                                 <Text className="text-emerald-400 text-xl font-bold mb-1">
-                                  {recipe.nutritionInfo.protein}g
+                                  {recipe.nutritionInfo?.protein || 0}g
                                 </Text>
                                 <Text className="text-gray-300 text-xs tracking-wide font-semibold">PROTEIN</Text>
                               </View>
                               <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                               <View className="items-center flex-1">
-                                <Text style={{ color: "#3B82F6" }} className="text-xl font-bold mb-1">{recipe.nutritionInfo.carbs}g</Text>
+                                <Text style={{ color: "#3B82F6" }} className="text-xl font-bold mb-1">{recipe.nutritionInfo?.carbs || 0}g</Text>
                                 <Text className="text-gray-300 text-xs tracking-wide font-semibold">CARBS</Text>
                               </View>
                               <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                               <View className="items-center flex-1">
-                                <Text style={{ color: "#F59E0B" }} className="text-xl font-bold mb-1">{recipe.nutritionInfo.fat}g</Text>
+                                <Text style={{ color: "#F59E0B" }} className="text-xl font-bold mb-1">{recipe.nutritionInfo?.fat || 0}g</Text>
                                 <Text className="text-gray-300 text-xs tracking-wide font-semibold">FAT</Text>
                               </View>
                             </View>
@@ -661,7 +660,7 @@ const FavoritesScreen: React.FC = () => {
                           <View className="mb-6">
                             <View className="flex-row items-center mb-4">
                               <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                              <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
+                              <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.ingredients')}</Text>
                               <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                             </View>
                             <View
@@ -700,7 +699,7 @@ const FavoritesScreen: React.FC = () => {
                           <View className="mb-6">
                             <View className="flex-row items-center mb-5">
                               <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                              <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                              <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.instructions')}</Text>
                               <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                             </View>
                             <View className="space-y-4">
@@ -758,7 +757,7 @@ const FavoritesScreen: React.FC = () => {
                             <View className="mb-6">
                               <View className="flex-row items-center mb-5">
                                 <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                                <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                                <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.chefsTips')}</Text>
                                 <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                               </View>
                               <View
@@ -791,7 +790,7 @@ const FavoritesScreen: React.FC = () => {
                               <View className="flex-row items-center justify-between mb-5">
                                 <View className="flex-row items-center">
                                   <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
-                                  <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                                  <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.substitutions')}</Text>
                                 </View>
                                 <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
                                   <Text className="text-blue-300 text-xs font-bold">{recipe.substitutions.length} options</Text>
@@ -847,7 +846,7 @@ const FavoritesScreen: React.FC = () => {
                                 }}
                               />
                               <Ionicons name="flame" size={20} color="#FFFFFF" />
-                              <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Start Cooking</Text>
+                              <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>{t('favorites.startCooking')}</Text>
                             </TouchableOpacity>
                           </View>
 
@@ -870,7 +869,7 @@ const FavoritesScreen: React.FC = () => {
                               }}
                               activeOpacity={0.7}
                             >
-                              <Text style={{ color: "#EF4444", fontWeight: "600", marginLeft: 12, marginRight: 12, fontSize: 16, letterSpacing: 0.5 }}>Remove from Favorites</Text>
+                              <Text style={{ color: "#EF4444", fontWeight: "600", marginLeft: 12, marginRight: 12, fontSize: 16, letterSpacing: 0.5 }}>{t('favorites.removeFromFavorites')}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>
@@ -891,12 +890,12 @@ const FavoritesScreen: React.FC = () => {
       <Dialog
         visible={showRemoveDialog}
         type="warning"
-        title="Remove from Favorites"
-        message="Are you sure you want to remove this recipe from your favorites? This action cannot be undone."
+        title={t('favorites.removeFromFavorites')}
+        message={t('favorites.removeConfirmMessage')}
         onClose={() => setShowRemoveDialog(false)}
         onConfirm={handleRemoveFromFavorites}
-        confirmText="Remove"
-        cancelText="Cancel"
+        confirmText={t('favorites.removeConfirmTitle')}
+        cancelText={t('common.cancel')}
         showCancelButton={true}
       />
 
@@ -906,8 +905,8 @@ const FavoritesScreen: React.FC = () => {
         type={errorDialogConfig.type}
         title={errorDialogConfig.title}
         message={errorDialogConfig.message}
-        confirmText="Retry"
-        cancelText="Cancel"
+        confirmText={t('favorites.tryAgain')}
+        cancelText={t('common.cancel')}
         showCancelButton={true}
         onClose={() => setShowErrorDialog(false)}
         onConfirm={() => {
@@ -922,9 +921,9 @@ const FavoritesScreen: React.FC = () => {
       <Dialog
         visible={showEditSuccessDialog}
         type="success"
-        title="Recipe Updated"
-        message="Your recipe has been successfully updated!"
-        confirmText="OK"
+        title={t('favorites.recipeUpdated')}
+        message={t('favorites.recipeUpdatedMessage')}
+        confirmText={t('common.ok')}
         onClose={() => setShowEditSuccessDialog(false)}
         onConfirm={() => setShowEditSuccessDialog(false)}
       />
@@ -959,7 +958,7 @@ const FavoritesScreen: React.FC = () => {
               >
                 {isEditMode ? (
                   <>
-                    <Text className="text-red-400 font-bold ml-2 text-base">Cancel</Text>
+                    <Text className="text-red-400 font-bold ml-2 text-base">{t('common.cancel')}</Text>
                   </>
                 ) : (
                   <Ionicons name="close" size={22} color="#FACC15" />
@@ -967,7 +966,7 @@ const FavoritesScreen: React.FC = () => {
               </TouchableOpacity>
 
               <Text className="text-white text-lg font-bold flex-1 text-center">
-                {isEditMode ? "Edit Recipe" : "Recipe Details"}
+                {isEditMode ? t('recipe.edit') : t('recipe.details')}
               </Text>
 
               <TouchableOpacity
@@ -1082,7 +1081,7 @@ const FavoritesScreen: React.FC = () => {
                       style={{ opacity: isEditMode ? 0.5 : 1 }}
                     >
                       <Ionicons name="share-outline" size={20} color="#FBBF24" />
-                      <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">Share</Text>
+                      <Text className="text-amber-300 font-bold ml-2 text-base tracking-wide">{t('common.share')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
@@ -1101,7 +1100,7 @@ const FavoritesScreen: React.FC = () => {
                     >
                       <Ionicons name={isEditMode ? "checkmark-circle" : "create-outline"} size={20} color={isEditMode ? "#10b981ff" : "#3B82F6"} />
                       <Text className={`${isEditMode ? 'text-white' : 'text-blue-300'} font-bold ml-2 text-base tracking-wide`}>
-                        {isEditMode ? "Save Changes" : "Edit"}
+                        {isEditMode ? t('favorites.saveChanges') : t('common.edit')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -1110,7 +1109,7 @@ const FavoritesScreen: React.FC = () => {
                   <View className="mb-6">
                     <View className="flex-row items-center mb-4">
                       <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                      <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
+                      <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.nutrition')}</Text>
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
                     <View className="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-4 shadow-lg">
@@ -1146,7 +1145,7 @@ const FavoritesScreen: React.FC = () => {
                   <View className="mb-6">
                     <View className="flex-row items-center mb-4">
                       <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                      <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
+                      <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.ingredients')}</Text>
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
                     <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
@@ -1237,7 +1236,7 @@ const FavoritesScreen: React.FC = () => {
                   <View className="mb-6">
                     <View className="flex-row items-center mb-5">
                       <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                      <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                      <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.instructions')}</Text>
                       <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                     </View>
                     <View className="space-y-4">
@@ -1320,7 +1319,7 @@ const FavoritesScreen: React.FC = () => {
                           activeOpacity={0.7}
                         >
                           <Ionicons name="close" size={24} color="#EF4444" />
-                          <Text style={{ color: "#EF4444", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>Cancel</Text>
+                          <Text style={{ color: "#EF4444", fontWeight: "700", marginLeft: 12, fontSize: 16, letterSpacing: 0.5 }}>{t('common.cancel')}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -1333,7 +1332,7 @@ const FavoritesScreen: React.FC = () => {
                           activeOpacity={0.7}
                         >
                           <Ionicons name="checkmark-circle" size={20} color="#10b981ff" />
-                          <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 6, fontSize: 16, letterSpacing: 0.5 }} >Save Changes</Text>
+                          <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 6, fontSize: 16, letterSpacing: 0.5 }} >{t('favorites.saveChanges')}</Text>
                         </TouchableOpacity>
                       </View>
                     ) : (
@@ -1365,7 +1364,7 @@ const FavoritesScreen: React.FC = () => {
                           }}
                         />
                         <Ionicons name="flame" size={24} color="#FFFFFF" />
-                        <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>Start Cooking</Text>
+                        <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>{t('favorites.startCooking')}</Text>
                       </TouchableOpacity>
                     )}
                   </View>
@@ -1375,7 +1374,7 @@ const FavoritesScreen: React.FC = () => {
                     <View className="mb-6">
                       <View className="flex-row items-center mb-5">
                         <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                        <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                        <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.chefsTips')}</Text>
                         <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                       </View>
                       <View
@@ -1424,7 +1423,7 @@ const FavoritesScreen: React.FC = () => {
                       <View className="flex-row items-center justify-between mb-5">
                         <View className="flex-row items-center">
                           <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
-                          <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                          <Text className="text-white text-xl font-bold tracking-tight">{t('favorites.substitutions')}</Text>
                         </View>
                         <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
                           <Text className="text-blue-300 text-xs font-bold">{recipe.substitutions.length} options</Text>
@@ -1468,7 +1467,7 @@ const FavoritesScreen: React.FC = () => {
                       disabled={isEditMode}
                       style={{ opacity: isEditMode ? 0.5 : 1 }}
                     >
-                      <Text className="text-red-400 font-bold ml-3 mr-3 text-base tracking-wide">Remove from Favorites</Text>
+                      <Text className="text-red-400 font-bold ml-3 mr-3 text-base tracking-wide">{t('favorites.removeFromFavorites')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>

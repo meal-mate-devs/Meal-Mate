@@ -1,6 +1,7 @@
 "use client"
 
 import Dialog from "@/components/atoms/Dialog"
+import { useLanguage } from "@/context/LanguageContext"
 import { useDietPlanningStore } from "@/hooks/useDietPlanningStore"
 import { DIET_GOALS } from "@/lib/constants/dietPlanning"
 import { dietPlanningService } from "@/lib/services/dietPlanningService"
@@ -23,6 +24,7 @@ import {
 const AIMealPlanGenerator = () => {
     const router = useRouter()
     const { selectedGoal, setGoal } = useDietPlanningStore()
+    const { t } = useLanguage()
 
     const [planDuration, setPlanDuration] = useState<"weekly" | "monthly">("weekly")
     const [mealsPerDay, setMealsPerDay] = useState(3)
@@ -63,8 +65,8 @@ const AIMealPlanGenerator = () => {
             if (response.plan) {
                 setHasExistingPlan(true)
                 setDialogType('warning')
-                setDialogTitle('Active Plan Exists')
-                setDialogMessage('You already have an active meal plan. Please cancel your current plan before generating a new one.')
+                setDialogTitle(t('diet.activePlanExists'))
+                setDialogMessage(t('diet.cancelCurrentPlanBeforeGenerating'))
                 setShowDialog(true)
                 // Navigate back after dialog closes
                 setTimeout(() => router.push("/health"), 2500)
@@ -77,32 +79,32 @@ const AIMealPlanGenerator = () => {
 
     // Diet types
     const dietTypes = [
-        { id: "balanced", name: "Balanced", icon: "⚖️" },
-        { id: "high_protein", name: "High Protein", icon: "💪" },
-        { id: "low_carb", name: "Low Carb", icon: "🥗" },
-        { id: "keto", name: "Keto", icon: "🥑" },
-        { id: "vegetarian", name: "Vegetarian", icon: "🌱" },
-        { id: "vegan", name: "Vegan", icon: "🥬" },
+        { id: "balanced", name: t('diet.balanced'), icon: "⚖️" },
+        { id: "high_protein", name: t('diet.highProtein'), icon: "💪" },
+        { id: "low_carb", name: t('diet.lowCarb'), icon: "🥗" },
+        { id: "keto", name: t('diet.keto'), icon: "🥑" },
+        { id: "vegetarian", name: t('diet.vegetarian'), icon: "🌱" },
+        { id: "vegan", name: t('diet.vegan'), icon: "🥬" },
     ]
 
     // Common allergies
     const commonAllergies = [
-        { id: "dairy", name: "Dairy", icon: "🥛" },
-        { id: "nuts", name: "Nuts", icon: "🥜" },
-        { id: "gluten", name: "Gluten", icon: "🌾" },
-        { id: "shellfish", name: "Shellfish", icon: "🦐" },
-        { id: "eggs", name: "Eggs", icon: "🥚" },
-        { id: "soy", name: "Soy", icon: "🫘" },
+        { id: "dairy", name: t('diet.dairy'), icon: "🥛" },
+        { id: "nuts", name: t('diet.nuts'), icon: "🥜" },
+        { id: "gluten", name: t('diet.gluten'), icon: "🌾" },
+        { id: "shellfish", name: t('diet.shellfish'), icon: "🦐" },
+        { id: "eggs", name: t('diet.eggs'), icon: "🥚" },
+        { id: "soy", name: t('diet.soy'), icon: "🫘" },
     ]
 
     // Cuisine preferences
     const cuisines = [
-        { id: "mediterranean", name: "Mediterranean", icon: "🇬🇷" },
-        { id: "asian", name: "Asian", icon: "🍜" },
-        { id: "mexican", name: "Mexican", icon: "🌮" },
-        { id: "american", name: "American", icon: "🍔" },
-        { id: "indian", name: "Indian", icon: "🍛" },
-        { id: "italian", name: "Italian", icon: "🍝" },
+        { id: "mediterranean", name: t('diet.mediterranean'), icon: "🇬🇷" },
+        { id: "asian", name: t('diet.asian'), icon: "🍜" },
+        { id: "mexican", name: t('diet.mexican'), icon: "🌮" },
+        { id: "american", name: t('diet.american'), icon: "🍔" },
+        { id: "indian", name: t('diet.indian'), icon: "🍛" },
+        { id: "italian", name: t('diet.italian'), icon: "🍝" },
     ]
 
     const toggleSelection = (array: string[], setArray: Function, id: string) => {
@@ -117,16 +119,16 @@ const AIMealPlanGenerator = () => {
         // Validate at least one diet type is selected
         if (selectedDietType.length === 0) {
             setDialogType('warning')
-            setDialogTitle('Selection Required')
-            setDialogMessage('Please select at least one diet type')
+            setDialogTitle(t('diet.selectionRequired'))
+            setDialogMessage(t('diet.selectAtLeastOneDietType'))
             setShowDialog(true)
             return
         }
 
         if (!selectedGoal) {
             setDialogType('warning')
-            setDialogTitle('Goal Required')
-            setDialogMessage('Please select a fitness goal')
+            setDialogTitle(t('diet.goalRequired'))
+            setDialogMessage(t('diet.pleaseSelectFitnessGoal'))
             setShowDialog(true)
             return
         }
@@ -170,12 +172,12 @@ const AIMealPlanGenerator = () => {
             if (response.success) {
                 const totalMeals = response.plan.dailyPlans.reduce((sum, day) => sum + day.meals.length, 0)
                 setDialogType('success')
-                setDialogTitle('Success! 🎉')
-                setDialogMessage(`Your ${planDuration} meal plan has been generated with ${totalMeals} meals!`)
+                setDialogTitle(t('diet.success'))
+                setDialogMessage(t('diet.mealPlanGeneratedWithMeals', { duration: planDuration, count: totalMeals }))
                 setShowDialog(true)
                 setTimeout(() => router.push("/health"), 2500)
             } else {
-                setDialogType('error'); setDialogTitle('Generation Failed'); setDialogMessage(response.message || 'Failed to generate meal plan'); setShowDialog(true)
+                setDialogType('error'); setDialogTitle(t('diet.generationFailed')); setDialogMessage(response.message || 'Failed to generate meal plan'); setShowDialog(true)
             }
         } catch (error: any) {
             console.log('Error generating meal plan:', error)
@@ -198,10 +200,10 @@ const AIMealPlanGenerator = () => {
                     <TouchableOpacity onPress={() => router.push("/health")} className="p-2 rounded-full">
                         <Ionicons name="arrow-back" size={24} color="white" />
                     </TouchableOpacity>
-                    <Text className="text-white text-xl font-bold">AI Meal Plan Generator</Text>
+                    <Text className="text-white text-xl font-bold">{t('diet.aiMealPlanGenerator')}</Text>
                     <View className="w-10" />
                 </View>
-                <Text className="text-gray-400 text-center">Customize your perfect meal plan</Text>
+                <Text className="text-gray-400 text-center">{t('diet.customizeYourPerfectMealPlan')}</Text>
             </View>
 
             <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
@@ -218,8 +220,8 @@ const AIMealPlanGenerator = () => {
                                     <Ionicons name="medical" size={24} color="#3B82F6" />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-white text-lg font-bold mb-1">Have Health Conditions?</Text>
-                                    <Text className="text-blue-300 text-sm">Get specialized plans for diabetes, heart health, IBS & more</Text>
+                                    <Text className="text-white text-lg font-bold mb-1">{t('diet.haveHealthConditions')}</Text>
+                                    <Text className="text-blue-300 text-sm">{t('diet.getSpecializedPlans')}</Text>
                                 </View>
                             </View>
                             <Ionicons name="chevron-forward" size={24} color="#3B82F6" />
@@ -229,7 +231,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Plan Duration */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Plan Duration</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.planDuration')}</Text>
                     <View className="flex-row gap-3">
                         <TouchableOpacity
                             onPress={() => setPlanDuration("weekly")}
@@ -237,7 +239,7 @@ const AIMealPlanGenerator = () => {
                                 }`}
                         >
                             <Text className={`text-center font-bold ${planDuration === "weekly" ? "text-purple-400" : "text-gray-400"}`}>
-                                📅 Weekly (7 days)
+                                {t('diet.weekly7Days')}
                             </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -246,7 +248,7 @@ const AIMealPlanGenerator = () => {
                                 }`}
                         >
                             <Text className={`text-center font-bold ${planDuration === "monthly" ? "text-purple-400" : "text-gray-400"}`}>
-                                📆 Monthly (30 days)
+                                {t('diet.monthly30Days')}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -254,7 +256,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Fitness Goal */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Fitness Goal</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.fitnessGoal')}</Text>
                     <View className="flex-row flex-wrap gap-3">
                         {DIET_GOALS.map((goal) => (
                             <TouchableOpacity
@@ -276,7 +278,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Meals Per Day */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Meals Per Day</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.mealsPerDay')}</Text>
                     <View className="bg-zinc-800 rounded-2xl p-5">
                         <View className="flex-row items-center justify-between">
                             <TouchableOpacity
@@ -287,7 +289,7 @@ const AIMealPlanGenerator = () => {
                             </TouchableOpacity>
                             <View className="items-center">
                                 <Text className="text-white text-4xl font-bold">{mealsPerDay}</Text>
-                                <Text className="text-gray-400 text-sm">meals</Text>
+                                <Text className="text-gray-400 text-sm">{t('diet.meals')}</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => setMealsPerDay(Math.min(6, mealsPerDay + 1))}
@@ -301,7 +303,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Diet Type */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Diet Type (Select Multiple)</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.dietTypeSelectMultiple')}</Text>
                     <View className="flex-row flex-wrap gap-3">
                         {dietTypes.map((diet) => (
                             <TouchableOpacity
@@ -322,7 +324,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Allergies & Restrictions */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Allergies & Restrictions</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.allergiesAndRestrictions')}</Text>
                     <View className="flex-row flex-wrap gap-3">
                         {commonAllergies.map((allergy) => (
                             <TouchableOpacity
@@ -343,7 +345,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Cuisine Preferences */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Cuisine Preferences</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.cuisinePreferences')}</Text>
                     <View className="flex-row flex-wrap gap-3">
                         {cuisines.map((cuisine) => (
                             <TouchableOpacity
@@ -364,7 +366,7 @@ const AIMealPlanGenerator = () => {
 
                 {/* Budget Level */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Budget Level</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.budgetLevel')}</Text>
                     <View className="flex-row gap-3">
                         {["budget", "moderate", "premium"].map((level) => (
                             <TouchableOpacity
@@ -383,11 +385,11 @@ const AIMealPlanGenerator = () => {
 
                 {/* Custom Notes */}
                 <View className="mb-6">
-                    <Text className="text-white text-lg font-bold mb-3">Additional Preferences</Text>
+                    <Text className="text-white text-lg font-bold mb-3">{t('diet.additionalPreferences')}</Text>
                     <TextInput
                         value={customNotes}
                         onChangeText={setCustomNotes}
-                        placeholder="E.g., I prefer quick meals under 30 minutes, love spicy food..."
+                        placeholder={t('diet.preferencesPlaceholder')}
                         placeholderTextColor="#6B7280"
                         multiline
                         numberOfLines={4}
@@ -415,14 +417,14 @@ const AIMealPlanGenerator = () => {
                                     <>
                                         <ActivityIndicator color="white" size="small" />
                                         <Text className="text-white text-center font-bold text-lg ml-2">
-                                            Generating Plan...
+                                            {t('diet.generatingPlan')}
                                         </Text>
                                     </>
                                 ) : (
                                     <>
                                         <Ionicons name="sparkles" size={24} color="white" />
                                         <Text className="text-white text-center font-bold text-lg ml-2">
-                                            Generate AI Meal Plan
+                                            {t('diet.generateAIMealPlan')}
                                         </Text>
                                     </>
                                 )}
@@ -431,8 +433,8 @@ const AIMealPlanGenerator = () => {
                     </TouchableOpacity>
                     <Text className="text-gray-400 text-center text-xs mt-3">
                         {isGenerating
-                            ? 'This may take up to 90 seconds...'
-                            : `AI will create a personalized ${planDuration} plan based on your preferences`
+                            ? t('diet.generatingMayTake90Seconds')
+                            : t('diet.aiWillCreatePersonalizedPlan', { duration: planDuration })
                         }
                     </Text>
                 </View>

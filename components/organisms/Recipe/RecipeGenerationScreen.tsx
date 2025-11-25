@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import { PantryItem, pantryService } from "@/lib/services/pantryService"
 import type {
     GeneratedRecipe,
@@ -24,6 +25,7 @@ import VoiceControl from "./VoiceControl"
 export default function RecipeGenerationScreen(): JSX.Element {
     const router = useRouter()
     const { profile } = useAuthContext()
+    const { t } = useLanguage()
     const isPro = profile?.isPro || false
     const [filters, setFilters] = useState<RecipeFilters>({
         cuisines: [],
@@ -80,7 +82,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
         try {
             // Load full pantry items for the ingredient selector (including expiring items)
             const pantryResponse = await pantryService.getPantryItems()
-            const usableItems = pantryResponse.items.filter(item => 
+            const usableItems = pantryResponse.items.filter(item =>
                 item.expiryStatus === 'active' || item.expiryStatus === 'expiring'
             )
 
@@ -90,7 +92,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             // Also get just ingredient names for recipe generation
             const ingredientNames = usableItems.map(item => item.name)
             setPantryIngredients(ingredientNames)
-            
+
             console.log(`Loaded ${usableItems.length} pantry items for recipe generation (${pantryResponse.items.filter(item => item.expiryStatus === 'expiring').length} expiring)`)
         } catch (error) {
             console.log('Failed to load pantry ingredients:', error)
@@ -105,7 +107,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
         // Special handling for dietary preferences with smart restrictions
         if (key === 'dietaryPreferences') {
             const newPreferences = Array.isArray(value) ? value : []
-            
+
             // Check for conflicts with selected pantry categories
             const filteredPreferences = newPreferences.filter(pref => {
                 // Don't allow vegan/vegetarian if meat is selected (neither can eat meat)
@@ -122,7 +124,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 }
                 return true
             })
-            
+
             setFilters((prev) => ({
                 ...prev,
                 [key]: filteredPreferences,
@@ -132,7 +134,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 ...prev,
                 [key]: value,
             }))
-            
+
             // If ingredients are being updated, update pantry categories for dietary restrictions
             if (key === 'ingredients') {
                 updatePantryCategories(value)
@@ -153,33 +155,36 @@ export default function RecipeGenerationScreen(): JSX.Element {
         if (sanitizedIngredients.length === 0) {
             return;
         }
-        
+
         console.log("Selected ingredients:", sanitizedIngredients);
-        
+
         // Update filters with unique ingredients (combine with existing ones)
         const uniqueIngredients = [...new Set([...filters.ingredients, ...sanitizedIngredients])];
         handleFilterChange("ingredients", uniqueIngredients);
-        
+
         // Track scanned ingredients separately
         const uniqueScannedIngredients = [...new Set([...scannedIngredients, ...sanitizedIngredients])];
         setScannedIngredients(uniqueScannedIngredients);
-        
+
         // Update pantry categories for dietary restrictions logic
         updatePantryCategories(uniqueIngredients);
-        
+
         // Show a notification about added ingredients
-        setDialogMessage(`Added ${sanitizedIngredients.length} ingredient${sanitizedIngredients.length > 1 ? 's' : ''} to your recipe.`)
+        setDialogMessage(t('aiRecipeGenerator.ingredientsAddedMessage', {
+            count: sanitizedIngredients.length,
+            plural: sanitizedIngredients.length > 1 ? 's' : ''
+        }))
         setShowIngredientsAddedDialog(true)
     }
 
     // Function to categorize ingredients and update dietary restrictions logic
     const updatePantryCategories = (ingredients: string[]) => {
         const categories = new Set<string>()
-        
+
         // Map ingredients to their likely categories based on comprehensive keyword matching
         ingredients.forEach(ingredient => {
             const lowerIngredient = ingredient.toLowerCase().trim()
-            
+
             // Meat category detection (including seafood, poultry, etc.)
             const meatKeywords = [
                 'chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'goose', 'quail',
@@ -192,7 +197,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             if (meatKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('meat')
             }
-            
+
             // Dairy category detection
             const dairyKeywords = [
                 'milk', 'cheese', 'butter', 'cream', 'yogurt', 'dairy', 'cheddar', 'mozzarella',
@@ -204,7 +209,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             if (dairyKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('dairy')
             }
-            
+
             // Additional category detection for better dietary filtering
             const vegetableKeywords = [
                 'lettuce', 'spinach', 'kale', 'broccoli', 'cauliflower', 'carrot', 'potato',
@@ -215,7 +220,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             if (vegetableKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('vegetable')
             }
-            
+
             const fruitKeywords = [
                 'apple', 'banana', 'orange', 'lemon', 'lime', 'grape', 'strawberry', 'blueberry',
                 'raspberry', 'blackberry', 'cherry', 'peach', 'pear', 'plum', 'apricot',
@@ -225,7 +230,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             if (fruitKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('fruit')
             }
-            
+
             const grainKeywords = [
                 'rice', 'wheat', 'flour', 'bread', 'pasta', 'noodle', 'oat', 'barley',
                 'quinoa', 'couscous', 'bulgur', 'farro', 'spelt', 'rye', 'cornmeal',
@@ -234,7 +239,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             if (grainKeywords.some(keyword => lowerIngredient.includes(keyword))) {
                 categories.add('grain')
             }
-            
+
             const nutKeywords = [
                 'almond', 'walnut', 'pecan', 'cashew', 'pistachio', 'hazelnut', 'macadamia',
                 'peanut', 'nut', 'seed', 'chia', 'flax', 'sesame', 'sunflower', 'pumpkin'
@@ -243,34 +248,34 @@ export default function RecipeGenerationScreen(): JSX.Element {
                 categories.add('nut')
             }
         })
-        
+
         // Also check pantry items for categories (for ingredients that exist in pantry)
         pantryItems.forEach(item => {
             if (ingredients.includes(item.name)) {
                 categories.add(item.category)
             }
         })
-        
+
         setSelectedPantryCategories(categories)
-        
+
         // Auto-adjust dietary preferences based on selected categories
         const currentDietary = new Set(filters.dietaryPreferences)
-        
+
         // If meat is selected, remove both vegan and vegetarian options (neither can eat meat)
         if (categories.has('meat')) {
             currentDietary.delete('vegan')
             currentDietary.delete('vegetarian')
         }
-        
+
         // If dairy is selected, only remove vegan option (vegetarians can eat dairy, vegans cannot)
         if (categories.has('dairy')) {
             currentDietary.delete('vegan')
             currentDietary.delete('dairy-free')
         }
-        
+
         // Update dietary preferences if changes were made
         const newDietaryArray = Array.from(currentDietary)
-        if (newDietaryArray.length !== filters.dietaryPreferences.length || 
+        if (newDietaryArray.length !== filters.dietaryPreferences.length ||
             !newDietaryArray.every(pref => filters.dietaryPreferences.includes(pref))) {
             setFilters((prev) => ({
                 ...prev,
@@ -282,7 +287,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
     const handleGenerateRecipes = (): void => {
         // Validate that user has selected at least one cuisine or category
         if (filters.cuisines.length === 0 && filters.categories.length === 0) {
-            setDialogMessage("Please select at least one cuisine or food category to generate recipes.")
+            setDialogMessage(t('aiRecipeGenerator.selectionRequiredMessage'))
             setShowSelectionRequiredDialog(true)
             return
         }
@@ -292,7 +297,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
 
         // Navigate immediately to response screen with the recipe data
         console.log('Starting recipe generation flow - navigating to response screen')
-        
+
         // Pass filters and ingredients as route params
         const params = {
             cuisines: JSON.stringify(filters.cuisines),
@@ -305,7 +310,7 @@ export default function RecipeGenerationScreen(): JSX.Element {
             difficulty: filters.difficulty,
             recipeChoice: filters.recipeChoice || '', // 🆕 NEW: Pass recipe choice
         }
-        
+
         router.push({
             pathname: '/(protected)/recipe/response',
             params
@@ -352,366 +357,365 @@ export default function RecipeGenerationScreen(): JSX.Element {
         >
             <View style={{ flex: 1, backgroundColor: 'transparent' }}>
                 <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-                <View className="pt-14 px-4 pb-4">
-                    <Text className="text-center text-white text-2xl font-bold mb-2">AI Recipe Generator</Text>
-                    <Text className="text-center text-zinc-400 text-sm">Create personalized recipes with AI magic ✨</Text>
-                </View>
-
-                <View className="mb-6">
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={{ paddingHorizontal: 16 }}
-                        className="py-2"
-                    >
-                        <TouchableOpacity
-                            className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[140px]"
-                            onPress={() => setShowIngredientSelector(true)}
-                            disabled={isLoadingPantry}
-                        >
-                            <Ionicons name="basket-outline" size={18} color="#FBBF24" />
-                            <Text className="text-white ml-2 text-sm font-medium">
-                                {isLoadingPantry ? "Loading..." : `My Pantry${pantryIngredients.length > 0 ? ` (${pantryIngredients.length})` : ""}`}
-                            </Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[140px]"
-                            onPress={() => router.push('/(protected)/recipe/favorites')}
-                        >
-                            <Ionicons name="heart-outline" size={18} color="#FBBF24" />
-                            <Text className="text-white ml-2 text-sm font-medium">Favorites</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity
-                            className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[160px] relative"
-                            onPress={() => {
-                                if (isPro) {
-                                    setShowIngredientScanner(true)
-                                } else {
-                                    setShowProUpgradeDialog(true)
-                                }
-                            }}
-                            disabled={!isPro}
-                        >
-                            <Ionicons name="camera-outline" size={18} color={isPro ? "#FBBF24" : "#6B7280"} />
-                            <Text className={`ml-2 text-sm font-medium ${isPro ? "text-white" : "text-zinc-500"}`}>Scan Ingredients</Text>
-                            <View className="bg-yellow-400 rounded-full px-2 py-1 ml-2">
-                                <Text className="text-black text-xs font-bold">PRO</Text>
-                            </View>
-                        </TouchableOpacity>
-                    </ScrollView>
-                </View>
-
-                {/* Selected Pantry Ingredients */}
-                {filters.ingredients.length > 0 && (
-                    <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
-                        <View className="flex-row items-center mb-3">
-                            <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
-                            <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
-                                <Text className="text-white text-xs font-bold">{filters.ingredients.length}</Text>
-                            </View>
-                        </View>
-                        <View className="flex-row flex-wrap">
-                            {filters.ingredients.map((ingredient, index) => {
-                                const isScanned = scannedIngredients.includes(ingredient)
-                                const ingredientLabel = typeof ingredient === 'string'
-                                    ? ingredient.trim()
-                                    : ''
-
-                                if (!ingredientLabel) {
-                                    return null
-                                }
-
-                                return (
-                                    <TouchableOpacity
-                                        key={`${ingredientLabel}-${index}`}
-                                        onPress={() => {
-                                            const newIngredients = filters.ingredients.filter(item => item !== ingredient)
-                                            handleFilterChange("ingredients", newIngredients)
-                                            // Also remove from scanned if it was scanned
-                                            if (isScanned) {
-                                                setScannedIngredients(prev => prev.filter(item => item !== ingredient))
-                                            }
-                                        }}
-                                        className={`mr-2 mb-2 rounded-full px-3 py-2 items-center ${
-                                            isScanned ? 'bg-purple-500 border border-purple-400' : 'bg-green-500 border border-green-400'
-                                        }`}
-                                    >
-                                        <View className="flex-row items-center">
-                                            {isScanned && (
-                                                <Ionicons name="camera" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
-                                            )}
-                                            <Text className="text-white text-sm font-medium">{ingredientLabel}</Text>
-                                            <Ionicons name="close" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
-                                        </View>
-                                    </TouchableOpacity>
-                                )
-                            })}
-                        </View>
+                    <View className="pt-14 px-4 pb-4">
+                        <Text className="text-center text-white text-2xl font-bold mb-2">AI Recipe Generator</Text>
+                        <Text className="text-center text-zinc-400 text-sm">Create personalized recipes with AI magic ✨</Text>
                     </View>
-                )}
 
-                <FilterSection
-                    title="Cuisine Type"
-                    items={CUISINES}
-                    selectedItems={filters.cuisines}
-                    onSelectionChange={(selected) => handleFilterChange("cuisines", selected)}
-                    multiSelect={true}
-                />
+                    <View className="mb-6">
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ paddingHorizontal: 16 }}
+                            className="py-2"
+                        >
+                            <TouchableOpacity
+                                className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[140px]"
+                                onPress={() => setShowIngredientSelector(true)}
+                                disabled={isLoadingPantry}
+                            >
+                                <Ionicons name="basket-outline" size={18} color="#FBBF24" />
+                                <Text className="text-white ml-2 text-sm font-medium">
+                                    {isLoadingPantry ? "Loading..." : `My Pantry${pantryIngredients.length > 0 ? ` (${pantryIngredients.length})` : ""}`}
+                                </Text>
+                            </TouchableOpacity>
 
-                <FilterSection
-                    title="Food Category"
-                    items={FOOD_CATEGORIES}
-                    selectedItems={filters.categories}
-                    onSelectionChange={(selected) => handleFilterChange("categories", selected)}
-                    multiSelect={true}
-                />
+                            <TouchableOpacity
+                                className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[140px]"
+                                onPress={() => router.push('/(protected)/recipe/favorites')}
+                            >
+                                <Ionicons name="heart-outline" size={18} color="#FBBF24" />
+                                <Text className="text-white ml-2 text-sm font-medium">Favorites</Text>
+                            </TouchableOpacity>
 
-                <FilterSection
-                    title="Dietary Preferences"
-                    items={DIETARY_PREFERENCES}
-                    selectedItems={filters.dietaryPreferences}
-                    onSelectionChange={(selected) => handleFilterChange("dietaryPreferences", selected)}
-                    multiSelect={true}
-                    disabledItems={Array.from(selectedPantryCategories).reduce((disabled: string[], category) => {
-                        if (category === 'meat') {
-                            disabled.push('vegan', 'vegetarian')
-                        }
-                        if (category === 'dairy') {
-                            disabled.push('dairy-free')
-                        }
-                        return disabled
-                    }, [])}
-                />
+                            <TouchableOpacity
+                                className="flex-row items-center bg-zinc-800 rounded-full px-4 py-3 mr-3 border border-zinc-700 min-w-[160px] relative"
+                                onPress={() => {
+                                    if (isPro) {
+                                        setShowIngredientScanner(true)
+                                    } else {
+                                        setShowProUpgradeDialog(true)
+                                    }
+                                }}
+                                disabled={!isPro}
+                            >
+                                <Ionicons name="camera-outline" size={18} color={isPro ? "#FBBF24" : "#6B7280"} />
+                                <Text className={`ml-2 text-sm font-medium ${isPro ? "text-white" : "text-zinc-500"}`}>Scan Ingredients</Text>
+                                <View className="bg-yellow-400 rounded-full px-2 py-1 ml-2">
+                                    <Text className="text-black text-xs font-bold">PRO</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </ScrollView>
+                    </View>
 
-                {/* Smart Dietary Restrictions Info */}
-                {(selectedPantryCategories.has('meat') || selectedPantryCategories.has('dairy')) && (
+                    {/* Selected Pantry Ingredients */}
+                    {filters.ingredients.length > 0 && (
+                        <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
+                            <View className="flex-row items-center mb-3">
+                                <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
+                                <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
+                                    <Text className="text-white text-xs font-bold">{filters.ingredients.length}</Text>
+                                </View>
+                            </View>
+                            <View className="flex-row flex-wrap">
+                                {filters.ingredients.map((ingredient, index) => {
+                                    const isScanned = scannedIngredients.includes(ingredient)
+                                    const ingredientLabel = typeof ingredient === 'string'
+                                        ? ingredient.trim()
+                                        : ''
+
+                                    if (!ingredientLabel) {
+                                        return null
+                                    }
+
+                                    return (
+                                        <TouchableOpacity
+                                            key={`${ingredientLabel}-${index}`}
+                                            onPress={() => {
+                                                const newIngredients = filters.ingredients.filter(item => item !== ingredient)
+                                                handleFilterChange("ingredients", newIngredients)
+                                                // Also remove from scanned if it was scanned
+                                                if (isScanned) {
+                                                    setScannedIngredients(prev => prev.filter(item => item !== ingredient))
+                                                }
+                                            }}
+                                            className={`mr-2 mb-2 rounded-full px-3 py-2 items-center ${isScanned ? 'bg-purple-500 border border-purple-400' : 'bg-green-500 border border-green-400'
+                                                }`}
+                                        >
+                                            <View className="flex-row items-center">
+                                                {isScanned && (
+                                                    <Ionicons name="camera" size={14} color="#FFFFFF" style={{ marginRight: 4 }} />
+                                                )}
+                                                <Text className="text-white text-sm font-medium">{ingredientLabel}</Text>
+                                                <Ionicons name="close" size={14} color="#FFFFFF" style={{ marginLeft: 4 }} />
+                                            </View>
+                                        </TouchableOpacity>
+                                    )
+                                })}
+                            </View>
+                        </View>
+                    )}
+
+                    <FilterSection
+                        title={t('aiRecipeGenerator.cuisineType')}
+                        items={CUISINES}
+                        selectedItems={filters.cuisines}
+                        onSelectionChange={(selected) => handleFilterChange("cuisines", selected)}
+                        multiSelect={true}
+                    />
+
+                    <FilterSection
+                        title={t('aiRecipeGenerator.foodCategory')}
+                        items={FOOD_CATEGORIES}
+                        selectedItems={filters.categories}
+                        onSelectionChange={(selected) => handleFilterChange("categories", selected)}
+                        multiSelect={true}
+                    />
+
+                    <FilterSection
+                        title={t('aiRecipeGenerator.dietaryPreferences')}
+                        items={DIETARY_PREFERENCES}
+                        selectedItems={filters.dietaryPreferences}
+                        onSelectionChange={(selected) => handleFilterChange("dietaryPreferences", selected)}
+                        multiSelect={true}
+                        disabledItems={Array.from(selectedPantryCategories).reduce((disabled: string[], category) => {
+                            if (category === 'meat') {
+                                disabled.push('vegan', 'vegetarian')
+                            }
+                            if (category === 'dairy') {
+                                disabled.push('dairy-free')
+                            }
+                            return disabled
+                        }, [])}
+                    />
+
+                    {/* Smart Dietary Restrictions Info */}
+                    {(selectedPantryCategories.has('meat') || selectedPantryCategories.has('dairy')) && (
+                        <View className="px-4 mb-4">
+                            <View className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+                                <View className="flex-row items-center mb-2">
+                                    <Ionicons name="information-circle" size={20} color="#F59E0B" />
+                                    <Text className="text-amber-500 font-bold ml-2">{t('aiRecipeGenerator.smartDietaryFiltering')}</Text>
+                                </View>
+                                <Text className="text-amber-200 text-sm leading-relaxed">
+                                    {selectedPantryCategories.has('meat') && selectedPantryCategories.has('dairy')
+                                        ? t('aiRecipeGenerator.veganVegetarianDairyFreeUnavailable')
+                                        : selectedPantryCategories.has('meat')
+                                            ? t('aiRecipeGenerator.veganVegetarianUnavailableMeat')
+                                            : t('aiRecipeGenerator.dairyFreeUnavailableDairy')
+                                    }
+                                </Text>
+                            </View>
+                        </View>
+                    )}
+
+                    <FilterSection
+                        title={t('aiRecipeGenerator.mealTime')}
+                        items={MEAL_TIMES}
+                        selectedItems={filters.mealTime ? [filters.mealTime] : []}
+                        onSelectionChange={(selected) => handleFilterChange("mealTime", selected[0] || "")}
+                        multiSelect={false}
+                    />
+
+                    {/* 🆕 NEW: Recipe Choice Input */}
                     <View className="px-4 mb-4">
-                        <View className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-                            <View className="flex-row items-center mb-2">
-                                <Ionicons name="information-circle" size={20} color="#F59E0B" />
-                                <Text className="text-amber-500 font-bold ml-2">Smart Dietary Filtering</Text>
+                        <View className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                            <View className="flex-row items-center mb-3">
+                                <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
+                                <Text className="text-white text-lg font-bold ml-3">{t('aiRecipeGenerator.whatDoYouWantToCook')}</Text>
+                                <View className="bg-orange-500 rounded-full px-2 py-1 ml-2">
+                                    <Text className="text-white text-xs font-bold">{t('aiRecipeGenerator.optional')}</Text>
+                                </View>
                             </View>
-                            <Text className="text-amber-200 text-sm leading-relaxed">
-                                {selectedPantryCategories.has('meat') && selectedPantryCategories.has('dairy') 
-                                    ? "Vegan, vegetarian, and dairy-free options are unavailable due to selected meat and dairy ingredients."
-                                    : selectedPantryCategories.has('meat')
-                                    ? "Vegan and vegetarian options are unavailable due to selected meat ingredients."
-                                    : "Dairy-free options are unavailable due to selected dairy ingredients."
-                                }
+                            <View className="bg-zinc-700 rounded-xl px-4 py-3 border border-zinc-600">
+                                <TextInput
+                                    className="text-white text-base"
+                                    placeholder={t('aiRecipeGenerator.recipePlaceholder')}
+                                    placeholderTextColor="#9CA3AF"
+                                    value={filters.recipeChoice}
+                                    onChangeText={(text) => handleFilterChange("recipeChoice", text)}
+                                    autoCapitalize="words"
+                                    autoCorrect={false}
+                                    maxLength={50}
+                                />
+                            </View>
+                            <Text className="text-zinc-400 text-sm mt-2 leading-relaxed">
+                                {t('aiRecipeGenerator.recipeChoiceDescription')}
                             </Text>
                         </View>
                     </View>
-                )}
 
-                <FilterSection
-                    title="Meal Time"
-                    items={MEAL_TIMES}
-                    selectedItems={filters.mealTime ? [filters.mealTime] : []}
-                    onSelectionChange={(selected) => handleFilterChange("mealTime", selected[0] || "")}
-                    multiSelect={false}
-                />
+                    <View className="px-4 mb-6">
+                        <Text className="text-white text-lg font-bold mb-4">{t('aiRecipeGenerator.customizeYourRecipe')}</Text>
 
-                {/* 🆕 NEW: Recipe Choice Input */}
-                <View className="px-4 mb-4">
-                    <View className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
-                        <View className="flex-row items-center mb-3">
-                            <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
-                            <Text className="text-white text-lg font-bold ml-3">What do you want to cook?</Text>
-                            <View className="bg-orange-500 rounded-full px-2 py-1 ml-2">
-                                <Text className="text-white text-xs font-bold">OPTIONAL</Text>
+                        <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
+                            <Text className="text-white font-bold mb-2">{t('aiRecipeGenerator.numberOfServings')}</Text>
+                            <View className="flex-row items-center justify-between">
+                                <TouchableOpacity
+                                    className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
+                                    onPress={() => handleFilterChange("servings", Math.max(1, filters.servings - 1))}
+                                >
+                                    <Ionicons name="remove" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
+                                <Text className="text-white text-xl font-bold">{filters.servings}</Text>
+                                <TouchableOpacity
+                                    className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
+                                    onPress={() => handleFilterChange("servings", Math.min(12, filters.servings + 1))}
+                                >
+                                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
                             </View>
                         </View>
-                        <View className="bg-zinc-700 rounded-xl px-4 py-3 border border-zinc-600">
-                            <TextInput
-                                className="text-white text-base"
-                                placeholder="e.g., pizza, chicken curry, chocolate cake..."
-                                placeholderTextColor="#9CA3AF"
-                                value={filters.recipeChoice}
-                                onChangeText={(text) => handleFilterChange("recipeChoice", text)}
-                                autoCapitalize="words"
-                                autoCorrect={false}
-                                maxLength={50}
-                            />
-                        </View>
-                        <Text className="text-zinc-400 text-sm mt-2 leading-relaxed">
-                            Specify what you&apos;d like to cook and we&apos;ll create that recipe using your available ingredients. Leave empty for ingredient-based suggestions.
-                        </Text>
-                    </View>
-                </View>
 
-                <View className="px-4 mb-6">
-                    <Text className="text-white text-lg font-bold mb-4">Customize Your Recipe</Text>
-
-                    <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
-                        <Text className="text-white font-bold mb-2">Number of Servings</Text>
-                        <View className="flex-row items-center justify-between">
-                            <TouchableOpacity
-                                className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
-                                onPress={() => handleFilterChange("servings", Math.max(1, filters.servings - 1))}
-                            >
-                                <Ionicons name="remove" size={20} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <Text className="text-white text-xl font-bold">{filters.servings}</Text>
-                            <TouchableOpacity
-                                className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
-                                onPress={() => handleFilterChange("servings", Math.min(12, filters.servings + 1))}
-                            >
-                                <Ionicons name="add" size={20} color="#FFFFFF" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
-                        <Text className="text-white font-bold mb-2">Max Cooking Time</Text>
-                        <View className="flex-row items-center justify-between">
-                            <TouchableOpacity
-                                className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
-                                onPress={() => handleFilterChange("cookingTime", Math.max(10, filters.cookingTime - 10))}
-                            >
-                                <Ionicons name="remove" size={20} color="#FFFFFF" />
-                            </TouchableOpacity>
-                            <Text className="text-white text-xl font-bold">{filters.cookingTime} min</Text>
-                            <TouchableOpacity
-                                className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
-                                onPress={() => handleFilterChange("cookingTime", Math.min(180, filters.cookingTime + 10))}
-                            >
-                                <Ionicons name="add" size={20} color="#FFFFFF" />
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-
-                    <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
-                        <Text className="text-white font-bold mb-3">Difficulty Level</Text>
-                        <View className="flex-row justify-between">
-                            {["Any", "Easy", "Medium", "Hard"].map((difficulty) => (
+                        <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
+                            <Text className="text-white font-bold mb-2">{t('aiRecipeGenerator.maxCookingTime')}</Text>
+                            <View className="flex-row items-center justify-between">
                                 <TouchableOpacity
-                                    key={difficulty}
-                                    className={`flex-1 py-2 mx-1 rounded-lg ${filters.difficulty === difficulty ? "bg-yellow-400" : "bg-zinc-700"
-                                        }`}
-                                    onPress={() => handleFilterChange("difficulty", difficulty)}
+                                    className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
+                                    onPress={() => handleFilterChange("cookingTime", Math.max(10, filters.cookingTime - 10))}
                                 >
-                                    <Text
-                                        className={`text-center font-bold ${filters.difficulty === difficulty ? "text-black" : "text-white"
-                                            }`}
-                                    >
-                                        {difficulty}
-                                    </Text>
+                                    <Ionicons name="remove" size={20} color="#FFFFFF" />
                                 </TouchableOpacity>
+                                <Text className="text-white text-xl font-bold">{filters.cookingTime} {t('aiRecipeGenerator.minutes')}</Text>
+                                <TouchableOpacity
+                                    className="w-10 h-10 rounded-full bg-zinc-700 items-center justify-center"
+                                    onPress={() => handleFilterChange("cookingTime", Math.min(180, filters.cookingTime + 10))}
+                                >
+                                    <Ionicons name="add" size={20} color="#FFFFFF" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View className="bg-zinc-800 rounded-xl p-4 mb-4 border border-zinc-700">
+                            <Text className="text-white font-bold mb-3">{t('aiRecipeGenerator.difficultyLevel')}</Text>
+                            <View className="flex-row justify-between">
+                                {["Any", "Easy", "Medium", "Hard"].map((difficulty) => (
+                                    <TouchableOpacity
+                                        key={difficulty}
+                                        className={`flex-1 py-2 mx-1 rounded-lg ${filters.difficulty === difficulty ? "bg-yellow-400" : "bg-zinc-700"
+                                            }`}
+                                        onPress={() => handleFilterChange("difficulty", difficulty)}
+                                    >
+                                        <Text
+                                            className={`text-center font-bold ${filters.difficulty === difficulty ? "text-black" : "text-white"
+                                                }`}
+                                        >
+                                            {t(`aiRecipeGenerator.${difficulty.toLowerCase()}`)}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    </View>
+
+                    <View className="px-4 mb-6">
+                        <TouchableOpacity
+                            className="rounded-xl overflow-hidden"
+                            onPress={handleGenerateRecipes}
+                        >
+                            <LinearGradient
+                                colors={["#FBBF24", "#F97416"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                className="py-4 px-6"
+                            >
+                                <View className="flex-row items-center justify-center">
+                                    <Ionicons name="restaurant" size={20} color="#FFFFFF" />
+                                    <Text className="text-white text-lg font-bold ml-2">{t('aiRecipeGenerator.generateAIRecipes')}</Text>
+                                </View>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    </View>
+
+                    {generatedRecipes.length > 0 && (
+                        <View className="px-4 mb-6">
+                            <Text className="text-white text-xl font-bold mb-4">{t('aiRecipeGenerator.aiGeneratedRecipes')}</Text>
+                            {generatedRecipes.map((recipe) => (
+                                <GeneratedRecipeCard key={recipe.id} recipe={recipe} onPress={() => handleRecipeSelect(recipe)} />
                             ))}
                         </View>
-                    </View>
-                </View>
+                    )}
+                </ScrollView>
 
-                <View className="px-4 mb-6">
-                    <TouchableOpacity
-                        className="rounded-xl overflow-hidden"
-                        onPress={handleGenerateRecipes}
-                    >
-                        <LinearGradient
-                            colors={["#FBBF24", "#F97416"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            className="py-4 px-6"
-                        >
-                            <View className="flex-row items-center justify-center">
-                                <Ionicons name="restaurant" size={20} color="#FFFFFF" />
-                                <Text className="text-white text-lg font-bold ml-2">Generate AI Recipes</Text>
-                            </View>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
+                <IngredientSelector
+                    visible={showIngredientSelector}
+                    onClose={() => setShowIngredientSelector(false)}
+                    selectedIngredients={filters.ingredients}
+                    onIngredientsChange={(ingredients) => handleFilterChange("ingredients", ingredients)}
+                    pantryItems={pantryItems}
+                    isLoadingPantry={isLoadingPantry}
+                    showIngredientScanner={showIngredientScanner}
+                    setShowIngredientScanner={setShowIngredientScanner}
+                    scannedIngredients={scannedIngredients}
+                />
 
-                {generatedRecipes.length > 0 && (
-                    <View className="px-4 mb-6">
-                        <Text className="text-white text-xl font-bold mb-4">✨ AI Generated Recipes</Text>
-                        {generatedRecipes.map((recipe) => (
-                            <GeneratedRecipeCard key={recipe.id} recipe={recipe} onPress={() => handleRecipeSelect(recipe)} />
-                        ))}
-                    </View>
-                )}
-            </ScrollView>
+                <IngredientSearchModal
+                    visible={showIngredientScanner}
+                    onClose={() => setShowIngredientScanner(false)}
+                    onIngredientsSelected={handleIngredientsDetected}
+                    isPro={isPro}
+                />
 
-            <IngredientSelector
-                visible={showIngredientSelector}
-                onClose={() => setShowIngredientSelector(false)}
-                selectedIngredients={filters.ingredients}
-                onIngredientsChange={(ingredients) => handleFilterChange("ingredients", ingredients)}
-                pantryItems={pantryItems}
-                isLoadingPantry={isLoadingPantry}
-                showIngredientScanner={showIngredientScanner}
-                setShowIngredientScanner={setShowIngredientScanner}
-                scannedIngredients={scannedIngredients}
-            />
+                <VoiceControl
+                    visible={showVoiceControl}
+                    onClose={() => setShowVoiceControl(false)}
+                    onVoiceInput={handleVoiceGeneration}
+                />
 
-            <IngredientSearchModal
-                visible={showIngredientScanner}
-                onClose={() => setShowIngredientScanner(false)}
-                onIngredientsSelected={handleIngredientsDetected}
-                isPro={isPro}
-            />
+                <RecipeDetailModal
+                    visible={showRecipeDetail}
+                    recipe={selectedRecipe}
+                    onClose={() => setShowRecipeDetail(false)}
+                />
 
-            <VoiceControl
-                visible={showVoiceControl}
-                onClose={() => setShowVoiceControl(false)}
-                onVoiceInput={handleVoiceGeneration}
-            />
+                <Dialog
+                    visible={showIngredientsAddedDialog}
+                    type="success"
+                    title={t('aiRecipeGenerator.ingredientsAdded')}
+                    message={dialogMessage}
+                    onClose={() => handleIngredientsAddedDialog('ok')}
+                    onConfirm={() => handleIngredientsAddedDialog('generate')}
+                    confirmText={t('aiRecipeGenerator.generateRecipes')}
+                    cancelText={t('common.ok')}
+                    showCancelButton={true}
+                />
 
-            <RecipeDetailModal
-                visible={showRecipeDetail}
-                recipe={selectedRecipe}
-                onClose={() => setShowRecipeDetail(false)}
-            />
+                <Dialog
+                    visible={showSelectionRequiredDialog}
+                    type="warning"
+                    title={t('aiRecipeGenerator.selectionRequired')}
+                    message={dialogMessage}
+                    onClose={handleSelectionRequiredDialog}
+                    confirmText={t('common.ok')}
+                    showCancelButton={false}
+                />
 
-            <Dialog
-                visible={showIngredientsAddedDialog}
-                type="success"
-                title="Ingredients Added!"
-                message={dialogMessage}
-                onClose={() => handleIngredientsAddedDialog('ok')}
-                onConfirm={() => handleIngredientsAddedDialog('generate')}
-                confirmText="Generate Recipes"
-                cancelText="OK"
-                showCancelButton={true}
-            />
+                <Dialog
+                    visible={showErrorDialog}
+                    type="warning"
+                    title={t('aiRecipeGenerator.noIngredientsAvailable')}
+                    message={dialogMessage}
+                    onClose={() => handleNoIngredientsDialog('cancel')}
+                    onConfirm={() => handleNoIngredientsDialog('add')}
+                    confirmText={t('aiRecipeGenerator.addToPantry')}
+                    cancelText={t('common.cancel')}
+                    showCancelButton={true}
+                />
 
-            <Dialog
-                visible={showSelectionRequiredDialog}
-                type="warning"
-                title="Selection Required"
-                message={dialogMessage}
-                onClose={handleSelectionRequiredDialog}
-                confirmText="OK"
-                showCancelButton={false}
-            />
-
-            <Dialog
-                visible={showErrorDialog}
-                type="warning"
-                title="No Ingredients Available"
-                message={dialogMessage}
-                onClose={() => handleNoIngredientsDialog('cancel')}
-                onConfirm={() => handleNoIngredientsDialog('add')}
-                confirmText="Add to Pantry"
-                cancelText="Cancel"
-                showCancelButton={true}
-            />
-
-            <Dialog
-                visible={showProUpgradeDialog}
-                type="warning"
-                title="Pro Feature"
-                message="Scan ingredients using camera or gallery is a premium feature. Upgrade to Pro to unlock this functionality and many more advanced features!"
-                onClose={() => setShowProUpgradeDialog(false)}
-                onConfirm={() => {
-                    setShowProUpgradeDialog(false)
-                    router.push('/(protected)/(tabs)/(hidden)/settings/subscription')
-                }}
-                confirmText="Upgrade to Pro"
-                cancelText="Maybe Later"
-                showCancelButton={true}
-            />
+                <Dialog
+                    visible={showProUpgradeDialog}
+                    type="warning"
+                    title={t('aiRecipeGenerator.proFeature')}
+                    message={t('aiRecipeGenerator.proFeatureMessage')}
+                    onClose={() => setShowProUpgradeDialog(false)}
+                    onConfirm={() => {
+                        setShowProUpgradeDialog(false)
+                        router.push('/(protected)/(tabs)/(hidden)/settings/subscription')
+                    }}
+                    confirmText={t('aiRecipeGenerator.upgradeToPro')}
+                    cancelText={t('aiRecipeGenerator.maybeLater')}
+                    showCancelButton={true}
+                />
             </View>
         </LinearGradient>
     )

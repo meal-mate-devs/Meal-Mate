@@ -5,6 +5,7 @@ import ErrorDisplay from "@/components/atoms/ErrorDisplay"
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
 import { useNotifications } from "@/hooks/useNotifications"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
@@ -17,19 +18,19 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
-    Animated,
-    Dimensions,
-    FlatList,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Animated,
+  Dimensions,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -40,7 +41,7 @@ type PantryItem = BackendPantryItem;
 
 // Modern category definitions will be loaded from backend
 const CATEGORIES = [
-  { id: "all", name: "All", icon: "apps-outline", color: "#FACC15" },
+  { id: "all", name: "all", icon: "apps-outline", color: "#FACC15" },
   { id: "vegetables", name: "vegetables", icon: "leaf-outline", color: "#22C55E" },
   { id: "fruits", name: "fruits", icon: "nutrition-outline", color: "#F97316" },
   { id: "meat", name: "meat", icon: "fish-outline", color: "#EF4444" },
@@ -91,6 +92,7 @@ interface ImagePickerDialogProps {
 const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary, isPro = false }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (visible) {
@@ -160,11 +162,11 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
             </View>
 
             <Text style={imagePickerStyles.title}>
-              Add Item Photo
+              {t('pantry.addItemPhoto')}
             </Text>
 
             <Text style={imagePickerStyles.message}>
-              Choose a photo source for your pantry item
+              {t('pantry.choosePhotoSource')}
             </Text>
 
             <View style={imagePickerStyles.buttonContainer}>
@@ -183,9 +185,9 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                     <Ionicons name="camera" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>Camera</Text>
+                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>{t('pantry.camera')}</Text>
                     <Text style={[imagePickerStyles.optionSubtitle, !isPro && imagePickerStyles.disabledText]}>
-                      {isPro ? "Capture a new photo" : "Pro feature"}
+                      {isPro ? t('pantry.captureNewPhoto') : t('pantry.proFeature')}
                     </Text>
                   </View>
                 </View>
@@ -207,9 +209,9 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                     <Ionicons name="images" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>Gallery</Text>
+                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>{t('pantry.gallery')}</Text>
                     <Text style={[imagePickerStyles.optionSubtitle, !isPro && imagePickerStyles.disabledText]}>
-                      {isPro ? "Choose from library" : "Pro feature"}
+                      {isPro ? t('pantry.chooseFromLibrary') : t('pantry.proFeature')}
                     </Text>
                   </View>
                 </View>
@@ -222,7 +224,7 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
               onPress={onClose}
             >
               <Text style={imagePickerStyles.cancelText}>
-                Cancel
+                {t('pantry.cancel')}
               </Text>
             </TouchableOpacity>
           </LinearGradient>
@@ -374,10 +376,11 @@ const PantryManagementScreen: React.FC = () => {
   const params = useLocalSearchParams()
   const { profile } = useAuthContext()
   const isPro = profile?.isPro || false
-  
+  const { t } = useLanguage()
+
   // Notification hook for checking expiry
   const { checkPantryExpiry } = useNotifications()
-  
+
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
@@ -445,8 +448,8 @@ const PantryManagementScreen: React.FC = () => {
     confirmText: 'OK',
     cancelText: 'Cancel',
     showCancelButton: false,
-    onConfirm: () => {},
-    onCancel: () => {},
+    onConfirm: () => { },
+    onCancel: () => { },
   })
 
   // Ingredient scanner hook
@@ -499,8 +502,8 @@ const PantryManagementScreen: React.FC = () => {
     if (error.message?.includes('fetch') || error.message?.includes('network') || error.message?.includes('Failed to fetch') || error.message?.includes('Request timeout')) {
       return {
         type: 'network' as const,
-        title: 'Connection Problem',
-        message: 'Unable to connect to our servers. Please check your internet connection and try again.',
+        title: t('pantry.connectionError'),
+        message: t('pantry.unableToLoad'),
         canRetry: true
       };
     }
@@ -571,7 +574,7 @@ const PantryManagementScreen: React.FC = () => {
           canRetry: true,
         };
       setErrorDetails(enhancedError);
-      
+
       // Show dialog for network/timeout errors
       if (error.message?.includes('timeout') || error.message?.includes('connection') || error.message?.includes('network')) {
         showCustomDialog(
@@ -586,7 +589,7 @@ const PantryManagementScreen: React.FC = () => {
           }
         );
       }
-      
+
       console.log('Error loading pantry items:', error);
     } finally {
       setIsLoading(false);
@@ -607,8 +610,8 @@ const PantryManagementScreen: React.FC = () => {
     confirmText = 'OK',
     cancelText = 'Cancel',
     showCancelButton = false,
-    onConfirm = () => {},
-    onCancel = () => {}
+    onConfirm = () => { },
+    onCancel = () => { }
   ) => {
     setDialogConfig({
       type,
@@ -716,11 +719,11 @@ const PantryManagementScreen: React.FC = () => {
   // Get expiry status text
   const getExpiryText = useCallback((expiryDate: string) => {
     const days = getDaysUntilExpiry(expiryDate)
-    if (days < 0) return `Expired ${Math.abs(days)}d ago`
-    if (days === 0) return "Expires today"
-    if (days === 1) return "Expires tomorrow"
-    return `Expires in ${days} days`
-  }, [getDaysUntilExpiry])
+    if (days < 0) return t('pantry.expiredDaysAgo', { days: Math.abs(days) })
+    if (days === 0) return t('pantry.expiresToday')
+    if (days === 1) return t('pantry.expiresTomorrow')
+    return t('pantry.expiresIn', { days })
+  }, [getDaysUntilExpiry, t])
 
   // Handle tab change with animation
   const handleTabChange = useCallback((tab: string) => {
@@ -749,7 +752,7 @@ const PantryManagementScreen: React.FC = () => {
   // Handle adding new item
   const handleAddItem = useCallback(async () => {
     if (!newItem.name || !newItem.quantity) {
-      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.', 'OK', 'Cancel', false, () => {
+      showCustomDialog('warning', t('pantry.missingInformation'), t('pantry.fillRequiredFields'), t('pantry.ok'), t('pantry.cancel'), false, () => {
         hideDialog();
       });
       return
@@ -799,16 +802,16 @@ const PantryManagementScreen: React.FC = () => {
             useNativeDriver: true,
           }),
         ]).start();
-        
+
         // Check pantry expiry after adding item
         checkPantryExpiry().catch(err => console.log('Error checking pantry expiry:', err));
       } else {
-        showCustomDialog('error', 'Error', 'Failed to add item to pantry.', 'OK', 'Cancel', false, () => {
+        showCustomDialog('error', t('common.error'), t('pantry.failedToAdd'), t('pantry.ok'), t('pantry.cancel'), false, () => {
           hideDialog();
         });
       }
     } catch (error) {
-      showCustomDialog('error', 'Error', 'Failed to add item to pantry. Please try again.', 'OK', 'Cancel', false, () => {
+      showCustomDialog('error', t('common.error'), t('pantry.failedToAdd') + ' ' + t('pantry.tryAgain'), t('pantry.ok'), t('pantry.cancel'), false, () => {
         hideDialog();
       });
     }
@@ -818,12 +821,12 @@ const PantryManagementScreen: React.FC = () => {
   const handleRemoveItem = useCallback(async (itemId: string) => {
     // Show confirmation dialog
     showCustomDialog(
-      'confirm', 
-      'Remove Item', 
-      'Are you sure you want to remove this item?', 
-      'Remove', 
-      'Cancel', 
-      true, 
+      'confirm',
+      t('pantry.removeItemConfirm'),
+      t('pantry.removeItemMessage'),
+      t('pantry.remove'),
+      t('pantry.cancel'),
+      true,
       async () => {
         hideDialog(); // Close dialog first
         try {
@@ -835,16 +838,16 @@ const PantryManagementScreen: React.FC = () => {
             if (showItemDetails?.id === itemId) {
               setShowItemDetails(null)
             }
-            showCustomDialog('success', 'Success', 'Item removed successfully.', 'OK', 'Cancel', false, () => {
+            showCustomDialog('success', t('common.success'), t('pantry.itemRemovedSuccess'), t('pantry.ok'), t('pantry.cancel'), false, () => {
               hideDialog();
             });
           } else {
-            showCustomDialog('error', 'Error', 'Failed to remove item from pantry.', 'OK', 'Cancel', false, () => {
+            showCustomDialog('error', t('common.error'), t('pantry.failedToRemove'), t('pantry.ok'), t('pantry.cancel'), false, () => {
               hideDialog();
             });
           }
         } catch (error) {
-          showCustomDialog('error', 'Error', 'Failed to remove item from pantry. Please try again.', 'OK', 'Cancel', false, () => {
+          showCustomDialog('error', t('common.error'), t('pantry.failedToRemove') + ' ' + t('pantry.tryAgain'), t('pantry.ok'), t('pantry.cancel'), false, () => {
             hideDialog();
           });
         }
@@ -864,10 +867,10 @@ const PantryManagementScreen: React.FC = () => {
       if (!isPro) {
         showCustomDialog(
           'info',
-          'Pro Feature',
-          'Scan ingredients using camera or gallery is a premium feature. Upgrade to Pro to unlock this functionality!',
-          'Upgrade to Pro',
-          'Maybe Later',
+          t('pantry.proFeatureTitle'),
+          t('pantry.proFeatureMessage'),
+          t('pantry.upgradeToPro'),
+          t('pantry.maybeLater'),
           true,
           () => {
             hideDialog();
@@ -894,7 +897,7 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync()
       if (status !== "granted") {
-        showCustomDialog('warning', 'Permission Required', 'Please grant camera access to capture food photos.', 'OK', 'Cancel', false, () => {
+        showCustomDialog('warning', t('pantry.permissionRequired'), t('pantry.cameraPermission'), t('pantry.ok'), t('pantry.cancel'), false, () => {
           hideDialog();
         });
         return
@@ -937,7 +940,7 @@ const PantryManagementScreen: React.FC = () => {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
       if (status !== "granted") {
-        showCustomDialog('warning', 'Permission Required', 'Please grant photo library access to add item photos.', 'OK', 'Cancel', false, () => {
+        showCustomDialog('warning', t('pantry.permissionRequired'), t('pantry.galleryPermission'), t('pantry.ok'), t('pantry.cancel'), false, () => {
           hideDialog();
         });
         return
@@ -1047,7 +1050,7 @@ const PantryManagementScreen: React.FC = () => {
 
     // Validate required fields
     if (!editFormData.name.trim() || !editFormData.quantity.trim()) {
-      showCustomDialog('warning', 'Missing Information', 'Please fill in at least the name and quantity fields.', 'OK', 'Cancel', false, () => {
+      showCustomDialog('warning', t('pantry.missingInformation'), t('pantry.fillRequiredFields'), t('pantry.ok'), t('pantry.cancel'), false, () => {
         hideDialog();
       });
       return
@@ -1086,12 +1089,12 @@ const PantryManagementScreen: React.FC = () => {
           expiryDate: new Date()
         })
 
-        showCustomDialog('success', 'Success', 'Item updated successfully!', 'OK', 'Cancel', false, () => {
+        showCustomDialog('success', t('common.success'), t('pantry.itemUpdatedSuccess'), t('pantry.ok'), t('pantry.cancel'), false, () => {
           hideDialog();
         });
       }
     } catch (error) {
-      showCustomDialog('error', 'Error', 'Failed to update item. Please try again.', 'OK', 'Cancel', false, () => {
+      showCustomDialog('error', t('common.error'), t('pantry.failedToUpdate'), t('pantry.ok'), t('pantry.cancel'), false, () => {
         hideDialog();
       });
     }
@@ -2041,10 +2044,10 @@ const PantryManagementScreen: React.FC = () => {
     const { active, expiringSoon, expired } = getItemsByStatus()
 
     const tabs = [
-      { id: STATUS.ALL, name: "All", count: active.length + expiringSoon.length + expired.length, color: "#6B7280", icon: "apps-outline" },
-      { id: STATUS.ACTIVE, name: "Active", count: active.length, color: "#22C55E", icon: "checkmark-circle-outline" },
-      { id: STATUS.EXPIRING, name: "Expiring", count: expiringSoon.length, color: "#F59E0B", icon: "time-outline" },
-      { id: STATUS.EXPIRED, name: "Expired", count: expired.length, color: "#EF4444", icon: "alert-circle-outline" },
+      { id: STATUS.ALL, name: t('pantry.statusAll'), count: active.length + expiringSoon.length + expired.length, color: "#6B7280", icon: "apps-outline" },
+      { id: STATUS.ACTIVE, name: t('pantry.statusActive'), count: active.length, color: "#22C55E", icon: "checkmark-circle-outline" },
+      { id: STATUS.EXPIRING, name: t('pantry.statusExpiring'), count: expiringSoon.length, color: "#F59E0B", icon: "time-outline" },
+      { id: STATUS.EXPIRED, name: t('pantry.statusExpired'), count: expired.length, color: "#EF4444", icon: "alert-circle-outline" },
     ]
 
     return (
@@ -2102,7 +2105,7 @@ const PantryManagementScreen: React.FC = () => {
             color={selectedCategory === "all" ? "#FACC15" : "#94A3B8"}
           />
           <Text style={[styles.categoryChipText, selectedCategory === "all" && styles.activeCategoryChipText]}>
-            All Categories
+            {t('pantry.allCategories')}
           </Text>
         </TouchableOpacity>
 
@@ -2119,7 +2122,7 @@ const PantryManagementScreen: React.FC = () => {
               color={selectedCategory === category.id ? "#FACC15" : category.color}
             />
             <Text style={[styles.categoryChipText, selectedCategory === category.id && styles.activeCategoryChipText]}>
-              {category.name}
+              {t(`pantry.${category.name}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -2175,7 +2178,7 @@ const PantryManagementScreen: React.FC = () => {
             </View>
             <View style={styles.locationContainer}>
               <Ionicons name={category?.icon as any} size={14} color={category?.color} />
-              <Text style={styles.locationText}>{category?.name}</Text>
+              <Text style={styles.locationText}>{t(`pantry.${category?.name}`)}</Text>
             </View>
           </View>
 
@@ -2223,12 +2226,12 @@ const PantryManagementScreen: React.FC = () => {
           >
             <Ionicons name="close-outline" size={28} color="white" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Add New Item</Text>
+          <Text style={styles.modalTitle}>{t('pantry.addNewItem')}</Text>
           <TouchableOpacity
             onPress={handleAddItem}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.saveButton}>Save</Text>
+            <Text style={styles.saveButton}>{t('pantry.save')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -2244,7 +2247,7 @@ const PantryManagementScreen: React.FC = () => {
             onScrollBeginDrag={() => isUnitDropdownOpen && setIsUnitDropdownOpen(false)}
           >
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Autodetect Ingredient</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.autodetectIngredient')}</Text>
               <TouchableOpacity
                 style={[styles.inputContainer, { paddingRight: 50 }]}
                 onPress={handleImagePicker}
@@ -2252,7 +2255,7 @@ const PantryManagementScreen: React.FC = () => {
               >
                 <Ionicons name="camera-outline" size={20} color="#FACC15" />
                 <Text style={[styles.placeholderText, { marginLeft: 12, marginVertical: 0 }]}>
-                  {newItem.image ? "Image selected" : "Tap to take or select a photo"}
+                  {newItem.image ? t('pantry.imageSelected') : t('pantry.tapToTakePhoto')}
                 </Text>
                 {newItem.image && (
                   <View style={styles.previewContainer}>
@@ -2268,14 +2271,14 @@ const PantryManagementScreen: React.FC = () => {
             </View>
 
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Item Name *</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.itemNameRequired')}</Text>
               <View style={styles.inputContainer}>
                 <Ionicons name="nutrition-outline" size={18} color="#FACC15" />
                 <TextInput
                   style={styles.textInput}
                   value={newItem.name}
                   onChangeText={(text) => setNewItem((prev) => ({ ...prev, name: text }))}
-                  placeholder="Enter item name"
+                  placeholder={t('pantry.enterItemName')}
                   placeholderTextColor="#64748B"
                   returnKeyType="next"
                 />
@@ -2283,7 +2286,7 @@ const PantryManagementScreen: React.FC = () => {
             </View>
 
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Category</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.category')}</Text>
               <View style={styles.categorySelection}>
                 {CATEGORIES.filter(cat => cat.id !== "all").map((category) => (
                   <TouchableOpacity
@@ -2308,7 +2311,7 @@ const PantryManagementScreen: React.FC = () => {
                         newItem.category === category.id && styles.selectedCategoryOptionText,
                       ]}
                     >
-                      {category.name}
+                      {t(`pantry.${category.name}`)}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -2317,7 +2320,7 @@ const PantryManagementScreen: React.FC = () => {
 
             <View style={styles.formRow}>
               <View style={[styles.formField, { flex: 1, marginHorizontal: 6 }]}>
-                <Text style={styles.fieldLabel}>Quantity & Unit *</Text>
+                <Text style={styles.fieldLabel}>{t('pantry.quantityAndUnit')}</Text>
                 <View style={[styles.inputContainer, { paddingRight: 95 }]}>
                   <Ionicons name="cube-outline" size={18} color="#FACC15" />
                   <TextInput
@@ -2334,7 +2337,7 @@ const PantryManagementScreen: React.FC = () => {
                     onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
                   >
                     <Text style={styles.unitButtonText}>
-                      {newItem.unit} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
+                      {t(`pantry.${newItem.unit}`)} <MaterialIcons name="arrow-drop-down" size={16} color="#FACC15" />
                     </Text>
                   </TouchableOpacity>
 
@@ -2362,7 +2365,7 @@ const PantryManagementScreen: React.FC = () => {
                               styles.unitDropdownItemText,
                               newItem.unit === unit && styles.unitDropdownItemTextSelected
                             ]}>
-                              {unit}
+                              {t(`pantry.${unit}`)}
                             </Text>
                           </TouchableOpacity>
                         ))}
@@ -2376,7 +2379,7 @@ const PantryManagementScreen: React.FC = () => {
 
 
             <View style={styles.formField}>
-              <Text style={styles.fieldLabel}>Expiry Date</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.expiryDate')}</Text>
               <TouchableOpacity
                 style={styles.dateInput}
                 onPress={() => setShowDatePicker(true)}
@@ -2428,12 +2431,12 @@ const PantryManagementScreen: React.FC = () => {
           >
             <Ionicons name="close-outline" size={28} color="white" />
           </TouchableOpacity>
-          <Text style={styles.modalTitle}>Edit Item</Text>
+          <Text style={styles.modalTitle}>{t('pantry.editItem')}</Text>
           <TouchableOpacity
             onPress={handleUpdateItem}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Text style={styles.saveButton}>Save</Text>
+            <Text style={styles.saveButton}>{t('pantry.save')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -2442,14 +2445,14 @@ const PantryManagementScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Item Name</Text>
+            <Text style={styles.fieldLabel}>{t('pantry.itemName')}</Text>
             <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
               <Ionicons name="nutrition-outline" size={20} color="#FACC15" />
               <TextInput
                 style={styles.textInput}
                 value={editFormData.name}
                 onChangeText={(text) => setEditFormData(prev => ({ ...prev, name: text }))}
-                placeholder="Enter item name"
+                placeholder={t('pantry.enterItemName')}
                 placeholderTextColor="#666666"
                 autoCapitalize="words"
               />
@@ -2458,7 +2461,7 @@ const PantryManagementScreen: React.FC = () => {
 
           <View style={styles.formRow}>
             <View style={{ flex: 1, marginHorizontal: 6 }}>
-              <Text style={styles.fieldLabel}>Quantity</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.quantity')}</Text>
               <View style={[styles.inputContainer, { flexDirection: 'row', alignItems: 'center' }]}>
                 <Ionicons name="calculator-outline" size={20} color="#FACC15" />
                 <TextInput
@@ -2473,13 +2476,13 @@ const PantryManagementScreen: React.FC = () => {
             </View>
 
             <View style={{ flex: 1, marginHorizontal: 6 }}>
-              <Text style={styles.fieldLabel}>Unit</Text>
+              <Text style={styles.fieldLabel}>{t('pantry.unit')}</Text>
               <View style={[styles.inputContainer, { position: 'relative', justifyContent: 'center', paddingHorizontal: 12 }]}>
                 <TouchableOpacity
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
                   onPress={() => setIsUnitDropdownOpen(!isUnitDropdownOpen)}
                 >
-                  <Text style={[styles.unitButtonText, { fontSize: 15, textAlign: 'left', flex: 1 }]}>{editFormData.unit}</Text>
+                  <Text style={[styles.unitButtonText, { fontSize: 15, textAlign: 'left', flex: 1 }]}>{t(`pantry.${editFormData.unit}`)}</Text>
                   <Ionicons
                     name={isUnitDropdownOpen ? "chevron-up" : "chevron-down"}
                     size={20}
@@ -2507,7 +2510,7 @@ const PantryManagementScreen: React.FC = () => {
                           styles.unitDropdownItemText,
                           editFormData.unit === unit && styles.unitDropdownItemTextSelected
                         ]}>
-                          {unit}
+                          {t(`pantry.${unit}`)}
                         </Text>
                       </TouchableOpacity>
                     ))}
@@ -2518,7 +2521,7 @@ const PantryManagementScreen: React.FC = () => {
           </View>
 
           <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.fieldLabel}>{t('pantry.category')}</Text>
             <View style={styles.categorySelection}>
               {CATEGORIES.filter(cat => cat.id !== "all").map((category) => (
                 <TouchableOpacity
@@ -2543,7 +2546,7 @@ const PantryManagementScreen: React.FC = () => {
                       editFormData.category === category.id && styles.selectedCategoryOptionText,
                     ]}
                   >
-                    {category.name}
+                    {t(`pantry.${category.name}`)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -2551,7 +2554,7 @@ const PantryManagementScreen: React.FC = () => {
           </View>
 
           <View style={styles.formField}>
-            <Text style={styles.fieldLabel}>Expiry Date</Text>
+            <Text style={styles.fieldLabel}>{t('pantry.expiryDate')}</Text>
             <TouchableOpacity
               style={styles.dateInput}
               onPress={() => setShowEditDatePicker(true)}
@@ -2593,10 +2596,10 @@ const PantryManagementScreen: React.FC = () => {
     const daysAdded = Math.floor((new Date().getTime() - new Date(showItemDetails.addedDate).getTime()) / (1000 * 60 * 60 * 24))
 
     const addedText = daysAdded === 0
-      ? "Added today"
+      ? t('pantry.addedToday')
       : daysAdded === 1
-        ? "Added yesterday"
-        : `Added ${daysAdded} days ago`
+        ? t('pantry.addedYesterday')
+        : t('pantry.addedDaysAgo', { days: daysAdded })
 
     return (
       <Modal
@@ -2619,7 +2622,7 @@ const PantryManagementScreen: React.FC = () => {
             >
               <Ionicons name="chevron-back" size={28} color="white" />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Item Details</Text>
+            <Text style={styles.modalTitle}>{t('pantry.itemDetails')}</Text>
             <TouchableOpacity
               onPress={() => handleRemoveItem(showItemDetails.id)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -2654,7 +2657,7 @@ const PantryManagementScreen: React.FC = () => {
               <View style={styles.detailRow}>
                 <View style={styles.detailItem}>
                   <Ionicons name="cube-outline" size={22} color="#FACC15" />
-                  <Text style={styles.detailLabel}>Quantity</Text>
+                  <Text style={styles.detailLabel}>{t('pantry.quantity')}</Text>
                   <Text style={styles.detailValue}>
                     {showItemDetails.quantity} {showItemDetails.unit}
                   </Text>
@@ -2662,15 +2665,15 @@ const PantryManagementScreen: React.FC = () => {
 
                 <View style={styles.detailItem}>
                   <Ionicons name={category?.icon as any} size={22} color={category?.color} />
-                  <Text style={styles.detailLabel}>Category</Text>
-                  <Text style={styles.detailValue}>{category?.name}</Text>
+                  <Text style={styles.detailLabel}>{t('pantry.category')}</Text>
+                  <Text style={styles.detailValue}>{t(`pantry.${category?.name}`)}</Text>
                 </View>
               </View>
 
               <View style={styles.detailRow}>
                 <View style={styles.detailItem}>
                   <Ionicons name="calendar-outline" size={22} color="#64748B" />
-                  <Text style={styles.detailLabel}>Added On</Text>
+                  <Text style={styles.detailLabel}>{t('pantry.addedOn')}</Text>
                   <Text style={styles.detailValue}>
                     {new Date(showItemDetails.addedDate).toLocaleDateString()}
                   </Text>
@@ -2678,7 +2681,7 @@ const PantryManagementScreen: React.FC = () => {
               </View>
 
               <View style={styles.expirySection}>
-                <Text style={styles.expirySectionTitle}>Expiry Information</Text>
+                <Text style={styles.expirySectionTitle}>{t('pantry.expiryInformation')}</Text>
                 <View style={styles.expiryInfo}>
                   <Ionicons name="time-outline" size={22} color={expiryColor} />
                   <Text style={[styles.expiryInfoText, { color: expiryColor }]}>
@@ -2694,7 +2697,7 @@ const PantryManagementScreen: React.FC = () => {
                 >
                   <Ionicons name="create-outline" size={22} color="#FACC15" />
                   <Text style={[styles.actionButtonText, styles.primaryActionText]}>
-                    Update Item
+                    {t('pantry.updateItem')}
                   </Text>
                 </TouchableOpacity>
 
@@ -2704,7 +2707,7 @@ const PantryManagementScreen: React.FC = () => {
                 >
                   <Ionicons name="trash-outline" size={22} color="#EF4444" />
                   <Text style={[styles.actionButtonText, styles.destructiveActionText]}>
-                    Remove Item
+                    {t('pantry.removeItem')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -2728,310 +2731,310 @@ const PantryManagementScreen: React.FC = () => {
       <View style={[styles.container, { paddingTop: insets.top + 8 }]}>
         {/* Main background - now handled by LinearGradient */}
 
-      {/* Error State */}
-      {errorDetails && (
-        <ErrorDisplay
-          errorDetails={errorDetails}
-          onRetry={errorDetails.canRetry ? () => {
-            loadPantryItems()
-          } : undefined}
-          secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
-          onSecondaryAction={() => {
-            setErrorDetails(null)
+        {/* Error State */}
+        {errorDetails && (
+          <ErrorDisplay
+            errorDetails={errorDetails}
+            onRetry={errorDetails.canRetry ? () => {
+              loadPantryItems()
+            } : undefined}
+            secondaryActionLabel={cachedPantryItems.length > 0 ? "Show local items" : "Dismiss"}
+            onSecondaryAction={() => {
+              setErrorDetails(null)
 
-            if (cachedPantryItems.length > 0) {
-              setPantryItems(cachedPantryItems)
-            } else {
-              setPantryItems(LOCAL_FALLBACK_ITEMS)
-              setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
-            }
-          }}
-        />
-      )}
-
-      {/* Main Content */}
-      <>
-        {/* Header section */}
-        <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
-          <View style={styles.headerContent}>
-            {/* Back Button */}
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => {
-                // If accessed from sidebar, go back with smooth transition
-                if (params.from === 'sidebar') {
-                  router.back()
-                } else {
-                  router.back()
-                }
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.backButtonInner}>
-                <Ionicons name="chevron-back" size={24} color="#FACC15" />
-              </View>
-            </TouchableOpacity>
-
-            {/* Title Section */}
-            <View style={styles.titleSection}>
-              <Text style={styles.headerTitle}>Pantry Manager</Text>
-              <Text style={styles.headerSubtitle}>
-                Organize, track & reduce food waste
-              </Text>
-            </View>
-
-            {/* Add Button */}
-            <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
-              <TouchableOpacity
-                style={styles.headerAddButton}
-                onPress={() => {
-                  setShowAddModal(true)
-                }}
-                activeOpacity={0.85}
-              >
-                <LinearGradient
-                  colors={["#FACC15", "#F97316"]}
-                  style={styles.headerAddButtonGradient}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                >
-                  <Ionicons name="add" size={24} color="white" />
-                </LinearGradient>
-              </TouchableOpacity>
-            </Animated.View>
-          </View>
-        </Animated.View>
-
-        {/* Search bar */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchContainer}>
-            {/* Replace BlurView with a simple background color for better performance */}
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
-            <View style={styles.searchBlur}>
-              <Ionicons name="search-outline" size={22} color="#FACC15" />
-              <TextInput
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search pantry items..."
-                placeholderTextColor="#64748B"
-                autoCorrect={false}
-                returnKeyType="search"
-                maxLength={50}
-              />
-              {searchQuery.length > 0 && (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery("")
-                  }}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                >
-                  <Ionicons name="close-circle" size={22} color="#64748B" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        </View>
-
-        {/* Tab bar for filtering */}
-        {renderTabBar()}
-
-        {/* Category filters */}
-        {renderCategoryFilter()}
-
-        {/* Items list */}
-        <Animated.View
-          style={[
-            styles.itemsList,
-            {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }]
-            }
-          ]}
-        >
-          <FlatList
-            data={filteredItems()}
-            renderItem={renderPantryItem}
-            keyExtractor={(item) => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            ListEmptyComponent={
-              isLoading ? (
-                <View style={styles.inlineLoaderContainer}>
-                  <PantryLoadingAnimation message="Loading your pantry..." />
-                </View>
-              ) : (
-                <View style={styles.emptyState}>
-                  <Animated.View
-                    style={[
-                      styles.emptyStateIcon,
-                      {
-                        transform: [
-                          {
-                            rotate: rotateAnim.interpolate({
-                              inputRange: [0, 1],
-                              outputRange: ["0deg", "0deg"],
-                            }),
-                          },
-                        ],
-                      },
-                    ]}
-                  >
-                    <LinearGradient
-                      colors={["#FACC15", "#F97316"]}
-                      style={{ borderRadius: 35, padding: 16 }}
-                      start={{ x: 0, y: 0 }}
-                      end={{ x: 1, y: 1 }}
-                    >
-                      <Ionicons
-                        name={
-                          activeTab === STATUS.ACTIVE
-                            ? "nutrition-outline"
-                            : activeTab === STATUS.EXPIRING
-                              ? "time-outline"
-                              : "alert-circle-outline"
-                        }
-                        size={56}
-                        color="white"
-                      />
-                    </LinearGradient>
-                  </Animated.View>
-                  <Text style={styles.emptyStateTitle}>
-                    {(() => {
-                      const { active, expiringSoon, expired } = getItemsByStatus()
-                      const totalItems = active.length + expiringSoon.length + expired.length
-
-                      if (totalItems === 0) {
-                        return "No items in your pantry"
-                      }
-
-                      if (activeTab === STATUS.ALL && totalItems === 0) {
-                        return "No items in your pantry"
-                      }
-
-                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                        if (expiringSoon.length > 0) {
-                          return "Check your expiring items"
-                        } else if (expired.length > 0) {
-                          return "Check your expired items"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                        if (active.length > 0) {
-                          return "All items are fresh!"
-                        } else if (expired.length > 0) {
-                          return "Check your expired items"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                        if (active.length > 0) {
-                          return "All items are still good!"
-                        } else if (expiringSoon.length > 0) {
-                          return "Check your expiring items"
-                        }
-                      }
-
-                      return "No items found"
-                    })()}
-                  </Text>
-                  <Text style={styles.emptyStateSubtitle}>
-                    {(() => {
-                      const { active, expiringSoon, expired } = getItemsByStatus()
-                      const totalItems = active.length + expiringSoon.length + expired.length
-
-                      if (totalItems === 0) {
-                        return "Tap the + button to add some ingredients to your pantry"
-                      }
-
-                      if (activeTab === STATUS.ALL && totalItems === 0) {
-                        return "Tap the + button to add some ingredients to your pantry"
-                      }
-
-                      if (activeTab === STATUS.ACTIVE && active.length === 0) {
-                        if (expiringSoon.length > 0) {
-                          return "Some items are about to expire soon"
-                        } else if (expired.length > 0) {
-                          return "Some items have already expired"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
-                        if (active.length > 0) {
-                          return "Your pantry is well-stocked with fresh items"
-                        } else if (expired.length > 0) {
-                          return "Focus on your expired items first"
-                        }
-                      }
-
-                      if (activeTab === STATUS.EXPIRED && expired.length === 0) {
-                        if (active.length > 0) {
-                          return "Great job keeping your pantry fresh!"
-                        } else if (expiringSoon.length > 0) {
-                          return "Some items are expiring soon - check them out"
-                        }
-                      }
-
-                      return "Try adjusting your search or filters"
-                    })()}
-                  </Text>
-                </View>
-              )
-            }
+              if (cachedPantryItems.length > 0) {
+                setPantryItems(cachedPantryItems)
+              } else {
+                setPantryItems(LOCAL_FALLBACK_ITEMS)
+                setCachedPantryItems(LOCAL_FALLBACK_ITEMS)
+              }
+            }}
           />
-        </Animated.View>
+        )}
 
-        {/* Modals */}
-        {renderAddItemModal()}
-        {renderItemDetailsModal()}
-        {renderEditModal()}
+        {/* Main Content */}
+        <>
+          {/* Header section */}
+          <Animated.View style={[styles.header, { height: headerHeightAnim }]}>
+            <View style={styles.headerContent}>
+              {/* Back Button */}
+              <TouchableOpacity
+                style={styles.backButton}
+                onPress={() => {
+                  // If accessed from sidebar, go back with smooth transition
+                  if (params.from === 'sidebar') {
+                    router.back()
+                  } else {
+                    router.back()
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.backButtonInner}>
+                  <Ionicons name="chevron-back" size={24} color="#FACC15" />
+                </View>
+              </TouchableOpacity>
 
-        {/* Custom Image Picker Dialog */}
-        <ImagePickerDialog
-          visible={showImagePickerDialog}
-          onClose={() => setShowImagePickerDialog(false)}
-          onCamera={handleCamera}
-          onLibrary={handleGallery}
-          isPro={isPro}
-        />
+              {/* Title Section */}
+              <View style={styles.titleSection}>
+                <Text style={styles.headerTitle}>{t('pantry.headerTitle')}</Text>
+                <Text style={styles.headerSubtitle}>
+                  {t('pantry.headerSubtitle')}
+                </Text>
+              </View>
 
-        {/* Ingredient Detection Modal */}
-        <IngredientSelectionModal
-          visible={showIngredientDetectionModal}
-          onClose={() => setShowIngredientDetectionModal(false)}
-          ingredients={detectedIngredients}
-          onSelectIngredient={handleSelectIngredient}
-          isLoading={isDetecting}
-        />
+              {/* Add Button */}
+              <Animated.View style={{ transform: [{ scale: addButtonAnim }] }}>
+                <TouchableOpacity
+                  style={styles.headerAddButton}
+                  onPress={() => {
+                    setShowAddModal(true)
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <LinearGradient
+                    colors={["#FACC15", "#F97316"]}
+                    style={styles.headerAddButtonGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="add" size={24} color="white" />
+                  </LinearGradient>
+                </TouchableOpacity>
+              </Animated.View>
+            </View>
+          </Animated.View>
 
-        {/* Custom Dialog */}
-        <Dialog
-          visible={showDialog}
-          type={dialogConfig.type}
-          title={dialogConfig.title}
-          message={dialogConfig.message}
-          onConfirm={dialogConfig.onConfirm}
-          onCancel={dialogConfig.onCancel}
-          confirmText={dialogConfig.confirmText}
-          cancelText={dialogConfig.cancelText}
-          showCancelButton={dialogConfig.showCancelButton}
-          onClose={hideDialog}
-        />
+          {/* Search bar */}
+          <View style={styles.searchRow}>
+            <View style={styles.searchContainer}>
+              {/* Replace BlurView with a simple background color for better performance */}
+              <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(30, 30, 30, 0.6)' }]} />
+              <View style={styles.searchBlur}>
+                <Ionicons name="search-outline" size={22} color="#FACC15" />
+                <TextInput
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={t('pantry.searchPlaceholder')}
+                  placeholderTextColor="#64748B"
+                  autoCorrect={false}
+                  returnKeyType="search"
+                  maxLength={50}
+                />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearchQuery("")
+                    }}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="close-circle" size={22} color="#64748B" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          </View>
 
-        {/* Scanner Dialog */}
-        <Dialog
-          visible={scannerShowDialog}
-          type={scannerDialogConfig.type}
-          title={scannerDialogConfig.title}
-          message={scannerDialogConfig.message}
-          confirmText="OK"
-          showCancelButton={false}
-          onClose={scannerCloseDialog}
-          onConfirm={scannerCloseDialog}
-        />
-      </>
-    </View>
+          {/* Tab bar for filtering */}
+          {renderTabBar()}
+
+          {/* Category filters */}
+          {renderCategoryFilter()}
+
+          {/* Items list */}
+          <Animated.View
+            style={[
+              styles.itemsList,
+              {
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }]
+              }
+            ]}
+          >
+            <FlatList
+              data={filteredItems()}
+              renderItem={renderPantryItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.listContent}
+              ListEmptyComponent={
+                isLoading ? (
+                  <View style={styles.inlineLoaderContainer}>
+                    <PantryLoadingAnimation message={t('pantry.loadingPantry')} />
+                  </View>
+                ) : (
+                  <View style={styles.emptyState}>
+                    <Animated.View
+                      style={[
+                        styles.emptyStateIcon,
+                        {
+                          transform: [
+                            {
+                              rotate: rotateAnim.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ["0deg", "0deg"],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    >
+                      <LinearGradient
+                        colors={["#FACC15", "#F97316"]}
+                        style={{ borderRadius: 35, padding: 16 }}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                      >
+                        <Ionicons
+                          name={
+                            activeTab === STATUS.ACTIVE
+                              ? "nutrition-outline"
+                              : activeTab === STATUS.EXPIRING
+                                ? "time-outline"
+                                : "alert-circle-outline"
+                          }
+                          size={56}
+                          color="white"
+                        />
+                      </LinearGradient>
+                    </Animated.View>
+                    <Text style={styles.emptyStateTitle}>
+                      {(() => {
+                        const { active, expiringSoon, expired } = getItemsByStatus()
+                        const totalItems = active.length + expiringSoon.length + expired.length
+
+                        if (totalItems === 0) {
+                          return t('pantry.noItemsInPantry')
+                        }
+
+                        if (activeTab === STATUS.ALL && totalItems === 0) {
+                          return t('pantry.noItemsInPantry')
+                        }
+
+                        if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                          if (expiringSoon.length > 0) {
+                            return t('pantry.checkExpiringItems')
+                          } else if (expired.length > 0) {
+                            return t('pantry.checkExpiredItems')
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                          if (active.length > 0) {
+                            return t('pantry.allItemsFresh')
+                          } else if (expired.length > 0) {
+                            return t('pantry.checkExpiredItems')
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                          if (active.length > 0) {
+                            return t('pantry.allItemsGood')
+                          } else if (expiringSoon.length > 0) {
+                            return t('pantry.checkExpiringItems')
+                          }
+                        }
+
+                        return t('pantry.noItemsFound')
+                      })()}
+                    </Text>
+                    <Text style={styles.emptyStateSubtitle}>
+                      {(() => {
+                        const { active, expiringSoon, expired } = getItemsByStatus()
+                        const totalItems = active.length + expiringSoon.length + expired.length
+
+                        if (totalItems === 0) {
+                          return t('pantry.tapToAddIngredients')
+                        }
+
+                        if (activeTab === STATUS.ALL && totalItems === 0) {
+                          return t('pantry.tapToAddIngredients')
+                        }
+
+                        if (activeTab === STATUS.ACTIVE && active.length === 0) {
+                          if (expiringSoon.length > 0) {
+                            return t('pantry.someItemsExpiringSoon')
+                          } else if (expired.length > 0) {
+                            return t('pantry.someItemsExpired')
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRING && expiringSoon.length === 0) {
+                          if (active.length > 0) {
+                            return t('pantry.pantryWellStocked')
+                          } else if (expired.length > 0) {
+                            return t('pantry.focusOnExpired')
+                          }
+                        }
+
+                        if (activeTab === STATUS.EXPIRED && expired.length === 0) {
+                          if (active.length > 0) {
+                            return t('pantry.greatJobKeepingFresh')
+                          } else if (expiringSoon.length > 0) {
+                            return t('pantry.someItemsExpiringSoonCheck')
+                          }
+                        }
+
+                        return t('pantry.adjustFilters')
+                      })()}
+                    </Text>
+                  </View>
+                )
+              }
+            />
+          </Animated.View>
+
+          {/* Modals */}
+          {renderAddItemModal()}
+          {renderItemDetailsModal()}
+          {renderEditModal()}
+
+          {/* Custom Image Picker Dialog */}
+          <ImagePickerDialog
+            visible={showImagePickerDialog}
+            onClose={() => setShowImagePickerDialog(false)}
+            onCamera={handleCamera}
+            onLibrary={handleGallery}
+            isPro={isPro}
+          />
+
+          {/* Ingredient Detection Modal */}
+          <IngredientSelectionModal
+            visible={showIngredientDetectionModal}
+            onClose={() => setShowIngredientDetectionModal(false)}
+            ingredients={detectedIngredients}
+            onSelectIngredient={handleSelectIngredient}
+            isLoading={isDetecting}
+          />
+
+          {/* Custom Dialog */}
+          <Dialog
+            visible={showDialog}
+            type={dialogConfig.type}
+            title={dialogConfig.title}
+            message={dialogConfig.message}
+            onConfirm={dialogConfig.onConfirm}
+            onCancel={dialogConfig.onCancel}
+            confirmText={dialogConfig.confirmText}
+            cancelText={dialogConfig.cancelText}
+            showCancelButton={dialogConfig.showCancelButton}
+            onClose={hideDialog}
+          />
+
+          {/* Scanner Dialog */}
+          <Dialog
+            visible={scannerShowDialog}
+            type={scannerDialogConfig.type}
+            title={scannerDialogConfig.title}
+            message={scannerDialogConfig.message}
+            confirmText="OK"
+            showCancelButton={false}
+            onClose={scannerCloseDialog}
+            onConfirm={scannerCloseDialog}
+          />
+        </>
+      </View>
     </LinearGradient>
   )
 }
