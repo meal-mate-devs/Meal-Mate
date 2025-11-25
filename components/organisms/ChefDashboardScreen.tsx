@@ -1744,7 +1744,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="person-circle-outline" size={20} color="#06B6D4" />
-          <Text style={[styles.actionText, { color: "#06B6D4" }]}>View Profile</Text>
+          <Text style={[styles.actionText, { color: "#06B6D4" }]}>{t('chef.viewMyProfile')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1753,7 +1753,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="cash-outline" size={20} color="#a6fa15ee" />
-          <Text style={[styles.actionText, { color: "#a6fa15ee" }]}>Monetization</Text>
+          <Text style={[styles.actionText, { color: "#a6fa15ee" }]}>{t('chef.monetization')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -1765,7 +1765,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="restaurant-outline" size={20} color="#22C55E" />
-          <Text style={[styles.actionText, { color: "#22C55E" }]}>Upload Recipe</Text>
+          <Text style={[styles.actionText, { color: "#22C55E" }]}>{t('chef.uploadRecipe')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -1774,7 +1774,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Ionicons name="school-outline" size={20} color="#f6c43bfb" />
-          <Text style={[styles.actionText, { color: "#f6c43bfb" }]}>Create Course</Text>
+          <Text style={[styles.actionText, { color: "#f6c43bfb" }]}>{t('chef.createCourse')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -2962,7 +2962,7 @@ const ChefDashboardScreen: React.FC = () => {
                 fontWeight: '700',
                 color: '#1a1a1a'
               }}>
-                Browse as Food Explorer
+                {t('chef.browseAsFoodExplorer')}
               </Text>
             </TouchableOpacity>
           </ScrollView>
