@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import { subscriptionService } from "@/lib/services/subscriptionService"
 import type { PlanType, SubscriptionPlan } from "@/lib/types/subscription"
 import { Ionicons } from "@expo/vector-icons"
@@ -15,6 +16,7 @@ const SubscriptionScreen: React.FC = () => {
   const router = useRouter()
   const { initPaymentSheet, presentPaymentSheet } = useStripe()
   const { profile, refreshProfile } = useAuthContext()
+  const { t } = useLanguage()
 
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('yearly')
   const [loading, setLoading] = useState(false)
@@ -34,14 +36,14 @@ const SubscriptionScreen: React.FC = () => {
 
   // Premium features that users get with subscription
   const premiumFeatures = [
-    { id: "1", name: "Read Aloud Recipes", icon: "volume-high" as const },
-    { id: "2", name: "Ad-Free Experience", icon: "close-circle" as const },
-    { id: "3", name: "Recipe Export (PDF/Image)", icon: "download" as const },
-    { id: "4", name: "Unlimited Recipe Generation", icon: "infinite" as const },
-    { id: "5", name: "Custom Weekly Meal Plans", icon: "calendar" as const },
-    { id: "6", name: "Custom Monthly Meal Plans", icon: "calendar-outline" as const },
-    { id: "7", name: "Advanced Nutrition Tracking", icon: "nutrition" as const },
-    { id: "8", name: "Priority Customer Support", icon: "headset" as const },
+    { id: "1", name: t('subscription.readAloudRecipes'), icon: "volume-high" as const },
+    { id: "2", name: t('subscription.adFreeExperience'), icon: "close-circle" as const },
+    { id: "3", name: t('subscription.recipeExport'), icon: "download" as const },
+    { id: "4", name: t('subscription.unlimitedRecipeGeneration'), icon: "infinite" as const },
+    { id: "5", name: t('subscription.customWeeklyMealPlans'), icon: "calendar" as const },
+    { id: "6", name: t('subscription.customMonthlyMealPlans'), icon: "calendar-outline" as const },
+    { id: "7", name: t('subscription.advancedNutritionTracking'), icon: "nutrition" as const },
+    { id: "8", name: t('subscription.priorityCustomerSupport'), icon: "headset" as const },
   ]
 
   // Load available plans
@@ -56,7 +58,7 @@ const SubscriptionScreen: React.FC = () => {
       setAvailablePlans(plansResponse.plans)
     } catch (error) {
       console.log('Failed to load plans:', error)
-      setErrorMessage('Failed to load subscription plans')
+      setErrorMessage(t('subscription.failedToLoadPlans'))
       setShowErrorDialog(true)
     } finally {
       setLoadingPlans(false)
@@ -101,7 +103,7 @@ const SubscriptionScreen: React.FC = () => {
       }
     } catch (error: any) {
       console.log('Subscription error:', error)
-      setErrorMessage(error?.message || "Failed to process subscription")
+      setErrorMessage(error?.message || t('subscription.failedToProcessSubscription'))
       setShowErrorDialog(true)
     } finally {
       setLoading(false)
@@ -110,7 +112,7 @@ const SubscriptionScreen: React.FC = () => {
 
   const handleCancelSubscription = async () => {
     if (!profile?.subscriptionId) {
-      setErrorMessage("No active subscription found")
+      setErrorMessage(t('subscription.noActiveSubscriptionFound'))
       setShowErrorDialog(true)
       return
     }
@@ -128,7 +130,7 @@ const SubscriptionScreen: React.FC = () => {
       setShowCancelSuccessDialog(true)
     } catch (error: any) {
       console.log('Cancel subscription error:', error)
-      setErrorMessage(error?.message || "Failed to cancel subscription")
+      setErrorMessage(error?.message || t('subscription.failedToCancelSubscription'))
       setShowErrorDialog(true)
     } finally {
       setLoading(false)
@@ -145,7 +147,7 @@ const SubscriptionScreen: React.FC = () => {
       }
     }
     return {
-      name: planType === 'monthly' ? 'Monthly Plan' : 'Yearly Plan',
+      name: planType === 'monthly' ? t('subscription.monthlyPlan') : t('subscription.yearlyPlan'),
       price: planType === 'monthly' ? '$9.99' : '$99.99',
       interval: planType === 'monthly' ? 'month' : 'year',
     }
@@ -285,12 +287,12 @@ const SubscriptionScreen: React.FC = () => {
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
             <Text className="text-white text-xl font-bold">
-              {isPro ? "My Subscription" : "Premium Plans"}
+              {isPro ? t('subscription.mySubscription') : t('subscription.premiumPlans')}
             </Text>
             <View className="w-6" />
           </View>
           <Text className="text-gray-400 text-center">
-            {isPro ? "Manage your premium membership" : "Unlock all premium features"}
+            {isPro ? t('subscription.manageYourPremiumMembership') : t('subscription.unlockAllPremiumFeatures')}
           </Text>
         </View>
 
@@ -312,20 +314,20 @@ const SubscriptionScreen: React.FC = () => {
                   <View className="flex-row items-center justify-between mb-4">
                     <View>
                       <Text className="text-white text-2xl font-bold">
-                        {subscriptionPlan === 'yearly' ? 'Yearly' : 'Monthly'} Premium
+                        {subscriptionPlan === 'yearly' ? t('subscription.yearlyPremium') : t('subscription.monthlyPremium')}
                       </Text>
                       <Text className="text-white/80 text-sm mt-1">
-                        Status: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
+                        {t('subscription.status')}: {subscriptionStatus.charAt(0).toUpperCase() + subscriptionStatus.slice(1)}
                       </Text>
                     </View>
                     <View className="bg-white/20 rounded-full px-3 py-1">
-                      <Text className="text-white font-semibold text-sm uppercase">Active</Text>
+                      <Text className="text-white font-semibold text-sm uppercase">{t('subscription.active')}</Text>
                     </View>
                   </View>
                   {subscriptionEndDate && (
                     <View className="bg-white/10 rounded-xl p-4 mb-4">
                       <View className="flex-row justify-between items-center">
-                        <Text className="text-white/80">Renews On</Text>
+                        <Text className="text-white/80">{t('subscription.renewsOn')}</Text>
                         <Text className="text-white font-semibold">
                           {new Date(
                             typeof subscriptionEndDate === 'number'
@@ -349,7 +351,7 @@ const SubscriptionScreen: React.FC = () => {
                     <View className="flex-row items-center justify-center">
                       <Ionicons name="close-circle-outline" size={20} color="white" />
                       <Text className="text-white font-semibold ml-2">
-                        {loading ? "Processing..." : "Cancel Subscription"}
+                        {loading ? t('subscription.processing') : t('subscription.cancelSubscription')}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -370,10 +372,10 @@ const SubscriptionScreen: React.FC = () => {
                 >
                   <Ionicons name="sparkles" size={48} color="white" />
                   <Text className="text-white text-2xl font-bold mt-3 text-center">
-                    Upgrade to Premium
+                    {t('subscription.upgradeToPremium')}
                   </Text>
                   <Text className="text-white/90 text-center mt-2">
-                    Get access to exclusive features and enhance your cooking experience
+                    {t('subscription.getAccessToExclusiveFeatures')}
                   </Text>
                 </LinearGradient>
               </View>
@@ -383,7 +385,7 @@ const SubscriptionScreen: React.FC = () => {
           {/* Plan Selection (only for non-Pro users) */}
           {!isPro && (
             <View className="mb-6">
-              <Text className="text-white text-lg font-bold mb-4">Choose Your Plan</Text>
+              <Text className="text-white text-lg font-bold mb-4">{t('subscription.chooseYourPlan')}</Text>
 
               {/* Yearly Plan */}
               {yearlyPlan && (
@@ -395,7 +397,7 @@ const SubscriptionScreen: React.FC = () => {
                   <View className={`rounded-2xl overflow-hidden ${selectedPlan === 'yearly' ? 'border-2 border-yellow-500' : 'border border-zinc-700'}`}>
                     <View className="bg-yellow-500 py-1">
                       <Text className="text-black text-xs font-bold text-center uppercase">
-                        Most Popular - Best Value
+                        {t('subscription.mostPopularBestValue')}
                       </Text>
                     </View>
                     <View className="bg-zinc-900 p-5">
@@ -409,16 +411,16 @@ const SubscriptionScreen: React.FC = () => {
                               </View>
                             )}
                           </View>
-                          <Text className="text-gray-400 text-sm mt-1">$8.33/month</Text>
+                          <Text className="text-gray-400 text-sm mt-1">$8.33/{t('subscription.perMonth')}</Text>
                         </View>
                         <View className="items-end">
                           <Text className="text-white text-3xl font-bold">${yearlyPlan.amount.toFixed(2)}</Text>
-                          <Text className="text-gray-400 text-sm">per year</Text>
+                          <Text className="text-gray-400 text-sm">{t('subscription.perYear')}</Text>
                         </View>
                       </View>
                       <View className="bg-green-500/20 rounded-lg px-3 py-2 mt-2">
                         <Text className="text-green-400 font-semibold text-center">
-                          💰 Save $19.89 compared to monthly
+                          {t('subscription.saveComparedToMonthly')}
                         </Text>
                       </View>
                     </View>
@@ -444,11 +446,11 @@ const SubscriptionScreen: React.FC = () => {
                               </View>
                             )}
                           </View>
-                          <Text className="text-gray-400 text-sm mt-1">Billed monthly</Text>
+                          <Text className="text-gray-400 text-sm mt-1">{t('subscription.billedMonthly')}</Text>
                         </View>
                         <View className="items-end">
                           <Text className="text-white text-3xl font-bold">${monthlyPlan.amount.toFixed(2)}</Text>
-                          <Text className="text-gray-400 text-sm">per month</Text>
+                          <Text className="text-gray-400 text-sm">{t('subscription.perMonth')}</Text>
                         </View>
                       </View>
                     </View>
@@ -460,7 +462,7 @@ const SubscriptionScreen: React.FC = () => {
 
           {/* Premium Features */}
           <View className="mb-6">
-            <Text className="text-white text-lg font-bold mb-4">Premium Features Included</Text>
+            <Text className="text-white text-lg font-bold mb-4">{t('subscription.premiumFeaturesIncluded')}</Text>
             <View className="bg-zinc-900 rounded-2xl overflow-hidden border border-zinc-800">
               {premiumFeatures.map((feature, index) => (
                 <View key={feature.id}>
@@ -497,7 +499,7 @@ const SubscriptionScreen: React.FC = () => {
                 ) : (
                   <>
                     <Text className="text-black font-bold text-xl">
-                      Subscribe to {getPlanInfo(selectedPlan).name}
+                      {t('subscription.subscribeTo')} {getPlanInfo(selectedPlan).name}
                     </Text>
                     <Text className="text-black/80 text-sm mt-1">
                       {getPlanInfo(selectedPlan).price}/{getPlanInfo(selectedPlan).interval}
@@ -511,31 +513,31 @@ const SubscriptionScreen: React.FC = () => {
           {/* Benefits Comparison */}
           <View className="bg-zinc-900 rounded-2xl p-5 mb-6 border border-zinc-800">
             <Text className="text-white font-bold text-lg mb-4 text-center">
-              Why Go Premium?
+              {t('subscription.whyGoPremium')}
             </Text>
             <View className="flex gap-4">
               <View className="flex-row items-center">
                 <Ionicons name="trending-up" size={20} color="#10B981" />
                 <Text className="text-gray-300 ml-3 flex-1">
-                  Generate unlimited recipes tailored to your preferences
+                  {t('subscription.generateUnlimitedRecipes')}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <Ionicons name="calendar" size={20} color="#10B981" />
                 <Text className="text-gray-300 ml-3 flex-1">
-                  Custom meal plans to stay organized and healthy
+                  {t('subscription.customMealPlans')}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <Ionicons name="remove-circle" size={20} color="#10B981" />
                 <Text className="text-gray-300 ml-3 flex-1">
-                  Enjoy an ad-free, distraction-free cooking experience
+                  {t('subscription.adFreeExperience')}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <Ionicons name="volume-high" size={20} color="#10B981" />
                 <Text className="text-gray-300 ml-3 flex-1">
-                  Hands-free cooking with read-aloud instructions
+                  {t('subscription.handsFreeReadAloud')}
                 </Text>
               </View>
             </View>
@@ -543,7 +545,7 @@ const SubscriptionScreen: React.FC = () => {
 
           {/* Terms */}
           <Text className="text-gray-500 text-xs text-center px-4 mb-4">
-            Cancel anytime. No commitments. Payment will be charged to your account. Subscription automatically renews unless auto-renew is turned off at least 24 hours before the end of the current period.
+            {t('subscription.termsText')}
           </Text>
 
           {/* Support Link */}
@@ -552,7 +554,7 @@ const SubscriptionScreen: React.FC = () => {
             className="items-center mb-6"
           >
             <Text className="text-yellow-500 text-sm">
-              Need help? Contact Support
+              {t('subscription.needHelp')}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -561,9 +563,9 @@ const SubscriptionScreen: React.FC = () => {
         <Dialog
           visible={showErrorDialog}
           type="error"
-          title="Error"
+          title={t('subscription.error')}
           message={errorMessage}
-          confirmText="OK"
+          confirmText={t('common.ok')}
           onConfirm={() => setShowErrorDialog(false)}
           onClose={() => setShowErrorDialog(false)}
         />
@@ -572,9 +574,9 @@ const SubscriptionScreen: React.FC = () => {
         <Dialog
           visible={showSuccessDialog}
           type="success"
-          title="Success! 🎉"
-          message="Welcome to MealMate Premium! You now have access to all premium features."
-          confirmText="Great!"
+          title={t('subscription.successTitle')}
+          message={t('subscription.welcomeToPremium')}
+          confirmText={t('subscription.great')}
           onConfirm={async () => {
             setShowSuccessDialog(false)
             await refreshProfile()
@@ -591,10 +593,10 @@ const SubscriptionScreen: React.FC = () => {
         <Dialog
           visible={showCancelConfirmDialog}
           type="warning"
-          title="Cancel Subscription"
-          message="Are you sure you want to cancel your premium subscription? You'll lose access to all premium features at the end of your billing period."
-          confirmText="Cancel Subscription"
-          cancelText="Keep Subscription"
+          title={t('subscription.cancelSubscriptionTitle')}
+          message={t('subscription.cancelSubscriptionMessage')}
+          confirmText={t('subscription.cancelSubscriptionButton')}
+          cancelText={t('subscription.keepSubscription')}
           showCancelButton={true}
           onConfirm={confirmCancelSubscription}
           onCancel={() => setShowCancelConfirmDialog(false)}
@@ -605,9 +607,9 @@ const SubscriptionScreen: React.FC = () => {
         <Dialog
           visible={showCancelSuccessDialog}
           type="info"
-          title="Subscription Canceled"
-          message="Your subscription has been canceled. You'll continue to have access to premium features until the end of your billing period."
-          confirmText="OK"
+          title={t('subscription.subscriptionCanceled')}
+          message={t('subscription.subscriptionCanceledMessage')}
+          confirmText={t('common.ok')}
           onConfirm={async () => {
             setShowCancelSuccessDialog(false)
             await refreshProfile()

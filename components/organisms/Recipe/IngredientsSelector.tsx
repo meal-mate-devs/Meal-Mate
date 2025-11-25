@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useState } from "react"
 import { ActivityIndicator, Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { useLanguage } from "../../../context/LanguageContext"
 
 
 interface IngredientSelectorProps {
@@ -30,8 +31,21 @@ export default function IngredientSelector({
     setShowIngredientScanner,
     scannedIngredients = [],
 }: IngredientSelectorProps): JSX.Element {
+    const { language, t } = useLanguage()
     const [searchText, setSearchText] = useState<string>("")
     const [customIngredient, setCustomIngredient] = useState<string>("")
+
+    // Function to convert user inputs to English for backend compatibility
+    // Backend only understands English
+    const convertToEnglishForBackend = (text: string): string => {
+        if (!text || language === 'en') return text
+
+        // For now, return the text as-is since implementing full translation is complex
+        // In a production app, you would integrate with a translation service here
+        // For best results, users should input ingredient names in English
+        console.log(`Converting custom ingredient to English for backend: "${text}" (from ${language})`)
+        return text // TODO: Implement proper translation to English
+    }
 
     // Filter pantry items based on search text
     const filteredPantryItems = pantryItems.filter((item) =>
@@ -40,7 +54,7 @@ export default function IngredientSelector({
 
     // Separate expiring items for priority display (from original pantry, not filtered)
     const allExpiringItems = pantryItems.filter(item => item.expiryStatus === 'expiring')
-    const unselectedExpiringItems = allExpiringItems.filter(item => 
+    const unselectedExpiringItems = allExpiringItems.filter(item =>
         !selectedIngredients.includes(item.name)
     )
 
@@ -53,7 +67,7 @@ export default function IngredientSelector({
     const customIngredients = selectedIngredients.filter(ingredient =>
         !pantryItems.some(item => item.name === ingredient)
     )
-    
+
     // Scanned items - create pseudo-items for scanned ingredients not in pantry
     const scannedItems = (scannedIngredients || [])
         .filter(ingredientName => typeof ingredientName === 'string' && ingredientName.trim() !== '')
@@ -79,14 +93,14 @@ export default function IngredientSelector({
                     updatedAt: new Date().toISOString()
                 } as PantryItem
             }
-        }).filter(item => 
+        }).filter(item =>
             // Only show if matches search filter
             item.name.toLowerCase().includes(searchText.toLowerCase())
         )
 
     // Regular pantry items (excluding selected and scanned to avoid duplicates)
-    const regularItems = filteredPantryItems.filter(item => 
-        !selectedIngredients.includes(item.name) && 
+    const regularItems = filteredPantryItems.filter(item =>
+        !selectedIngredients.includes(item.name) &&
         !scannedIngredients.includes(item.name)
     )
 
@@ -138,7 +152,9 @@ export default function IngredientSelector({
 
     const handleAddCustomIngredient = (): void => {
         if (customIngredient.trim() && !selectedIngredients.includes(customIngredient.trim())) {
-            onIngredientsChange([...selectedIngredients, customIngredient.trim()])
+            // Convert to English for backend compatibility
+            const englishIngredient = convertToEnglishForBackend(customIngredient.trim())
+            onIngredientsChange([...selectedIngredients, englishIngredient])
             setCustomIngredient("")
         }
     }
@@ -173,12 +189,12 @@ export default function IngredientSelector({
                             <Ionicons name="close" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
                         <Text className="text-white text-lg font-bold">
-                            My Pantry{!isLoadingPantry && ` (${pantryItems.length})`}
+                            {t('aiRecipeGenerator.myPantry')}{!isLoadingPantry && ` (${pantryItems.length})`}
                         </Text>
                         <TouchableOpacity onPress={() => setShowIngredientScanner(true)}>
                             <View className="flex-row items-center">
                                 <Ionicons name="camera" size={20} color="#FBBF24" />
-                                <Text className="text-yellow-400 font-semibold ml-1">Scan</Text>
+                                <Text className="text-yellow-400 font-semibold ml-1">{t('aiRecipeGenerator.scanIngredients')}</Text>
                             </View>
                         </TouchableOpacity>
                     </View>
@@ -224,7 +240,7 @@ export default function IngredientSelector({
                     {selectedIngredients.length > 0 && (
                         <View className="mb-4 mr-4 ml-4 p-3 bg-gradient-to-r from-green-900/20 to-emerald-900/20 rounded-xl border border-green-500/30">
                             <View className="flex-row items-center mb-3">
-                                <Text className="text-green-400 text-lg font-bold ml-2">Selected Ingredients</Text>
+                                <Text className="text-green-400 text-lg font-bold ml-2">{t('aiRecipeGenerator.selectedIngredients')}</Text>
                                 <View className="bg-green-500 rounded-full px-2 py-1 ml-2">
                                     <Text className="text-white text-xs font-bold">{selectedIngredients.length}</Text>
                                 </View>
@@ -294,15 +310,15 @@ export default function IngredientSelector({
                         <ScrollView className="flex-1 px-4" showsVerticalScrollIndicator={false}>
                             {/* Custom Ingredient Section - Always show */}
                             <View className="mb-6 pb-6">
-                                <Text className="text-white text-lg font-bold mb-3">Add Custom Ingredient</Text>
-                                
+                                <Text className="text-white text-lg font-bold mb-3">{t('aiRecipeGenerator.addCustomIngredient')}</Text>
+
                                 <TouchableOpacity
                                     onPress={() => setShowIngredientScanner(true)}
                                     className="flex-row items-center justify-center bg-zinc-800 border border-zinc-600 rounded-full px-4 py-3"
                                 >
                                     <Ionicons name="add-outline" size={20} color="#FBBF24" />
                                     <Ionicons name="camera-outline" size={20} color="#FBBF24" />
-                                    <Text className="text-white ml-2 text-sm font-medium">Manually Add Ingredients</Text>
+                                    <Text className="text-white ml-2 text-sm font-medium">{t('aiRecipeGenerator.manuallyAddIngredients')}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -348,11 +364,10 @@ export default function IngredientSelector({
                                                         <TouchableOpacity
                                                             key={item.id}
                                                             onPress={() => handleIngredientToggle(item.name)}
-                                                            className={`mr-3 mb-3 rounded-2xl border ${
-                                                                isSelected
+                                                            className={`mr-3 mb-3 rounded-2xl border ${isSelected
                                                                     ? "bg-yellow-400 border-yellow-400"
                                                                     : "bg-zinc-800 border-purple-500/50"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {expiryLabel && (
                                                                 <View className={`${expiryLabel.color} rounded-t-xl px-3 py-1`}>
@@ -364,17 +379,15 @@ export default function IngredientSelector({
                                                             <View className={`px-4 py-3 ${expiryLabel ? '' : 'rounded-2xl'}`}>
                                                                 <View className="flex-row items-center">
                                                                     <Text
-                                                                        className={`font-medium ${
-                                                                            isSelected ? "text-black" : "text-white"
-                                                                        }`}
+                                                                        className={`font-medium ${isSelected ? "text-black" : "text-white"
+                                                                            }`}
                                                                     >
                                                                         {item.name || 'Unknown Ingredient'}
                                                                     </Text>
                                                                     {item.quantity > 0 && item.unit && (
                                                                         <Text
-                                                                            className={`ml-2 text-sm ${
-                                                                                isSelected ? "text-black opacity-70" : "text-zinc-400"
-                                                                            }`}
+                                                                            className={`ml-2 text-sm ${isSelected ? "text-black opacity-70" : "text-zinc-400"
+                                                                                }`}
                                                                         >
                                                                             ({item.quantity} {item.unit})
                                                                         </Text>
@@ -402,13 +415,12 @@ export default function IngredientSelector({
                                                         <TouchableOpacity
                                                             key={item.id}
                                                             onPress={() => handleIngredientToggle(item.name)}
-                                                            className={`mr-3 mb-3 rounded-2xl border ${
-                                                                isSelected
+                                                            className={`mr-3 mb-3 rounded-2xl border ${isSelected
                                                                     ? "bg-yellow-400 border-yellow-400"
                                                                     : expiryLabel
-                                                                    ? "bg-zinc-800 border-orange-500/50"
-                                                                    : "bg-zinc-800 border-zinc-600"
-                                                            }`}
+                                                                        ? "bg-zinc-800 border-orange-500/50"
+                                                                        : "bg-zinc-800 border-zinc-600"
+                                                                }`}
                                                         >
                                                             {expiryLabel && (
                                                                 <View className={`${expiryLabel.color} rounded-t-xl px-3 py-1`}>
@@ -420,17 +432,15 @@ export default function IngredientSelector({
                                                             <View className={`px-4 py-3 ${expiryLabel ? '' : 'rounded-2xl'}`}>
                                                                 <View className="flex-row items-center">
                                                                     <Text
-                                                                        className={`font-medium ${
-                                                                            isSelected ? "text-black" : "text-white"
-                                                                        }`}
+                                                                        className={`font-medium ${isSelected ? "text-black" : "text-white"
+                                                                            }`}
                                                                     >
                                                                         {item.name || 'Unknown Ingredient'}
                                                                     </Text>
                                                                     {item.quantity > 0 && item.unit && (
                                                                         <Text
-                                                                            className={`ml-2 text-sm ${
-                                                                                isSelected ? "text-black opacity-70" : "text-zinc-400"
-                                                                            }`}
+                                                                            className={`ml-2 text-sm ${isSelected ? "text-black opacity-70" : "text-zinc-400"
+                                                                                }`}
                                                                         >
                                                                             ({item.quantity} {item.unit})
                                                                         </Text>

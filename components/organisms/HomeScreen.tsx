@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/context/authContext';
+import { useLanguage } from '@/context/LanguageContext';
 import * as chefService from '@/lib/api/chefService';
 import { groceryService } from '@/lib/services/groceryService';
 import { pantryService } from '@/lib/services/pantryService';
@@ -75,6 +76,7 @@ interface Recipe {
 }
 
 const HomeScreen: React.FC = () => {
+    const { t } = useLanguage();
     const insets = useSafeAreaInsets()
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -221,7 +223,7 @@ const HomeScreen: React.FC = () => {
             setIsLoadingRecipeDetails(true)
             const recipeId = recipe.id || recipe._id
             if (!recipeId) {
-                setGeneralErrorMessage('Recipe ID is missing. Please try again.')
+                setGeneralErrorMessage(t('home.recipeIdMissing'))
                 setShowGeneralErrorDialog(true)
                 return
             }
@@ -246,7 +248,7 @@ const HomeScreen: React.FC = () => {
         } catch (error: any) {
             console.log('❌ Failed to fetch recipe details:', error)
             setExpandedRecipeId(null)
-            setGeneralErrorMessage('Failed to load recipe details. Please try again.')
+            setGeneralErrorMessage(t('home.failedToLoadRecipeDetails'))
             setShowGeneralErrorDialog(true)
         } finally {
             setIsLoadingRecipeDetails(false)
@@ -256,7 +258,7 @@ const HomeScreen: React.FC = () => {
     // Handle Start Cooking
     const handleStartCooking = (recipe: any) => {
         if (!recipe || !recipe.instructions || recipe.instructions.length === 0) {
-            setGeneralErrorMessage('This recipe has no cooking instructions available.')
+            setGeneralErrorMessage(t('home.noInstructionsAvailable'))
             setShowGeneralErrorDialog(true)
             return
         }
@@ -339,7 +341,7 @@ const HomeScreen: React.FC = () => {
             recipeText += `\n`
         }
 
-        recipeText += `---\nShared from Meal Mate App 🍳`
+        recipeText += `---\n${t('home.sharedFrom')}`
 
         try {
             await Share.share({
@@ -362,10 +364,10 @@ const HomeScreen: React.FC = () => {
             // Remove from favorites
             const success = await removeFromFavorites(recipeId)
             if (success) {
-                setGeneralSuccessMessage('Recipe removed from favorites')
+                setGeneralSuccessMessage(t('home.recipeRemovedFromFavorites'))
                 setShowGeneralSuccessDialog(true)
             } else {
-                setGeneralErrorMessage('Failed to remove from favorites')
+                setGeneralErrorMessage(t('home.failedToRemoveFromFavorites'))
                 setShowGeneralErrorDialog(true)
             }
         } else {
@@ -408,10 +410,10 @@ const HomeScreen: React.FC = () => {
             })
 
             if (success) {
-                setGeneralSuccessMessage('Recipe added to favorites')
+                setGeneralSuccessMessage(t('home.recipeAddedToFavorites'))
                 setShowGeneralSuccessDialog(true)
             } else {
-                setGeneralErrorMessage('Failed to add to favorites')
+                setGeneralErrorMessage(t('home.failedToAddToFavorites'))
                 setShowGeneralErrorDialog(true)
             }
         }
@@ -462,7 +464,7 @@ const HomeScreen: React.FC = () => {
                                         <Ionicons name="basket-outline" size={16} color="#22C55E" />
                                     </View>
                                     <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{pantryData.total}</Text>
-                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Pantry</Text>
+                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>{t('home.pantry')}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -484,7 +486,7 @@ const HomeScreen: React.FC = () => {
                                         <Ionicons name="cart-outline" size={16} color="#3B82F6" />
                                     </View>
                                     <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{groceryData.total}</Text>
-                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Grocery</Text>
+                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>{t('home.grocery')}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -506,7 +508,7 @@ const HomeScreen: React.FC = () => {
                                         <Ionicons name="fitness-outline" size={16} color="#F97316" />
                                     </View>
                                     <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{todayCaloriesConsumed}</Text>
-                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Calories</Text>
+                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>{t('home.calories')}</Text>
                                 </TouchableOpacity>
                             </View>
 
@@ -528,7 +530,7 @@ const HomeScreen: React.FC = () => {
                                         <Ionicons name="trophy-outline" size={16} color="#FACC15" />
                                     </View>
                                     <Text className="text-sm font-bold" style={{ color: '#FFFFFF' }}>{streakData.currentStreak}</Text>
-                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>Streak</Text>
+                                    <Text className="text-xs font-medium" style={{ color: '#94A3B8' }}>{t('diet.streak')}</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -552,13 +554,13 @@ const HomeScreen: React.FC = () => {
                     {isLoadingRecipes ? (
                         <View className="flex-1 items-center justify-center py-20">
                             <ActivityIndicator size="large" color="#FACC15" />
-                            <Text className="text-gray-400 mt-4">Loading recipes...</Text>
+                            <Text className="text-gray-400 mt-4">{t('home.loadingRecipes')}</Text>
                         </View>
                     ) : filteredRecipes.length === 0 ? (
                         <View className="flex-1 items-center justify-center py-20">
                             <Ionicons name="restaurant-outline" size={64} color="#6B7280" />
                             <Text className="text-gray-400 mt-4 text-center">
-                                No recipes available in this category
+                                {t('home.noRecipesAvailable')}
                             </Text>
                         </View>
                     ) : (
@@ -576,7 +578,7 @@ const HomeScreen: React.FC = () => {
                                         {recipe.isPremium && (
                                             <View style={styles.managementPremiumBadge}>
                                                 <Ionicons name="diamond" size={12} color="#FACC15" />
-                                                <Text style={styles.managementPremiumBadgeText}>Premium</Text>
+                                                <Text style={styles.managementPremiumBadgeText}>{t('home.premium')}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -597,7 +599,7 @@ const HomeScreen: React.FC = () => {
                                         {recipe.creator && (
                                             <View style={styles.metaItem}>
                                                 <Ionicons name="person" size={14} color="#A78BFA" />
-                                                <Text style={[styles.metaText, { color: '#A78BFA' }]}>By: {recipe.creator}</Text>
+                                                <Text style={[styles.metaText, { color: '#A78BFA' }]}>{t('home.by')} {recipe.creator}</Text>
                                             </View>
                                         )}
                                     </View>
@@ -634,7 +636,7 @@ const HomeScreen: React.FC = () => {
                                 </TouchableOpacity>
 
                                 <Text className="text-white text-lg font-bold flex-1 text-center">
-                                    Recipe Details
+                                    {t('home.recipeDetails')}
                                 </Text>
 
                                 <View className="w-10" />
@@ -719,7 +721,7 @@ const HomeScreen: React.FC = () => {
                                         activeOpacity={0.7}
                                     >
                                         <Ionicons name="share-outline" size={18} color="#FBBF24" />
-                                        <Text className="text-amber-300 font-bold ml-2 text-sm tracking-wide">Share</Text>
+                                        <Text className="text-amber-300 font-bold ml-2 text-sm tracking-wide">{t('home.share')}</Text>
                                     </TouchableOpacity>
 
                                     <TouchableOpacity
@@ -733,7 +735,7 @@ const HomeScreen: React.FC = () => {
                                             color={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "#EC4899" : "#A78BFA"}
                                         />
                                         <Text className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'text-pink-300' : 'text-purple-300'} font-bold ml-2 text-sm tracking-wide`}>
-                                            {isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'Saved' : 'Favorite'}
+                                            {isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? t('home.saved') : t('home.favorite')}
                                         </Text>
                                     </TouchableOpacity>
                                 </View>
@@ -743,7 +745,7 @@ const HomeScreen: React.FC = () => {
                                     <View className="mb-6">
                                         <View className="flex-row items-center mb-4">
                                             <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                                            <Text className="text-white text-xl font-bold tracking-tight">Nutrition</Text>
+                                            <Text className="text-white text-xl font-bold tracking-tight">{t('home.nutrition')}</Text>
                                             <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                                         </View>
                                         <View className="bg-zinc-800 border-2 border-zinc-700 rounded-xl p-4 shadow-lg">
@@ -752,28 +754,28 @@ const HomeScreen: React.FC = () => {
                                                     <Text className="text-amber-400 text-xl font-bold mb-1">
                                                         {expandedRecipeData.nutrition?.calories || 0}
                                                     </Text>
-                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">CALORIES</Text>
+                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">{t('home.calories').toUpperCase()}</Text>
                                                 </View>
                                                 <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                                                 <View className="items-center flex-1">
                                                     <Text className="text-emerald-400 text-xl font-bold mb-1">
                                                         {expandedRecipeData.nutrition?.protein || 0}g
                                                     </Text>
-                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">PROTEIN</Text>
+                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">{t('home.protein').toUpperCase()}</Text>
                                                 </View>
                                                 <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                                                 <View className="items-center flex-1">
                                                     <Text style={{ color: "#3B82F6" }} className="text-xl font-bold mb-1">
                                                         {expandedRecipeData.nutrition?.carbs || 0}g
                                                     </Text>
-                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">CARBS</Text>
+                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">{t('home.carbs').toUpperCase()}</Text>
                                                 </View>
                                                 <View style={{ width: 1, height: 48, backgroundColor: "rgba(255, 255, 255, 0.1)" }} />
                                                 <View className="items-center flex-1">
                                                     <Text style={{ color: "#F59E0B" }} className="text-xl font-bold mb-1">
                                                         {expandedRecipeData.nutrition?.fat || 0}g
                                                     </Text>
-                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">FAT</Text>
+                                                    <Text className="text-gray-300 text-xs tracking-wide font-semibold">{t('home.fat').toUpperCase()}</Text>
                                                 </View>
                                             </View>
                                         </View>
@@ -784,7 +786,7 @@ const HomeScreen: React.FC = () => {
                                 <View className="mb-6">
                                     <View className="flex-row items-center mb-4">
                                         <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                                        <Text className="text-white text-xl font-bold tracking-tight">Ingredients</Text>
+                                        <Text className="text-white text-xl font-bold tracking-tight">{t('home.ingredients')}</Text>
                                         <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                                     </View>
                                     <View className="bg-zinc-800 border-4 border-zinc-700 rounded-2xl p-3 shadow-xl">
@@ -819,7 +821,7 @@ const HomeScreen: React.FC = () => {
                                 <View className="mb-6">
                                     <View className="flex-row items-center mb-5">
                                         <View className="w-1 h-6 bg-amber-500 rounded-full mr-3" />
-                                        <Text className="text-white text-xl font-bold tracking-tight">Instructions</Text>
+                                        <Text className="text-white text-xl font-bold tracking-tight">{t('home.instructions')}</Text>
                                         <View className="flex-1 h-px bg-amber-500/20 ml-4" />
                                     </View>
                                     <View className="space-y-4">
@@ -873,7 +875,7 @@ const HomeScreen: React.FC = () => {
                                     />
                                     <Ionicons name="flame" size={24} color="#FFFFFF" />
                                     <Text style={{ color: "#FFFFFF", fontWeight: "700", marginLeft: 12, fontSize: 18, letterSpacing: 0.5 }}>
-                                        Start Cooking
+                                        {t('home.startCooking')}
                                     </Text>
                                 </TouchableOpacity>
 
@@ -882,7 +884,7 @@ const HomeScreen: React.FC = () => {
                                     <View className="mb-6">
                                         <View className="flex-row items-center mb-5">
                                             <View className="w-1 h-6 rounded-full mr-3" style={{ backgroundColor: "#FACC15" }} />
-                                            <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
+                                            <Text className="text-white text-xl font-bold tracking-tight">{t('recipe.chefsTips')}</Text>
                                             <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                                         </View>
                                         <View
@@ -915,11 +917,11 @@ const HomeScreen: React.FC = () => {
                                         <View className="flex-row items-center justify-between mb-5">
                                             <View className="flex-row items-center">
                                                 <View className="w-1 h-6 bg-blue-500 rounded-full mr-3" />
-                                                <Text className="text-white text-xl font-bold tracking-tight">Substitutions</Text>
+                                                <Text className="text-white text-xl font-bold tracking-tight">{t('home.substitutions')}</Text>
                                             </View>
                                             <View className="bg-blue-500/20 border-2 border-blue-500/40 px-4 py-2 rounded-full shadow-md">
                                                 <Text className="text-blue-300 text-xs font-bold">
-                                                    {expandedRecipeData.substitutions.length} options
+                                                    {expandedRecipeData.substitutions.length} {t('recipe.options')}
                                                 </Text>
                                             </View>
                                         </View>
@@ -938,7 +940,7 @@ const HomeScreen: React.FC = () => {
                                                             {sub.original} → {sub.substitute}
                                                         </Text>
                                                     </View>
-                                                    <Text className="text-zinc-300 text-sm mb-2 ml-12">Ratio: {sub.ratio}</Text>
+                                                    <Text className="text-zinc-300 text-sm mb-2 ml-12">{t('recipe.ratio')}: {sub.ratio}</Text>
                                                     <Text className="text-zinc-200 text-sm leading-6 ml-12">{sub.notes}</Text>
                                                 </View>
                                             ))}
@@ -978,8 +980,8 @@ const HomeScreen: React.FC = () => {
                 <Dialog
                     visible={showPremiumDialog}
                     type="warning"
-                    title="Premium Content"
-                    message="This is a premium recipe. Upgrade to Pro to access exclusive content and features."
+                    title={t('home.premiumContent')}
+                    message={t('home.premiumRecipeMessage')}
                     onClose={() => setShowPremiumDialog(false)}
                     onConfirm={() => {
                         setShowPremiumDialog(false)
@@ -989,8 +991,8 @@ const HomeScreen: React.FC = () => {
                             console.log('Navigation error:', error)
                         }
                     }}
-                    confirmText="Upgrade to Pro"
-                    cancelText="Cancel"
+                    confirmText={t('home.upgradeToPro')}
+                    cancelText={t('common.cancel')}
                     showCancelButton={true}
                 />
             </SafeAreaView>

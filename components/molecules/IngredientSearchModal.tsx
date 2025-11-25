@@ -211,7 +211,7 @@ export default function IngredientSearchModal({
         } else {
           showCustomDialog('info', 'No New Ingredients', 'No new ingredients were detected or they\'re already in your list.');
         }
-        
+
         setScanCompleted(true);
         setNoIngredientsDetected(false);
       } else {
@@ -222,12 +222,12 @@ export default function IngredientSearchModal({
       }
     } catch (error) {
       console.log("Error processing image:", error);
-      
+
       // Check for timeout/network errors
       const errorMessage = error && typeof error === 'object' && 'message' in error
         ? String(error.message)
         : "Failed to process image.";
-      
+
       if (errorMessage.includes('timeout') || errorMessage.includes('connection') || errorMessage.includes('network') || errorMessage.includes('Request Timeout')) {
         showCustomDialog('error', 'Request Failed', 'Unable to analyze the image. Please check your connection and try again.');
       } else {
@@ -251,11 +251,11 @@ export default function IngredientSearchModal({
           <View style={styles.header}>
             <Text style={styles.title}>Add Ingredients</Text>
             <Text style={styles.subtitle}>
-              {isScanning 
-                ? "Scanning image..." 
-                : scanCompleted && noIngredientsDetected 
-                ? "No ingredients detected" 
-                : "Choose how to add ingredients"}
+              {isScanning
+                ? "Scanning image..."
+                : scanCompleted && noIngredientsDetected
+                  ? "No ingredients detected"
+                  : "Choose how to add ingredients"}
             </Text>
           </View>
 
@@ -459,7 +459,7 @@ export default function IngredientSearchModal({
       </View>
     </Modal>
   )
-    {/* Custom Dialog */}
+  {/* Custom Dialog */ }
 }
 
 const styles = StyleSheet.create({
