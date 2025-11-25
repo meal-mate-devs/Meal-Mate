@@ -4,7 +4,9 @@ import Dialog from "@/components/atoms/Dialog"
 import ErrorDisplay from "@/components/atoms/ErrorDisplay"
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation"
 import IngredientSelectionModal from "@/components/molecules/IngredientSelectionModal"
+import { useAuthContext } from "@/context/authContext"
 import { IngredientItem, useIngredientScanner } from "@/hooks/useIngredientScanner"
+import { useNotifications } from "@/hooks/useNotifications"
 import { PantryItem as BackendPantryItem, pantryService } from "@/lib/services/pantryService"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -15,19 +17,19 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import React, { useCallback, useEffect, useRef, useState } from "react"
 import {
-  Animated,
-  Dimensions,
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Animated,
+    Dimensions,
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 
@@ -83,9 +85,10 @@ interface ImagePickerDialogProps {
   onClose: () => void
   onCamera: () => void
   onLibrary: () => void
+  isPro?: boolean
 }
 
-const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary }) => {
+const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary, isPro = false }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
 
@@ -166,45 +169,51 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
 
             <View style={imagePickerStyles.buttonContainer}>
               <TouchableOpacity
-                style={imagePickerStyles.optionButton}
-                onPress={handleCamera}
-                activeOpacity={0.8}
+                style={[imagePickerStyles.optionButton, !isPro && imagePickerStyles.disabledButton]}
+                onPress={isPro ? handleCamera : undefined}
+                activeOpacity={isPro ? 0.8 : 1}
+                disabled={!isPro}
               >
                 <View style={imagePickerStyles.buttonContent}>
                   <View style={imagePickerStyles.iconCircle}>
                     <LinearGradient
-                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      colors={isPro ? ['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)'] : ['rgba(107, 114, 128, 0.2)', 'rgba(75, 85, 99, 0.2)']}
                       style={imagePickerStyles.iconGradient}
                     />
-                    <Ionicons name="camera" size={24} color="#FACC15" />
+                    <Ionicons name="camera" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Camera</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Capture a new photo</Text>
+                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>Camera</Text>
+                    <Text style={[imagePickerStyles.optionSubtitle, !isPro && imagePickerStyles.disabledText]}>
+                      {isPro ? "Capture a new photo" : "Pro feature"}
+                    </Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={16} color={isPro ? "#9CA3AF" : "#6B7280"} />
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={imagePickerStyles.optionButton}
-                onPress={handleLibrary}
-                activeOpacity={0.8}
+                style={[imagePickerStyles.optionButton, !isPro && imagePickerStyles.disabledButton]}
+                onPress={isPro ? handleLibrary : undefined}
+                activeOpacity={isPro ? 0.8 : 1}
+                disabled={!isPro}
               >
                 <View style={imagePickerStyles.buttonContent}>
                   <View style={imagePickerStyles.iconCircle}>
                     <LinearGradient
-                      colors={['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)']}
+                      colors={isPro ? ['rgba(250, 204, 21, 0.2)', 'rgba(249, 115, 22, 0.2)'] : ['rgba(107, 114, 128, 0.2)', 'rgba(75, 85, 99, 0.2)']}
                       style={imagePickerStyles.iconGradient}
                     />
-                    <Ionicons name="images" size={24} color="#FACC15" />
+                    <Ionicons name="images" size={24} color={isPro ? "#FACC15" : "#6B7280"} />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Gallery</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Choose from library</Text>
+                    <Text style={[imagePickerStyles.optionTitle, !isPro && imagePickerStyles.disabledText]}>Gallery</Text>
+                    <Text style={[imagePickerStyles.optionSubtitle, !isPro && imagePickerStyles.disabledText]}>
+                      {isPro ? "Choose from library" : "Pro feature"}
+                    </Text>
                   </View>
                 </View>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                <Ionicons name="chevron-forward" size={16} color={isPro ? "#9CA3AF" : "#6B7280"} />
               </TouchableOpacity>
             </View>
 
@@ -347,6 +356,12 @@ const imagePickerStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: '#6B7280',
+  },
 })
 
 /**
@@ -357,6 +372,12 @@ const PantryManagementScreen: React.FC = () => {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const params = useLocalSearchParams()
+  const { profile } = useAuthContext()
+  const isPro = profile?.isPro || false
+  
+  // Notification hook for checking expiry
+  const { checkPantryExpiry } = useNotifications()
+  
   const [activeTab, setActiveTab] = useState(STATUS.ACTIVE)
   const [pantryItems, setPantryItems] = useState<PantryItem[]>([])
   const [cachedPantryItems, setCachedPantryItems] = useState<PantryItem[]>(LOCAL_FALLBACK_ITEMS)
@@ -778,6 +799,9 @@ const PantryManagementScreen: React.FC = () => {
             useNativeDriver: true,
           }),
         ]).start();
+        
+        // Check pantry expiry after adding item
+        checkPantryExpiry().catch(err => console.log('Error checking pantry expiry:', err));
       } else {
         showCustomDialog('error', 'Error', 'Failed to add item to pantry.', 'OK', 'Cancel', false, () => {
           hideDialog();
@@ -837,6 +861,25 @@ const PantryManagementScreen: React.FC = () => {
     setIsImagePickerOpen(true)
 
     try {
+      if (!isPro) {
+        showCustomDialog(
+          'info',
+          'Pro Feature',
+          'Scan ingredients using camera or gallery is a premium feature. Upgrade to Pro to unlock this functionality!',
+          'Upgrade to Pro',
+          'Maybe Later',
+          true,
+          () => {
+            hideDialog();
+            router.push('/(protected)/(tabs)/(hidden)/settings/subscription');
+          },
+          () => {
+            hideDialog();
+          }
+        );
+        return;
+      }
+
       // Show custom dialog
       setShowImagePickerDialog(true)
     } catch (error) {
@@ -844,7 +887,7 @@ const PantryManagementScreen: React.FC = () => {
     } finally {
       setIsImagePickerOpen(false)
     }
-  }, [isImagePickerOpen])
+  }, [isImagePickerOpen, isPro, showCustomDialog, hideDialog, router])
 
   // Handle camera selection
   const handleCamera = useCallback(async () => {
@@ -2950,6 +2993,7 @@ const PantryManagementScreen: React.FC = () => {
           onClose={() => setShowImagePickerDialog(false)}
           onCamera={handleCamera}
           onLibrary={handleGallery}
+          isPro={isPro}
         />
 
         {/* Ingredient Detection Modal */}

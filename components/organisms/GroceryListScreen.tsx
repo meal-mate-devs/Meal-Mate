@@ -1,6 +1,7 @@
 import Dialog from "@/components/atoms/Dialog";
 import ErrorDisplay from "@/components/atoms/ErrorDisplay";
 import PantryLoadingAnimation from "@/components/atoms/PantryLoadingAnimation";
+import { useNotifications } from "@/hooks/useNotifications";
 import { GroceryItem as BackendGroceryItem, groceryService } from "@/lib/services/groceryService";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -8,18 +9,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  FlatList,
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  ScrollView,
-  Share,
-  StatusBar,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    FlatList,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    ScrollView,
+    Share,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -122,6 +123,9 @@ const createInitialPurchaseForm = (): PurchaseFormData => ({
 const GroceryListScreen: React.FC = () => {
   const router = useRouter();
   const params = useLocalSearchParams();
+  
+  // Notification hook for checking deadlines
+  const { checkGroceryDeadlines } = useNotifications();
 
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [cachedGroceryItems, setCachedGroceryItems] = useState<GroceryItem[]>(LOCAL_FALLBACK_ITEMS);
@@ -354,6 +358,9 @@ const GroceryListScreen: React.FC = () => {
       setErrorDetails(null);
       setShowAddModal(false);
       resetAddForm();
+      
+      // Check grocery deadlines after adding item
+      checkGroceryDeadlines().catch(err => console.log('Error checking grocery deadlines:', err));
     } catch (err) {
       console.log('Failed to add grocery item:', err);
       showCustomDialog('error', 'Error', 'Failed to add grocery item. Please try again.', 'OK', '', false, hideDialog);

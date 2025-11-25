@@ -6,7 +6,6 @@ import { useFocusEffect } from "@react-navigation/native"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useEffect, useRef, useState } from "react"
 import {
-    Alert,
     Animated,
     FlatList,
     Image,
@@ -21,6 +20,7 @@ import {
 
 import { useAuthContext } from "@/context/authContext"
 import CommunityAPI from "@/lib/services/community.service"
+import CustomDialog from "../../atoms/CustomDialog"
 import EmptyState from "../../atoms/EmptyState"
 import PostSkeleton from "../../atoms/PostSkeleton"
 import CreatePostDrawer from "./CreactPostDrawer"
@@ -41,6 +41,8 @@ export default function CommunityScreen(): JSX.Element {
     const [selectedPost, setSelectedPost] = useState<Post | null>(null)
     const [showRecipeDetail, setShowRecipeDetail] = useState<boolean>(false)
     const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false)
+    const [showErrorDialog, setShowErrorDialog] = useState<boolean>(false)
+    const [errorMessage, setErrorMessage] = useState<string>('')
 
     const scrollY = useRef(new Animated.Value(0)).current
 
@@ -131,7 +133,8 @@ export default function CommunityScreen(): JSX.Element {
                 }
                 return post
             }))
-            Alert.alert('Error', 'Failed to update like status')
+            setErrorMessage('Failed to update like status')
+            setShowErrorDialog(true)
         }
     }
 
@@ -159,7 +162,8 @@ export default function CommunityScreen(): JSX.Element {
                     }
                     : post,
             ))
-            Alert.alert('Error', 'Failed to save post')
+            setErrorMessage('Failed to save post')
+            setShowErrorDialog(true)
         }
     }
 
@@ -193,7 +197,8 @@ export default function CommunityScreen(): JSX.Element {
             }))
         } catch (error) {
             console.log('Error adding comment:', error)
-            Alert.alert('Error', 'Failed to add comment')
+            setErrorMessage('Failed to add comment')
+            setShowErrorDialog(true)
         }
     }
 
@@ -204,6 +209,26 @@ export default function CommunityScreen(): JSX.Element {
         } catch (error) {
             console.log('Error deleting post:', error)
             throw error
+        }
+    }
+
+    const handleDeleteComment = async (commentId: string, postId: string): Promise<void> => {
+        try {
+            await CommunityAPI.deleteComment(commentId)
+            setPosts(posts.map(post => {
+                if (post.id === postId) {
+                    return {
+                        ...post,
+                        comments: post.comments - 1,
+                        commentsList: post.commentsList?.filter(comment => comment.id !== commentId) || []
+                    }
+                }
+                return post
+            }))
+        } catch (error) {
+            console.log('Error deleting comment:', error)
+            setErrorMessage('Failed to delete comment')
+            setShowErrorDialog(true)
         }
     }
 
@@ -299,6 +324,7 @@ export default function CommunityScreen(): JSX.Element {
             onUserPress={handleUserPress}
             onViewRecipe={handleViewRecipe}
             onAddComment={handleAddComment}
+            onDeleteComment={handleDeleteComment}
             onDeletePost={handleDeletePost}
             onUpdatePost={handleUpdatePost}
             loadPosts={loadPosts}
@@ -318,7 +344,7 @@ export default function CommunityScreen(): JSX.Element {
     )
 
     const renderContent = (): JSX.Element => {
-        if (loading) {
+        if (loading || refreshing) {
             return renderSkeletonLoader()
         }
 
@@ -403,6 +429,20 @@ export default function CommunityScreen(): JSX.Element {
                 />
 
                 <PostDetailModel currentUserId={currentUser.mongoId} visible={showRecipeDetail} post={selectedPost} onClose={() => setShowRecipeDetail(false)} />
+
+                <CustomDialog
+                    visible={showErrorDialog}
+                    onClose={() => setShowErrorDialog(false)}
+                    title="Error"
+                >
+                    <Text className="text-white text-base mb-4">{errorMessage}</Text>
+                    <TouchableOpacity
+                        className="bg-red-600 rounded-lg py-3 px-6 self-center"
+                        onPress={() => setShowErrorDialog(false)}
+                    >
+                        <Text className="text-white font-semibold">OK</Text>
+                    </TouchableOpacity>
+                </CustomDialog>
             </LinearGradient>
         </View>
     )

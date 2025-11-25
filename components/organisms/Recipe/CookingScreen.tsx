@@ -1,6 +1,8 @@
+import { useAuthContext } from '@/context/authContext';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Speech from 'expo-speech';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -21,15 +23,18 @@ export default function CookingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const insets = useSafeAreaInsets();
+  const { profile } = useAuthContext();
+
+  const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
 
   // Parse recipe from params with useMemo to prevent re-parsing on every render
   const recipe = useMemo(() => {
     try {
       const recipeParam = params.recipe;
-      
+
       if (typeof recipeParam === 'string' && recipeParam.trim()) {
         const parsed = JSON.parse(recipeParam);
-        
+
         // Validate that we have the required recipe structure
         if (parsed && typeof parsed === 'object' && typeof parsed.title === 'string' && parsed.title.trim()) {
           // Ensure instructions is an array
@@ -55,6 +60,11 @@ export default function CookingScreen() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isSpeakingInstruction, setIsSpeakingInstruction] = useState(false);
+  const [isSpeakingIngredients, setIsSpeakingIngredients] = useState(false);
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+  const [upgradeDialogType, setUpgradeDialogType] = useState<'instruction' | 'ingredients'>('instruction');
+  const [showTTSErrorDialog, setShowTTSErrorDialog] = useState(false);
 
   const overallTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -168,6 +178,86 @@ export default function CookingScreen() {
   const handlePauseResume = () => {
     setIsPaused((prev) => !prev);
   };
+
+  const handleSpeakInstruction = async () => {
+    if (!isPro) {
+      setUpgradeDialogType('instruction');
+      setShowUpgradeDialog(true);
+      return;
+    }
+
+    console.log('🔊 handleSpeakInstruction called, isSpeakingInstruction:', isSpeakingInstruction);
+    
+    if (isSpeakingInstruction) {
+      // Stop speaking
+      console.log('⏹️ Stopping speech...');
+      Speech.stop();
+      setIsSpeakingInstruction(false);
+      return;
+    }
+
+    // Check if TTS is available
+    try {
+      const available = await Speech.isSpeakingAsync();
+      console.log('🎙️ Speech available:', available);
+    } catch (error) {
+      console.log('⚠️ TTS check failed:', error);
+      setShowTTSErrorDialog(true);
+      return;
+    }
+
+    // Stop any ongoing speech first
+    console.log('🛑 Stopping any ongoing speech...');
+    Speech.stop();
+    setIsSpeakingIngredients(false);
+
+    // Start speaking instruction
+    console.log('▶️ Starting speech...');
+    setIsSpeakingInstruction(true);
+
+    const textToSpeak = instructionText;
+    console.log('📝 Text to speak:', textToSpeak.substring(0, 50) + '...');
+
+    try {
+      Speech.speak(textToSpeak, {
+        language: 'en-US',
+        pitch: 1.0,
+        rate: 0.9,
+        onDone: () => {
+          console.log('✅ Speech done');
+          setIsSpeakingInstruction(false);
+        },
+        onStopped: () => {
+          console.log('⏹️ Speech stopped');
+          setIsSpeakingInstruction(false);
+        },
+        onError: (error) => {
+          console.log('❌ Speech error:', error);
+          setIsSpeakingInstruction(false);
+          setShowTTSErrorDialog(true);
+        },
+      });
+      console.log('🎤 Speech.speak called successfully');
+    } catch (error) {
+      console.log('❌ Failed to speak:', error);
+      setIsSpeakingInstruction(false);
+      setShowTTSErrorDialog(true);
+    }
+  };
+
+  // Cleanup speech on step change
+  useEffect(() => {
+    Speech.stop();
+    setIsSpeakingInstruction(false);
+    setIsSpeakingIngredients(false);
+  }, [currentStep]);
+
+  // Cleanup speech on unmount
+  useEffect(() => {
+    return () => {
+      Speech.stop();
+    };
+  }, []);
 
   function ensureString(value: unknown, fallback = ''): string {
     if (value === null || value === undefined) {
@@ -387,35 +477,65 @@ export default function CookingScreen() {
             className="rounded-2xl p-6 mb-6"
             style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}
           >
-            <View className="flex-row items-center mb-4">
-              <View
-                className="w-10 h-10 rounded-xl items-center justify-center mr-3"
-                style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}
-              >
-                <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
-              </View>
-              <Text className="text-lg font-bold" style={{ color: '#FACC15' }}>
-                INSTRUCTION
-              </Text>
-              <TouchableOpacity
-                onPress={handlePauseResume}
-                className="h-10 px-4 rounded-full items-center justify-center ml-3 flex-row"
-                style={{
-                  backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
-                  borderWidth: 2,
-                  borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
-                }}
-                activeOpacity={0.8}
-              >
-                <Ionicons
-                  name={isPaused ? "play" : "pause"}
-                  size={16}
-                  color={isPaused ? "#22C55E" : "#EF4444"}
-                />
-                <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
-                  {isPaused ? "RESUME" : "PAUSE"}
+            <View className="flex-row items-center mb-4 justify-between">
+              <View className="flex-row items-center flex-1">
+                <View
+                  className="w-10 h-10 rounded-xl items-center justify-center mr-3"
+                  style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)' }}
+                >
+                  <Ionicons name="restaurant-outline" size={20} color="#FACC15" />
+                </View>
+                <Text className="text-lg font-bold" style={{ color: '#FACC15' }}>
+                  INSTRUCTION
                 </Text>
-              </TouchableOpacity>
+              </View>
+
+              <View className="flex-row items-center">
+                <TouchableOpacity
+                  onPress={handleSpeakInstruction}
+                  className="h-10 px-3 rounded-full items-center justify-center mr-2"
+                  style={{
+                    backgroundColor: isSpeakingInstruction ? 'rgba(239, 68, 68, 0.15)' : isPro ? 'rgba(59, 130, 246, 0.15)' : 'rgba(107, 114, 128, 0.1)',
+                    borderWidth: 2,
+                    borderColor: isSpeakingInstruction ? 'rgba(239, 68, 68, 0.4)' : isPro ? 'rgba(59, 130, 246, 0.4)' : 'rgba(107, 114, 128, 0.3)',
+                    opacity: isPro ? 1 : 0.7,
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <View className="relative">
+                    <Ionicons
+                      name={isSpeakingInstruction ? "stop" : "volume-high"}
+                      size={18}
+                      color={isSpeakingInstruction ? "#EF4444" : "#3B82F6"}
+                    />
+                    {!isPro && (
+                      <View className="absolute -top-1.5 -right-1.5 bg-yellow-400 rounded-full px-1" style={{ minWidth: 20, height: 12 }}>
+                        <Text className="text-black text-xs font-bold" style={{ fontSize: 8, lineHeight: 12 }}>PRO</Text>
+                      </View>
+                    )}
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handlePauseResume}
+                  className="h-10 px-4 rounded-full items-center justify-center flex-row"
+                  style={{
+                    backgroundColor: isPaused ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                    borderWidth: 2,
+                    borderColor: isPaused ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.4)',
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons
+                    name={isPaused ? "play" : "pause"}
+                    size={16}
+                    color={isPaused ? "#22C55E" : "#EF4444"}
+                  />
+                  <Text className="text-sm font-bold ml-2" style={{ color: isPaused ? "#22C55E" : "#EF4444" }}>
+                    {isPaused ? "RESUME" : "PAUSE"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
             <Text className="text-white text-base leading-7">{instructionText}</Text>
@@ -424,7 +544,7 @@ export default function CookingScreen() {
             {(() => {
               const duration = recipe?.instructions?.[currentStep]?.duration;
               const hasDuration = duration !== null && duration !== undefined && duration !== '' && duration !== 0;
-              
+
               if (!hasDuration) return null;
 
               let durationText = '';
@@ -572,6 +692,34 @@ export default function CookingScreen() {
         confirmText="Done"
         onConfirm={handleCloseCompletionDialog}
         onClose={handleCloseCompletionDialog}
+      />
+
+      {/* Upgrade to Pro Dialog */}
+      <Dialog
+        visible={showUpgradeDialog}
+        type="warning"
+        title="🎙️ Premium Feature"
+        message={`Text-to-speech for ${upgradeDialogType === 'instruction' ? 'cooking instructions' : 'ingredients'} is a premium feature. Upgrade to Pro to listen to your recipes hands-free!`}
+        confirmText="Upgrade to Pro"
+        cancelText="Cancel"
+        showCancelButton={true}
+        onConfirm={() => {
+          setShowUpgradeDialog(false);
+          router.push('/settings/subscription');
+        }}
+        onCancel={() => setShowUpgradeDialog(false)}
+        onClose={() => setShowUpgradeDialog(false)}
+      />
+
+      {/* TTS Error Dialog */}
+      <Dialog
+        visible={showTTSErrorDialog}
+        type="error"
+        title="⚠️ Text-to-Speech Unavailable"
+        message="Text-to-speech is not available on your device. Please install a TTS engine (like Google Text-to-Speech) from the Play Store and enable it in your device settings."
+        confirmText="OK"
+        onConfirm={() => setShowTTSErrorDialog(false)}
+        onClose={() => setShowTTSErrorDialog(false)}
       />
     </View>
   );

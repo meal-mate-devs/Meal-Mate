@@ -5,12 +5,12 @@ import React, { useEffect, useState } from "react";
 import { Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { ingredientDetectionService } from "../../lib/services/ingredientDetectionService";
 import { IngredientWithConfidence } from "../../lib/types/ingredientDetection";
-import Dialog from "../atoms/Dialog";
 
 interface IngredientSearchModalProps {
   visible: boolean;
   onClose: () => void;
   onIngredientsSelected: (ingredients: string[]) => void;
+  isPro?: boolean;
 }
 
 interface IngredientItem {
@@ -23,13 +23,16 @@ const { width } = Dimensions.get("window");
 export default function IngredientSearchModal({
   visible,
   onClose,
-  onIngredientsSelected
+  onIngredientsSelected,
+  isPro = false
 }: IngredientSearchModalProps) {
   const [selectedIngredients, setSelectedIngredients] = useState<IngredientItem[]>([]);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [manualInput, setManualInput] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
+  const [scanCompleted, setScanCompleted] = useState(false);
+  const [noIngredientsDetected, setNoIngredientsDetected] = useState(false);
 
   // Dialog state
   const [showDialog, setShowDialog] = useState(false);
@@ -51,6 +54,8 @@ export default function IngredientSearchModal({
       setSelectedIngredients([]);
       setManualInput('');
       setShowManualInput(false);
+      setScanCompleted(false);
+      setNoIngredientsDetected(false);
     }
   }, [visible]);
 
@@ -206,8 +211,14 @@ export default function IngredientSearchModal({
         } else {
           showCustomDialog('info', 'No New Ingredients', 'No new ingredients were detected or they\'re already in your list.');
         }
+        
+        setScanCompleted(true);
+        setNoIngredientsDetected(false);
       } else {
-        showCustomDialog('warning', 'No Ingredients Detected', 'Try taking a clearer picture of your ingredients.');
+        // No ingredients detected - show the no ingredients UI instead of just a dialog
+        setScanCompleted(true);
+        setNoIngredientsDetected(true);
+        // Don't show the dialog here since we'll show the UI instead
       }
     } catch (error) {
       console.log("Error processing image:", error);
@@ -240,7 +251,11 @@ export default function IngredientSearchModal({
           <View style={styles.header}>
             <Text style={styles.title}>Add Ingredients</Text>
             <Text style={styles.subtitle}>
-              {isScanning ? "Scanning image..." : "Choose how to add ingredients"}
+              {isScanning 
+                ? "Scanning image..." 
+                : scanCompleted && noIngredientsDetected 
+                ? "No ingredients detected" 
+                : "Choose how to add ingredients"}
             </Text>
           </View>
 
@@ -261,6 +276,36 @@ export default function IngredientSearchModal({
                 />
               </View>
               <Text style={styles.progressText}>{Math.round(scanProgress || 0)}%</Text>
+            </View>
+          ) : scanCompleted && noIngredientsDetected ? (
+            <View style={styles.noIngredientsContainer}>
+              <View style={styles.iconCircle}>
+                <LinearGradient
+                  colors={["rgba(239, 68, 68, 0.2)", "rgba(239, 68, 68, 0.05)"]}
+                  style={styles.iconGradient}
+                />
+                <Ionicons name="eye-off" size={32} color="#EF4444" />
+              </View>
+              <Text style={styles.noIngredientsTitle}>No Ingredients Detected</Text>
+              <Text style={styles.noIngredientsText}>
+                We couldn&apos;t identify any ingredients in the image. Try taking a clearer photo or add ingredients manually.
+              </Text>
+              <View style={styles.retryButtonsContainer}>
+                <TouchableOpacity
+                  style={[styles.retryButton, { backgroundColor: "rgba(250, 204, 21, 0.1)", borderColor: "#FACC15", borderWidth: 1 }]}
+                  onPress={handleCamera}
+                >
+                  <Ionicons name="camera" size={20} color="#FACC15" />
+                  <Text style={[styles.retryButtonText, { color: "#FACC15" }]}>Try Again</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.retryButton, { backgroundColor: "rgba(59, 130, 246, 0.1)", borderColor: "#3B82F6", borderWidth: 1 }]}
+                  onPress={handleGallery}
+                >
+                  <Ionicons name="images" size={20} color="#3B82F6" />
+                  <Text style={[styles.retryButtonText, { color: "#3B82F6" }]}>Choose Photo</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : (
             <>
@@ -337,25 +382,29 @@ export default function IngredientSearchModal({
                 </Text>
                 <View style={styles.optionButtonsContainer}>
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
-                    onPress={handleCamera}
-                    disabled={showManualInput}
+                    style={[styles.optionButton, (showManualInput || !isPro) && styles.disabledButton]}
+                    onPress={isPro ? handleCamera : undefined}
+                    disabled={showManualInput || !isPro}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(250, 204, 21, 0.2)" }]}>
-                      <Ionicons name="camera" size={22} color="#FACC15" />
+                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(250, 204, 21, 0.2)" : "rgba(156, 163, 175, 0.2)" }]}>
+                      <Ionicons name="camera" size={22} color={isPro ? "#FACC15" : "#9CA3AF"} />
                     </View>
-                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Camera</Text>
+                    <Text style={[styles.optionText, (showManualInput || !isPro) && styles.disabledText]}>
+                      {isPro ? "Camera" : "Pro feature"}
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
-                    style={[styles.optionButton, showManualInput && styles.disabledButton]}
-                    onPress={handleGallery}
-                    disabled={showManualInput}
+                    style={[styles.optionButton, (showManualInput || !isPro) && styles.disabledButton]}
+                    onPress={isPro ? handleGallery : undefined}
+                    disabled={showManualInput || !isPro}
                   >
-                    <View style={[styles.optionIconCircle, { backgroundColor: "rgba(59, 130, 246, 0.2)" }]}>
-                      <Ionicons name="images" size={22} color="#3B82F6" />
+                    <View style={[styles.optionIconCircle, { backgroundColor: isPro ? "rgba(59, 130, 246, 0.2)" : "rgba(156, 163, 175, 0.2)" }]}>
+                      <Ionicons name="images" size={22} color={isPro ? "#3B82F6" : "#9CA3AF"} />
                     </View>
-                    <Text style={[styles.optionText, showManualInput && styles.disabledText]}>Gallery</Text>
+                    <Text style={[styles.optionText, (showManualInput || !isPro) && styles.disabledText]}>
+                      {isPro ? "Gallery" : "Pro feature"}
+                    </Text>
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -411,14 +460,6 @@ export default function IngredientSearchModal({
     </Modal>
   )
     {/* Custom Dialog */}
-    <Dialog
-      visible={showDialog}
-      type={dialogType}
-      title={dialogTitle}
-      message={dialogMessage}
-      onClose={() => setShowDialog(false)}
-      confirmText="OK"
-    />
 }
 
 const styles = StyleSheet.create({
@@ -682,5 +723,46 @@ const styles = StyleSheet.create({
   activeTypeText: {
     fontWeight: 'bold',
     color: '#10B981',
+  },
+  noIngredientsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+    paddingHorizontal: 24,
+  },
+  noIngredientsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    marginTop: 16,
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noIngredientsText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  retryButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    gap: 12,
+  },
+  retryButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    gap: 8,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

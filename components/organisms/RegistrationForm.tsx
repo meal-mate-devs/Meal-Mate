@@ -143,21 +143,73 @@ export default function RegistrationForm() {
             if (!email.trim()) {
                 setEmailError('Email is required');
                 hasError = true;
-            } else if (!/\S+@\S+\.\S+/.test(email)) {
-                setEmailError('Please enter a valid email address');
-                hasError = true;
             } else {
-                // Check email domain validity
-                const domain = email.substring(email.indexOf('@') + 1);
-                if (!domain.includes('.') || domain.length < 3) {
-                    setEmailError('The email domain is invalid');
+                // Check for multiple @ symbols
+                const atCount = (email.match(/@/g) || []).length;
+                if (atCount === 0) {
+                    setEmailError('Email must contain @ symbol');
+                    hasError = true;
+                } else if (atCount > 1) {
+                    setEmailError('Email cannot contain multiple @ symbols');
+                    hasError = true;
+                } else if (!/\S+@\S+\.\S+/.test(email)) {
+                    setEmailError('Please enter a valid email address');
                     hasError = true;
                 } else {
-                    // Check for disposable email domains
-                    const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
-                    if (disposableDomains.includes(domain)) {
-                        setEmailError('Disposable email addresses are not allowed');
+                    // Extract and validate domain
+                    const atIndex = email.indexOf('@');
+                    const localPart = email.substring(0, atIndex);
+                    const domain = email.substring(atIndex + 1).toLowerCase();
+                    
+                    // Check if local part exists
+                    if (!localPart || localPart.length === 0) {
+                        setEmailError('Email must have a username before @');
                         hasError = true;
+                    }
+                    // Gmail-specific validation
+                    else if (domain.includes('gmail')) {
+                        // Check if it's exactly gmail.com (not gmail.com.com or other variations)
+                        if (domain !== 'gmail.com') {
+                            setEmailError('Invalid Gmail address. Must end with @gmail.com');
+                            hasError = true;
+                        }
+                        // Gmail username validation (1-30 characters, only letters, numbers, dots)
+                        else if (localPart.length < 1 || localPart.length > 30) {
+                            setEmailError('Please input valid email address');
+                            hasError = true;
+                        }
+                        else if (!/^[a-zA-Z0-9.]+$/.test(localPart)) {
+                            setEmailError('Gmail username can only contain letters, numbers, and dots');
+                            hasError = true;
+                        }
+                        else if (localPart.startsWith('.') || localPart.endsWith('.')) {
+                            setEmailError('Gmail username cannot start or end with a dot');
+                            hasError = true;
+                        }
+                        else if (localPart.includes('..')) {
+                            setEmailError('Gmail username cannot contain consecutive dots');
+                            hasError = true;
+                        }
+                    }
+                    // General domain validation for non-Gmail addresses
+                    else {
+                        if (!domain.includes('.') || domain.length < 3) {
+                            setEmailError('The email domain is invalid');
+                            hasError = true;
+                        } else if (domain.startsWith('.') || domain.endsWith('.')) {
+                            setEmailError('Domain cannot start or end with a dot');
+                            hasError = true;
+                        } else if (domain.includes('..')) {
+                            setEmailError('Domain cannot contain consecutive dots');
+                            hasError = true;
+                        } else {
+                            // Check for disposable email domains
+                            const disposableDomains = ['mailinator.com', 'guerrillamail.com', 'tempmail.com'];
+                            if (disposableDomains.includes(domain)) {
+                                setEmailError('Disposable email addresses are not allowed');
+                                hasError = true;
+                            }
+                        }
                     }
                 }
             }

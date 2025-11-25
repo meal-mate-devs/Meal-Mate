@@ -1,4 +1,5 @@
 import { useAuthContext } from '@/context/authContext';
+import { auth } from '@/lib/config/clientApp';
 import { canUseGoogleSignIn } from '@/lib/utils/developmentMode';
 import { validateGoogleEnvironment } from '@/lib/utils/envValidation';
 import { checkNetworkConnectivity, handleLoginError, validateEmail } from '@/lib/utils/loginAuthHelpers';
@@ -6,6 +7,7 @@ import { configureGoogleSignIn, signInWithGoogle } from '@/lib/utils/safeGoogleA
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
+import { updatePassword } from 'firebase/auth';
 import React, { useEffect, useRef, useState } from 'react';
 import {
     Animated,
@@ -20,6 +22,7 @@ import {
     View
 } from 'react-native';
 import Dialog from '../atoms/Dialog';
+import GooglePasswordSetupDialog from '../molecules/GooglePasswordSetupDialog';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -33,6 +36,10 @@ export default function LoginForm() {
     const [dialogType, setDialogType] = useState<'success' | 'error' | 'warning' | 'loading'>('loading');
     const [dialogTitle, setDialogTitle] = useState('');
     const [dialogMessage, setDialogMessage] = useState('');
+
+    // Google password setup state
+    const [showPasswordSetupDialog, setShowPasswordSetupDialog] = useState(false);
+    const [pendingGoogleUserName, setPendingGoogleUserName] = useState('');
 
     // Animated orbs
     const orb1Anim = useRef(new Animated.Value(0)).current;
@@ -75,7 +82,7 @@ export default function LoginForm() {
     }, []);
 
     const router = useRouter();
-    const { login, loginWithGoogle, doesAccountExist } = useAuthContext();
+    const { login, loginWithGoogle, doesAccountExist, profile } = useAuthContext();
 
     const clearErrors = () => {
         setEmailError('');
@@ -222,12 +229,38 @@ export default function LoginForm() {
                 const firebaseUser = await loginWithGoogle(googleUser.idToken);
 
                 if (firebaseUser) {
-                    // Success - navigate to home or profile completion
-                    setTimeout(() => {
-                        setDialogVisible(false);
-                        setIsLoading(false);
-                        router.push('/(protected)/(tabs)/home');
-                    }, 800);
+                    // Close loading dialog
+                    setDialogVisible(false);
+                    setIsLoading(false);
+
+                    // Wait a bit for profile to be updated
+                    await new Promise(resolve => setTimeout(resolve, 500));
+
+                    // Check if this is a first-time Google user who needs to set a password
+                    // We need to fetch the profile again to get the latest data
+                    const response = await fetch(`${process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api'}/auth/profile`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${await firebaseUser.getIdToken()}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (response.ok) {
+                        const profileData = await response.json();
+                        const userProfile = profileData.user;
+
+                        // If user is a Google user and hasn't set a password, show password setup dialog
+                        // Moved to HomeScreen - dialog appears when user reaches home screen
+                        // if (userProfile?.isGoogleUser && !userProfile?.hasPassword) {
+                        //     setPendingGoogleUserName(userProfile.userName || userProfile.firstName || 'User');
+                        //     setShowPasswordSetupDialog(true);
+                        //     return; // Don't navigate yet
+                        // }
+                    }
+
+                    // Navigate to home if password is already set or not needed
+                    router.push('/(protected)/(tabs)/home');
                 } else {
                     throw new Error('Firebase authentication failed');
                 }
@@ -283,6 +316,66 @@ export default function LoginForm() {
 
     const handleDialogConfirm = () => {
         setDialogVisible(false);
+    };
+
+    const setGoogleUserPassword = async (password: string) => {
+        try {
+            const currentUser = auth.currentUser;
+            
+            if (!currentUser) {
+                throw new Error('No user is currently logged in');
+            }
+
+            // Update password in Firebase
+            await updatePassword(currentUser, password);
+
+            // Update password status in backend
+            const token = await currentUser.getIdToken();
+            const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000/api';
+            
+            const response = await fetch(`${API_BASE_URL}/auth/set-google-password`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ hasPassword: true }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to update password status in backend');
+            }
+
+            console.log('Password set successfully for Google user');
+        } catch (error: any) {
+            console.error('Error setting Google user password:', error);
+            throw error;
+        }
+    };
+
+    const handleSetPassword = async (password: string) => {
+        try {
+            await setGoogleUserPassword(password);
+            setShowPasswordSetupDialog(false);
+            
+            // Show success message
+            showDialog('success', 'Password Set Successfully', 'Your account is now secured with a password.');
+            
+            // Navigate to home after a short delay
+            setTimeout(() => {
+                setDialogVisible(false);
+                router.push('/(protected)/(tabs)/home');
+            }, 1500);
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to set password');
+        }
+    };
+
+    const handleSkipPasswordSetup = () => {
+        setShowPasswordSetupDialog(false);
+        // Navigate to home directly
+        router.push('/(protected)/(tabs)/home');
     };
 
     return (
@@ -509,6 +602,14 @@ export default function LoginForm() {
                     </KeyboardAvoidingView>
                 </LinearGradient>
             </ImageBackground>
+
+            {/* Google Password Setup Dialog */}
+            <GooglePasswordSetupDialog
+                visible={showPasswordSetupDialog}
+                onPasswordSet={handleSetPassword}
+                onSkip={handleSkipPasswordSetup}
+                userName={pendingGoogleUserName}
+            />
         </>
     );
 }

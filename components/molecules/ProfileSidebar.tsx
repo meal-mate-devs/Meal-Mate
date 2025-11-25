@@ -17,12 +17,12 @@ const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
 // Enhanced menu items with descriptions
 const menuItems = [
-  { icon: "bell", label: "Notifications", route: "(tabs)/(hidden)/settings/notifications", description: "Updates & Alerts" },
+  { icon: "bell", label: "Notifications", route: "(hidden)/settings/notifications", description: "Updates & Alerts" },
   { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
   { icon: "package", label: "Pantry", route: "recipe/pantry", description: "Pantry Management" },
-  { icon: "shopping-cart", label: "Grocery List", route: "(tabs)/(hidden)/settings/grocery-list", description: "Shopping & Groceries" },
-  { icon: "credit-card", label: "Subscription", route: "(tabs)/(hidden)/settings/subscription", description: "Manage Your Plan" },
-  { icon: "settings", label: "Settings", route: "(tabs)/(hidden)/settings", description: "App Preferences" },
+  { icon: "shopping-cart", label: "Grocery List", route: "(hidden)/settings/grocery-list", description: "Shopping & Groceries" },
+  { icon: "credit-card", label: "Subscription", route: "(hidden)/settings/subscription", description: "Manage Your Plan" },
+  { icon: "settings", label: "Settings", route: "(hidden)/settings", description: "App Preferences" },
 ]
 
 // Custom Image Picker Dialog Component

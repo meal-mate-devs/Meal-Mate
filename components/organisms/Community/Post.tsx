@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import React, { JSX, useState } from "react"
 import { ActivityIndicator, Image, Text, TextInput, TouchableOpacity, View } from "react-native"
+import CustomDialog from "../../atoms/CustomDialog"
 import PostOptionsPopover from "../../atoms/PostOptionsPopover"
 import EditPostModal from "../../molecules/EditPostModal"
 import PostImageCarousel from "./PostImageCarousel"
@@ -20,6 +21,7 @@ interface PostItemProps {
     onAddComment: (postId: string, comment: string) => Promise<void>
     onDeletePost: (postId: string) => Promise<void>
     onUpdatePost?: (postId: string, updateData: any) => Promise<void>
+    onDeleteComment?: (commentId: string, postId: string) => Promise<void>
     loadPosts?: () => Promise<void>
 }
 
@@ -33,6 +35,7 @@ export default function PostItem({
     onAddComment,
     onDeletePost,
     onUpdatePost,
+    onDeleteComment,
     loadPosts,
 }: PostItemProps): JSX.Element {
     const [showComments, setShowComments] = useState<boolean>(false)
@@ -40,6 +43,8 @@ export default function PostItem({
     const [showOptionsPopover, setShowOptionsPopover] = useState<boolean>(false)
     const [showEditModal, setShowEditModal] = useState<boolean>(false)
     const [isCommenting, setIsCommenting] = useState<boolean>(false)
+    const [showDeleteConfirmation, setShowDeleteConfirmation] = useState<boolean>(false)
+    const [commentToDelete, setCommentToDelete] = useState<string | null>(null)
     const isOwnPost = post.author.id === currentUser.mongoId
 
     const handleAddComment = async (): Promise<void> => {
@@ -54,6 +59,24 @@ export default function PostItem({
         } finally {
             setIsCommenting(false)
         }
+    }
+
+    const handleDeleteCommentClick = (commentId: string): void => {
+        setCommentToDelete(commentId)
+        setShowDeleteConfirmation(true)
+    }
+
+    const handleConfirmDelete = async (): Promise<void> => {
+        if (commentToDelete && onDeleteComment) {
+            await onDeleteComment(commentToDelete, post.id)
+        }
+        setShowDeleteConfirmation(false)
+        setCommentToDelete(null)
+    }
+
+    const handleCancelDelete = (): void => {
+        setShowDeleteConfirmation(false)
+        setCommentToDelete(null)
     }
 
     const toggleComments = (): void => {
@@ -198,8 +221,25 @@ export default function PostItem({
                                             />
                                             <View className="flex-1">
                                                 <View className="bg-zinc-700 rounded-xl p-3">
-                                                    <Text className="text-white font-bold text-sm mb-1">{comment.author.name}</Text>
-                                                    <Text className="text-white text-sm leading-4">{comment.text}</Text>
+                                                    <View className="flex-row justify-between items-start">
+                                                        <View className="flex-1">
+                                                            <Text className="text-white font-bold text-sm mb-1">{comment.author.name}</Text>
+                                                            <Text className="text-white text-sm leading-4">{comment.text}</Text>
+                                                        </View>
+                                                        {(isOwnPost || comment.author.id === currentUser.mongoId) && onDeleteComment && (
+                                                            <TouchableOpacity 
+                                                                className="ml-2 w-6 h-6 rounded-lg justify-center items-center overflow-hidden"
+                                                                onPress={() => handleDeleteCommentClick(comment.id)}
+                                                            >
+                                                                <LinearGradient
+                                                                    colors={["#ef4444ca", "#dc26268a"]}
+                                                                    className="w-full h-full flex justify-center items-center"
+                                                                >
+                                                                    <Ionicons name="trash-outline" size={12} color="#FFFFFF" />
+                                                                </LinearGradient>
+                                                            </TouchableOpacity>
+                                                        )}
+                                                    </View>
                                                 </View>
                                                 <Text className="text-zinc-400 text-xs mt-1 ml-3">{comment.timeAgo}</Text>
                                             </View>
@@ -231,7 +271,7 @@ export default function PostItem({
                                     multiline={false}
                                 />
                                 <TouchableOpacity
-                                    className="mr-2 w-8 h-8 rounded-full justify-center items-center"
+                                    className="mr-2 w-8 h-8 rounded-xl justify-center items-center overflow-hidden"
                                     onPress={handleAddComment}
                                     disabled={!commentText.trim() || isCommenting}
                                 >
@@ -240,13 +280,12 @@ export default function PostItem({
                                             <ActivityIndicator size="small" color="#FBBF24" />
                                         </View>
                                     ) : (
-                                        <>
-                                            <LinearGradient
-                                                colors={commentText.trim() ? ["#FBBF24", "#F97416"] : ["#6B7280", "#6B7280"]}
-                                                className="w-full h-full rounded-full absolute"
-                                            />
+                                        <LinearGradient
+                                            colors={commentText.trim() ? ["#FBBF24", "#F97416"] : ["#6B7280", "#6B7280"]}
+                                            className="w-full h-full flex justify-center items-center"
+                                        >
                                             <Ionicons name="send" size={16} color="#FFFFFF" />
-                                        </>
+                                        </LinearGradient>
                                     )}
                                 </TouchableOpacity>
                             </View>
@@ -271,6 +310,30 @@ export default function PostItem({
                 onUpdate={handleUpdatePost}
                 loadPosts={loadPosts}
             />
+
+            <CustomDialog
+                visible={showDeleteConfirmation}
+                onClose={handleCancelDelete}
+                title="Delete Comment"
+            >
+                <Text className="text-white text-base mb-4">
+                    Are you sure you want to delete this comment? This action cannot be undone.
+                </Text>
+                <View className="flex-row justify-end space-x-3">
+                    <TouchableOpacity
+                        className="bg-zinc-600 rounded-lg py-3 px-6 mr-3"
+                        onPress={handleCancelDelete}
+                    >
+                        <Text className="text-white font-semibold">Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        className="bg-red-600 rounded-lg py-3 px-6"
+                        onPress={handleConfirmDelete}
+                    >
+                        <Text className="text-white font-semibold">Delete</Text>
+                    </TouchableOpacity>
+                </View>
+            </CustomDialog>
         </>
     )
 }

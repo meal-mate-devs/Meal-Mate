@@ -1,16 +1,17 @@
 // context/AuthContext.tsx
 import { auth } from '@/lib/config/clientApp';
+import { subscriptionService } from '@/lib/services/subscriptionService';
 import { isGoogleSignedIn, signOutFromGoogle } from '@/lib/utils/safeGoogleAuth';
 import {
-    createUserWithEmailAndPassword,
-    fetchSignInMethodsForEmail,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    sendEmailVerification,
-    sendPasswordResetEmail,
-    signInWithCredential,
-    signInWithEmailAndPassword,
-    signOut
+  createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signOut
 } from 'firebase/auth';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
@@ -20,6 +21,9 @@ type User = {
   displayName: string | null;
   emailVerified: boolean;
 };
+
+type SubscriptionStatus = 'active' | 'canceled' | 'past_due' | 'unpaid' | 'incomplete' | 'incomplete_expired' | 'trialing' | null;
+type SubscriptionPlan = 'monthly' | 'yearly' | null;
 
 type Profile = {
   _id: string;
@@ -38,8 +42,16 @@ type Profile = {
     publicId: string | null;
   };
   isProfileComplete: boolean;
-  isChef: boolean;
+  isChef: 'no' | 'yes' | 'banned';
   isPro: boolean;
+  isGoogleUser?: boolean;
+  hasPassword?: boolean;
+  // Subscription fields
+  stripeCustomerId?: string | null;
+  subscriptionId?: string | null;
+  subscriptionStatus?: SubscriptionStatus;
+  subscriptionPlan?: SubscriptionPlan;
+  subscriptionCurrentPeriodEnd?: Date | string | null;
 };
 
 type AuthContextType = {
@@ -154,7 +166,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             publicId: null
           },
           isProfileComplete: false,
-          isChef: false,
+          isChef: 'no',
           isPro: false
         };
 
@@ -173,6 +185,29 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Profile fetch successful:', data.user.userName);
+
+      // Fetch subscription details if user is Pro
+      if (data.user.isPro && data.user.subscriptionId) {
+        try {
+          console.log('Fetching subscription details for Pro user...');
+          const subscriptionData = await subscriptionService.getCurrentSubscription();
+
+          if (subscriptionData.subscription) {
+            // Merge subscription details into the profile
+            data.user.subscriptionStatus = subscriptionData.subscription.status;
+            data.user.subscriptionPlan = subscriptionData.subscription.planType;
+            data.user.subscriptionCurrentPeriodEnd = subscriptionData.subscription.currentPeriodEnd;
+            console.log('Subscription details fetched:', {
+              status: subscriptionData.subscription.status,
+              plan: subscriptionData.subscription.planType,
+              endDate: subscriptionData.subscription.currentPeriodEnd
+            });
+          }
+        } catch (subError) {
+          console.log('Failed to fetch subscription details:', subError);
+          // Continue with profile data even if subscription fetch fails
+        }
+      }
 
       // Only update the profile if there are actual changes
       if (JSON.stringify(data.user) !== JSON.stringify(profile)) {
@@ -203,7 +238,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           publicId: null
         },
         isProfileComplete: false,
-        isChef: false,
+        isChef: 'no',
         isPro: false
       };
 
@@ -306,7 +341,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       // Handle DD-MM-YYYY format from frontend
       let dobDate;
       let formattedDOB;
-      
+
       try {
         // Check if dateOfBirth is in DD-MM-YYYY format
         if (typeof dateOfBirth === 'string' && dateOfBirth.includes('-') && dateOfBirth.length === 10) {
@@ -315,7 +350,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
         } else {
           dobDate = new Date(dateOfBirth);
         }
-        
+
         formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : dateOfBirth;
       } catch (error) {
         console.log('Date parsing error:', error);
@@ -330,6 +365,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       formData.append('gender', gender);
       formData.append('dateOfBirth', formattedDOB);
       formData.append('phoneNumber', phoneNumber);
+      formData.append('isChef', 'no');
 
       if (profileImage) {
         const imageType = profileImage.type || profileImage.mimeType || 'image/jpeg';
@@ -399,7 +435,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   const loginWithGoogle = async (idToken: string) => {
     try {
       console.log('Starting Google authentication with Firebase...');
-      
+
       // Create Google credential with the ID token
       const credential = GoogleAuthProvider.credential(idToken);
 
@@ -445,7 +481,9 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             body: JSON.stringify({
               firstName: userCredential.user.displayName?.split(' ')[0] || '',
               lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
-              isGoogleUser: true
+              isGoogleUser: true,
+              hasPassword: false,
+              isChef: 'no'
             }),
           });
 
@@ -478,8 +516,10 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
             publicId: null
           },
           isProfileComplete: false, // Mark as incomplete since we don't have all required fields
-          isChef: false,
-          isPro: false
+          isChef: 'no',
+          isPro: false,
+          isGoogleUser: true,
+          hasPassword: false
         };
 
         console.log('Using basic profile for Google user:', basicProfile);
@@ -502,19 +542,26 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
   // Enhanced logout function that handles Google sign-out
   const logout = async () => {
     try {
-      // Check if user is signed in to Google and sign out
-      const isGoogleUser = await isGoogleSignedIn();
-      if (isGoogleUser) {
-        console.log('Signing out from Google...');
-        await signOutFromGoogle();
+      // Try to sign out from Google, but don't let it block the logout
+      try {
+        const isGoogleUser = await isGoogleSignedIn();
+        if (isGoogleUser) {
+          console.log('Signing out from Google...');
+          await signOutFromGoogle();
+          console.log('Google sign-out successful');
+        }
+      } catch (googleError) {
+        console.log('Google sign-out failed, but continuing with app sign-out:', googleError);
+        // Continue with Firebase sign-out even if Google sign-out fails
       }
-      
+
       // Sign out from Firebase
       await signOut(auth);
-      
+
       console.log('User signed out successfully');
     } catch (error) {
       console.log('Error signing out:', error);
+      // Even if Firebase sign-out fails, try to clear local state
       throw error;
     }
   };
@@ -636,7 +683,7 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
       if (userData.dateOfBirth) {
         let dobDate;
         let formattedDOB;
-        
+
         try {
           // Check if dateOfBirth is in DD-MM-YYYY format
           if (typeof userData.dateOfBirth === 'string' && userData.dateOfBirth.includes('-') && userData.dateOfBirth.length === 10) {
@@ -645,13 +692,13 @@ export function AuthContextProvider({ children }: { children: ReactNode }) {
           } else {
             dobDate = new Date(userData.dateOfBirth);
           }
-          
+
           formattedDOB = !isNaN(dobDate.getTime()) ? dobDate.toISOString() : userData.dateOfBirth;
         } catch (error) {
           console.log('Date parsing error in updateUserProfile:', error);
           formattedDOB = userData.dateOfBirth;
         }
-        
+
         formData.append('dateOfBirth', formattedDOB);
       }
 

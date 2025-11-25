@@ -1,145 +1,76 @@
 "use client"
 
+import { useNotifications } from "@/hooks/useNotifications"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useLocalSearchParams, useRouter } from "expo-router"
-import React, { useState } from "react"
-import { Image, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
+import React, { useEffect, useState } from "react"
+import { ActivityIndicator, RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpacity, View } from "react-native"
 
 interface Notification {
-  id: string
-  type: "pantry" | "community" | "chef" | "payment" | "subscription"
+  _id: string
+  type: "pantry" | "grocery" | "community" | "chef" | "payment" | "subscription" | "health" | "system"
   title: string
   message: string
-  timestamp: string
+  createdAt: string
   isRead: boolean
-  priority: "low" | "medium" | "high"
+  priority: "low" | "medium" | "high" | "urgent"
   data?: any
 }
 
 const NotificationsScreen: React.FC = () => {
   const router = useRouter()
   const params = useLocalSearchParams()
-  const [notifications, setNotifications] = useState<Notification[]>([
-    // Pantry Notifications
-    {
-      id: "1",
-      type: "pantry",
-      title: "Items Expiring Soon",
-      message: "Milk (500ml) expires in 2 days",
-      timestamp: "2 hours ago",
-      isRead: false,
-      priority: "medium",
-      data: { item: "Milk", amount: "500ml", expiryDate: "2024-01-15", daysLeft: 2 },
-    },
-    {
-      id: "2",
-      type: "pantry",
-      title: "Item Expired",
-      message: "Bread (1 loaf) expired yesterday",
-      timestamp: "1 day ago",
-      isRead: false,
-      priority: "high",
-      data: { item: "Bread", amount: "1 loaf", expiryDate: "2024-01-12", daysLeft: -1 },
-    },
-    {
-      id: "3",
-      type: "pantry",
-      title: "Low Stock Alert",
-      message: "Eggs (6 remaining) need to be refilled",
-      timestamp: "3 hours ago",
-      isRead: true,
-      priority: "medium",
-      data: { item: "Eggs", amount: "6 remaining", stockLevel: "low" },
-    },
-    // Community Notifications
-    {
-      id: "4",
-      type: "community",
-      title: "New Like on Your Post",
-      message: "Sarah liked your Chocolate Cake recipe",
-      timestamp: "30 minutes ago",
-      isRead: false,
-      priority: "low",
-      data: { user: "Sarah", postTitle: "Chocolate Cake", action: "like" },
-    },
-    {
-      id: "5",
-      type: "community",
-      title: "New Comment",
-      message: "Mike commented on your Pasta Carbonara post",
-      timestamp: "1 hour ago",
-      isRead: false,
-      priority: "medium",
-      data: { user: "Mike", postTitle: "Pasta Carbonara", action: "comment", comment: "Looks delicious!" },
-    },
-    {
-      id: "6",
-      type: "community",
-      title: "Reply to Your Comment",
-      message: "Chef Anna replied to your comment on Italian Risotto",
-      timestamp: "4 hours ago",
-      isRead: true,
-      priority: "medium",
-      data: { user: "Chef Anna", postTitle: "Italian Risotto", action: "reply" },
-    },
-    // Chef Notifications
-    {
-      id: "7",
-      type: "chef",
-      title: "New Recipe from Chef Mario",
-      message: "Chef Mario shared a new recipe: Authentic Pizza Margherita",
-      timestamp: "6 hours ago",
-      isRead: false,
-      priority: "medium",
-      data: {
-        chef: "Chef Mario",
-        recipeTitle: "Authentic Pizza Margherita",
-        chefImage: "https://images.unsplash.com/photo-1583394293214-28ded15ee548?w=100&h=100&fit=crop&crop=face",
-      },
-    },
-    {
-      id: "8",
-      type: "chef",
-      title: "Chef Live Session",
-      message: "Chef Sofia is going live in 30 minutes for a cooking masterclass",
-      timestamp: "45 minutes ago",
-      isRead: false,
-      priority: "high",
-      data: { chef: "Chef Sofia", event: "Live Cooking Masterclass", startTime: "7:00 PM" },
-    },
-    // Payment Notifications
-    {
-      id: "9",
-      type: "payment",
-      title: "Card Expiring Soon",
-      message: "Your Mastercard ending in 8675 expires in 15 days",
-      timestamp: "1 day ago",
-      isRead: true,
-      priority: "high",
-      data: { cardType: "Mastercard", last4: "8675", expiryDate: "03/25", daysLeft: 15 },
-    },
-    // Subscription Notifications
-    {
-      id: "10",
-      type: "subscription",
-      title: "Premium Membership Ending",
-      message: "Your Premium membership expires in 7 days",
-      timestamp: "2 days ago",
-      isRead: false,
-      priority: "high",
-      data: { plan: "Premium", expiryDate: "2024-01-20", daysLeft: 7 },
-    },
-  ])
+  const { 
+    notifications: realNotifications, 
+    unreadCount: realUnreadCount,
+    loading,
+    fetchNotifications,
+    markAsRead: markAsReadAPI,
+    deleteNotifications: deleteNotificationAPI,
+    sendTestNotification,
+    runComprehensiveChecks,
+  } = useNotifications()
 
   const [filter, setFilter] = useState<string>("all")
+  const [refreshing, setRefreshing] = useState(false)
+
+  // Fetch notifications on mount
+  useEffect(() => {
+    console.log('🔄 Fetching notifications...')
+    fetchNotifications()
+  }, [])
+
+  // Handle pull to refresh
+  const onRefresh = async () => {
+    console.log('🔄 Pull to refresh...')
+    setRefreshing(true)
+    await fetchNotifications()
+    setRefreshing(false)
+  }
+
+  // Transform backend notifications to match UI format
+  const notifications: Notification[] = realNotifications.map(notif => ({
+    _id: notif._id,
+    type: notif.type as any,
+    title: notif.title,
+    message: notif.message,
+    createdAt: notif.createdAt,
+    isRead: notif.isRead,
+    priority: notif.priority as any,
+    data: notif.data
+  }))
+
+  const unreadCount = realUnreadCount
 
   const getNotificationIcon = (type: string, priority: string) => {
-    const iconColor = priority === "high" ? "#EF4444" : priority === "medium" ? "#F97316" : "#10B981"
+    const iconColor = priority === "urgent" || priority === "high" ? "#EF4444" : priority === "medium" ? "#F97316" : "#10B981"
 
     switch (type) {
       case "pantry":
         return <MaterialIcons name="kitchen" size={20} color={iconColor} />
+      case "grocery":
+        return <Ionicons name="cart" size={20} color={iconColor} />
       case "community":
         return <Ionicons name="people" size={20} color={iconColor} />
       case "chef":
@@ -148,6 +79,8 @@ const NotificationsScreen: React.FC = () => {
         return <Ionicons name="card" size={20} color={iconColor} />
       case "subscription":
         return <Ionicons name="diamond" size={20} color={iconColor} />
+      case "health":
+        return <Ionicons name="fitness" size={20} color={iconColor} />
       default:
         return <Ionicons name="notifications" size={20} color={iconColor} />
     }
@@ -157,6 +90,8 @@ const NotificationsScreen: React.FC = () => {
     switch (type) {
       case "pantry":
         return "Pantry"
+      case "grocery":
+        return "Grocery"
       case "community":
         return "Community"
       case "chef":
@@ -165,6 +100,8 @@ const NotificationsScreen: React.FC = () => {
         return "Payment"
       case "subscription":
         return "Premium"
+      case "health":
+        return "Health"
       default:
         return "General"
     }
@@ -174,14 +111,18 @@ const NotificationsScreen: React.FC = () => {
     switch (type) {
       case "pantry":
         return "#10B981"
-      case "community":
+      case "grocery":
         return "#3B82F6"
+      case "community":
+        return "#8B5CF6"
       case "chef":
         return "#F97316"
       case "payment":
         return "#EF4444"
       case "subscription":
         return "#8B5CF6"
+      case "health":
+        return "#06B6D4"
       default:
         return "#6B7280"
     }
@@ -189,6 +130,7 @@ const NotificationsScreen: React.FC = () => {
 
   const getPriorityIndicator = (priority: string) => {
     switch (priority) {
+      case "urgent":
       case "high":
         return <View className="w-3 h-3 bg-red-500 rounded-full" />
       case "medium":
@@ -200,37 +142,53 @@ const NotificationsScreen: React.FC = () => {
     }
   }
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map((notif) => (notif.id === id ? { ...notif, isRead: true } : notif)))
+  const markAsRead = async (id: string) => {
+    await markAsReadAPI([id])
+    await fetchNotifications()
   }
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id))
+  const deleteNotification = async (id: string) => {
+    await deleteNotificationAPI([id])
+    await fetchNotifications()
   }
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map((notif) => ({ ...notif, isRead: true })))
+  const markAllAsRead = async () => {
+    await markAsReadAPI([], true)
+    await fetchNotifications()
+  }
+
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+
+    if (diffMins < 1) return "Just now"
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    return date.toLocaleDateString()
   }
 
   const filteredNotifications =
     filter === "all" ? notifications : notifications.filter((notif) => notif.type === filter)
 
-  const unreadCount = notifications.filter((notif) => !notif.isRead).length
-
   const filters = [
     { key: "all", label: "All", count: notifications.length },
     { key: "pantry", label: "Pantry", count: notifications.filter((n) => n.type === "pantry").length },
+    { key: "grocery", label: "Grocery", count: notifications.filter((n) => n.type === "grocery").length },
     { key: "community", label: "Community", count: notifications.filter((n) => n.type === "community").length },
     { key: "chef", label: "Chef", count: notifications.filter((n) => n.type === "chef").length },
-    { key: "payment", label: "Payment", count: notifications.filter((n) => n.type === "payment").length },
-    { key: "subscription", label: "Premium", count: notifications.filter((n) => n.type === "subscription").length },
+    { key: "health", label: "Health", count: notifications.filter((n) => n.type === "health").length },
   ]
 
   const renderNotification = (notification: Notification) => {
     return (
       <TouchableOpacity
-        key={notification.id}
-        onPress={() => markAsRead(notification.id)}
+        key={notification._id}
+        onPress={() => markAsRead(notification._id)}
         className={`bg-zinc-800 rounded-2xl p-4 mb-3 ${!notification.isRead ? "border border-orange-500/30" : ""}`}
       >
         <View className="flex-row items-start">
@@ -258,9 +216,9 @@ const NotificationsScreen: React.FC = () => {
                 {!notification.isRead && <View className="w-2 h-2 bg-orange-500 rounded-full" />}
               </View>
               <View className="items-end">
-                <Text className="text-gray-400 text-xs mb-2">{notification.timestamp}</Text>
+                <Text className="text-gray-400 text-xs mb-2">{formatTimestamp(notification.createdAt)}</Text>
                 <TouchableOpacity
-                  onPress={() => notification.isRead ? deleteNotification(notification.id) : markAsRead(notification.id)}
+                  onPress={() => notification.isRead ? deleteNotification(notification._id) : markAsRead(notification._id)}
                   className={`px-3 py-1.5 rounded-lg flex-row items-center ${
                     notification.isRead ? "bg-red-500/20 border border-red-500/30" : "bg-green-500/20 border border-green-500/30"
                   }`}
@@ -288,82 +246,30 @@ const NotificationsScreen: React.FC = () => {
             {/* Additional Data */}
             {notification.data && (
               <View className="mt-3 p-3 bg-zinc-700 rounded-xl">
-                {notification.type === "pantry" && (
+                {(notification.type === "pantry" || notification.type === "grocery") && notification.data.itemName && (
                   <View className="flex-row items-center justify-between">
                     <View>
-                      <Text className="text-white font-medium">{notification.data.item}</Text>
-                      <Text className="text-gray-400 text-sm">Amount: {notification.data.amount}</Text>
-                    </View>
-                    {notification.data.expiryDate && (
-                      <View className="items-end">
-                        <Text className="text-gray-400 text-xs">Expires</Text>
-                        <Text
-                          className={`font-semibold ${
-                            notification.data.daysLeft < 0
-                              ? "text-red-400"
-                              : notification.data.daysLeft <= 2
-                                ? "text-orange-400"
-                                : "text-green-400"
-                          }`}
-                        >
-                          {notification.data.expiryDate}
+                      <Text className="text-white font-medium">{notification.data.itemName}</Text>
+                      {notification.data.daysLeft !== undefined && (
+                        <Text className="text-gray-400 text-sm">
+                          {notification.data.daysLeft === 0 ? "Today" : 
+                           notification.data.daysLeft === 1 ? "Tomorrow" :
+                           notification.data.daysLeft > 0 ? `${notification.data.daysLeft} days` :
+                           "Expired"}
                         </Text>
-                      </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+                {notification.type === "chef" && notification.data.chefName && (
+                  <View>
+                    <Text className="text-white font-medium">{notification.data.chefName}</Text>
+                    {notification.data.recipeTitle && (
+                      <Text className="text-gray-400 text-sm">{notification.data.recipeTitle}</Text>
                     )}
-                  </View>
-                )}
-
-                {notification.type === "community" && (
-                  <View className="flex-row items-center">
-                    <View className="w-8 h-8 bg-gray-600 rounded-full mr-3" />
-                    <View>
-                      <Text className="text-white font-medium">{notification.data.user}</Text>
-                      <Text className="text-gray-400 text-sm">{notification.data.postTitle}</Text>
-                    </View>
-                  </View>
-                )}
-
-                {notification.type === "chef" && (
-                  <View className="flex-row items-center">
-                    {notification.data.chefImage ? (
-                      <Image source={{ uri: notification.data.chefImage }} className="w-8 h-8 rounded-full mr-3" />
-                    ) : (
-                      <View className="w-8 h-8 bg-orange-500 rounded-full mr-3 items-center justify-center">
-                        <Ionicons name="person" size={16} color="white" />
-                      </View>
+                    {notification.data.courseTitle && (
+                      <Text className="text-gray-400 text-sm">{notification.data.courseTitle}</Text>
                     )}
-                    <View>
-                      <Text className="text-white font-medium">{notification.data.chef}</Text>
-                      <Text className="text-gray-400 text-sm">
-                        {notification.data.recipeTitle || notification.data.event}
-                      </Text>
-                    </View>
-                  </View>
-                )}
-
-                {notification.type === "payment" && (
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-white font-medium">{notification.data.cardType}</Text>
-                      <Text className="text-gray-400 text-sm">•••• •••• •••• {notification.data.last4}</Text>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-gray-400 text-xs">Expires</Text>
-                      <Text className="text-red-400 font-semibold">{notification.data.expiryDate}</Text>
-                    </View>
-                  </View>
-                )}
-
-                {notification.type === "subscription" && (
-                  <View className="flex-row items-center justify-between">
-                    <View>
-                      <Text className="text-white font-medium">{notification.data.plan} Plan</Text>
-                      <Text className="text-gray-400 text-sm">Access to premium features</Text>
-                    </View>
-                    <View className="items-end">
-                      <Text className="text-gray-400 text-xs">Expires in</Text>
-                      <Text className="text-purple-400 font-semibold">{notification.data.daysLeft} days</Text>
-                    </View>
                   </View>
                 )}
               </View>
@@ -375,87 +281,116 @@ const NotificationsScreen: React.FC = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
-      <SafeAreaView className="flex-1 bg-black" style={{ backgroundColor: '#000000' }}>
+    <View className="flex-1 bg-black">
+      <SafeAreaView className="flex-1 bg-black">
         <StatusBar barStyle="light-content" backgroundColor="#000000" translucent={true} />
 
-      {/* Header */}
-      <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
-        <View className="flex-row items-center justify-between mb-2">
-          <TouchableOpacity onPress={() => {
-            // If accessed from sidebar, go back with smooth transition
-            if (params.from === 'sidebar') {
-              router.back()
-            } else {
-              router.back()
-            }
-          }}>
-            <Ionicons name="arrow-back" size={24} color="white" />
-          </TouchableOpacity>
-          <Text className="text-white text-xl font-bold">Notifications</Text>
-          <TouchableOpacity onPress={markAllAsRead}>
-            <Text className="text-orange-500 font-semibold">Mark All Read</Text>
-          </TouchableOpacity>
-        </View>
-        <Text className="text-gray-400 text-center">
-          {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up!"}
-        </Text>
-      </View>
-
-      {/* Filter Tabs */}
-      <View className="px-4 mb-4">
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View className="flex-row">
-            {filters.map((filterItem) => (
-              <TouchableOpacity
-                key={filterItem.key}
-                onPress={() => setFilter(filterItem.key)}
-                className={`py-2 px-3 mr-2 rounded-full flex-row items-center min-w-[80px] justify-center ${
-                  filter === filterItem.key ? "overflow-hidden" : "bg-zinc-800"
-                }`}
-                style={{ height: 36 }}
-              >
-                {filter === filterItem.key ? (
-                  <LinearGradient
-                    colors={["#FACC15", "#F97316"]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    className="absolute inset-0"
-                  />
-                ) : null}
-                <Text className={`${filter === filterItem.key ? "text-white" : "text-gray-400"} font-medium text-sm mr-1`}>
-                  {filterItem.label}
-                </Text>
-                <View className={`px-1.5 py-0.5 rounded-full ${filter === filterItem.key ? "bg-white/20" : "bg-zinc-700"}`}>
-                  <Text className={`text-xs font-bold ${filter === filterItem.key ? "text-white" : "text-gray-300"}`}>
-                    {filterItem.count}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            ))}
+        {/* Header */}
+        <View style={{ paddingTop: 44, backgroundColor: "#000000" }} className="px-4 pb-4 mt-2">
+          <View className="flex-row items-center justify-between mb-2">
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="white" />
+            </TouchableOpacity>
+            <Text className="text-white text-xl font-bold justify-center">Notifications</Text>
+            <TouchableOpacity onPress={markAllAsRead}>
+              <Text className="text-orange-500 font-semibold">All Read</Text>
+            </TouchableOpacity>
           </View>
-        </ScrollView>
-      </View>
+          <Text className="text-gray-400 text-center">
+            {unreadCount > 0 ? `${unreadCount} unread notifications` : "All caught up!"}
+          </Text>
+        </View>
 
-      {/* Notifications List */}
-      <ScrollView 
-        className="flex-1 px-4" 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ backgroundColor: '#000000' }}
-      >
-        {filteredNotifications.length === 0 ? (
-          <View className="flex-1 items-center justify-center py-20">
-            <Ionicons name="notifications-off-outline" size={64} color="#4B5563" />
-            <Text className="text-gray-400 text-lg mt-4 text-center">No notifications</Text>
-            <Text className="text-gray-500 text-center mt-2">
-              {filter === "all" ? "You're all caught up!" : `No ${filter} notifications`}
-            </Text>
+        {/* Comprehensive Check Button */}
+        <View className="px-4 pb-4">
+          <TouchableOpacity
+            onPress={async () => {
+              const result = await runComprehensiveChecks()
+              if (result.success) {
+                console.log('✅ Comprehensive checks completed:', result)
+                await fetchNotifications()
+              } else {
+                console.log('❌ Comprehensive checks failed:', result.error)
+              }
+            }}
+            className="bg-blue-500/20 border border-blue-500/30 rounded-xl p-3 flex-row items-center justify-center"
+          >
+            <MaterialIcons name="refresh" size={20} color="#3b82f6" />
+            <Text className="text-blue-400 font-semibold ml-2">Run Status Checks</Text>
+          </TouchableOpacity>
+          <Text className="text-gray-500 text-xs text-center mt-1">
+            Check pantry expiry, grocery deadlines, and status changes
+          </Text>
+        </View>
+
+        {/* Filter Tabs */}
+        <View className="px-4 mb-4">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View className="flex-row">
+              {filters.map((filterItem) => (
+                <TouchableOpacity
+                  key={filterItem.key}
+                  onPress={() => setFilter(filterItem.key)}
+                  className={`py-2 px-3 mr-2 rounded-full flex-row items-center min-w-[80px] justify-center ${
+                    filter === filterItem.key ? "overflow-hidden" : "bg-zinc-800"
+                  }`}
+                  style={{ height: 36 }}
+                >
+                  {filter === filterItem.key ? (
+                    <LinearGradient
+                      colors={["#FACC15", "#F97316"]}
+                      start={{ x: 0, y: 0 }}
+                      end={{ x: 1, y: 0 }}
+                      className="absolute inset-0"
+                    />
+                  ) : null}
+                  <Text className={`${filter === filterItem.key ? "text-white" : "text-gray-400"} font-medium text-sm mr-1`}>
+                    {filterItem.label}
+                  </Text>
+                  <View className={`px-1.5 py-0.5 rounded-full ${filter === filterItem.key ? "bg-white/20" : "bg-zinc-700"}`}>
+                    <Text className={`text-xs font-bold ${filter === filterItem.key ? "text-white" : "text-gray-300"}`}>
+                      {filterItem.count}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* Notifications List */}
+        {loading && notifications.length === 0 ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#F97316" />
+            <Text className="text-gray-400 mt-4">Loading notifications...</Text>
           </View>
         ) : (
-          <View className="pb-8">{filteredNotifications.map(renderNotification)}</View>
+          <ScrollView 
+            className="flex-1 px-4" 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ backgroundColor: '#000000' }}
+            refreshControl={
+              <RefreshControl 
+                refreshing={refreshing} 
+                onRefresh={onRefresh}
+                tintColor="#F97316"
+              />
+            }
+          >
+            {filteredNotifications.length === 0 ? (
+              <View className="flex-1 items-center justify-center py-20">
+                <Ionicons name="notifications-off-outline" size={64} color="#4B5563" />
+                <Text className="text-gray-400 text-lg mt-4 text-center">No notifications</Text>
+                <Text className="text-gray-500 text-center mt-2">
+                  {filter === "all" ? "You're all caught up!" : `No ${filter} notifications`}
+                </Text>
+              </View>
+            ) : (
+              <View className="pb-8">{filteredNotifications.map(renderNotification)}</View>
+            )}
+          </ScrollView>
         )}
-      </ScrollView>
-    </SafeAreaView>
+      </SafeAreaView>
     </View>
   )
 }

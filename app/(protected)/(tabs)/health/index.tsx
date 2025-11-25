@@ -1,6 +1,6 @@
-import HealthScreen from '@/components/organisms/HealthScreen'
+import DietPlanningScreen from '@/components/organisms/DietPlanning/DietPlanningScreen'
 import React from 'react'
 
 export default function Health() {
-    return <HealthScreen />
+    return <DietPlanningScreen />
 }

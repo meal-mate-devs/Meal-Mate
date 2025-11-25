@@ -86,7 +86,7 @@ const RecipeDetailScreen = () => {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     className="flex-1 bg-green-700 py-4 rounded-full flex-row items-center justify-center"
                     onPress={() => router.push('/recipe/cooking')}
                 >
