@@ -79,32 +79,32 @@ const AIMealPlanGenerator = () => {
 
     // Diet types
     const dietTypes = [
-        { id: "balanced", name: "Balanced", icon: "⚖️" },
-        { id: "high_protein", name: "High Protein", icon: "💪" },
-        { id: "low_carb", name: "Low Carb", icon: "🥗" },
-        { id: "keto", name: "Keto", icon: "🥑" },
-        { id: "vegetarian", name: "Vegetarian", icon: "🌱" },
-        { id: "vegan", name: "Vegan", icon: "🥬" },
+        { id: "balanced", name: t('diet.balanced'), icon: "⚖️" },
+        { id: "high_protein", name: t('diet.highProtein'), icon: "💪" },
+        { id: "low_carb", name: t('diet.lowCarb'), icon: "🥗" },
+        { id: "keto", name: t('diet.keto'), icon: "🥑" },
+        { id: "vegetarian", name: t('diet.vegetarian'), icon: "🌱" },
+        { id: "vegan", name: t('diet.vegan'), icon: "🥬" },
     ]
 
     // Common allergies
     const commonAllergies = [
-        { id: "dairy", name: "Dairy", icon: "🥛" },
-        { id: "nuts", name: "Nuts", icon: "🥜" },
-        { id: "gluten", name: "Gluten", icon: "🌾" },
-        { id: "shellfish", name: "Shellfish", icon: "🦐" },
-        { id: "eggs", name: "Eggs", icon: "🥚" },
-        { id: "soy", name: "Soy", icon: "🫘" },
+        { id: "dairy", name: t('diet.dairy'), icon: "🥛" },
+        { id: "nuts", name: t('diet.nuts'), icon: "🥜" },
+        { id: "gluten", name: t('diet.gluten'), icon: "🌾" },
+        { id: "shellfish", name: t('diet.shellfish'), icon: "🦐" },
+        { id: "eggs", name: t('diet.eggs'), icon: "🥚" },
+        { id: "soy", name: t('diet.soy'), icon: "🫘" },
     ]
 
     // Cuisine preferences
     const cuisines = [
-        { id: "mediterranean", name: "Mediterranean", icon: "🇬🇷" },
-        { id: "asian", name: "Asian", icon: "🍜" },
-        { id: "mexican", name: "Mexican", icon: "🌮" },
-        { id: "american", name: "American", icon: "🍔" },
-        { id: "indian", name: "Indian", icon: "🍛" },
-        { id: "italian", name: "Italian", icon: "🍝" },
+        { id: "mediterranean", name: t('diet.mediterranean'), icon: "🇬🇷" },
+        { id: "asian", name: t('diet.asian'), icon: "🍜" },
+        { id: "mexican", name: t('diet.mexican'), icon: "🌮" },
+        { id: "american", name: t('diet.american'), icon: "🍔" },
+        { id: "indian", name: t('diet.indian'), icon: "🍛" },
+        { id: "italian", name: t('diet.italian'), icon: "🍝" },
     ]
 
     const toggleSelection = (array: string[], setArray: Function, id: string) => {

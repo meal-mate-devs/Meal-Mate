@@ -1,6 +1,6 @@
 import { useAuthContext } from '@/context/authContext';
-import { stripeConnectService } from '@/lib/services/stripeConnectService';
 import { useLanguage } from '@/context/LanguageContext';
+import { stripeConnectService } from '@/lib/services/stripeConnectService';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -115,12 +115,12 @@ export default function ChefMonetizationScreen() {
         setIsStripeLoading(true);
         try {
             const { Linking } = await import('react-native');
-            
+
             if (!stripeStatus.onboardingComplete) {
                 // Start or continue onboarding
                 console.log('🔗 [STRIPE] Starting onboarding...');
                 const response = await stripeConnectService.createAccountLink();
-                
+
                 if (response.success && response.url) {
                     const canOpen = await Linking.canOpenURL(response.url);
                     if (canOpen) {
@@ -136,7 +136,7 @@ export default function ChefMonetizationScreen() {
                 // Open Stripe Express Dashboard
                 console.log('🔗 [STRIPE] Opening dashboard...');
                 const dashboardResponse = await stripeConnectService.getDashboardLink();
-                
+
                 if (dashboardResponse.success && dashboardResponse.url) {
                     const canOpen = await Linking.canOpenURL(dashboardResponse.url);
                     if (canOpen) {
@@ -229,7 +229,7 @@ export default function ChefMonetizationScreen() {
             console.log('🔍 [FRONTEND] Checking Stripe account status...');
             const statusResponse = await stripeConnectService.checkAccountStatus();
             console.log('🔍 [FRONTEND] Stripe status response:', JSON.stringify(statusResponse, null, 2));
-            
+
             setStripeStatus({
                 hasAccount: statusResponse.hasAccount || !!statusResponse.accountId,
                 onboardingComplete: statusResponse.onboardingComplete,
@@ -277,7 +277,7 @@ export default function ChefMonetizationScreen() {
 
         // Parse the withdrawal amount
         const amount = parseFloat(withdrawalAmount);
-        
+
         // Check if amount is valid
         if (!withdrawalAmount || isNaN(amount) || amount <= 0) {
             showDialog(t('chef.invalidAmount'), <Text style={{ color: 'rgba(255, 255, 255, 0.7)' }}>{t('chef.enterValidAmount')}</Text>, undefined, undefined, 'OK');
@@ -334,7 +334,7 @@ export default function ChefMonetizationScreen() {
                     if (response.success) {
                         // Clear the input field
                         setWithdrawalAmount('');
-                        
+
                         showDialog(
                             t('chef.withdrawalSuccessful'),
                             <Text style={{ color: '#FFFFFF' }}>{t('chef.withdrawalTransferred', { amount: (response.withdrawalAmount || 0).toFixed(2), transferId: response.transferId || 'N/A' })}</Text>,
@@ -345,7 +345,7 @@ export default function ChefMonetizationScreen() {
                     } else {
                         // Handle specific error codes
                         let errorMessage = response.error || t('chef.failedToProcessWithdrawal');
-                        
+
                         if (response.code === 'PAYOUTS_NOT_ENABLED') {
                             errorMessage = t('chef.stripeNotSetupForPayouts');
                         } else if (response.code === 'PLATFORM_BALANCE_INSUFFICIENT') {
@@ -496,9 +496,9 @@ export default function ChefMonetizationScreen() {
                                 <Text style={styles.earningsBreakdownValue}>${stats.lastWithdrawalAmount.toFixed(2)}</Text>
                             </View>
                             <Text style={styles.lastWithdrawalDate}>
-                                {new Date(stats.lastWithdrawalAt).toLocaleDateString('en-US', { 
-                                    year: 'numeric', 
-                                    month: 'short', 
+                                {new Date(stats.lastWithdrawalAt).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
                                     day: 'numeric',
                                     hour: '2-digit',
                                     minute: '2-digit'
@@ -509,36 +509,36 @@ export default function ChefMonetizationScreen() {
                 </View>
 
                 {stripeStatus.hasAccount && stripeStatus.payoutsEnabled && stats.availableBalance >= MINIMUM_WITHDRAWAL && (
-                <View style={styles.withdrawalInputContainer}>
-                    <Text style={styles.withdrawalInputLabel}>{t('chef.withdrawalAmountLabel')}</Text>
-                    <TextInput
-                        style={styles.withdrawalInput}
-                        value={withdrawalAmount}
-                        onChangeText={(text: string) => {
-                            // Only allow numbers and decimal point
-                            const cleanedText = text.replace(/[^0-9.]/g, '');
-                            // Ensure only one decimal point
-                            const parts = cleanedText.split('.');
-                            const formattedText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText;
-                            setWithdrawalAmount(formattedText);
-                        }}
-                        placeholder={`${t('chef.minWithdrawal')} $${MINIMUM_WITHDRAWAL} - ${t('chef.maxWithdrawal')} $${stats.availableBalance.toFixed(2)}`}
-                        placeholderTextColor="#64748B"
-                        keyboardType="decimal-pad"
-                        maxLength={10}
-                    />
-                    {withdrawalAmount && (
-                        <Text style={styles.withdrawalAmountHint}>
-                            {t('chef.youWillReceive', { amount: (parseFloat(withdrawalAmount) || 0).toFixed(2) })}
-                        </Text>
-                    )}
-                </View>
+                    <View style={styles.withdrawalInputContainer}>
+                        <Text style={styles.withdrawalInputLabel}>{t('chef.withdrawalAmountLabel')}</Text>
+                        <TextInput
+                            style={styles.withdrawalInput}
+                            value={withdrawalAmount}
+                            onChangeText={(text: string) => {
+                                // Only allow numbers and decimal point
+                                const cleanedText = text.replace(/[^0-9.]/g, '');
+                                // Ensure only one decimal point
+                                const parts = cleanedText.split('.');
+                                const formattedText = parts.length > 2 ? `${parts[0]}.${parts.slice(1).join('')}` : cleanedText;
+                                setWithdrawalAmount(formattedText);
+                            }}
+                            placeholder={`${t('chef.minWithdrawal')} $${MINIMUM_WITHDRAWAL} - ${t('chef.maxWithdrawal')} $${stats.availableBalance.toFixed(2)}`}
+                            placeholderTextColor="#64748B"
+                            keyboardType="decimal-pad"
+                            maxLength={10}
+                        />
+                        {withdrawalAmount && (
+                            <Text style={styles.withdrawalAmountHint}>
+                                {t('chef.youWillReceive', { amount: (parseFloat(withdrawalAmount) || 0).toFixed(2) })}
+                            </Text>
+                        )}
+                    </View>
                 )}
 
                 {/* Action Buttons Row */}
                 <View style={styles.earningsButtonsRow}>
                     {/* Withdraw Button */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[
                             styles.withdrawButton,
                             styles.earningsButtonFlex,
@@ -553,13 +553,13 @@ export default function ChefMonetizationScreen() {
                             <>
                                 <Ionicons name="wallet-outline" size={16} color="#FFFFFF" />
                                 <Text style={styles.withdrawButtonText}>
-                                    {!withdrawalAmount 
-                                        ? t('chef.enterAmount') 
+                                    {!withdrawalAmount
+                                        ? t('chef.enterAmount')
                                         : parseFloat(withdrawalAmount) < MINIMUM_WITHDRAWAL
-                                        ? t('chef.minAmount', { amount: MINIMUM_WITHDRAWAL })
-                                        : parseFloat(withdrawalAmount) > stats.availableBalance
-                                        ? t('chef.tooHigh')
-                                        : t('chef.withdraw')
+                                            ? t('chef.minAmount', { amount: MINIMUM_WITHDRAWAL })
+                                            : parseFloat(withdrawalAmount) > stats.availableBalance
+                                                ? t('chef.tooHigh')
+                                                : t('chef.withdraw')
                                     }
                                 </Text>
                             </>
@@ -567,7 +567,7 @@ export default function ChefMonetizationScreen() {
                     </TouchableOpacity>
 
                     {/* Stripe Dashboard/Onboarding Button */}
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         style={[
                             styles.stripeButton,
                             styles.earningsButtonFlex,

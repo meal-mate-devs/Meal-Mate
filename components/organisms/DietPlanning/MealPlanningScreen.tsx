@@ -104,15 +104,15 @@ const MealPlanningScreen = () => {
 
         // Daily targets (RDA for adults)
         const vitamins = [
-            { name: "Vitamin C", amount: Math.round(totalNutrition.vitaminC), target: 90, unit: "mg", color: "#10B981" },
-            { name: "Vitamin D", amount: parseFloat(totalNutrition.vitaminD.toFixed(1)), target: 15, unit: "μg", color: "#F97316" },
-            { name: "Vitamin B12", amount: parseFloat(totalNutrition.vitaminB12.toFixed(1)), target: 2.4, unit: "μg", color: "#10B981" },
+            { name: t('diet.vitaminC'), amount: Math.round(totalNutrition.vitaminC), target: 90, unit: "mg", color: "#10B981" },
+            { name: t('diet.vitaminD'), amount: parseFloat(totalNutrition.vitaminD.toFixed(1)), target: 15, unit: "μg", color: "#F97316" },
+            { name: t('diet.vitaminB12'), amount: parseFloat(totalNutrition.vitaminB12.toFixed(1)), target: 2.4, unit: "μg", color: "#10B981" },
         ]
 
         const minerals = [
-            { name: "Calcium", amount: Math.round(totalNutrition.calcium), target: 1000, unit: "mg", color: "#10B981" },
-            { name: "Iron", amount: parseFloat(totalNutrition.iron.toFixed(1)), target: 18, unit: "mg", color: "#F97316" },
-            { name: "Magnesium", amount: Math.round(totalNutrition.magnesium), target: 420, unit: "mg", color: "#FACC15" },
+            { name: t('diet.calcium'), amount: Math.round(totalNutrition.calcium), target: 1000, unit: "mg", color: "#10B981" },
+            { name: t('diet.iron'), amount: parseFloat(totalNutrition.iron.toFixed(1)), target: 18, unit: "mg", color: "#F97316" },
+            { name: t('diet.magnesium'), amount: Math.round(totalNutrition.magnesium), target: 420, unit: "mg", color: "#FACC15" },
         ]
 
         return { vitamins, minerals }
