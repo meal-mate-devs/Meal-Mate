@@ -13,6 +13,7 @@ import {
     Alert,
     Animated,
     BackHandler,
+    Modal,
     ScrollView,
     Share,
     StatusBar,
@@ -93,6 +94,28 @@ const ViewRecipeScreen = () => {
             }
         }
     }, [])
+
+    // Reset state when meal changes
+    useEffect(() => {
+        const mealId = params.mealId as string
+        if (mealId) {
+            // Reset all state when navigating to a different meal
+            setIsGenerating(true)
+            setGeneratedRecipe(null)
+            setError(null)
+            setIsRecipeSaved(false)
+            setShowTimeoutDialog(false)
+            setShowSaveSuccessDialog(false)
+            setShowRemoveSuccessDialog(false)
+            setShowFullDescription(false)
+
+            // Clear any existing timeout
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current)
+                timeoutRef.current = null
+            }
+        }
+    }, [params.mealId])
 
     // Handle hardware back button
     useEffect(() => {
@@ -304,13 +327,22 @@ const ViewRecipeScreen = () => {
                 end={{ x: 0, y: 0.5 }}
             >
                 <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-                    {/* Loading State */}
-                    {isGenerating && !error && !generatedRecipe && (
-                        <View className="flex-1 justify-center items-center" style={{ backgroundColor: '#0c0c1563' }}>
-                            <View className="absolute inset-0">
+                    {/* Full Screen Loading Modal */}
+                    <Modal
+                        visible={isGenerating && !error && !generatedRecipe}
+                        transparent={true}
+                        animationType="fade"
+                        statusBarTranslucent={true}
+                        style={{ margin: 0 }}
+                    >
+                        <View style={{ flex: 1, backgroundColor: '#0c0c1563', justifyContent: 'center', alignItems: 'center' }}>
+                            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
                                 <Animated.View
-                                    className="absolute w-80 h-80 rounded-full"
                                     style={{
+                                        position: 'absolute',
+                                        width: 320,
+                                        height: 320,
+                                        borderRadius: 160,
                                         top: "-10%",
                                         left: "-25%",
                                         backgroundColor: "#FACC15",
@@ -319,8 +351,11 @@ const ViewRecipeScreen = () => {
                                     }}
                                 />
                                 <Animated.View
-                                    className="absolute w-64 h-64 rounded-full"
                                     style={{
+                                        position: 'absolute',
+                                        width: 256,
+                                        height: 256,
+                                        borderRadius: 128,
                                         bottom: "5%",
                                         right: "-20%",
                                         backgroundColor: "#F97316",
@@ -330,8 +365,8 @@ const ViewRecipeScreen = () => {
                                 />
                             </View>
 
-                            <Animated.View className="items-center justify-center z-10 px-8" style={{ opacity: fadeAnim }}>
-                                <View className="relative mb-12">
+                            <Animated.View style={{ alignItems: 'center', justifyContent: 'center', zIndex: 10, paddingHorizontal: 32, opacity: fadeAnim }}>
+                                <View style={{ marginBottom: 48 }}>
                                     <LottieView
                                         source={require("@/assets/lottie/loading.json")}
                                         autoPlay
@@ -340,21 +375,21 @@ const ViewRecipeScreen = () => {
                                     />
                                 </View>
 
-                                <View className="items-center space-y-4">
-                                    <Text className="text-4xl font-light tracking-tight text-center leading-tight" style={{ color: '#FFFFFF' }}>
+                                <View style={{ alignItems: 'center', marginVertical: 16 }}>
+                                    <Text style={{ fontSize: 48, fontWeight: '300', letterSpacing: -1, textAlign: 'center', lineHeight: 56, color: '#FFFFFF' }}>
                                         Crafting Your{"\n"}
-                                        <Text className="font-bold" style={{ color: '#FACC15' }}>Perfect Recipe</Text>
+                                        <Text style={{ fontWeight: 'bold', color: '#FACC15' }}>Perfect Recipe</Text>
                                     </Text>
 
-                                    <View className="w-16 h-px my-2" style={{ backgroundColor: 'rgba(250, 204, 21, 0.3)' }} />
+                                    <View style={{ width: 64, height: 1, marginVertical: 8, backgroundColor: 'rgba(250, 204, 21, 0.3)' }} />
 
-                                    <Text className="text-center text-base font-light leading-relaxed max-w-xs" style={{ color: '#94A3B8' }}>
+                                    <Text style={{ textAlign: 'center', fontSize: 16, fontWeight: '300', lineHeight: 24, maxWidth: 320, color: '#94A3B8' }}>
                                         Our AI chef is analyzing ingredients and creating something extraordinary
                                     </Text>
                                 </View>
                             </Animated.View>
                         </View>
-                    )}
+                    </Modal>
 
                     {/* Error State */}
                     {error && (

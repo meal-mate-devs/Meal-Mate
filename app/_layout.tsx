@@ -2,6 +2,7 @@ import CustomSplashScreen from "@/components/molecules/CustomSplashScreen";
 import { AuthContextProvider, useAuthContext } from "@/context/authContext";
 import { NotificationProvider } from "@/context/notificationContext";
 import { Poppins_400Regular, Poppins_700Bold, useFonts } from '@expo-google-fonts/poppins';
+import { StripeProvider } from '@stripe/stripe-react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import { SplashScreen, Stack, usePathname, useRouter } from 'expo-router';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
@@ -65,11 +66,16 @@ export default function RootLayout() {
       {!fontsLoaded ? (
         <CustomSplashScreen />
       ) : (
-        <AuthContextProvider>
-          <NotificationProvider>
-            <RootLayoutContent />
-          </NotificationProvider>
-        </AuthContextProvider>
+        <StripeProvider
+          publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}
+          merchantIdentifier="merchant.com.meal-mate"
+        >
+          <AuthContextProvider>
+            <NotificationProvider>
+              <RootLayoutContent />
+            </NotificationProvider>
+          </AuthContextProvider>
+        </StripeProvider>
       )}
     </View>
   );
