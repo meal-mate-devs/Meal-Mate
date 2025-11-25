@@ -1,6 +1,7 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import { logout } from "@/lib/modules/firebase/authService"
 import { Feather, Ionicons } from "@expo/vector-icons"
 import { BlurView } from "expo-blur"
@@ -15,16 +16,6 @@ import Dialog from "../atoms/Dialog"
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window")
 
-// Enhanced menu items with descriptions
-const menuItems = [
-  { icon: "bell", label: "Notifications", route: "(hidden)/settings/notifications", description: "Updates & Alerts" },
-  { icon: "heart", label: "Favorites", route: "recipe/favorites", description: "Saved Recipes" },
-  { icon: "package", label: "Pantry", route: "recipe/pantry", description: "Pantry Management" },
-  { icon: "shopping-cart", label: "Grocery List", route: "(hidden)/settings/grocery-list", description: "Shopping & Groceries" },
-  { icon: "credit-card", label: "Subscription", route: "(hidden)/settings/subscription", description: "Manage Your Plan" },
-  { icon: "settings", label: "Settings", route: "(hidden)/settings", description: "App Preferences" },
-]
-
 // Custom Image Picker Dialog Component
 interface ImagePickerDialogProps {
   visible: boolean
@@ -36,6 +27,7 @@ interface ImagePickerDialogProps {
 }
 
 const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose, onCamera, onLibrary, profileImage, onViewImage }) => {
+  const { t } = useLanguage()
   const fadeAnim = useRef(new Animated.Value(0)).current
   const scaleAnim = useRef(new Animated.Value(0.9)).current
 
@@ -107,11 +99,11 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
             </View>
 
             <Text style={imagePickerStyles.title}>
-              Select Profile Picture
+              {t("sidebar.selectProfilePicture")}
             </Text>
 
             <Text style={imagePickerStyles.message}>
-              Choose how you want to select your profile picture
+              {t("sidebar.selectProfilePictureDesc")}
             </Text>
 
             <View style={imagePickerStyles.buttonContainer}>
@@ -134,8 +126,8 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                       <Ionicons name="eye" size={20} color="#FACC15" />
                     </View>
                     <View style={imagePickerStyles.textContainer}>
-                      <Text style={imagePickerStyles.optionTitle}>View Image</Text>
-                      <Text style={imagePickerStyles.optionSubtitle}>See current profile picture</Text>
+                      <Text style={imagePickerStyles.optionTitle}>{t("sidebar.viewImage")}</Text>
+                      <Text style={imagePickerStyles.optionSubtitle}>{t("sidebar.viewImageDesc")}</Text>
                     </View>
                   </View>
                 </TouchableOpacity>
@@ -155,8 +147,8 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                     <Ionicons name="camera" size={24} color="#FACC15" />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Camera</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Take a new photo</Text>
+                    <Text style={imagePickerStyles.optionTitle}>{t("sidebar.camera")}</Text>
+                    <Text style={imagePickerStyles.optionSubtitle}>{t("sidebar.cameraDesc")}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
@@ -176,8 +168,8 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
                     <Ionicons name="images" size={24} color="#FACC15" />
                   </View>
                   <View style={imagePickerStyles.textContainer}>
-                    <Text style={imagePickerStyles.optionTitle}>Gallery</Text>
-                    <Text style={imagePickerStyles.optionSubtitle}>Choose from library</Text>
+                    <Text style={imagePickerStyles.optionTitle}>{t("sidebar.gallery")}</Text>
+                    <Text style={imagePickerStyles.optionSubtitle}>{t("sidebar.galleryDesc")}</Text>
                   </View>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
@@ -189,7 +181,7 @@ const ImagePickerDialog: React.FC<ImagePickerDialogProps> = ({ visible, onClose,
               onPress={onClose}
             >
               <Text style={imagePickerStyles.cancelText}>
-                Cancel
+                {t("sidebar.cancel")}
               </Text>
             </TouchableOpacity>
           </LinearGradient>
@@ -468,6 +460,18 @@ interface ProfileSidebarProps {
 }
 
 const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEditProfile }) => {
+  const { t } = useLanguage()
+
+  // Enhanced menu items with descriptions - now using translations
+  const menuItems = [
+    { icon: "bell", labelKey: "sidebar.notifications", descKey: "sidebar.notificationsDesc", route: "(hidden)/settings/notifications" },
+    { icon: "heart", labelKey: "sidebar.favorites", descKey: "sidebar.favoritesDesc", route: "recipe/favorites" },
+    { icon: "package", labelKey: "sidebar.pantry", descKey: "sidebar.pantryDesc", route: "recipe/pantry" },
+    { icon: "shopping-cart", labelKey: "sidebar.groceryList", descKey: "sidebar.groceryListDesc", route: "(hidden)/settings/grocery-list" },
+    { icon: "credit-card", labelKey: "sidebar.subscription", descKey: "sidebar.subscriptionDesc", route: "(hidden)/settings/subscription" },
+    { icon: "settings", labelKey: "sidebar.settings", descKey: "sidebar.settingsDesc", route: "(hidden)/settings" },
+  ]
+
   const insets = useSafeAreaInsets()
   const { profileData, updateProfileImage, subscribe } = useProfileStore()
   const { profile, user, updateUserProfile } = useAuthContext()
@@ -639,7 +643,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
       // For recipe-related pages (pantry, favorites), pass sidebar context
       if (route.includes("recipe/")) {
         router.push({ pathname: route as any, params: { from: "sidebar" } })
-      } 
+      }
       // For settings pages and grocery list, pass sidebar context 
       else if (route.includes("settings")) {
         router.push({ pathname: route as any, params: { from: "sidebar" } })
@@ -668,7 +672,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
       const mediaLibraryPermission = await ImagePicker.requestMediaLibraryPermissionsAsync()
 
       if (cameraPermission.status !== "granted" || mediaLibraryPermission.status !== "granted") {
-        Alert.alert("Permission needed", "Camera and photo library permissions are required to change profile picture.")
+        Alert.alert(t("sidebar.permissionNeeded"), t("sidebar.permissionMessage"))
         return
       }
 
@@ -692,7 +696,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
       setShowImagePickerDialog(true)
     } catch (error) {
       console.log("Error picking image:", error)
-      Alert.alert("Error", "Failed to open image picker")
+      Alert.alert(t("sidebar.error"), t("sidebar.failedToOpenImagePicker"))
     }
   }
 
@@ -747,11 +751,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           }),
         ]).start()
 
-        Alert.alert("Success!", "Profile picture updated successfully!")
+        Alert.alert(t("sidebar.success"), t("sidebar.profilePictureUpdated"))
       }
     } catch (error) {
       console.log("Error opening camera:", error)
-      Alert.alert("Error", "Failed to open camera")
+      Alert.alert(t("sidebar.error"), t("sidebar.failedToOpenCamera"))
     } finally {
       setIsImageLoading(false)
     }
@@ -809,11 +813,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
           }),
         ]).start()
 
-        Alert.alert("Success!", "Profile picture updated successfully!")
+        Alert.alert(t("sidebar.success"), t("sidebar.profilePictureUpdated"))
       }
     } catch (error) {
       console.log("Error opening image library:", error)
-      Alert.alert("Error", "Failed to open photo library")
+      Alert.alert(t("sidebar.error"), t("sidebar.failedToOpenPhotoLibrary"))
     } finally {
       setIsImageLoading(false)
     }
@@ -865,7 +869,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
               >
                 <LinearGradient colors={["#FACC15", "#F97316"]} style={styles.spinnerGradient} />
               </Animated.View>
-              <Text style={styles.loadingText}>Uploading...</Text>
+              <Text style={styles.loadingText}>{t("sidebar.uploading")}</Text>
             </View>
           </Animated.View>
         </View>
@@ -1003,7 +1007,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
                   style={styles.buttonGradient}
                 >
                   <Ionicons name="person-outline" size={16} color="#FACC15" />
-                  <Text style={styles.editProfileText}>View Profile</Text>
+                  <Text style={styles.editProfileText}>{t("sidebar.viewProfile")}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </View>
@@ -1011,7 +1015,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
         </Animated.View>
 
         {/* Enhanced Menu Items with ScrollView - includes Sign Out button */}
-        <ScrollView 
+        <ScrollView
           style={styles.menuContainer}
           showsVerticalScrollIndicator={false}
           bounces={true}
@@ -1041,8 +1045,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
                   <Feather name={item.icon as any} size={20} color="#FACC15" />
                 </View>
                 <View style={styles.menuTextContainer}>
-                  <Text style={styles.menuItemText}>{item.label}</Text>
-                  <Text style={styles.menuItemDescription}>{item.description}</Text>
+                  <Text style={styles.menuItemText}>{t(item.labelKey)}</Text>
+                  <Text style={styles.menuItemDescription}>{t(item.descKey)}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={16} color="#6B7280" />
               </TouchableOpacity>
@@ -1055,8 +1059,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
               <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             </View>
             <View style={styles.logoutTextContainer}>
-              <Text style={styles.logoutText}>Sign Out</Text>
-              <Text style={styles.logoutDescription}>End your session</Text>
+              <Text style={styles.logoutText}>{t("sidebar.signOut")}</Text>
+              <Text style={styles.logoutDescription}>{t("sidebar.signOutDesc")}</Text>
             </View>
           </TouchableOpacity>
         </ScrollView>
@@ -1073,12 +1077,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose, onEdit
       <Dialog
         visible={showLogoutDialog}
         type="warning"
-        title="Sign Out"
-        message="Are you sure you want to sign out?"
+        title={t("sidebar.signOutTitle")}
+        message={t("sidebar.signOutMessage")}
         onClose={() => setShowLogoutDialog(false)}
         onConfirm={confirmLogout}
-        confirmText="Sign Out"
-        cancelText="Cancel"
+        confirmText={t("sidebar.signOut")}
+        cancelText={t("sidebar.cancel")}
         showCancelButton={true}
       />
 

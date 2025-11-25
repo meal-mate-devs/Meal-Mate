@@ -1,6 +1,7 @@
 "use client"
 
 import Dialog from "@/components/atoms/Dialog"
+import { useLanguage } from "@/context/LanguageContext"
 import { useDietPlanningStore } from "@/hooks/useDietPlanningStore"
 import { DIET_GOALS } from "@/lib/constants/dietPlanning"
 import { DietPlan, dietPlanningService } from "@/lib/services/dietPlanningService"
@@ -13,6 +14,7 @@ import { RefreshControl, SafeAreaView, ScrollView, StatusBar, Text, TouchableOpa
 
 const DietPlanningScreen = () => {
     const router = useRouter()
+    const { t } = useLanguage()
     const {
         selectedGoal,
         streakData,
@@ -144,8 +146,8 @@ const DietPlanningScreen = () => {
 
         // Show confirmation dialog
         setDialogType('confirm')
-        setDialogTitle('Cancel Meal Plan')
-        setDialogMessage('Are you sure you want to cancel your current meal plan? This action cannot be undone.')
+        setDialogTitle(t('diet.deleteDietPlan'))
+        setDialogMessage(t('diet.deletePlanConfirm'))
         setDialogAction(() => async () => {
             try {
                 setIsDeletingPlan(true)
@@ -156,15 +158,15 @@ const DietPlanningScreen = () => {
 
                 // Show success dialog
                 setDialogType('success')
-                setDialogTitle('Plan Cancelled')
-                setDialogMessage('Your meal plan has been cancelled successfully')
+                setDialogTitle(t('diet.planDeletedSuccess'))
+                setDialogMessage('')
                 setDialogAction(null)
                 setShowDialog(true)
             } catch (error: any) {
                 console.log('Error deleting plan:', error)
                 setDialogType('error')
-                setDialogTitle('Error')
-                setDialogMessage(error.message || 'Failed to cancel plan')
+                setDialogTitle(t('diet.failedToDeletePlan'))
+                setDialogMessage(error.message || t('diet.failedToDeletePlan'))
                 setDialogAction(null)
                 setShowDialog(true)
             } finally {
@@ -259,13 +261,13 @@ const DietPlanningScreen = () => {
     // Quick stats
     const quickStats = [
         {
-            label: "Today's Meals",
+            label: t('diet.todaysMeals'),
             value: `${stats.mealsCompleted}/${stats.totalMeals}`,
             icon: "restaurant-outline",
             color: "#10B981",
         },
         {
-            label: "Calories Left",
+            label: t('diet.caloriesToday'),
             value: stats.caloriesRemaining.toString(),
             icon: "flame-outline",
             color: "#F97316",
@@ -277,7 +279,7 @@ const DietPlanningScreen = () => {
             color: "#3B82F6",
         },
         {
-            label: "Streak Days",
+            label: t('diet.dayStreak'),
             value: streakData.currentStreak.toString(),
             icon: "trophy-outline",
             color: "#FACC15",
@@ -303,8 +305,8 @@ const DietPlanningScreen = () => {
                 <Text className="text-gray-400 text-center">Personalize nutrition for healthy living</Text>
             </View>
 
-            <ScrollView 
-                className="flex-1 px-4" 
+            <ScrollView
+                className="flex-1 px-4"
                 showsVerticalScrollIndicator={false}
                 refreshControl={
                     <RefreshControl
@@ -342,7 +344,7 @@ const DietPlanningScreen = () => {
                                 <Ionicons name="calendar-outline" size={40} color="#71717a" />
                             </View>
                             <Text className="text-white text-lg font-bold mb-2 text-center">
-                                No Active Meal Plan
+                                {t('diet.noActivePlan')}
                             </Text>
                             <Text className="text-gray-400 text-center mb-6 text-sm">
                                 Generate a personalized AI meal plan to start tracking your nutrition and reaching your goals
@@ -391,18 +393,18 @@ const DietPlanningScreen = () => {
                                     <View className="flex-1">
                                         <View className="flex-row items-center mb-2">
                                             <View className="bg-white/20 px-3 py-1 rounded-full mr-2">
-                                                <Text className="text-white text-xs font-bold">ACTIVE</Text>
+                                                <Text className="text-white text-xs font-bold">{t('diet.active').toUpperCase()}</Text>
                                             </View>
                                             <View className="bg-white/20 px-3 py-1 rounded-full">
                                                 <Text className="text-white text-xs font-bold">
-                                                    {activePlan.duration} DAYS
+                                                    {activePlan.duration} {t('diet.days').toUpperCase()}
                                                 </Text>
                                             </View>
                                         </View>
                                         <Text className="text-white text-xl font-bold mb-1">
-                                            {activePlan.goalType === 'lose' ? 'Weight Loss Plan' :
-                                                activePlan.goalType === 'gain' ? 'Muscle Gain Plan' :
-                                                    'Maintenance Plan'}
+                                            {activePlan.goalType === 'lose' ? t('diet.weightLoss') :
+                                                activePlan.goalType === 'gain' ? t('diet.muscleGain') :
+                                                    t('diet.maintenance')} Plan
                                         </Text>
                                         <Text className="text-white/80 text-sm">
                                             {activePlan.targetCalories.toLocaleString()} cal/day • {activePlan.macroTargets.protein}g protein
@@ -426,7 +428,7 @@ const DietPlanningScreen = () => {
                                     <View>
                                         <Text className="text-white/70 text-xs">Plan Progress</Text>
                                         <Text className="text-white text-lg font-bold">
-                                            Day {dietPlanningService.getPlanStatistics(activePlan).currentDay} of {activePlan.duration}
+                                            {t('diet.dayOf', { current: dietPlanningService.getPlanStatistics(activePlan).currentDay, total: activePlan.duration })}
                                         </Text>
                                     </View>
                                     <View className="bg-white/20 h-2 rounded-full flex-1 mx-4">
@@ -514,7 +516,7 @@ const DietPlanningScreen = () => {
                         </View>
                         {/* Overall Nutrition Breakdown */}
                         <View className="mb-6">
-                            <Text className="text-white text-xl font-bold mb-4">Overall Nutrition Status</Text>
+                            <Text className="text-white text-xl font-bold mb-4">{t('diet.overallNutritionStatus')}</Text>
                             <View className="bg-zinc-800 rounded-3xl p-5">
                                 {isLoadingNutrition ? (
                                     <>
@@ -547,11 +549,11 @@ const DietPlanningScreen = () => {
                                     </>
                                 ) : overallNutrition.hasData ? (
                                     <>
-                                        <Text className="text-gray-400 text-sm mb-4">Based on completed meals</Text>
+                                        <Text className="text-gray-400 text-sm mb-4">{t('diet.basedOnCompletedMeals')}</Text>
 
                                         {/* Macros */}
                                         <View className="mb-4">
-                                            <Text className="text-white font-semibold mb-3">Macronutrients (Daily Avg)</Text>
+                                            <Text className="text-white font-semibold mb-3">{t('diet.macronutrientsDailyAvg')}</Text>
                                             {overallNutrition.macros.map((macro, idx) => {
                                                 const percentage = Math.min((macro.current / macro.target) * 100, 100)
                                                 return (
@@ -577,7 +579,7 @@ const DietPlanningScreen = () => {
 
                                         {/* Key Micronutrients */}
                                         <View>
-                                            <Text className="text-white font-semibold mb-3">Key Micronutrients (Daily Avg)</Text>
+                                            <Text className="text-white font-semibold mb-3">{t('diet.keyMicronutrientsDailyAvg')}</Text>
                                             {overallNutrition.micronutrients.map((nutrient, idx) => (
                                                 <View key={idx} className="flex-row items-center justify-between mb-3">
                                                     <Text className="text-gray-300 text-sm flex-1">{nutrient.name}</Text>
@@ -596,7 +598,7 @@ const DietPlanningScreen = () => {
                                     </>
                                 ) : (
                                     <Text className="text-gray-500 text-center py-8">
-                                        Complete meals to see your nutrition progress
+                                        {t('diet.completeMealsToSeeProgress')}
                                     </Text>
                                 )}
                             </View>
@@ -657,88 +659,88 @@ const DietPlanningScreen = () => {
                                 start={{ x: 0, y: 0 }}
                                 end={{ x: 1, y: 0 }}
                                 className="p-5"
-                        >
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center flex-1">
-                                    <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
-                                        <Ionicons name="sparkles-outline" size={28} color="white" />
-                                    </View>
-                                    <View className="flex-1">
-                                        <View className="flex-row items-center mb-1">
-                                            <Text className="text-white text-lg font-bold mr-2">AI Meal Plans</Text>
-                                            <View className="bg-white/30 px-2 py-1 rounded-full">
-                                                <Text className="text-white text-xs font-bold">AI</Text>
-                                            </View>
+                            >
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center flex-1">
+                                        <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
+                                            <Ionicons name="sparkles-outline" size={28} color="white" />
                                         </View>
-                                        <Text className="text-white/80 text-sm">
-                                            Generate custom weekly & monthly plans
-                                        </Text>
+                                        <View className="flex-1">
+                                            <View className="flex-row items-center mb-1">
+                                                <Text className="text-white text-lg font-bold mr-2">AI Meal Plans</Text>
+                                                <View className="bg-white/30 px-2 py-1 rounded-full">
+                                                    <Text className="text-white text-xs font-bold">AI</Text>
+                                                </View>
+                                            </View>
+                                            <Text className="text-white/80 text-sm">
+                                                Generate custom weekly & monthly plans
+                                            </Text>
+                                        </View>
                                     </View>
+                                    <Ionicons name="chevron-forward" size={24} color="white" />
                                 </View>
-                                <Ionicons name="chevron-forward" size={24} color="white" />
-                            </View>
-                        </LinearGradient>
-                    </View>
-                </TouchableOpacity>
+                            </LinearGradient>
+                        </View>
+                    </TouchableOpacity>
 
-                {/* Health Conditions */}
-                <TouchableOpacity
-                    onPress={() => router.push("/diet-plan/health-conditions" as any)}
-                    activeOpacity={0.8}
-                >
-                    <View className="overflow-hidden rounded-3xl">
-                        <LinearGradient
-                            colors={["#047857", "#065f46"]}
-                            start={{ x: 0, y: 0 }}
-                            end={{ x: 1, y: 0 }}
-                            className="p-5"
-                        >
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-row items-center flex-1">
-                                    <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
-                                        <Ionicons name="medical-outline" size={28} color="white" />
+                    {/* Health Conditions */}
+                    <TouchableOpacity
+                        onPress={() => router.push("/diet-plan/health-conditions" as any)}
+                        activeOpacity={0.8}
+                    >
+                        <View className="overflow-hidden rounded-3xl">
+                            <LinearGradient
+                                colors={["#047857", "#065f46"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                className="p-5"
+                            >
+                                <View className="flex-row items-center justify-between">
+                                    <View className="flex-row items-center flex-1">
+                                        <View className="w-14 h-14 rounded-full bg-white/20 items-center justify-center mr-4">
+                                            <Ionicons name="medical-outline" size={28} color="white" />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text className="text-white text-lg font-bold mb-1">Health Conditions</Text>
+                                            <Text className="text-white/80 text-sm">Specialized dietary plans</Text>
+                                        </View>
                                     </View>
-                                    <View className="flex-1">
-                                        <Text className="text-white text-lg font-bold mb-1">Health Conditions</Text>
-                                        <Text className="text-white/80 text-sm">Specialized dietary plans</Text>
-                                    </View>
+                                    <Ionicons name="chevron-forward" size={24} color="white" />
                                 </View>
-                                <Ionicons name="chevron-forward" size={24} color="white" />
-                            </View>
-                        </LinearGradient>
-                    </View>
-                </TouchableOpacity>
-            </View>
+                            </LinearGradient>
+                        </View>
+                    </TouchableOpacity>
+                </View>
 
-            {/* Nutrition Tips Section - Always Visible */}
-            <View className="mb-8">
-                <Text className="text-white text-xl font-bold mb-4">Quick Tips</Text>
-                <View className="bg-zinc-800 rounded-2xl p-5">
-                    <View className="flex-row items-start mb-3">
-                        <View className="w-8 h-8 rounded-full bg-green-900/30 items-center justify-center mr-3">
-                            <Ionicons name="bulb-outline" size={18} color="#10B981" />
+                {/* Nutrition Tips Section - Always Visible */}
+                <View className="mb-8">
+                    <Text className="text-white text-xl font-bold mb-4">Quick Tips</Text>
+                    <View className="bg-zinc-800 rounded-2xl p-5">
+                        <View className="flex-row items-start mb-3">
+                            <View className="w-8 h-8 rounded-full bg-green-900/30 items-center justify-center mr-3">
+                                <Ionicons name="bulb-outline" size={18} color="#10B981" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-white font-semibold mb-1">Stay Consistent</Text>
+                                <Text className="text-gray-400 text-sm">
+                                    Track your meals daily to build healthy habits and reach your goals faster.
+                                </Text>
+                            </View>
                         </View>
-                        <View className="flex-1">
-                            <Text className="text-white font-semibold mb-1">Stay Consistent</Text>
-                            <Text className="text-gray-400 text-sm">
-                                Track your meals daily to build healthy habits and reach your goals faster.
-                            </Text>
-                        </View>
-                    </View>
-                    <View className="h-px bg-zinc-700 my-3" />
-                    <View className="flex-row items-start">
-                        <View className="w-8 h-8 rounded-full bg-blue-900/30 items-center justify-center mr-3">
-                            <Ionicons name="water-outline" size={18} color="#3B82F6" />
-                        </View>
-                        <View className="flex-1">
-                            <Text className="text-white font-semibold mb-1">Stay Hydrated</Text>
-                            <Text className="text-gray-400 text-sm">
-                                Drink water throughout the day. Track your intake to ensure proper hydration.
-                            </Text>
+                        <View className="h-px bg-zinc-700 my-3" />
+                        <View className="flex-row items-start">
+                            <View className="w-8 h-8 rounded-full bg-blue-900/30 items-center justify-center mr-3">
+                                <Ionicons name="water-outline" size={18} color="#3B82F6" />
+                            </View>
+                            <View className="flex-1">
+                                <Text className="text-white font-semibold mb-1">Stay Hydrated</Text>
+                                <Text className="text-gray-400 text-sm">
+                                    Drink water throughout the day. Track your intake to ensure proper hydration.
+                                </Text>
+                            </View>
                         </View>
                     </View>
                 </View>
-            </View>
             </ScrollView>
 
             {/* Dialog Component */}

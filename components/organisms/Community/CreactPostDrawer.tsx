@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import { CreatePostData } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
@@ -28,19 +29,19 @@ interface CreatePostDrawerProps {
 const { height } = Dimensions.get("window")
 
 const RECIPE_CATEGORIES = [
-    "Appetizer",
-    "Main Course",
-    "Dessert",
-    "Soup",
-    "Salad",
-    "Pasta",
-    "Seafood",
-    "Vegetarian",
-    "Snack",
-    "Beverage",
+    "appetizer",
+    "mainCourse",
+    "dessert",
+    "soup",
+    "salad",
+    "pasta",
+    "seafood",
+    "vegetarian",
+    "snack",
+    "beverage",
 ]
 
-const DIFFICULTY_LEVELS = ["Easy", "Medium", "Hard"]
+const DIFFICULTY_LEVELS = ["easy", "medium", "hard"]
 
 export default function CreatePostDrawer({
     visible,
@@ -48,6 +49,7 @@ export default function CreatePostDrawer({
     onCreatePost,
     userAvatar,
 }: CreatePostDrawerProps): JSX.Element {
+    const { t } = useLanguage();
     const [postType, setPostType] = useState<"simple" | "recipe">("simple")
     const [content, setContent] = useState<string>("")
     const [images, setImages] = useState<any[]>([])
@@ -55,8 +57,8 @@ export default function CreatePostDrawer({
     const [recipeTitle, setRecipeTitle] = useState<string>("")
     const [cookTime, setCookTime] = useState<string>("")
     const [servings, setServings] = useState<number>(4)
-    const [difficulty, setDifficulty] = useState<string>("Easy")
-    const [category, setCategory] = useState<string>("Main Course")
+    const [difficulty, setDifficulty] = useState<string>("easy")
+    const [category, setCategory] = useState<string>("mainCourse")
     const [ingredients, setIngredients] = useState<string[]>([""])
     const [instructions, setInstructions] = useState<string[]>([""])
     const [tags, setTags] = useState<string[]>([])
@@ -82,8 +84,8 @@ export default function CreatePostDrawer({
         setRecipeTitle("")
         setCookTime("")
         setServings(4)
-        setDifficulty("Easy")
-        setCategory("Main Course")
+        setDifficulty("easy")
+        setCategory("mainCourse")
         setIngredients([""])
         setInstructions([""])
         setTags([])
@@ -103,7 +105,7 @@ export default function CreatePostDrawer({
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
             if (status !== 'granted') {
-                Alert.alert('Permission needed', 'Please grant camera roll permissions to add images.')
+                Alert.alert(t('community.createPost.permissionNeeded'), t('community.createPost.cameraPermissionMessage'))
                 return
             }
 
@@ -134,7 +136,7 @@ export default function CreatePostDrawer({
             }
         } catch (error) {
             console.log('Error picking image from gallery:', error)
-            Alert.alert('Error', 'Failed to pick image from gallery')
+            Alert.alert(t('community.createPost.error'), t('community.createPost.failedToPickImage'))
         } finally {
             setShowImagePicker(false)
         }
@@ -144,7 +146,7 @@ export default function CreatePostDrawer({
         try {
             const { status } = await ImagePicker.requestCameraPermissionsAsync()
             if (status !== 'granted') {
-                Alert.alert('Permission needed', 'Please grant camera permissions to take photos.')
+                Alert.alert(t('community.createPost.permissionNeeded'), t('community.createPost.cameraPermissionNeeded'))
                 return
             }
 
@@ -174,7 +176,7 @@ export default function CreatePostDrawer({
             }
         } catch (error) {
             console.log('Error taking photo:', error)
-            Alert.alert('Error', 'Failed to take photo')
+            Alert.alert(t('community.createPost.error'), t('community.createPost.failedToTakePhoto'))
         } finally {
             setShowImagePicker(false)
         }
@@ -229,12 +231,12 @@ export default function CreatePostDrawer({
 
     const handleCreatePost = async (): Promise<void> => {
         if (!content.trim()) {
-            Alert.alert("Please add some content to your post")
+            Alert.alert(t('community.createPost.pleaseAddContent'))
             return
         }
 
         if (postType === "recipe" && !recipeTitle.trim()) {
-            Alert.alert("Please add a recipe title")
+            Alert.alert(t('community.createPost.pleaseAddRecipeTitle'))
             return
         }
 
@@ -273,12 +275,12 @@ export default function CreatePostDrawer({
             postType: postType,
         }
 
-        showDialog('loading', 'Posting', 'Please wait while we create your post...')
+        showDialog('loading', t('community.createPost.posting'), t('community.createPost.postingMessage'))
 
         try {
 
             await onCreatePost(postData)
-            showDialog('success', 'Post Created', 'Your post was created successfully.')
+            showDialog('success', t('community.createPost.postCreated'), t('community.createPost.postCreatedMessage'))
             setTimeout(() => {
                 setDialogVisible(false)
                 resetForm()
@@ -287,23 +289,23 @@ export default function CreatePostDrawer({
 
         } catch (err: any) {
             console.log('Error creating post:', err)
-            showDialog('error', 'Failed to Create Post', err?.message || 'An error occurred while creating your post.')
+            showDialog('error', t('community.createPost.failedToCreatePost'), err?.message || t('community.createPost.error'))
             return Promise.reject(err)
         }
     }
 
     return (
-        <Modal 
-            visible={visible} 
-            animationType="slide" 
-            transparent={false} 
+        <Modal
+            visible={visible}
+            animationType="slide"
+            transparent={false}
             statusBarTranslucent={false}
             style={{ margin: 0 }}
             presentationStyle="fullScreen"
         >
             <View style={{ flex: 1, backgroundColor: '#18181b' }}>
-                <KeyboardAvoidingView 
-                    behavior={Platform.OS === "ios" ? "padding" : "height"} 
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === "ios" ? "padding" : "height"}
                     style={{ flex: 1 }}
                     keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 25}
                 >
@@ -319,19 +321,19 @@ export default function CreatePostDrawer({
                         </View>
 
 
-                            <ScrollView
-                                className="flex-1"
-                                showsVerticalScrollIndicator={false}
-                                keyboardShouldPersistTaps="handled"
-                                contentContainerStyle={{ paddingBottom: 20 }}
-                            >
-                                <View className="flex-row items-center p-4">
-                                    <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
-                                    <View className="ml-3">
-                                        <Text className="text-white font-bold">You</Text>
-                                        <Text className="text-zinc-400 text-sm">Sharing with Recipe Community</Text>
-                                    </View>
+                        <ScrollView
+                            className="flex-1"
+                            showsVerticalScrollIndicator={false}
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={{ paddingBottom: 20 }}
+                        >
+                            <View className="flex-row items-center p-4">
+                                <Image source={userAvatar} className="w-12 h-12 rounded-full border-2 border-yellow-400" />
+                                <View className="ml-3">
+                                    <Text className="text-white font-bold">You</Text>
+                                    <Text className="text-zinc-400 text-sm">Sharing with Recipe Community</Text>
                                 </View>
+                            </View>
 
                             <View className="px-4 mb-4">
                                 <View className="flex-row bg-zinc-800 rounded-xl p-1">

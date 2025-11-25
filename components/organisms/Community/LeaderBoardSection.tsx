@@ -1,5 +1,6 @@
 "use client"
 
+import { useLanguage } from "@/context/LanguageContext"
 import CommunityAPI from "@/lib/services/community.service"
 import { LeaderboardEntry, User } from "@/lib/types/community"
 import { Ionicons } from "@expo/vector-icons"
@@ -13,6 +14,7 @@ interface LeaderboardScreenProps {
 }
 
 export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardScreenProps): JSX.Element {
+    const { t } = useLanguage()
     const [timeframe, setTimeframe] = useState<"week" | "month" | "all">("month")
     const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
     const [loading, setLoading] = useState<boolean>(true)
@@ -30,7 +32,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
         } catch (error) {
             console.log('Error loading leaderboard:', error)
             setLeaderboard([]) // Fallback to mock data
-            Alert.alert('Info', 'Using demo leaderboard data')
+            Alert.alert(t('community.info'), t('community.demoLeaderboardMessage'))
         } finally {
             setLoading(false)
         }
@@ -82,7 +84,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                         <TouchableOpacity onPress={onClose}>
                             <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                         </TouchableOpacity>
-                        <Text className="text-white text-xl font-bold">🏆 Leaderboard</Text>
+                        <Text className="text-white text-xl font-bold">{t('community.leaderboardTitle')}</Text>
                         <View style={{ width: 24 }} />
                     </View>
 
@@ -100,7 +102,7 @@ export default function LeaderboardScreen({ onUserPress, onClose }: LeaderboardS
                                             className={`text-center font-bold capitalize ${timeframe === period ? "text-black" : "text-white"
                                                 }`}
                                         >
-                                            {period === "all" ? "All Time" : period}
+                                            {t(`community.${period}`)}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}

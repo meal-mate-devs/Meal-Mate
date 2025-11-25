@@ -1,9 +1,12 @@
 "use client"
 
 import { useAuthContext } from "@/context/authContext"
+import { useLanguage } from "@/context/LanguageContext"
 import { useFavoritesStore } from "@/hooks/useFavoritesStore"
 import * as chefService from "@/lib/api/chefService"
 import { apiClient } from "@/lib/api/client"
+import { DIFFICULTY_LEVELS, DURATION_UNITS, SKILL_LEVELS } from "@/lib/constants/chefConstants"
+import { getDifficultyTranslation, getDurationUnitTranslation, getExpertiseCategoryTranslation, getSkillLevelTranslation } from "@/lib/utils/translationHelpers"
 import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
@@ -135,7 +138,8 @@ const ChefDashboardScreen: React.FC = () => {
   const scrollRef = useRef<FlatList>(null)
   const { profile, refreshProfile } = useAuthContext()
   const { addToFavorites, isFavorite, removeFromFavorites } = useFavoritesStore()
-  
+  const { t } = useLanguage()
+
   const [userType, setUserType] = useState<"user" | "chef">("user")
   const [selectedChef, setSelectedChef] = useState<string | null>(null)
   const [showRecipeModal, setShowRecipeModal] = useState(false)
@@ -148,7 +152,7 @@ const ChefDashboardScreen: React.FC = () => {
   const [chefSearchQuery, setChefSearchQuery] = useState("")
   const [viewingChefProfile, setViewingChefProfile] = useState<Chef | null>(null)
   const [editMode, setEditMode] = useState(false)
-  
+
   // Chef profile editing states (separate from user profile)
   const [editedChefName, setEditedChefName] = useState('')
   const [editedExpertiseCategory, setEditedExpertiseCategory] = useState('')
@@ -156,17 +160,17 @@ const ChefDashboardScreen: React.FC = () => {
   const [editedYearsOfExperience, setEditedYearsOfExperience] = useState(0)
   const [editedPortfolioImage, setEditedPortfolioImage] = useState('')
   const [showExpertiseDropdown, setShowExpertiseDropdown] = useState(false)
-  
+
   // Chef profile data from backend
   const [chefProfileData, setChefProfileData] = useState<any>(null)
-  
+
   const EXPERTISE_CATEGORIES = [
     "Baking", "Desi Cooking", "Knife Skills", "Healthy Cooking",
     "Continental", "Beginner Fundamentals", "Italian Cuisine",
     "Asian Fusion", "Desserts & Pastries", "Grilling & BBQ",
     "Vegan & Vegetarian", "Other"
   ]
-  
+
   // Update chef editing values when chef profile data changes
   React.useEffect(() => {
     if (chefProfileData) {
@@ -175,31 +179,31 @@ const ChefDashboardScreen: React.FC = () => {
       setEditedProfessionalSummary(chefProfileData.professionalSummary || '')
       setEditedYearsOfExperience(chefProfileData.yearsOfExperience || 0)
       // Handle portfolioImage - it could be a string or an object with url property
-      const portfolioImageUrl = typeof chefProfileData.portfolioImage === 'string' 
-        ? chefProfileData.portfolioImage 
+      const portfolioImageUrl = typeof chefProfileData.portfolioImage === 'string'
+        ? chefProfileData.portfolioImage
         : (chefProfileData.portfolioImage && typeof chefProfileData.portfolioImage === 'object' && 'url' in chefProfileData.portfolioImage)
-          ? (chefProfileData.portfolioImage as any).url 
+          ? (chefProfileData.portfolioImage as any).url
           : ''
       setEditedPortfolioImage(portfolioImageUrl)
     }
   }, [chefProfileData])
-  
+
   // Edit mode states
   const [editingRecipe, setEditingRecipe] = useState<any>(null)
   const [editingCourse, setEditingCourse] = useState<any>(null)
-  
+
   // Recipe detail modal state
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null)
   const [expandedRecipeData, setExpandedRecipeData] = useState<any>(null)
   const [isLoadingRecipeDetails, setIsLoadingRecipeDetails] = useState(false)
-  
+
   // Course detail modal state
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
   const [expandedCourseData, setExpandedCourseData] = useState<any>(null)
   const [isLoadingCourseDetails, setIsLoadingCourseDetails] = useState(false)
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set())
   const [expandedUnits, setExpandedUnits] = useState<Set<string>>(new Set())
-  
+
   // Publish/Unpublish state
   const [isPublishing, setIsPublishing] = useState(false)
   const [showPublishSuccessDialog, setShowPublishSuccessDialog] = useState(false)
@@ -234,24 +238,24 @@ const ChefDashboardScreen: React.FC = () => {
     "Misleading Information",
     "Spam or Scam",
   ]
-  
+
   // Chef registration states
   const [isRegisteringChef, setIsRegisteringChef] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [showRegErrorDialog, setShowRegErrorDialog] = useState(false)
   const [regErrorMessage, setRegErrorMessage] = useState("")
-  
+
   // Chef dashboard toggle state
   const [showProfileModal, setShowProfileModal] = useState(false)
   const [managementTab, setManagementTab] = useState<"recipes" | "courses">("recipes")
-  
+
   // General success and error dialogs
   const [showGeneralSuccessDialog, setShowGeneralSuccessDialog] = useState(false)
   const [showGeneralErrorDialog, setShowGeneralErrorDialog] = useState(false)
   const [generalSuccessMessage, setGeneralSuccessMessage] = useState('')
   const [generalErrorMessage, setGeneralErrorMessage] = useState('')
   const [showPremiumDialog, setShowPremiumDialog] = useState(false)
-  
+
   // Dynamic state for user-created content
   const [userRecipes, setUserRecipes] = useState<Recipe[]>([])
   const [userCourses, setUserCourses] = useState<Course[]>([])
@@ -300,7 +304,7 @@ const ChefDashboardScreen: React.FC = () => {
     try {
       console.log('📊 Fetching chef stats and feedback from backend...')
       const response = await apiClient.get<any>('/chef/profile/me', true)
-      
+
       if (response.chef) {
         console.log('✅ Chef profile fetched with stats:', response.chef.stats)
         console.log('📈 Backend Stats:', {
@@ -311,14 +315,14 @@ const ChefDashboardScreen: React.FC = () => {
           avgRating: response.chef.stats?.averageRating,
           totalRatings: response.chef.stats?.totalRatings
         })
-        
+
         // Store chef profile data
         setChefProfileData(response.chef)
-        
+
         // Store backend stats
         setBackendChefStats(response.chef.stats)
         console.log('✅ Backend stats stored in state')
-        
+
         // Transform profileRatings to feedbacks format
         if (response.chef.profileRatings && response.chef.profileRatings.length > 0) {
           const transformedFeedbacks = response.chef.profileRatings.map((rating: any) => ({
@@ -327,14 +331,14 @@ const ChefDashboardScreen: React.FC = () => {
             userAvatar: rating.ratedBy?.profileImage?.url || 'https://via.placeholder.com/40',
             rating: rating.rating,
             comment: rating.feedback || 'No feedback provided',
-            date: new Date(rating.ratedAt).toLocaleDateString('en-US', { 
-              month: 'short', 
-              day: 'numeric', 
-              year: 'numeric' 
+            date: new Date(rating.ratedAt).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
             }),
             recipeTitle: null
           })).reverse() // Show newest first
-          
+
           console.log(`✅ Loaded ${transformedFeedbacks.length} feedbacks`)
           setFeedbacks(transformedFeedbacks)
         } else {
@@ -355,7 +359,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('📚 Fetching chef recipes from backend...')
       const recipes = await chefService.getMyRecipes('all')
       console.log(`✅ Fetched ${recipes.length} recipes`)
-      
+
       // Convert backend recipes to local Recipe format
       const localRecipes: Recipe[] = recipes.map((r: any) => ({
         id: r._id,
@@ -373,7 +377,7 @@ const ChefDashboardScreen: React.FC = () => {
         chefId: r.authorId,
         chefName: "You"
       }))
-      
+
       setUserRecipes(localRecipes)
     } catch (error) {
       console.log('❌ Failed to fetch recipes:', error)
@@ -388,7 +392,7 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('📚 Fetching chef courses from backend...')
       const courses = await chefService.getMyCourses('all')
       console.log(`✅ Fetched ${courses.length} courses`)
-      
+
       // Convert backend courses to local Course format
       const localCourses: Course[] = courses.map((c: any) => ({
         id: c._id,
@@ -420,7 +424,7 @@ const ChefDashboardScreen: React.FC = () => {
           bestPractices: u.bestPractices || []
         }))
       }))
-      
+
       setUserCourses(localCourses)
     } catch (error) {
       console.log('❌ Failed to fetch courses:', error)
@@ -438,7 +442,7 @@ const ChefDashboardScreen: React.FC = () => {
   const [chefs, setChefs] = useState<Chef[]>([])
   const [isLoadingChefs, setIsLoadingChefs] = useState(false)
   const [chefsError, setChefsError] = useState<string | null>(null)
-  
+
   // Food Explorer recipes and courses
   const [explorerRecipes, setExplorerRecipes] = useState<any[]>([])
   const [explorerCourses, setExplorerCourses] = useState<any[]>([])
@@ -496,7 +500,7 @@ const ChefDashboardScreen: React.FC = () => {
         limit: 50,
         sortBy: 'rating'
       })
-      
+
       // Transform backend chef data to match our Chef interface
       const transformedChefs: Chef[] = fetchedChefs.map((chef: any) => ({
         id: chef.id,
@@ -512,9 +516,9 @@ const ChefDashboardScreen: React.FC = () => {
         courses: [], // Will be loaded when chef profile is viewed
         stats: chef.stats
       }))
-      
+
       setChefs(transformedChefs)
-      
+
       // Check subscription status for each chef if user is authenticated
       if (profile) {
         checkAllSubscriptions(transformedChefs)
@@ -531,7 +535,7 @@ const ChefDashboardScreen: React.FC = () => {
     try {
       const subscriptions = await chefService.getMySubscriptions()
       const subscribedChefIds = new Set(subscriptions.map((sub: any) => sub.chef._id || sub.chef.id))
-      
+
       setChefs((prevChefs) =>
         prevChefs.map((chef) => ({
           ...chef,
@@ -548,7 +552,7 @@ const ChefDashboardScreen: React.FC = () => {
     setRefreshing(true)
     try {
       console.log('🔄 Refreshing dashboard data...')
-      
+
       // Reload based on current mode
       if (userType === "chef") {
         // Chef Dashboard: reload recipes, courses, stats, and feedbacks
@@ -592,23 +596,23 @@ const ChefDashboardScreen: React.FC = () => {
         totalRatings: backendChefStats.totalRatings || 0,
       };
     }
-    
+
     // Fallback to computing from local data
     const totalRecipes = userRecipes.length;
     const totalCourses = userCourses.length;
-    
+
     // Calculate cumulative average rating from both recipes and courses
     const allRatings = [
       ...userRecipes.map(r => r.rating || 0),
       ...userCourses.map(c => c.rating || c.averageRating || 0)
     ].filter(rating => rating > 0);
-    
-    const averageRating = allRatings.length > 0 
+
+    const averageRating = allRatings.length > 0
       ? (allRatings.reduce((sum, rating) => sum + rating, 0) / allRatings.length).toFixed(1)
       : '0.0';
-    
+
     const totalSubscribers = 0;
-    
+
     return {
       totalRecipes,
       totalCourses,
@@ -655,7 +659,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <Ionicons name="restaurant-outline" size={20} color={userType === "user" ? "#FACC15" : "#94A3B8"} />
-          <Text style={[styles.userTypeText, userType === "user" && styles.activeUserTypeText]}>Food Explorer</Text>
+          <Text style={[styles.userTypeText, userType === "user" && styles.activeUserTypeText]}>{t('chef.foodExplorer')}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -664,7 +668,7 @@ const ChefDashboardScreen: React.FC = () => {
           activeOpacity={0.8}
         >
           <Ionicons name="business-outline" size={20} color={userType === "chef" ? "#FACC15" : "#94A3B8"} />
-          <Text style={[styles.userTypeText, userType === "chef" && styles.activeUserTypeText]}>Chef Dashboard</Text>
+          <Text style={[styles.userTypeText, userType === "chef" && styles.activeUserTypeText]}>{t('chef.dashboard')}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -672,15 +676,15 @@ const ChefDashboardScreen: React.FC = () => {
 
   const renderChefSection = () => {
     // Filter by subscription status
-    let displayedChefs = foodExplorerSection === "subscribed" 
+    let displayedChefs = foodExplorerSection === "subscribed"
       ? chefs.filter((chef) => chef.isSubscribed)
       : chefs
 
     // Apply search filter
     if (chefSearchQuery.trim()) {
       const query = chefSearchQuery.toLowerCase()
-      displayedChefs = displayedChefs.filter((chef) => 
-        chef.name.toLowerCase().includes(query) || 
+      displayedChefs = displayedChefs.filter((chef) =>
+        chef.name.toLowerCase().includes(query) ||
         chef.specialty.toLowerCase().includes(query)
       )
     }
@@ -701,7 +705,7 @@ const ChefDashboardScreen: React.FC = () => {
                 autoFocus
               />
               {chefSearchQuery.length > 0 && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   onPress={() => setChefSearchQuery("")}
                   style={styles.chefSearchClearButton}
                 >
@@ -709,7 +713,7 @@ const ChefDashboardScreen: React.FC = () => {
                 </TouchableOpacity>
               )}
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               onPress={() => {
                 setChefSearchVisible(false)
                 setChefSearchQuery("")
@@ -723,69 +727,69 @@ const ChefDashboardScreen: React.FC = () => {
         ) : (
           <View style={styles.chefSearchContainer}>
             <View style={styles.chefSectionTabs}>
-          <TouchableOpacity
-            style={[
-              styles.chefSectionTab,
-              foodExplorerSection === "all" && styles.activeChefSectionTab
-            ]}
-            onPress={() => setFoodExplorerSection("all")}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name="people-outline" 
-              size={18} 
-              color={foodExplorerSection === "all" ? "#FACC15" : "#94A3B8"} 
-            />
-            <Text style={[
-              styles.chefSectionTabText,
-              foodExplorerSection === "all" && styles.activeChefSectionTabText
-            ]}>
-              All Chefs
-            </Text>
-            <View style={[
-              styles.chefCountBadge,
-              foodExplorerSection === "all" && styles.activeChefCountBadge
-            ]}>
-              <Text style={[
-                styles.chefCountText,
-                foodExplorerSection === "all" && styles.activeChefCountText
-              ]}>
-                {chefs.length}
-              </Text>
-            </View>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.chefSectionTab,
+                  foodExplorerSection === "all" && styles.activeChefSectionTab
+                ]}
+                onPress={() => setFoodExplorerSection("all")}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="people-outline"
+                  size={18}
+                  color={foodExplorerSection === "all" ? "#FACC15" : "#94A3B8"}
+                />
+                <Text style={[
+                  styles.chefSectionTabText,
+                  foodExplorerSection === "all" && styles.activeChefSectionTabText
+                ]}>
+                  {t('chef.allChefs')}
+                </Text>
+                <View style={[
+                  styles.chefCountBadge,
+                  foodExplorerSection === "all" && styles.activeChefCountBadge
+                ]}>
+                  <Text style={[
+                    styles.chefCountText,
+                    foodExplorerSection === "all" && styles.activeChefCountText
+                  ]}>
+                    {chefs.length}
+                  </Text>
+                </View>
+              </TouchableOpacity>
 
-          <TouchableOpacity
-            style={[
-              styles.chefSectionTab,
-              foodExplorerSection === "subscribed" && styles.activeChefSectionTab
-            ]}
-            onPress={() => setFoodExplorerSection("subscribed")}
-            activeOpacity={0.7}
-          >
-            <Ionicons 
-              name="star" 
-              size={18} 
-              color={foodExplorerSection === "subscribed" ? "#FACC15" : "#94A3B8"} 
-            />
-            <Text style={[
-              styles.chefSectionTabText,
-              foodExplorerSection === "subscribed" && styles.activeChefSectionTabText
-            ]}>
-              Subscribed
-            </Text>
-            <View style={[
-              styles.chefCountBadge,
-              foodExplorerSection === "subscribed" && styles.activeChefCountBadge
-            ]}>
-              <Text style={[
-                styles.chefCountText,
-                foodExplorerSection === "subscribed" && styles.activeChefCountText
-              ]}>
-                {chefs.filter(c => c.isSubscribed).length}
-              </Text>
-            </View>
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.chefSectionTab,
+                  foodExplorerSection === "subscribed" && styles.activeChefSectionTab
+                ]}
+                onPress={() => setFoodExplorerSection("subscribed")}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name="star"
+                  size={18}
+                  color={foodExplorerSection === "subscribed" ? "#FACC15" : "#94A3B8"}
+                />
+                <Text style={[
+                  styles.chefSectionTabText,
+                  foodExplorerSection === "subscribed" && styles.activeChefSectionTabText
+                ]}>
+                  {t('chef.subscribed')}
+                </Text>
+                <View style={[
+                  styles.chefCountBadge,
+                  foodExplorerSection === "subscribed" && styles.activeChefCountBadge
+                ]}>
+                  <Text style={[
+                    styles.chefCountText,
+                    foodExplorerSection === "subscribed" && styles.activeChefCountText
+                  ]}>
+                    {chefs.filter(c => c.isSubscribed).length}
+                  </Text>
+                </View>
+              </TouchableOpacity>
             </View>
             <TouchableOpacity
               onPress={() => setChefSearchVisible(true)}
@@ -801,7 +805,7 @@ const ChefDashboardScreen: React.FC = () => {
         {chefsError ? (
           <View style={styles.emptyChefSection}>
             <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
-            <Text style={styles.emptyChefText}>Failed to load chefs</Text>
+            <Text style={styles.emptyChefText}>{t('chef.failedToLoadChefs')}</Text>
             <Text style={styles.emptyChefSubtext}>{chefsError}</Text>
             <TouchableOpacity
               style={styles.retryButton}
@@ -809,7 +813,7 @@ const ChefDashboardScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <Ionicons name="refresh" size={20} color="white" />
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <Text style={styles.retryButtonText}>{t('chef.retry')}</Text>
             </TouchableOpacity>
           </View>
         ) : displayedChefs.length > 0 ? (
@@ -832,7 +836,7 @@ const ChefDashboardScreen: React.FC = () => {
                   </View>
                 )}
                 <Text style={styles.chefName}>{item.name}</Text>
-                <Text style={styles.chefSpecialty}>{item.specialty}</Text>
+                <Text style={styles.chefSpecialty}>{getExpertiseCategoryTranslation(item.specialty, t)}</Text>
                 <View style={styles.chefRating}>
                   <Ionicons name="star" size={12} color="#FACC15" />
                   <Text style={styles.ratingText}>{item.rating}</Text>
@@ -844,14 +848,14 @@ const ChefDashboardScreen: React.FC = () => {
           <View style={styles.emptyChefSection}>
             <Ionicons name="people-outline" size={48} color="#475569" />
             <Text style={styles.emptyChefText}>
-              {foodExplorerSection === "subscribed" 
-                ? "No subscribed chefs yet"
-                : "No chefs available"}
+              {foodExplorerSection === "subscribed"
+                ? t('chef.noSubscribedChefs')
+                : t('chef.noChefsAvailable')}
             </Text>
             <Text style={styles.emptyChefSubtext}>
               {foodExplorerSection === "subscribed"
-                ? "Subscribe to chefs to see them here"
-                : "Check back later for new chefs"}
+                ? t('chef.subscribeToSee')
+                : t('chef.checkBackLater')}
             </Text>
           </View>
         )}
@@ -866,28 +870,28 @@ const ChefDashboardScreen: React.FC = () => {
         onPress={() => setFoodExplorerTab("recipes")}
         activeOpacity={0.8}
       >
-        <Ionicons 
-          name="restaurant-outline" 
-          size={20} 
-          color={foodExplorerTab === "recipes" ? "#22C55E" : "#94A3B8"} 
+        <Ionicons
+          name="restaurant-outline"
+          size={20}
+          color={foodExplorerTab === "recipes" ? "#22C55E" : "#94A3B8"}
         />
         <Text style={[styles.tabText, foodExplorerTab === "recipes" && styles.activeTabText]}>
-          Recipes
+          {t('chef.recipes')}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, foodExplorerTab === "courses" && styles.activeTab ]}
+        style={[styles.tabButton, foodExplorerTab === "courses" && styles.activeTab]}
         onPress={() => setFoodExplorerTab("courses")}
         activeOpacity={0.8}
       >
-        <Ionicons 
-          name="school-outline" 
-          size={20} 
-          color={foodExplorerTab === "courses" ? "#22C55E" : "#94A3B8"} 
+        <Ionicons
+          name="school-outline"
+          size={20}
+          color={foodExplorerTab === "courses" ? "#22C55E" : "#94A3B8"}
         />
-        <Text style={[styles.tabText, foodExplorerTab === "courses" && styles.activeTabText ]}>
-          Courses
+        <Text style={[styles.tabText, foodExplorerTab === "courses" && styles.activeTabText]}>
+          {t('chef.courses')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -900,28 +904,28 @@ const ChefDashboardScreen: React.FC = () => {
         onPress={() => setActiveTab("recipes")}
         activeOpacity={0.8}
       >
-        <Ionicons 
-          name="restaurant-outline" 
-          size={20} 
-          color={activeTab === "recipes" ? "#22C55E" : "#94A3B8"} 
+        <Ionicons
+          name="restaurant-outline"
+          size={20}
+          color={activeTab === "recipes" ? "#22C55E" : "#94A3B8"}
         />
         <Text style={[styles.tabText, activeTab === "recipes" && styles.activeTabText]}>
-          Recipes
+          {t('chef.recipes')}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={[styles.tabButton, activeTab === "courses" && styles.activeTab ]}
+        style={[styles.tabButton, activeTab === "courses" && styles.activeTab]}
         onPress={() => setActiveTab("courses")}
         activeOpacity={0.8}
       >
-        <Ionicons 
-          name="school-outline" 
-          size={20} 
-          color={activeTab === "courses" ? "#22C55E" : "#94A3B8"} 
+        <Ionicons
+          name="school-outline"
+          size={20}
+          color={activeTab === "courses" ? "#22C55E" : "#94A3B8"}
         />
-        <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText ]}>
-          Courses
+        <Text style={[styles.tabText, activeTab === "courses" && styles.activeTabText]}>
+          {t('chef.courses')}
         </Text>
       </TouchableOpacity>
     </View>
@@ -951,7 +955,7 @@ const ChefDashboardScreen: React.FC = () => {
 
   const renderSection = ({ item, index }: { item: any; index: number }) => {
     const section = getSections()[index];
-    
+
     switch (section.type) {
       case 'userTypeSelector':
         return renderUserTypeSelector();
@@ -977,13 +981,13 @@ const ChefDashboardScreen: React.FC = () => {
   // Update the renderLatestRecipes to not use FlatList
   const renderLatestRecipes = () => {
     const selectedChefData = chefs.find((chef) => chef.id === selectedChef)
-    
+
     // For Food Explorer: show only published recipes
     // For Chef Dashboard: show all recipes (published and unpublished)
-    let recipesToShow = userType === "user" 
+    let recipesToShow = userType === "user"
       ? userRecipes.filter(r => r.isPublished).slice(0, 6)
       : userRecipes.slice(0, 6)
-    
+
     // If a chef is selected on Food Explorer, filter recipes by that chef
     if (selectedChefData && userType === "user") {
       recipesToShow = userRecipes.filter(r => r.isPublished && r.chefId === selectedChefData.id).slice(0, 6)
@@ -1002,90 +1006,90 @@ const ChefDashboardScreen: React.FC = () => {
     return (
       <View style={styles.recipesContainer}>
         <Text style={styles.sectionTitle}>
-          {selectedChefData ? `${selectedChefData.name}'s Recipes` : "Latest Recipes"}
+          {selectedChefData ? `${selectedChefData.name}'s ${t('chef.recipes')}` : t('chef.latestRecipes')}
         </Text>
         {isLoadingRecipes ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FACC15" />
-            <Text style={styles.loadingText}>Loading recipes...</Text>
+            <Text style={styles.loadingText}>{t('chef.loadingRecipes')}</Text>
           </View>
         ) : recipesToShow.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="restaurant-outline" size={48} color="#475569" />
-            <Text style={styles.emptyStateText}>No Recipes Available</Text>
+            <Text style={styles.emptyStateText}>{t('chef.noRecipesAvailable')}</Text>
             <Text style={styles.emptyStateSubtext}>
-              {selectedChefData 
+              {selectedChefData
                 ? `${selectedChefData.name} hasn't published any recipes yet`
                 : "Check back later for new recipes"}
             </Text>
           </View>
         ) : (
-        <View style={styles.recipesGrid}>
-          {recipesToShow.map((item) => {
-            const hasAccess = canAccessRecipe(item)
-            const ownerChef = chefs.find(chef => chef.id === item.chefId)
-            
-            return (
-              <TouchableOpacity
-                key={item.id} 
-                style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
-                onPress={() => {
-                  if (userType === "chef") {
-                    // Chef viewing their own recipes
-                    router.push({
-                      pathname: '/recipe/[id]' as any,
-                      params: { id: item.id }
-                    })
-                  } else if (!hasAccess) {
-                    // Premium recipe - subscription required
-                    setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this recipe`)
-                    setShowGeneralErrorDialog(true)
-                  } else {
-                    // Navigate to recipe detail screen
-                    router.push({
-                      pathname: '/recipe/[id]' as any,
-                      params: { id: item.id }
-                    })
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Image source={{ uri: item.image }} style={styles.recipeImage} />
-                {item.isPremium && (
-                  <View style={styles.premiumBadge}>
-                    <Ionicons name="diamond" size={12} color="#FACC15" />
-                    <Text style={styles.premiumText}>Premium</Text>
-                  </View>
-                )}
-                {!hasAccess && userType === "user" && (
-                  <View style={styles.lockOverlay}>
-                    <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
-                  </View>
-                )}
-                {!item.isPublished && userType === "chef" && (
-                  <View style={styles.draftBadge}>
-                    <Ionicons name="document-outline" size={12} color="#94A3B8" />
-                    <Text style={styles.draftText}>Draft</Text>
-                  </View>
-                )}
-                <View style={styles.recipeInfo}>
-                  <Text style={styles.recipeTitle}>{item.title}</Text>
-                  <Text style={styles.recipeDescription}>{item.description}</Text>
-                  <View style={styles.recipeStats}>
-                    <View style={styles.statItem}>
-                      <Ionicons name="time-outline" size={14} color="#6B7280" />
-                      <Text style={styles.statText}>{item.cookTime}</Text>
+          <View style={styles.recipesGrid}>
+            {recipesToShow.map((item) => {
+              const hasAccess = canAccessRecipe(item)
+              const ownerChef = chefs.find(chef => chef.id === item.chefId)
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
+                  onPress={() => {
+                    if (userType === "chef") {
+                      // Chef viewing their own recipes
+                      router.push({
+                        pathname: '/recipe/[id]' as any,
+                        params: { id: item.id }
+                      })
+                    } else if (!hasAccess) {
+                      // Premium recipe - subscription required
+                      setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this recipe`)
+                      setShowGeneralErrorDialog(true)
+                    } else {
+                      // Navigate to recipe detail screen
+                      router.push({
+                        pathname: '/recipe/[id]' as any,
+                        params: { id: item.id }
+                      })
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Image source={{ uri: item.image }} style={styles.recipeImage} />
+                  {item.isPremium && (
+                    <View style={styles.premiumBadge}>
+                      <Ionicons name="diamond" size={12} color="#FACC15" />
+                      <Text style={styles.premiumText}>Premium</Text>
                     </View>
-                    <View style={styles.statItem}>
-                      <Ionicons name="star" size={14} color="#FACC15" />
-                      <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
+                  )}
+                  {!hasAccess && userType === "user" && (
+                    <View style={styles.lockOverlay}>
+                      <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+                    </View>
+                  )}
+                  {!item.isPublished && userType === "chef" && (
+                    <View style={styles.draftBadge}>
+                      <Ionicons name="document-outline" size={12} color="#94A3B8" />
+                      <Text style={styles.draftText}>Draft</Text>
+                    </View>
+                  )}
+                  <View style={styles.recipeInfo}>
+                    <Text style={styles.recipeTitle}>{item.title}</Text>
+                    <Text style={styles.recipeDescription}>{item.description}</Text>
+                    <View style={styles.recipeStats}>
+                      <View style={styles.statItem}>
+                        <Ionicons name="time-outline" size={14} color="#6B7280" />
+                        <Text style={styles.statText}>{item.cookTime}</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Ionicons name="star" size={14} color="#FACC15" />
+                        <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
         )}
       </View>
     )
@@ -1093,13 +1097,13 @@ const ChefDashboardScreen: React.FC = () => {
 
   const renderLatestCourses = () => {
     const selectedChefData = chefs.find((chef) => chef.id === selectedChef)
-    
+
     // For Food Explorer: show only published courses
     // For Chef Dashboard: show all courses (published and unpublished)
-    let coursesToShow = userType === "user" 
+    let coursesToShow = userType === "user"
       ? userCourses.filter(c => c.isPublished).slice(0, 6)
       : userCourses.slice(0, 6)
-    
+
     // If a chef is selected on Food Explorer, filter courses by that chef
     if (selectedChefData && userType === "user") {
       coursesToShow = userCourses.filter(c => c.isPublished && c.chefId === selectedChefData.id).slice(0, 6)
@@ -1118,90 +1122,90 @@ const ChefDashboardScreen: React.FC = () => {
     return (
       <View style={styles.recipesContainer}>
         <Text style={styles.sectionTitle}>
-          {selectedChefData ? `${selectedChefData.name}'s Courses` : "Latest Courses"}
+          {selectedChefData ? `${selectedChefData.name}'s ${t('chef.courses')}` : t('chef.latestCourses')}
         </Text>
         {isLoadingCourses ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#FACC15" />
-            <Text style={styles.loadingText}>Loading courses...</Text>
+            <Text style={styles.loadingText}>{t('chef.loadingCourses')}</Text>
           </View>
         ) : coursesToShow.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="book-outline" size={48} color="#475569" />
-            <Text style={styles.emptyStateText}>No Courses Available</Text>
+            <Text style={styles.emptyStateText}>{t('chef.noCoursesAvailable')}</Text>
             <Text style={styles.emptyStateSubtext}>
-              {selectedChefData 
+              {selectedChefData
                 ? `${selectedChefData.name} hasn't published any courses yet`
                 : "Check back later for new courses"}
             </Text>
           </View>
         ) : (
-        <View style={styles.recipesGrid}>
-          {coursesToShow.map((item) => {
-            const hasAccess = canAccessCourse(item)
-            const ownerChef = chefs.find(chef => chef.id === item.chefId)
-            
-            return (
-              <TouchableOpacity
-                key={item.id} 
-                style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
-                onPress={() => {
-                  if (userType === "chef") {
-                    // Chef viewing their own courses
-                    setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
-                    setShowGeneralErrorDialog(true)
-                  } else if (!hasAccess) {
-                    // Premium course - subscription required
-                    setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this course`)
-                    setShowGeneralErrorDialog(true)
-                  } else {
-                    // Navigate to course detail screen (to be implemented)
-                    setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
-                    setShowGeneralErrorDialog(true)
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Image source={{ uri: item.image }} style={styles.recipeImage} />
-                {item.isPremium && (
-                  <View style={styles.premiumBadge}>
-                    <Ionicons name="diamond" size={12} color="#FACC15" />
-                    <Text style={styles.premiumText}>Premium</Text>
-                  </View>
-                )}
-                {!hasAccess && userType === "user" && (
-                  <View style={styles.lockOverlay}>
-                    <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
-                  </View>
-                )}
-                {!item.isPublished && userType === "chef" && (
-                  <View style={styles.draftBadge}>
-                    <Ionicons name="document-outline" size={12} color="#94A3B8" />
-                    <Text style={styles.draftText}>Draft</Text>
-                  </View>
-                )}
-                <View style={styles.recipeInfo}>
-                  <Text style={styles.recipeTitle}>{item.title}</Text>
-                  <Text style={styles.recipeDescription}>{item.description}</Text>
-                  <View style={styles.courseStats}>
-                    <View style={styles.statItem}>
-                      <Ionicons name="book-outline" size={14} color="#6B7280" />
-                      <Text style={styles.statText}>{item.units?.length || 0} units</Text>
+          <View style={styles.recipesGrid}>
+            {coursesToShow.map((item) => {
+              const hasAccess = canAccessCourse(item)
+              const ownerChef = chefs.find(chef => chef.id === item.chefId)
+
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.recipeCard, { width: (SCREEN_WIDTH - 56) / 2 }]}
+                  onPress={() => {
+                    if (userType === "chef") {
+                      // Chef viewing their own courses
+                      setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                      setShowGeneralErrorDialog(true)
+                    } else if (!hasAccess) {
+                      // Premium course - subscription required
+                      setGeneralErrorMessage(`Subscribe to ${ownerChef?.name || 'this chef'} to access this course`)
+                      setShowGeneralErrorDialog(true)
+                    } else {
+                      // Navigate to course detail screen (to be implemented)
+                      setGeneralErrorMessage(`Opening: ${item.title}\n\nCourse detail screen coming soon!`)
+                      setShowGeneralErrorDialog(true)
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Image source={{ uri: item.image }} style={styles.recipeImage} />
+                  {item.isPremium && (
+                    <View style={styles.premiumBadge}>
+                      <Ionicons name="diamond" size={12} color="#FACC15" />
+                      <Text style={styles.premiumText}>Premium</Text>
                     </View>
-                    <View style={styles.statItem}>
-                      <Ionicons name="star" size={14} color="#FACC15" />
-                      <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
+                  )}
+                  {!hasAccess && userType === "user" && (
+                    <View style={styles.lockOverlay}>
+                      <Ionicons name="lock-closed" size={24} color="#FFFFFF" />
+                    </View>
+                  )}
+                  {!item.isPublished && userType === "chef" && (
+                    <View style={styles.draftBadge}>
+                      <Ionicons name="document-outline" size={12} color="#94A3B8" />
+                      <Text style={styles.draftText}>Draft</Text>
+                    </View>
+                  )}
+                  <View style={styles.recipeInfo}>
+                    <Text style={styles.recipeTitle}>{item.title}</Text>
+                    <Text style={styles.recipeDescription}>{item.description}</Text>
+                    <View style={styles.courseStats}>
+                      <View style={styles.statItem}>
+                        <Ionicons name="book-outline" size={14} color="#6B7280" />
+                        <Text style={styles.statText}>{item.units?.length || 0} units</Text>
+                      </View>
+                      <View style={styles.statItem}>
+                        <Ionicons name="star" size={14} color="#FACC15" />
+                        <Text style={styles.statText}>{typeof item.rating === 'number' ? item.rating.toFixed(1) : '0.0'}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.coursePrice}>
+                      <Text style={styles.priceText}>{item.skillLevel || 'Beginner'}</Text>
+                      <Text style={styles.subscribersText}>{item.duration}</Text>
                     </View>
                   </View>
-                  <View style={styles.coursePrice}>
-                    <Text style={styles.priceText}>{item.skillLevel || 'Beginner'}</Text>
-                    <Text style={styles.subscribersText}>{item.duration}</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
         )}
       </View>
     )
@@ -1240,7 +1244,7 @@ const ChefDashboardScreen: React.FC = () => {
           {/* Edit/Save/Cancel Buttons */}
           {editMode ? (
             <View style={styles.editButtonsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.editProfileButton, styles.cancelButton]}
                 onPress={() => {
                   // Cancel - restore original chef profile values
@@ -1259,12 +1263,12 @@ const ChefDashboardScreen: React.FC = () => {
               >
                 <Text style={[styles.editProfileButtonText, styles.cancelButtonText]}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.editProfileButton}
                 onPress={async () => {
                   try {
                     console.log('🚀 Updating chef profile...')
-                    
+
                     // Validate professional summary length
                     if (editedProfessionalSummary.trim().length < 50) {
                       setGeneralErrorMessage('Professional summary must be at least 50 characters')
@@ -1276,18 +1280,18 @@ const ChefDashboardScreen: React.FC = () => {
                       setShowGeneralErrorDialog(true)
                       return
                     }
-                    
+
                     const formData = new FormData()
                     formData.append('chefName', editedChefName.trim())
                     formData.append('expertiseCategory', editedExpertiseCategory)
                     formData.append('professionalSummary', editedProfessionalSummary.trim())
                     formData.append('yearsOfExperience', editedYearsOfExperience.toString())
-                    
+
                     // Get current portfolio image URL
                     const currentPortfolioImage = typeof chefProfileData?.portfolioImage === 'string'
                       ? chefProfileData?.portfolioImage
                       : chefProfileData?.portfolioImage?.url
-                    
+
                     // Always append portfolio image if it exists and has changed
                     if (editedPortfolioImage && editedPortfolioImage !== currentPortfolioImage) {
                       console.log('📸 Uploading new portfolio image...')
@@ -1295,19 +1299,19 @@ const ChefDashboardScreen: React.FC = () => {
                       const filename = imageUri.split('/').pop() || 'portfolio.jpg'
                       const match = /\.(\w+)$/.exec(filename)
                       const type = match ? `image/${match[1]}` : 'image/jpeg'
-                      
+
                       formData.append('portfolioImage', {
                         uri: imageUri,
                         name: filename,
                         type: type,
                       } as any)
                     }
-                    
+
                     await apiClient.put('/chef/profile', formData, true)
                     await refreshProfile()
                     setShowExpertiseDropdown(false)
                     setEditMode(false)
-                    
+
                     setGeneralSuccessMessage('Chef profile updated successfully')
                     setShowGeneralSuccessDialog(true)
                     console.log('✅ Chef profile updated successfully')
@@ -1323,7 +1327,7 @@ const ChefDashboardScreen: React.FC = () => {
             </View>
           ) : (
             <View style={styles.editButtonsContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.editProfileButton}
                 onPress={() => setEditMode(true)}
               >
@@ -1331,14 +1335,14 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
           )}
-          
+
           <View style={styles.profileImageContainer}>
-            <Image 
-              source={{ uri: editedPortfolioImage || (typeof chefProfileData?.portfolioImage === 'string' ? chefProfileData?.portfolioImage : chefProfileData?.portfolioImage?.url) || profile?.profileImage?.url || 'https://via.placeholder.com/150' }} 
+            <Image
+              source={{ uri: editedPortfolioImage || (typeof chefProfileData?.portfolioImage === 'string' ? chefProfileData?.portfolioImage : chefProfileData?.portfolioImage?.url) || profile?.profileImage?.url || 'https://via.placeholder.com/150' }}
               style={styles.profileImage}
             />
             {editMode && (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.editProfileImageButton}
                 onPress={handlePortfolioImagePicker}
               >
@@ -1346,7 +1350,7 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
             )}
           </View>
-          
+
           <View style={styles.profileHeaderInfo}>
             {editMode ? (
               <TextInput
@@ -1361,14 +1365,14 @@ const ChefDashboardScreen: React.FC = () => {
                 {chefProfileData?.chefName || profile?.userName || 'Chef Name'}
               </Text>
             )}
-            
+
             <View style={styles.profileBadgesRow}>
               {editMode ? (
                 <View style={{ width: '100%', marginTop: 8 }}>
-                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>Expertise Category</Text>
+                  <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>{t('chef.expertiseCategory')}</Text>
                   <TouchableOpacity
-                    style={[styles.profileBadge, { 
-                      backgroundColor: 'rgba(139, 92, 246, 0.15)', 
+                    style={[styles.profileBadge, {
+                      backgroundColor: 'rgba(139, 92, 246, 0.15)',
                       borderColor: 'rgba(139, 92, 246, 0.3)',
                       paddingHorizontal: 12,
                       paddingVertical: 8
@@ -1377,7 +1381,7 @@ const ChefDashboardScreen: React.FC = () => {
                   >
                     <Ionicons name="school" size={14} color="#8B5CF6" />
                     <Text style={[styles.profileBadgeText, { color: '#8B5CF6', flex: 1 }]}>
-                      {editedExpertiseCategory || 'Select expertise'}
+                      {editedExpertiseCategory ? getExpertiseCategoryTranslation(editedExpertiseCategory, t) : t('chef.selectExpertise')}
                     </Text>
                     <Ionicons name={showExpertiseDropdown ? "chevron-up" : "chevron-down"} size={16} color="#8B5CF6" />
                   </TouchableOpacity>
@@ -1393,7 +1397,7 @@ const ChefDashboardScreen: React.FC = () => {
                               setShowExpertiseDropdown(false)
                             }}
                           >
-                            <Text style={styles.dropdownItemText}>{category}</Text>
+                            <Text style={styles.dropdownItemText}>{getExpertiseCategoryTranslation(category, t)}</Text>
                             {editedExpertiseCategory === category && (
                               <Ionicons name="checkmark-circle" size={20} color="#8B5CF6" />
                             )}
@@ -1408,17 +1412,17 @@ const ChefDashboardScreen: React.FC = () => {
                   {chefProfileData?.expertiseCategory && (
                     <View style={[styles.profileBadge, { backgroundColor: 'rgba(139, 92, 246, 0.15)', borderColor: 'rgba(139, 92, 246, 0.3)' }]}>
                       <Ionicons name="school" size={14} color="#8B5CF6" />
-                      <Text style={[styles.profileBadgeText, { color: '#FFFFFF' }]}>{chefProfileData.expertiseCategory}</Text>
+                      <Text style={[styles.profileBadgeText, { color: '#FFFFFF' }]}>{getExpertiseCategoryTranslation(chefProfileData.expertiseCategory, t)}</Text>
                     </View>
                   )}
                 </>
               )}
-              
+
               {editMode ? (
                 <View style={{ width: '100%', marginTop: 8 }}>
                   <Text style={[styles.profileBadgeText, { color: '#94A3B8', marginBottom: 4 }]}>Years of Experience</Text>
-                  <View style={[styles.profileBadge, { 
-                    backgroundColor: 'rgba(59, 130, 246, 0.15)', 
+                  <View style={[styles.profileBadge, {
+                    backgroundColor: 'rgba(59, 130, 246, 0.15)',
                     borderColor: 'rgba(59, 130, 246, 0.3)',
                     paddingHorizontal: 12,
                     paddingVertical: 8
@@ -1448,7 +1452,7 @@ const ChefDashboardScreen: React.FC = () => {
                   )}
                 </>
               )}
-              
+
               {!editMode && profile?.isPro && (
                 <View style={[styles.profileBadge, { backgroundColor: 'rgba(250, 204, 21, 0.15)', borderColor: 'rgba(250, 204, 21, 0.3)' }]}>
                   <Ionicons name="diamond" size={14} color="#FACC15" />
@@ -1493,14 +1497,14 @@ const ChefDashboardScreen: React.FC = () => {
         {/* Detailed Stats Grid */}
         <View style={styles.detailedStatsCard}>
           <Text style={styles.profileSectionTitle}>Performance Statistics</Text>
-          
+
           <View style={styles.profileStatsGrid}>
             <View style={styles.statGridItem}>
               <View style={[styles.statIconCircle, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
                 <Ionicons name="restaurant-outline" size={15} color="#22C55E" />
               </View>
               <Text style={styles.statGridValue}>{chefStats.totalRecipes}</Text>
-              <Text style={styles.statGridLabel}>Total Recipes</Text>
+              <Text style={styles.statGridLabel}>{t('chef.totalRecipes')}</Text>
             </View>
 
             <View style={styles.statGridItem}>
@@ -1508,7 +1512,7 @@ const ChefDashboardScreen: React.FC = () => {
                 <Ionicons name="book-outline" size={15} color="#8B5CF6" />
               </View>
               <Text style={styles.statGridValue}>{chefStats.totalCourses}</Text>
-              <Text style={styles.statGridLabel}>Total Courses</Text>
+              <Text style={styles.statGridLabel}>{t('chef.totalCourses')}</Text>
             </View>
 
             <View style={styles.statGridItem}>
@@ -1606,7 +1610,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               {restrictedRecipes.length > 0 && (
                 <View style={styles.contentSubSection}>
-                  <Text style={styles.subSectionTitle}>Recipes ({restrictedRecipes.length})</Text>
+                  <Text style={styles.subSectionTitle}>{t('chef.recipes')} ({restrictedRecipes.length})</Text>
                   {restrictedRecipes.map(recipe => (
                     <View key={`restricted-recipe-${recipe.id}`} style={styles.contentItem}>
                       <Image source={{ uri: recipe.image }} style={styles.contentItemImage} />
@@ -1622,7 +1626,7 @@ const ChefDashboardScreen: React.FC = () => {
 
               {restrictedCourses.length > 0 && (
                 <View style={[styles.contentSubSection, restrictedRecipes.length > 0 && { marginTop: 16 }]}>
-                  <Text style={styles.subSectionTitle}>Courses ({restrictedCourses.length})</Text>
+                  <Text style={styles.subSectionTitle}>{t('chef.courses')} ({restrictedCourses.length})</Text>
                   {restrictedCourses.map(course => (
                     <View key={`restricted-course-${course.id}`} style={styles.contentItem}>
                       <Image source={{ uri: course.image }} style={styles.contentItemImage} />
@@ -1663,7 +1667,7 @@ const ChefDashboardScreen: React.FC = () => {
             <>
               {bannedRecipes.length > 0 && (
                 <View style={styles.contentSubSection}>
-                  <Text style={styles.subSectionTitle}>Recipes ({bannedRecipes.length})</Text>
+                  <Text style={styles.subSectionTitle}>{t('chef.recipes')} ({bannedRecipes.length})</Text>
                   {bannedRecipes.map(recipe => (
                     <View key={`banned-recipe-${recipe.id}`} style={styles.contentItem}>
                       <Image source={{ uri: recipe.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
@@ -1679,7 +1683,7 @@ const ChefDashboardScreen: React.FC = () => {
 
               {bannedCourses.length > 0 && (
                 <View style={[styles.contentSubSection, bannedRecipes.length > 0 && { marginTop: 16 }]}>
-                  <Text style={styles.subSectionTitle}>Courses ({bannedCourses.length})</Text>
+                  <Text style={styles.subSectionTitle}>{t('chef.courses')} ({bannedCourses.length})</Text>
                   {bannedCourses.map(course => (
                     <View key={`banned-course-${course.id}`} style={styles.contentItem}>
                       <Image source={{ uri: course.image }} style={[styles.contentItemImage, { opacity: 0.5 }]} />
@@ -1774,14 +1778,14 @@ const ChefDashboardScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-    </View>
+    </View >
   )
 
   const renderContentManagement = () => {
     // For Food Explorer (user), use foodExplorerTab and filter published only
     // For Chef Dashboard, use managementTab and show all
     const currentTab = userType === "user" ? foodExplorerTab : managementTab;
-    const recipesToShow = userType === "user" 
+    const recipesToShow = userType === "user"
       ? explorerRecipes.filter(r => r.isPublished)
       : userRecipes;
     const coursesToShow = userType === "user"
@@ -1798,17 +1802,17 @@ const ChefDashboardScreen: React.FC = () => {
               onPress={() => setManagementTab("recipes")}
             >
               <Text style={[styles.minimalistTabText, managementTab === "recipes" && styles.minimalistTabTextActive]}>
-                Recipes ({userRecipes.length})
+                {t('chef.recipes')} ({userRecipes.length})
               </Text>
               {managementTab === "recipes" && <View style={styles.tabUnderline} />}
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.minimalistTab}
               onPress={() => setManagementTab("courses")}
             >
               <Text style={[styles.minimalistTabText, managementTab === "courses" && styles.minimalistTabTextActive]}>
-                Courses ({userCourses.length})
+                {t('chef.courses')} ({userCourses.length})
               </Text>
               {managementTab === "courses" && <View style={styles.tabUnderline} />}
             </TouchableOpacity>
@@ -1828,12 +1832,12 @@ const ChefDashboardScreen: React.FC = () => {
               <View style={styles.emptyManagement}>
                 <Ionicons name="restaurant-outline" size={32} color="#64748B" />
                 <Text style={styles.emptyManagementText}>
-                  {userType === "user" ? "No recipes available" : "No recipes uploaded yet"}
+                  {userType === "user" ? t('chef.noRecipesAvailable') : t('chef.noRecipesUploaded')}
                 </Text>
                 <Text style={styles.emptyManagementSubtext}>
-                  {userType === "user" 
-                    ? "Check back later for new recipes" 
-                    : "Start by uploading your first recipe"}
+                  {userType === "user"
+                    ? t('chef.checkBackLaterRecipes')
+                    : t('chef.startUploading')}
                 </Text>
               </View>
             )
@@ -1848,12 +1852,12 @@ const ChefDashboardScreen: React.FC = () => {
               <View style={styles.emptyManagement}>
                 <Ionicons name="school-outline" size={32} color="#64748B" />
                 <Text style={styles.emptyManagementText}>
-                  {userType === "user" ? "No courses available" : "No courses created yet"}
+                  {userType === "user" ? t('chef.noCoursesAvailable') : t('chef.noCoursesCreated')}
                 </Text>
                 <Text style={styles.emptyManagementSubtext}>
                   {userType === "user"
-                    ? "Check back later for new courses"
-                    : "Start by creating your first course"}
+                    ? t('chef.checkBackLaterCourses')
+                    : t('chef.startCreating')}
                 </Text>
               </View>
             )
@@ -1872,108 +1876,108 @@ const ChefDashboardScreen: React.FC = () => {
     };
 
     return (
-    <TouchableOpacity 
-      style={styles.managementCard}
-      onPress={() => handleViewRecipe(recipe)}
-      activeOpacity={0.7}
-    >
-      <Image source={{ uri: getImageUrl(recipe.image) }} style={styles.managementCardImage} />
-      <View style={styles.managementCardContent}>
-        <View style={styles.managementCardHeader}>
-          <Text style={styles.managementCardTitle}>{recipe.title}</Text>
-          <View style={styles.managementCardBadges}>
-            {recipe.isPremium && (
-              <View style={styles.managementPremiumBadge}>
-                <Ionicons name="diamond" size={12} color="#FACC15" />
-                <Text style={styles.managementPremiumBadgeText}>Premium</Text>
+      <TouchableOpacity
+        style={styles.managementCard}
+        onPress={() => handleViewRecipe(recipe)}
+        activeOpacity={0.7}
+      >
+        <Image source={{ uri: getImageUrl(recipe.image) }} style={styles.managementCardImage} />
+        <View style={styles.managementCardContent}>
+          <View style={styles.managementCardHeader}>
+            <Text style={styles.managementCardTitle}>{recipe.title}</Text>
+            <View style={styles.managementCardBadges}>
+              {recipe.isPremium && (
+                <View style={styles.managementPremiumBadge}>
+                  <Ionicons name="diamond" size={12} color="#FACC15" />
+                  <Text style={styles.managementPremiumBadgeText}>{t('chef.premium')}</Text>
+                </View>
+              )}
+              <View style={[styles.statusBadge, !recipe.isPublished && styles.statusBadgeDraft]}>
+                <Ionicons
+                  name={recipe.isPublished ? "checkmark-circle" : "time-outline"}
+                  size={12}
+                  color={recipe.isPublished ? "#10B981" : "#F59E0B"}
+                />
+                <Text style={[styles.statusBadgeText, !recipe.isPublished && styles.statusBadgeTextDraft]}>
+                  {recipe.isPublished ? t('chef.published') : t('chef.notPublished')}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <Text style={styles.managementCardDescription} numberOfLines={2}>
+            {recipe.description}
+          </Text>
+
+          <View style={styles.managementCardMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="time" size={14} color="#6B7280" />
+              <Text style={styles.metaText}>{recipe.cookTime}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="star" size={14} color="#FACC15" />
+              <Text style={styles.metaText}>{recipe.rating?.toFixed(1) || '0.0'}</Text>
+            </View>
+            {recipe.creator && (
+              <View style={styles.metaItem}>
+                <Ionicons name="person" size={14} color="#a0edf7e0" />
+                <Text style={[styles.metaText, { color: '#a0edf7ff' }]}>By: {recipe.creator}</Text>
               </View>
             )}
-            <View style={[styles.statusBadge, !recipe.isPublished && styles.statusBadgeDraft]}>
-              <Ionicons 
-                name={recipe.isPublished ? "checkmark-circle" : "time-outline"} 
-                size={12} 
-                color={recipe.isPublished ? "#10B981" : "#F59E0B"} 
-              />
-              <Text style={[styles.statusBadgeText, !recipe.isPublished && styles.statusBadgeTextDraft]}>
-                {recipe.isPublished ? 'Published' : 'Not Published'}
-              </Text>
-            </View>
+          </View>
+
+          <View style={styles.managementCardActions}>
+            {userType === "chef" ? (
+              // Chef Dashboard actions: Edit and Delete
+              <>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    handleEditRecipe(recipe)
+                  }}
+                >
+                  <Ionicons name="create" size={16} color="#3B82F6" />
+                  <Text style={styles.managementActionText}>{t('chef.edit')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.managementActionButton, styles.deleteButton]}
+                  onPress={() => {
+                    handleDeleteRecipe(recipe.id)
+                  }}
+                >
+                  <Ionicons name="trash" size={16} color="#EF4444" />
+                  <Text style={[styles.managementActionText, styles.deleteText]}>{t('chef.delete')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Food Explorer actions: Report and Rate
+              <>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    setExpandedRecipeData(recipe)
+                    setShowRecipeReportDialog(true)
+                  }}
+                >
+                  <Ionicons name="flag" size={16} color="#EF4444" />
+                  <Text style={styles.managementActionText}>{t('chef.report')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    setExpandedRecipeData(recipe)
+                    setShowRecipeRatingDialog(true)
+                  }}
+                >
+                  <Ionicons name="star" size={16} color="#FACC15" />
+                  <Text style={styles.managementActionText}>{t('chef.rate')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
-        
-        <Text style={styles.managementCardDescription} numberOfLines={2}>
-          {recipe.description}
-        </Text>
-        
-        <View style={styles.managementCardMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>{recipe.cookTime}</Text>
-          </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{recipe.rating?.toFixed(1) || '0.0'}</Text>
-          </View>
-          {recipe.creator && (
-            <View style={styles.metaItem}>
-              <Ionicons name="person" size={14} color="#a0edf7e0" />
-              <Text style={[styles.metaText, { color: '#a0edf7ff' }]}>By: {recipe.creator}</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.managementCardActions}>
-          {userType === "chef" ? (
-            // Chef Dashboard actions: Edit and Delete
-            <>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  handleEditRecipe(recipe)
-                }}
-              >
-                <Ionicons name="create" size={16} color="#3B82F6" />
-                <Text style={styles.managementActionText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.managementActionButton, styles.deleteButton]}
-                onPress={() => {
-                  handleDeleteRecipe(recipe.id)
-                }}
-              >
-                <Ionicons name="trash" size={16} color="#EF4444" />
-                <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Food Explorer actions: Report and Rate
-            <>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  setExpandedRecipeData(recipe)
-                  setShowRecipeReportDialog(true)
-                }}
-              >
-                <Ionicons name="flag" size={16} color="#EF4444" />
-                <Text style={styles.managementActionText}>Report</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  setExpandedRecipeData(recipe)
-                  setShowRecipeRatingDialog(true)
-                }}
-              >
-                <Ionicons name="star" size={16} color="#FACC15" />
-                <Text style={styles.managementActionText}>Rate</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
   };
 
   const renderManagementCourseCard = (course: Course, index: number) => {
@@ -1985,113 +1989,113 @@ const ChefDashboardScreen: React.FC = () => {
     };
 
     return (
-    <TouchableOpacity 
-      style={styles.managementCard}
-      onPress={() => handleViewCourse(course)}
-      activeOpacity={0.7}
-    >
-      <Image source={{ uri: getImageUrl(course.image) }} style={styles.managementCardImage} />
-      <View style={styles.managementCardContent}>
-        <View style={styles.managementCardHeader}>
-          <Text style={styles.managementCardTitle}>{course.title}</Text>
-          <View style={styles.managementCardBadges}>
-            {course.isPremium && (
-              <View style={styles.managementPremiumBadge}>
-                <Ionicons name="diamond" size={12} color="#FACC15" />
-                <Text style={styles.managementPremiumBadgeText}>Premium</Text>
+      <TouchableOpacity
+        style={styles.managementCard}
+        onPress={() => handleViewCourse(course)}
+        activeOpacity={0.7}
+      >
+        <Image source={{ uri: getImageUrl(course.image) }} style={styles.managementCardImage} />
+        <View style={styles.managementCardContent}>
+          <View style={styles.managementCardHeader}>
+            <Text style={styles.managementCardTitle}>{course.title}</Text>
+            <View style={styles.managementCardBadges}>
+              {course.isPremium && (
+                <View style={styles.managementPremiumBadge}>
+                  <Ionicons name="diamond" size={12} color="#FACC15" />
+                  <Text style={styles.managementPremiumBadgeText}>{t('chef.premium')}</Text>
+                </View>
+              )}
+              <View style={[styles.statusBadge, !course.isPublished && styles.statusBadgeDraft]}>
+                <Ionicons
+                  name={course.isPublished ? "checkmark-circle" : "time-outline"}
+                  size={12}
+                  color={course.isPublished ? "#10B981" : "#F59E0B"}
+                />
+                <Text style={[styles.statusBadgeText, !course.isPublished && styles.statusBadgeTextDraft]}>
+                  {course.isPublished ? t('chef.published') : t('chef.notPublished')}
+                </Text>
               </View>
-            )}
-            <View style={[styles.statusBadge, !course.isPublished && styles.statusBadgeDraft]}>
-              <Ionicons 
-                name={course.isPublished ? "checkmark-circle" : "time-outline"} 
-                size={12} 
-                color={course.isPublished ? "#10B981" : "#F59E0B"} 
-              />
-              <Text style={[styles.statusBadgeText, !course.isPublished && styles.statusBadgeTextDraft]}>
-                {course.isPublished ? 'Published' : 'Not Published'}
-              </Text>
             </View>
           </View>
-        </View>
-        
-        <Text style={styles.managementCardDescription} numberOfLines={2}>
-          {course.description}
-        </Text>
-        
-        <View style={styles.managementCardMeta}>
-          <View style={styles.metaItem}>
-            <Ionicons name="time" size={14} color="#6B7280" />
-            <Text style={styles.metaText}>
-              {course.durationValue && course.durationUnit 
-                ? `${course.durationValue} ${course.durationUnit}` 
-                : course.totalDuration || course.duration || 'N/A'}
-            </Text>
+
+          <Text style={styles.managementCardDescription} numberOfLines={2}>
+            {course.description}
+          </Text>
+
+          <View style={styles.managementCardMeta}>
+            <View style={styles.metaItem}>
+              <Ionicons name="time" size={14} color="#6B7280" />
+              <Text style={styles.metaText}>
+                {course.durationValue && course.durationUnit
+                  ? `${course.durationValue} ${course.durationUnit}`
+                  : course.totalDuration || course.duration || 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="star" size={14} color="#FACC15" />
+              <Text style={styles.metaText}>{(course.rating || course.averageRating || 0).toFixed(1)}</Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Ionicons name="book-outline" size={14} color="#64748B" />
+              <Text style={styles.metaText}>{course.units?.length || 0} units</Text>
+            </View>
           </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="star" size={14} color="#FACC15" />
-            <Text style={styles.metaText}>{(course.rating || course.averageRating || 0).toFixed(1)}</Text>
+
+          <View style={styles.coursePriceContainer}>
+            <Text style={styles.managementCoursePrice}>{course.category} • {course.skillLevel}</Text>
           </View>
-          <View style={styles.metaItem}>
-            <Ionicons name="book-outline" size={14} color="#64748B" />
-            <Text style={styles.metaText}>{course.units?.length || 0} units</Text>
+
+          <View style={styles.managementCardActions}>
+            {userType === "chef" ? (
+              // Chef Dashboard actions: Edit and Delete
+              <>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    handleEditCourse(course);
+                  }}
+                >
+                  <Ionicons name="create" size={16} color="#3B82F6" />
+                  <Text style={styles.managementActionText}>{t('chef.edit')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.managementActionButton, styles.deleteButton]}
+                  onPress={() => {
+                    handleDeleteCourse(course.id);
+                  }}
+                >
+                  <Ionicons name="trash" size={16} color="#EF4444" />
+                  <Text style={[styles.managementActionText, styles.deleteText]}>{t('chef.delete')}</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              // Food Explorer actions: Report and Rate
+              <>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    setExpandedCourseData(course)
+                    setShowCourseReportDialog(true)
+                  }}
+                >
+                  <Ionicons name="flag" size={16} color="#EF4444" />
+                  <Text style={styles.managementActionText}>{t('chef.report')}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.managementActionButton}
+                  onPress={() => {
+                    setExpandedCourseData(course)
+                    setShowCourseRatingDialog(true)
+                  }}
+                >
+                  <Ionicons name="star" size={16} color="#FACC15" />
+                  <Text style={styles.managementActionText}>{t('chef.rate')}</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
-        
-        <View style={styles.coursePriceContainer}>
-          <Text style={styles.managementCoursePrice}>{course.category} • {course.skillLevel}</Text>
-        </View>
-        
-        <View style={styles.managementCardActions}>
-          {userType === "chef" ? (
-            // Chef Dashboard actions: Edit and Delete
-            <>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  handleEditCourse(course);
-                }}
-              >
-                <Ionicons name="create" size={16} color="#3B82F6" />
-                <Text style={styles.managementActionText}>Edit</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.managementActionButton, styles.deleteButton]}
-                onPress={() => {
-                  handleDeleteCourse(course.id);
-                }}
-              >
-                <Ionicons name="trash" size={16} color="#EF4444" />
-                <Text style={[styles.managementActionText, styles.deleteText]}>Delete</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            // Food Explorer actions: Report and Rate
-            <>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  setExpandedCourseData(course)
-                  setShowCourseReportDialog(true)
-                }}
-              >
-                <Ionicons name="flag" size={16} color="#EF4444" />
-                <Text style={styles.managementActionText}>Report</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.managementActionButton}
-                onPress={() => {
-                  setExpandedCourseData(course)
-                  setShowCourseRatingDialog(true)
-                }}
-              >
-                <Ionicons name="star" size={16} color="#FACC15" />
-                <Text style={styles.managementActionText}>Rate</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
     );
   };
 
@@ -2101,15 +2105,15 @@ const ChefDashboardScreen: React.FC = () => {
       setIsLoadingRecipeDetails(true)
       // Handle both 'id' and '_id' fields (explorer recipes use _id)
       const recipeId = recipe.id || (recipe as any)._id
-      
+
       console.log('👁️ Fetching recipe details for view:', recipeId)
       const fullRecipe = await chefService.getRecipeById(recipeId)
-      
+
       // Check if premium recipe and user is not pro (but allow author to view)
       const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
       const isAuthor = (fullRecipe as any).userId?.firebaseUid === profile?.firebaseUid;
       console.log('🔐 Premium Check (ChefDashboard):', { isPremium: fullRecipe.isPremium, isPro, isAuthor, recipeUserFirebaseUid: (fullRecipe as any).userId?.firebaseUid, userFirebaseUid: profile?.firebaseUid })
-      
+
       if (fullRecipe.isPremium && !isPro && !isAuthor) {
         setShowPremiumDialog(true)
         setIsLoadingRecipeDetails(false)
@@ -2133,9 +2137,9 @@ const ChefDashboardScreen: React.FC = () => {
     try {
       // Fetch full recipe details from backend
       console.log('📝 Fetching recipe details for edit:', recipe.id)
-      
+
       const fullRecipe = await chefService.getRecipeById(recipe.id)
-      
+
       console.log('✅ Full recipe fetched from backend:', fullRecipe)
       console.log('📋 Recipe fields:', {
         title: fullRecipe.title,
@@ -2151,7 +2155,7 @@ const ChefDashboardScreen: React.FC = () => {
         ingredientsCount: fullRecipe.ingredients?.length,
         instructionsCount: fullRecipe.instructions?.length,
       })
-      
+
       // Use full recipe data with all fields for editing
       setEditingRecipe(fullRecipe)
       setShowRecipeModal(true)
@@ -2160,19 +2164,19 @@ const ChefDashboardScreen: React.FC = () => {
       console.log('❌ Failed to fetch recipe for editing:', error)
       console.log('❌ Error details:', error.message)
       console.log(recipe.id)
-      
+
       // Show error to user instead of opening incomplete form
       setGeneralErrorMessage('Failed to load recipe details.')
       setShowGeneralErrorDialog(true)
       return
-      
+
     }
   }
 
   const handleDeleteRecipe = async (recipeId: string) => {
     const recipe = userRecipes.find(r => r.id === recipeId)
     if (!recipe) return
-    
+
     // TODO: Add confirmation dialog
     try {
       console.log('🗑️ Deleting recipe:', recipe.title)
@@ -2193,32 +2197,32 @@ const ChefDashboardScreen: React.FC = () => {
       title: expandedRecipeData?.title,
       currentStatus: expandedRecipeData?.isPublished
     })
-    
+
     if (!expandedRecipeData) {
       console.log('⚠️ No recipe data available')
       return
     }
-    
+
     setIsPublishing(true)
     try {
       const recipeId = expandedRecipeData._id || expandedRecipeData.id
-      
+
       if (expandedRecipeData.isPublished) {
         console.log('📥 Unpublishing recipe:', expandedRecipeData.title)
         await chefService.unpublishRecipe(recipeId)
         console.log('✅ Recipe unpublished successfully')
-        
+
         // Update local state
         setExpandedRecipeData({ ...expandedRecipeData, isPublished: false })
-        setUserRecipes(prev => prev.map(r => 
-          (r.id === recipeId || r.id === expandedRecipeData.id) 
-            ? { ...r, isPublished: false } 
+        setUserRecipes(prev => prev.map(r =>
+          (r.id === recipeId || r.id === expandedRecipeData.id)
+            ? { ...r, isPublished: false }
             : r
         ))
-        
+
         // Reload stats
         await fetchChefStatsAndFeedback()
-        
+
         // Show success dialog
         setPublishSuccessMessage('Your recipe is now offline and only visible to you.')
         setShowPublishSuccessDialog(true)
@@ -2226,20 +2230,20 @@ const ChefDashboardScreen: React.FC = () => {
         console.log('📢 Publishing recipe:', expandedRecipeData.title)
         await chefService.publishRecipe(recipeId)
         console.log('✅ Recipe published successfully')
-        
+
         // Update local state
         setExpandedRecipeData({ ...expandedRecipeData, isPublished: true })
-        setUserRecipes(prev => prev.map(r => 
-          (r.id === recipeId || r.id === expandedRecipeData.id) 
-            ? { ...r, isPublished: true } 
+        setUserRecipes(prev => prev.map(r =>
+          (r.id === recipeId || r.id === expandedRecipeData.id)
+            ? { ...r, isPublished: true }
             : r
         ))
-        
+
         // Reload stats
         await fetchChefStatsAndFeedback()
-        
+
         // Show success dialog
-        setPublishSuccessMessage('Your recipe is now live and visible to food explorers!')
+        setPublishSuccessMessage(t('chef.recipeLiveNow'))
         setShowPublishSuccessDialog(true)
       }
     } catch (error: any) {
@@ -2259,32 +2263,32 @@ const ChefDashboardScreen: React.FC = () => {
       title: expandedCourseData?.title,
       currentStatus: expandedCourseData?.isPublished
     })
-    
+
     if (!expandedCourseData) {
       console.log('⚠️ No course data available')
       return
     }
-    
+
     setIsPublishing(true)
     try {
       const courseId = expandedCourseData._id || expandedCourseData.id
-      
+
       if (expandedCourseData.isPublished) {
         console.log('📥 Unpublishing course:', expandedCourseData.title)
         await chefService.unpublishCourse(courseId)
         console.log('✅ Course unpublished successfully')
-        
+
         // Update local state
         setExpandedCourseData({ ...expandedCourseData, isPublished: false })
-        setUserCourses(prev => prev.map(c => 
-          (c.id === courseId || c.id === expandedCourseData.id) 
-            ? { ...c, isPublished: false } 
+        setUserCourses(prev => prev.map(c =>
+          (c.id === courseId || c.id === expandedCourseData.id)
+            ? { ...c, isPublished: false }
             : c
         ))
-        
+
         // Reload stats
         await fetchChefStatsAndFeedback()
-        
+
         // Show success dialog
         setPublishSuccessMessage('Your course is now offline and only visible to you.')
         setShowPublishSuccessDialog(true)
@@ -2292,18 +2296,18 @@ const ChefDashboardScreen: React.FC = () => {
         console.log('📢 Publishing course:', expandedCourseData.title)
         await chefService.publishCourse(courseId)
         console.log('✅ Course published successfully')
-        
+
         // Update local state
         setExpandedCourseData({ ...expandedCourseData, isPublished: true })
-        setUserCourses(prev => prev.map(c => 
-          (c.id === courseId || c.id === expandedCourseData.id) 
-            ? { ...c, isPublished: true } 
+        setUserCourses(prev => prev.map(c =>
+          (c.id === courseId || c.id === expandedCourseData.id)
+            ? { ...c, isPublished: true }
             : c
         ))
-        
+
         // Reload stats
         await fetchChefStatsAndFeedback()
-        
+
         // Show success dialog
         setPublishSuccessMessage('Your course is now live and visible to learners!')
         setShowPublishSuccessDialog(true)
@@ -2319,10 +2323,10 @@ const ChefDashboardScreen: React.FC = () => {
 
   const handleToggleFavoriteRecipe = async () => {
     if (!expandedRecipeData) return
-    
+
     const recipeId = expandedRecipeData._id || expandedRecipeData.id
     const isCurrentlyFavorite = isFavorite(recipeId)
-    
+
     if (isCurrentlyFavorite) {
       // Remove from favorites
       const success = await removeFromFavorites(recipeId)
@@ -2371,7 +2375,7 @@ const ChefDashboardScreen: React.FC = () => {
         tips: expandedRecipeData.tips || [],
         substitutions: expandedRecipeData.substitutions || []
       })
-      
+
       if (success) {
         setGeneralSuccessMessage('Recipe added to favorites')
         setShowGeneralSuccessDialog(true)
@@ -2388,10 +2392,10 @@ const ChefDashboardScreen: React.FC = () => {
       setShowGeneralErrorDialog(true)
       return
     }
-    
+
     setExpandedRecipeId(null)
     setExpandedRecipeData(null)
-    
+
     // Navigate to cooking screen with recipe data
     router.push({
       pathname: '/recipe/cooking' as any,
@@ -2405,7 +2409,7 @@ const ChefDashboardScreen: React.FC = () => {
   const handleShareRecipe = async (recipe: any): Promise<void> => {
     let recipeText = `🍽️ ${recipe.title}\n\n`
     recipeText += `📝 ${recipe.description || 'Delicious recipe from Meal Mate'}\n\n`
-    
+
     // Add timing information
     recipeText += `⏱️ Prep: ${recipe.prepTime}m | Cook: ${recipe.cookTime}m | Total: ${recipe.prepTime + recipe.cookTime}m\n`
     recipeText += `🍽️ Servings: ${recipe.servings} | Difficulty: ${recipe.difficulty} | Cuisine: ${recipe.cuisine}\n\n`
@@ -2481,15 +2485,15 @@ const ChefDashboardScreen: React.FC = () => {
       setIsLoadingCourseDetails(true)
       // Handle both 'id' and '_id' fields (explorer courses use _id)
       const courseId = course.id || (course as any)._id
-      
+
       console.log('👁️ Fetching course details for view:', courseId)
       const fullCourse = await chefService.getCourseById(courseId)
-      
+
       // Check if premium course and user is not pro (but allow author to view)
       const isPro = profile?.isPro && profile?.subscriptionStatus === 'active';
       const isAuthor = (fullCourse as any).userId?.firebaseUid === profile?.firebaseUid;
       console.log('🔐 Premium Check (Course):', { isPremium: fullCourse.isPremium, isPro, isAuthor, courseUserFirebaseUid: (fullCourse as any).userId?.firebaseUid, userFirebaseUid: profile?.firebaseUid })
-      
+
       if (fullCourse.isPremium && !isPro && !isAuthor) {
         setShowPremiumDialog(true)
         setIsLoadingCourseDetails(false)
@@ -2519,7 +2523,7 @@ const ChefDashboardScreen: React.FC = () => {
 
     const finalReason = recipeReportReason || "Custom"
     const recipeId = expandedRecipeData._id || expandedRecipeData.id
-    
+
     setIsReportingRecipe(true)
     try {
       await apiClient.post(`/recipes/${recipeId}/report`, {
@@ -2546,9 +2550,9 @@ const ChefDashboardScreen: React.FC = () => {
       setShowGeneralErrorDialog(true)
       return
     }
-    
+
     const recipeId = expandedRecipeData._id || expandedRecipeData.id
-    
+
     setIsRatingRecipe(true)
     try {
       const result = await apiClient.post(`/recipes/${recipeId}/rate`, {
@@ -2560,7 +2564,7 @@ const ChefDashboardScreen: React.FC = () => {
       setRecipeRatingFeedback("")
       setGeneralSuccessMessage("Recipe rating submitted successfully!")
       setShowGeneralSuccessDialog(true)
-      
+
       // Reload data to reflect updated ratings
       if (userType === "chef") {
         await fetchUserRecipes()
@@ -2586,7 +2590,7 @@ const ChefDashboardScreen: React.FC = () => {
 
     const finalReason = courseReportReason || "Custom"
     const courseId = expandedCourseData._id || expandedCourseData.id
-    
+
     setIsReportingCourse(true)
     try {
       await apiClient.post(`/courses/${courseId}/report`, {
@@ -2613,9 +2617,9 @@ const ChefDashboardScreen: React.FC = () => {
       setShowGeneralErrorDialog(true)
       return
     }
-    
+
     const courseId = expandedCourseData._id || expandedCourseData.id
-    
+
     setIsRatingCourse(true)
     try {
       const result = await apiClient.post(`/courses/${courseId}/rate`, {
@@ -2627,7 +2631,7 @@ const ChefDashboardScreen: React.FC = () => {
       setCourseRatingFeedback("")
       setGeneralSuccessMessage("Course rating submitted successfully!")
       setShowGeneralSuccessDialog(true)
-      
+
       // Reload data to reflect updated ratings
       if (userType === "chef") {
         await fetchUserCourses()
@@ -2648,7 +2652,7 @@ const ChefDashboardScreen: React.FC = () => {
       // Fetch full course details from backend
       console.log('📝 Fetching course details for edit:', course.id)
       const fullCourse = await chefService.getCourseById(course.id)
-      
+
       // Use full course data with all fields for editing
       setEditingCourse(fullCourse)
       setShowCourseModal(true)
@@ -2663,7 +2667,7 @@ const ChefDashboardScreen: React.FC = () => {
   const handleDeleteCourse = async (courseId: string) => {
     const course = userCourses.find(c => c.id === courseId)
     if (!course) return
-    
+
     // TODO: Add confirmation dialog
     try {
       console.log('🗑️ Deleting course:', course.title)
@@ -2686,7 +2690,7 @@ const ChefDashboardScreen: React.FC = () => {
   // Chef registration handler
   const handleChefRegistration = async (chefData: ChefRegistrationData) => {
     setIsRegisteringChef(true)
-    
+
     try {
       // Call API to register as chef
       const result = await apiClient.post<{ message: string; user: any }>(
@@ -2700,10 +2704,10 @@ const ChefDashboardScreen: React.FC = () => {
 
       // Refresh profile to get updated isChef status
       await refreshProfile()
-      
+
       // Initiate Stripe onboarding
       await handleStripeOnboarding()
-      
+
       setShowSuccessDialog(true)
       setIsRegisteringChef(false)
     } catch (error: any) {
@@ -2718,15 +2722,15 @@ const ChefDashboardScreen: React.FC = () => {
   const handleStripeOnboarding = async () => {
     try {
       const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
-      
+
       // Create account link for onboarding
       const response = await stripeConnectService.createAccountLink()
-      
+
       if (response.success && response.url) {
         // Open Stripe onboarding in browser
         const { Linking } = await import('react-native')
         const canOpen = await Linking.canOpenURL(response.url)
-        
+
         if (canOpen) {
           await Linking.openURL(response.url)
           console.log('✅ Opened Stripe onboarding URL')
@@ -2745,10 +2749,10 @@ const ChefDashboardScreen: React.FC = () => {
   const handleOpenStripeDashboard = async () => {
     try {
       const { stripeConnectService } = await import('@/lib/services/stripeConnectService')
-      
+
       // First check account status
       const status = await stripeConnectService.checkAccountStatus()
-      
+
       if (!status.onboardingComplete) {
         // If onboarding not complete, redirect to onboarding
         const response = await stripeConnectService.createAccountLink()
@@ -2798,7 +2802,7 @@ const ChefDashboardScreen: React.FC = () => {
           visible={showSuccessDialog}
           type="success"
           title="Welcome Chef!"
-          message="You've been successfully registered as a chef. You can now create courses and upload recipes!"
+          message={t('chef.registrationSuccess')}
           onClose={() => {
             setShowSuccessDialog(false)
           }}
@@ -2827,7 +2831,7 @@ const ChefDashboardScreen: React.FC = () => {
         style={{ flex: 1 }}
       >
         <View style={[styles.container, { paddingTop: insets.top + 20, backgroundColor: 'transparent', paddingHorizontal: 24 }]}>
-          <ScrollView 
+          <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40, alignItems: 'center', justifyContent: 'center', flex: 1 }}
           >
@@ -2844,7 +2848,7 @@ const ChefDashboardScreen: React.FC = () => {
               }}>
                 <Ionicons name="ban" size={30} color="#EF4444" />
               </View>
-              
+
               <Text style={{
                 fontSize: 24,
                 fontWeight: '800',
@@ -2854,7 +2858,7 @@ const ChefDashboardScreen: React.FC = () => {
               }}>
                 Account Banned
               </Text>
-              
+
               <Text style={{
                 fontSize: 14,
                 color: '#94A3B8',
@@ -3024,6 +3028,7 @@ const ChefDashboardScreen: React.FC = () => {
               handleModalClose()
             }}
             editingRecipe={editingRecipe}
+            t={t}
           />
         </Modal>
 
@@ -3042,6 +3047,7 @@ const ChefDashboardScreen: React.FC = () => {
               handleModalClose()
             }}
             editingCourse={editingCourse}
+            t={t}
           />
         </Modal>
 
@@ -3070,18 +3076,18 @@ const ChefDashboardScreen: React.FC = () => {
                 >
                   <Ionicons name="close" size={22} color="#FACC15" />
                 </TouchableOpacity>
-                
+
                 <Text className="text-white text-lg font-bold flex-1 text-center">
-                  Recipe Details
+                  {t('recipe.details')}
                 </Text>
-                
+
                 <View className="w-10" />
               </View>
             </View>
 
             {/* Modal Content */}
-            <ScrollView 
-              className="flex-1" 
+            <ScrollView
+              className="flex-1"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             >
@@ -3091,7 +3097,7 @@ const ChefDashboardScreen: React.FC = () => {
                   <Text className="text-white font-bold text-3xl mb-3 leading-tight tracking-tight">
                     {expandedRecipeData.title}
                   </Text>
-                  
+
                   {/* Creator Name - Display who created this recipe */}
                   {expandedRecipeData.creator && (
                     <View className="mb-3">
@@ -3103,7 +3109,7 @@ const ChefDashboardScreen: React.FC = () => {
                       </View>
                     </View>
                   )}
-                  
+
                   <Text className="text-gray-300 text-base mb-4 leading-relaxed">
                     {expandedRecipeData.description || 'Delicious recipe from your collection'}
                   </Text>
@@ -3193,10 +3199,10 @@ const ChefDashboardScreen: React.FC = () => {
                         className={`${expandedRecipeData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
                         activeOpacity={0.7}
                       >
-                        <Ionicons 
-                          name={isPublishing ? "hourglass-outline" : (expandedRecipeData.isPublished ? "eye-off-outline" : "eye-outline")} 
-                          size={18} 
-                          color={expandedRecipeData.isPublished ? "#FB923C" : "#10B981"} 
+                        <Ionicons
+                          name={isPublishing ? "hourglass-outline" : (expandedRecipeData.isPublished ? "eye-off-outline" : "eye-outline")}
+                          size={18}
+                          color={expandedRecipeData.isPublished ? "#FB923C" : "#10B981"}
                         />
                         <Text className={`${expandedRecipeData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
                           {isPublishing ? 'Processing...' : (expandedRecipeData.isPublished ? 'Hide' : 'Publish')}
@@ -3211,9 +3217,9 @@ const ChefDashboardScreen: React.FC = () => {
                         className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'bg-pink-500/15 border-pink-500/40' : 'bg-purple-500/15 border-purple-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1`}
                         activeOpacity={0.7}
                       >
-                        <Ionicons 
-                          name={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "heart" : "heart-outline"} 
-                          size={18} 
+                        <Ionicons
+                          name={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "heart" : "heart-outline"}
+                          size={18}
                           color={isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? "#EC4899" : "#A78BFA"}
                         />
                         <Text className={`${isFavorite(expandedRecipeData._id || expandedRecipeData.id) ? 'text-pink-300' : 'text-purple-300'} font-bold ml-2 text-sm tracking-wide`}>
@@ -3295,9 +3301,8 @@ const ChefDashboardScreen: React.FC = () => {
                     {expandedRecipeData.ingredients?.map((ingredient: any, index: number) => (
                       <View
                         key={`modal-ingredient-${expandedRecipeData.id}-${index}`}
-                        className={`py-2 ${
-                          index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
-                        }`}
+                        className={`py-2 ${index !== expandedRecipeData.ingredients.length - 1 ? "border-b border-zinc-600" : ""
+                          }`}
                       >
                         <View className="flex-row items-start">
                           <View className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/20 border-2 border-emerald-400/40 items-center justify-center mr-4 mt-0.5 shadow-lg">
@@ -3390,7 +3395,7 @@ const ChefDashboardScreen: React.FC = () => {
                       <Text className="text-white text-xl font-bold tracking-tight">Chef&apos;s Tips</Text>
                       <View className="flex-1 h-px ml-4" style={{ backgroundColor: "rgba(250, 204, 21, 0.2)" }} />
                     </View>
-                    <View 
+                    <View
                       className="rounded-2xl p-6 shadow-xl"
                       style={{
                         backgroundColor: "rgba(250, 204, 21, 0.1)",
@@ -3401,9 +3406,8 @@ const ChefDashboardScreen: React.FC = () => {
                       {expandedRecipeData.tips.map((tip: string, index: number) => (
                         <View
                           key={`modal-tip-${expandedRecipeData.id}-${index}`}
-                          className={`flex-row items-start ${
-                            index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
-                          }`}
+                          className={`flex-row items-start ${index !== expandedRecipeData.tips.length - 1 ? "mb-5 pb-5 border-b border-amber-400/30" : ""
+                            }`}
                         >
                           <View className="w-7 h-7 rounded-lg bg-amber-500/25 items-center justify-center mr-3 mt-0.5">
                             <Ionicons name="star" size={14} color="#FCD34D" />
@@ -3433,9 +3437,8 @@ const ChefDashboardScreen: React.FC = () => {
                       {expandedRecipeData.substitutions.map((sub: any, index: number) => (
                         <View
                           key={`modal-substitution-${expandedRecipeData.id}-${index}`}
-                          className={`${
-                            index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
-                          }`}
+                          className={`${index !== expandedRecipeData.substitutions.length - 1 ? "pb-5 mb-5 border-b border-zinc-600" : ""
+                            }`}
                         >
                           <View className="flex-row items-center mb-3">
                             <View className="w-9 h-9 rounded-xl bg-blue-500/15 items-center justify-center mr-3">
@@ -3482,18 +3485,18 @@ const ChefDashboardScreen: React.FC = () => {
                 >
                   <Ionicons name="close" size={22} color="#FACC15" />
                 </TouchableOpacity>
-                
+
                 <Text className="text-white text-lg font-bold flex-1 text-center">
                   Course Details
                 </Text>
-                
+
                 <View className="w-10" />
               </View>
             </View>
 
             {/* Modal Content */}
-            <ScrollView 
-              className="flex-1" 
+            <ScrollView
+              className="flex-1"
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             >
@@ -3525,10 +3528,10 @@ const ChefDashboardScreen: React.FC = () => {
                       <View className="flex-row items-center">
                         <Ionicons name="time-outline" size={14} color="#10B981" />
                         <Text className="text-emerald-300 ml-1 text-xs font-semibold">
-                          {expandedCourseData.durationValue && expandedCourseData.durationUnit 
-                            ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}` 
-                            : expandedCourseData.totalDuration 
-                              ? `${expandedCourseData.totalDuration} min` 
+                          {expandedCourseData.durationValue && expandedCourseData.durationUnit
+                            ? `${expandedCourseData.durationValue} ${expandedCourseData.durationUnit}`
+                            : expandedCourseData.totalDuration
+                              ? `${expandedCourseData.totalDuration} min`
                               : 'Self-paced'}
                         </Text>
                       </View>
@@ -3606,10 +3609,10 @@ const ChefDashboardScreen: React.FC = () => {
                         className={`${expandedCourseData.isPublished ? 'bg-orange-500/15 border-orange-500/40' : 'bg-emerald-500/15 border-emerald-500/40'} border rounded-xl py-3 flex-row items-center justify-center flex-1 ${isPublishing ? 'opacity-50' : ''}`}
                         activeOpacity={0.7}
                       >
-                        <Ionicons 
-                          name={isPublishing ? "hourglass-outline" : (expandedCourseData.isPublished ? "eye-off-outline" : "eye-outline")} 
-                          size={18} 
-                          color={expandedCourseData.isPublished ? "#FB923C" : "#10B981"} 
+                        <Ionicons
+                          name={isPublishing ? "hourglass-outline" : (expandedCourseData.isPublished ? "eye-off-outline" : "eye-outline")}
+                          size={18}
+                          color={expandedCourseData.isPublished ? "#FB923C" : "#10B981"}
                         />
                         <Text className={`${expandedCourseData.isPublished ? 'text-orange-300' : 'text-emerald-300'} font-bold ml-2 text-sm tracking-wide`}>
                           {isPublishing ? 'Processing...' : (expandedCourseData.isPublished ? 'Hide' : 'Publish')}
@@ -3658,7 +3661,7 @@ const ChefDashboardScreen: React.FC = () => {
                       {expandedCourseData.units.map((unit: any, unitIndex: number) => {
                         const unitId = `${expandedCourseData.id}-${unitIndex}`
                         const isExpanded = expandedUnits.has(unitId)
-                        
+
                         return (
                           <View
                             key={`modal-unit-${expandedCourseData.id}-${unitIndex}`}
@@ -3690,10 +3693,10 @@ const ChefDashboardScreen: React.FC = () => {
                                     )}
                                   </View>
                                   <View className="ml-3">
-                                    <Ionicons 
-                                      name={isExpanded ? "chevron-up" : "chevron-down"} 
-                                      size={24} 
-                                      color="#F59E0B" 
+                                    <Ionicons
+                                      name={isExpanded ? "chevron-up" : "chevron-down"}
+                                      size={24}
+                                      color="#F59E0B"
                                     />
                                   </View>
                                 </View>
@@ -3702,100 +3705,100 @@ const ChefDashboardScreen: React.FC = () => {
 
                             {/* Unit Content Area - Only Visible When Expanded */}
                             {isExpanded && (
-                                <View className="p-5">
-                                  {unit.content && (
-                                    <View className="mb-4">
-                                      <Text className="text-zinc-200 text-base leading-6 mb-1">
-                                        {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) 
-                                          ? unit.content 
-                                          : unit.content.length > 100 
-                                            ? `${unit.content.substring(0, 100)}...` 
-                                            : unit.content}
-                                      </Text>
-                                      {unit.content.length > 100 && (
-                                        <TouchableOpacity 
-                                          onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
-                                          className="self-start"
-                                        >
-                                          <Text className="text-amber-400 text-sm font-semibold">
-                                            {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
-                                          </Text>
-                                        </TouchableOpacity>
-                                      )}
-                                    </View>
-                                  )}
+                              <View className="p-5">
+                                {unit.content && (
+                                  <View className="mb-4">
+                                    <Text className="text-zinc-200 text-base leading-6 mb-1">
+                                      {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`)
+                                        ? unit.content
+                                        : unit.content.length > 100
+                                          ? `${unit.content.substring(0, 100)}...`
+                                          : unit.content}
+                                    </Text>
+                                    {unit.content.length > 100 && (
+                                      <TouchableOpacity
+                                        onPress={() => toggleDescription(`${expandedCourseData.id}-${unitIndex}`)}
+                                        className="self-start"
+                                      >
+                                        <Text className="text-amber-400 text-sm font-semibold">
+                                          {expandedDescriptions.has(`${expandedCourseData.id}-${unitIndex}`) ? 'Show less' : 'Show more'}
+                                        </Text>
+                                      </TouchableOpacity>
+                                    )}
+                                  </View>
+                                )}
 
-                                  {/* Learning Steps Section */}
-                                  {unit.steps && unit.steps.length > 0 && (
-                                    <View className="mb-4">
-                                      <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
-                                      <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
-                                        {unit.steps.map((step: string, stepIndex: number) => (
-                                          <Text 
-                                            key={`step-${unitIndex}-${stepIndex}`}
-                                            className="text-zinc-200 text-base leading-6 mb-1"
-                                          >
-                                            {stepIndex + 1}. {step}
-                                          </Text>
-                                        ))}
-                                      </View>
-                                    </View>
-                                  )}
-
-                                  {/* Common Errors Section */}
-                                  {unit.commonErrors && unit.commonErrors.length > 0 && (
-                                    <View className="mb-4">
-                                      <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
-                                      {unit.commonErrors.map((error: string, errorIndex: number) => (
-                                        <Text 
-                                          key={`error-${unitIndex}-${errorIndex}`}
-                                          className="text-zinc-200 text-base leading-6"
+                                {/* Learning Steps Section */}
+                                {unit.steps && unit.steps.length > 0 && (
+                                  <View className="mb-4">
+                                    <Text className="text-emerald-300 font-bold text-lg mb-3">Learning Steps</Text>
+                                    <View className="border border-emerald-500/30 rounded-lg p-3 bg-emerald-500/5">
+                                      {unit.steps.map((step: string, stepIndex: number) => (
+                                        <Text
+                                          key={`step-${unitIndex}-${stepIndex}`}
+                                          className="text-zinc-200 text-base leading-6 mb-1"
                                         >
-                                          • {error}
+                                          {stepIndex + 1}. {step}
                                         </Text>
                                       ))}
                                     </View>
-                                  )}
+                                  </View>
+                                )}
 
-                                  {/* Tips Section */}
-                                  {unit.tips && unit.tips.length > 0 && (
-                                    <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
-                                      <View className="flex-row items-center mb-3">
-                                        <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
-                                          <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
-                                        </View>
-                                        <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
-                                      </View>
-                                      <View className="ml-11">
-                                        {unit.tips.map((tip: string, tipIndex: number) => (
-                                          <Text 
-                                            key={`tip-${unitIndex}-${tipIndex}`}
-                                            className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
-                                          >
-                                            💡 {tip}
-                                          </Text>
-                                        ))}
-                                      </View>
-                                    </View>
-                                  )}
+                                {/* Common Errors Section */}
+                                {unit.commonErrors && unit.commonErrors.length > 0 && (
+                                  <View className="mb-4">
+                                    <Text className="text-red-400 font-bold text-lg mb-2">Common error</Text>
+                                    {unit.commonErrors.map((error: string, errorIndex: number) => (
+                                      <Text
+                                        key={`error-${unitIndex}-${errorIndex}`}
+                                        className="text-zinc-200 text-base leading-6"
+                                      >
+                                        • {error}
+                                      </Text>
+                                    ))}
+                                  </View>
+                                )}
 
-                                  {/* Video Section */}
-                                  {unit.videoUrl && (
-                                    <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
-                                      <View className="flex-row items-center">
-                                        <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
-                                          <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
-                                        </View>
-                                        <View className="flex-1">
-                                          <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
-                                          <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
-                                        </View>
-                                        <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                                {/* Tips Section */}
+                                {unit.tips && unit.tips.length > 0 && (
+                                  <View className="bg-blue-500/10 border-2 border-blue-500/30 rounded-xl p-4 mb-4">
+                                    <View className="flex-row items-center mb-3">
+                                      <View className="w-8 h-8 rounded-lg bg-blue-500/20 items-center justify-center mr-3">
+                                        <Ionicons name="bulb-outline" size={16} color="#3B82F6" />
                                       </View>
+                                      <Text className="text-blue-300 font-bold text-base">Pro Tips</Text>
                                     </View>
-                                  )}
-                                </View>
-                              )}
+                                    <View className="ml-11">
+                                      {unit.tips.map((tip: string, tipIndex: number) => (
+                                        <Text
+                                          key={`tip-${unitIndex}-${tipIndex}`}
+                                          className={`text-blue-100 text-base leading-6 ${tipIndex !== unit.tips.length - 1 ? 'mb-2' : ''}`}
+                                        >
+                                          💡 {tip}
+                                        </Text>
+                                      ))}
+                                    </View>
+                                  </View>
+                                )}
+
+                                {/* Video Section */}
+                                {unit.videoUrl && (
+                                  <View className="bg-purple-500/10 border-2 border-purple-500/30 rounded-xl p-4">
+                                    <View className="flex-row items-center">
+                                      <View className="w-8 h-8 rounded-lg bg-purple-500/20 items-center justify-center mr-3">
+                                        <Ionicons name="videocam-outline" size={16} color="#8B5CF6" />
+                                      </View>
+                                      <View className="flex-1">
+                                        <Text className="text-purple-300 font-bold text-base mb-0.5">Video Lesson</Text>
+                                        <Text className="text-purple-200 text-sm">Watch the tutorial for this unit</Text>
+                                      </View>
+                                      <Ionicons name="play-circle" size={24} color="#A78BFA" />
+                                    </View>
+                                  </View>
+                                )}
+                              </View>
+                            )}
                           </View>
                         )
                       })}
@@ -3807,7 +3810,7 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
         )}
       </View>
-      
+
       {/* Chef Profile Modal */}
       <Modal
         visible={showProfileModal}
@@ -3819,7 +3822,7 @@ const ChefDashboardScreen: React.FC = () => {
           colors={["#09090b", "#18181b"]}
           style={{ flex: 1 }}
         >
-          <View style={[styles.container, { paddingTop: Math.max(insets.top - 30, 0), backgroundColor: 'transparent' }]}> 
+          <View style={[styles.container, { paddingTop: Math.max(insets.top - 30, 0), backgroundColor: 'transparent' }]}>
             {/* Header */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chef Profile</Text>
@@ -3831,12 +3834,12 @@ const ChefDashboardScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView 
+            <ScrollView
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             >
               {renderChefProfile()}
-              
+
               {/* User Feedback Section */}
               <View style={[styles.contentSectionCard, { marginHorizontal: 24 }]}>
                 <View style={styles.sectionHeader}>
@@ -3883,7 +3886,7 @@ const ChefDashboardScreen: React.FC = () => {
           </View>
         </LinearGradient>
       </Modal>
-      
+
       {/* Publish/Unpublish Success Dialog */}
       <Dialog
         visible={showPublishSuccessDialog}
@@ -3895,7 +3898,7 @@ const ChefDashboardScreen: React.FC = () => {
         autoClose={true}
         autoCloseTime={5500}
       />
-      
+
       {/* Publish/Unpublish Error Dialog */}
       <Dialog
         visible={showPublishErrorDialog}
@@ -4043,12 +4046,12 @@ const ChefDashboardScreen: React.FC = () => {
           setRecipeReportReason("")
           setRecipeReportDescription("")
         }}
-        title="Report Recipe"
+        title={t('chef.reportRecipe')}
         height={450}
       >
         <>
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Describe Your Concern:</Text>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -4061,16 +4064,16 @@ const ChefDashboardScreen: React.FC = () => {
                 height: 60,
                 textAlignVertical: "top"
               }}
-              placeholder="Type your reason for reporting this recipe..."
+              placeholder={t('chef.typeReason')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
               value={recipeReportDescription}
               onChangeText={setRecipeReportDescription}
             />
-            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>{t('chef.orSelectReason')}</Text>
           </View>
-          
+
           <ScrollView style={{ maxHeight: 100 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
             {reportReasons.map((reason) => (
               <TouchableOpacity
@@ -4147,7 +4150,7 @@ const ChefDashboardScreen: React.FC = () => {
               {isReportingRecipe ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>Submit Report</Text>
+                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>{t('chef.submitReport')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -4162,11 +4165,11 @@ const ChefDashboardScreen: React.FC = () => {
           setRecipeRating(0)
           setRecipeRatingFeedback("")
         }}
-        title="Rate This Recipe"
+        title={t('chef.rateRecipe')}
         height={400}
       >
         <View>
-          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>Select Your Rating:</Text>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>{t('chef.selectRating')}</Text>
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 24 }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -4183,7 +4186,7 @@ const ChefDashboardScreen: React.FC = () => {
             ))}
           </View>
 
-          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Feedback (Optional):</Text>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={{
               backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -4196,7 +4199,7 @@ const ChefDashboardScreen: React.FC = () => {
               height: 100,
               textAlignVertical: "top"
             }}
-            placeholder="Share your thoughts about this recipe..."
+            placeholder={t('chef.shareThoughtsRecipe')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -4236,7 +4239,7 @@ const ChefDashboardScreen: React.FC = () => {
             {isRatingRecipe ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={{ color: recipeRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>Submit Rating</Text>
+              <Text style={{ color: recipeRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>{t('chef.submitRating')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -4250,12 +4253,12 @@ const ChefDashboardScreen: React.FC = () => {
           setCourseReportReason("")
           setCourseReportDescription("")
         }}
-        title="Report Course"
+        title={t('chef.reportCourse')}
         height={450}
       >
         <>
           <View style={{ marginBottom: 16 }}>
-            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Describe Your Concern:</Text>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>{t('chef.describeConcern')}</Text>
             <TextInput
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -4268,16 +4271,16 @@ const ChefDashboardScreen: React.FC = () => {
                 height: 60,
                 textAlignVertical: "top"
               }}
-              placeholder="Type your reason for reporting this course..."
+              placeholder={t('chef.typeReasonCourse')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={4}
               value={courseReportDescription}
               onChangeText={setCourseReportDescription}
             />
-            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>Or Select Common Reason:</Text>
+            <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginTop: 16, marginBottom: 8 }}>{t('chef.orSelectReason')}</Text>
           </View>
-          
+
           <ScrollView style={{ maxHeight: 100 }} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
             {reportReasons.map((reason) => (
               <TouchableOpacity
@@ -4354,7 +4357,7 @@ const ChefDashboardScreen: React.FC = () => {
               {isReportingCourse ? (
                 <ActivityIndicator size="small" color="white" />
               ) : (
-                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>Submit Report</Text>
+                <Text style={{ color: "white", fontSize: 14, fontWeight: "600" }}>{t('chef.submitReport')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -4369,11 +4372,11 @@ const ChefDashboardScreen: React.FC = () => {
           setCourseRating(0)
           setCourseRatingFeedback("")
         }}
-        title="Rate This Course"
+        title={t('chef.rateCourse')}
         height={400}
       >
         <View>
-          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>Select Your Rating:</Text>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 16 }}>{t('chef.selectRating')}</Text>
           <View style={{ flexDirection: "row", justifyContent: "center", gap: 12, marginBottom: 24 }}>
             {[1, 2, 3, 4, 5].map((star) => (
               <TouchableOpacity
@@ -4390,7 +4393,7 @@ const ChefDashboardScreen: React.FC = () => {
             ))}
           </View>
 
-          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>Feedback (Optional):</Text>
+          <Text style={{ color: "#E5E7EB", fontSize: 14, fontWeight: "600", marginBottom: 8 }}>{t('chef.feedbackOptional')}</Text>
           <TextInput
             style={{
               backgroundColor: "rgba(255, 255, 255, 0.05)",
@@ -4403,7 +4406,7 @@ const ChefDashboardScreen: React.FC = () => {
               height: 100,
               textAlignVertical: "top"
             }}
-            placeholder="Share your thoughts about this course..."
+            placeholder={t('chef.shareThoughtsCourse')}
             placeholderTextColor="#64748B"
             multiline
             numberOfLines={4}
@@ -4443,7 +4446,7 @@ const ChefDashboardScreen: React.FC = () => {
             {isRatingCourse ? (
               <ActivityIndicator size="small" color="white" />
             ) : (
-              <Text style={{ color: courseRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>Submit Rating</Text>
+              <Text style={{ color: courseRating === 0 ? "#94A3B8" : "#1a1a1a", fontSize: 14, fontWeight: "600" }}>{t('chef.submitRating')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -4453,16 +4456,17 @@ const ChefDashboardScreen: React.FC = () => {
 }
 
 // Recipe Upload Modal Component
-const RecipeUploadModal: React.FC<{ 
-  onClose: () => void; 
+const RecipeUploadModal: React.FC<{
+  onClose: () => void;
   onSave: (recipe: Recipe) => void;
   editingRecipe?: any;
-}> = ({ onClose, onSave, editingRecipe }) => {
+  t: (key: string) => string;
+}> = ({ onClose, onSave, editingRecipe, t }) => {
   const isEditMode = !!editingRecipe
-  
+
   // Recipe categories
   const RECIPE_CATEGORIES = [
-    "Appetizers", "Breakfast", "Lunch", "Dinner", "Desserts", 
+    "Appetizers", "Breakfast", "Lunch", "Dinner", "Desserts",
     "Snacks", "Beverages", "Salads", "Soups", "Main Course",
     "Side Dishes", "Baking", "Seafood", "Vegetarian", "Vegan", "Other"
   ]
@@ -4483,17 +4487,17 @@ const RecipeUploadModal: React.FC<{
         const errorMatch = error.message.match(/\{.*\}/);
         if (errorMatch) {
           const errorData = JSON.parse(errorMatch[0]);
-          
+
           // Check for the new format with counts
           if (errorData.counts) {
             const { free, premium, required, remaining } = errorData.counts;
             const contentType = error.message.includes('course') ? 'course' : 'recipe';
-            
+
             if (remaining > 0) {
               return `You need to create ${remaining} more free ${contentType}${remaining > 1 ? 's' : ''} before you can upload premium content.\n\nCurrent progress: ${free} free ${contentType}${free !== 1 ? 's' : ''} created (${required} required)`;
             }
           }
-          
+
           // Check for custom message
           if (errorData.message) {
             return errorData.message;
@@ -4502,7 +4506,7 @@ const RecipeUploadModal: React.FC<{
       } catch (parseError) {
         console.log('Failed to parse premium restriction error:', parseError);
       }
-      
+
       // Fallback messages
       if (error.message?.includes('course')) {
         return 'Create 1 free course first to unlock premium course uploads!';
@@ -4576,13 +4580,13 @@ const RecipeUploadModal: React.FC<{
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [publishNow, setPublishNow] = useState(true)
   const [recipeImage, setRecipeImage] = useState<string | null>(null)
-  const [ingredients, setIngredients] = useState<Array<{id: string; name: string; amount: string; unit: string; notes?: string; showUnitDropdown?: boolean}>>([
+  const [ingredients, setIngredients] = useState<Array<{ id: string; name: string; amount: string; unit: string; notes?: string; showUnitDropdown?: boolean }>>([
     { id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }
   ])
-  const [instructions, setInstructions] = useState<Array<{id: string; step: number; instruction: string; duration?: string; tips?: string}>>([
+  const [instructions, setInstructions] = useState<Array<{ id: string; step: number; instruction: string; duration?: string; tips?: string }>>([
     { id: '1', step: 1, instruction: '', duration: '', tips: '' }
   ])
-  
+
   // Dialog states
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
@@ -4606,10 +4610,10 @@ const RecipeUploadModal: React.FC<{
         instructions: editingRecipe.instructions,
         isPublished: editingRecipe.isPublished,
       })
-      
+
       // Handle nutrition data (backend uses 'nutritionInfo', frontend uses 'nutrition')
       const nutritionData = editingRecipe.nutritionInfo || editingRecipe.nutrition || {}
-      
+
       // Set basic recipe data
       setRecipeData({
         title: editingRecipe.title || '',
@@ -4626,10 +4630,10 @@ const RecipeUploadModal: React.FC<{
         carbs: nutritionData.carbs?.toString() || '',
         fat: nutritionData.fat?.toString() || '',
       })
-      
+
       // Set publish status
       setPublishNow(editingRecipe.isPublished !== undefined ? editingRecipe.isPublished : true)
-      
+
       console.log('✅ Recipe data set:', {
         prepTime: editingRecipe.prepTime?.toString(),
         cookTime: editingRecipe.cookTime?.toString(),
@@ -4637,13 +4641,13 @@ const RecipeUploadModal: React.FC<{
         cuisine: editingRecipe.cuisine,
         category: editingRecipe.category,
       })
-      
+
       // Set recipe image (handle both string and object formats)
-      const imageUrl = typeof editingRecipe.image === 'string' 
-        ? editingRecipe.image 
+      const imageUrl = typeof editingRecipe.image === 'string'
+        ? editingRecipe.image
         : editingRecipe.image?.url || null
       setRecipeImage(imageUrl)
-      
+
       // Set ingredients - ensure we always have at least one ingredient row
       if (editingRecipe.ingredients && editingRecipe.ingredients.length > 0) {
         const mappedIngredients = editingRecipe.ingredients.map((ing: any, index: number) => ({
@@ -4659,7 +4663,7 @@ const RecipeUploadModal: React.FC<{
       } else {
         setIngredients([{ id: '1', name: '', amount: '', unit: 'gram', notes: '', showUnitDropdown: false }])
       }
-      
+
       // Set instructions - ensure we always have at least one instruction row
       if (editingRecipe.instructions && editingRecipe.instructions.length > 0) {
         const mappedInstructions = editingRecipe.instructions.map((inst: any, index: number) => ({
@@ -4720,13 +4724,13 @@ const RecipeUploadModal: React.FC<{
   }
 
   const toggleUnitDropdown = (id: string) => {
-    setIngredients(ingredients.map(ing => 
+    setIngredients(ingredients.map(ing =>
       ing.id === id ? { ...ing, showUnitDropdown: !ing.showUnitDropdown } : { ...ing, showUnitDropdown: false }
     ))
   }
 
   const selectUnit = (id: string, unit: string) => {
-    setIngredients(ingredients.map(ing => 
+    setIngredients(ingredients.map(ing =>
       ing.id === id ? { ...ing, unit, showUnitDropdown: false } : ing
     ))
   }
@@ -4754,7 +4758,7 @@ const RecipeUploadModal: React.FC<{
 
   const handleSave = () => {
     // ==================== COMPREHENSIVE VALIDATION ====================
-    
+
     // 1. Image validation
     if (!recipeImage) {
       setErrorMessage("Recipe image is required. Please upload an image before submitting.")
@@ -4876,7 +4880,7 @@ const RecipeUploadModal: React.FC<{
       setShowErrorDialog(true)
       return
     }
-    
+
     // Check each ingredient has required fields
     for (let i = 0; i < validIngredients.length; i++) {
       const ing = validIngredients[i]
@@ -4962,10 +4966,10 @@ const RecipeUploadModal: React.FC<{
     }
 
     setIsUploading(true)
-    
+
     try {
       console.log(isEditMode ? '📝 Starting recipe update process...' : '🍳 Starting recipe upload process...')
-      
+
       // Step 1: Upload image to Cloudinary (only if new image)
       let imageUrl: string | undefined = recipeImage
       if (recipeImage && !recipeImage.startsWith('http')) {
@@ -5025,11 +5029,11 @@ const RecipeUploadModal: React.FC<{
       }
 
       console.log(isEditMode ? '📤 Updating recipe on backend...' : '📤 Sending recipe to backend...')
-      
+
       // Step 3: Create or Update recipe via API
       let savedRecipe: any
       if (isEditMode && editingRecipe) {
-        const recipeId =  editingRecipe.id || editingRecipe._id
+        const recipeId = editingRecipe.id || editingRecipe._id
         console.log('🔄 Updating recipe with ID:', recipeId)
         if (!recipeId) {
           throw new Error('Recipe ID is missing for update operation')
@@ -5067,7 +5071,7 @@ const RecipeUploadModal: React.FC<{
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.modalContainer}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -5080,23 +5084,23 @@ const RecipeUploadModal: React.FC<{
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        style={styles.modalContent} 
+      <ScrollView
+        style={styles.modalContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ paddingBottom: 16 }}
       >
         {/* Image Upload */}
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Recipe Image *</Text>
-          <TouchableOpacity 
+          <Text style={styles.inputLabel}>{t('chef.recipeImage')} *</Text>
+          <TouchableOpacity
             style={[styles.imageUploadBox, recipeImage && styles.imageUploadBoxFilled]}
             onPress={handleImagePicker}
           >
             {recipeImage ? (
               <>
                 <Image source={{ uri: recipeImage }} style={styles.uploadedImage} />
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0,0,0,0.7)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#eed52eff' }}
                   onPress={handleRemoveImage}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -5107,7 +5111,7 @@ const RecipeUploadModal: React.FC<{
             ) : (
               <View style={styles.imageUploadContent}>
                 <Ionicons name="camera" size={40} color="#64748B" />
-                <Text style={styles.imageUploadText}>Tap to upload recipe image *</Text>
+                <Text style={styles.imageUploadText}>{t('chef.tapToUploadImage')}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -5116,23 +5120,23 @@ const RecipeUploadModal: React.FC<{
         {/* Recipe Form */}
         <View style={styles.formContainer}>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Recipe Title *</Text>
+            <Text style={styles.inputLabel}>{t('chef.recipeTitle')} *</Text>
             <TextInput
               style={styles.textInput}
               value={recipeData.title}
               onChangeText={(text: string) => setRecipeData({ ...recipeData, title: text })}
-              placeholder="Enter recipe title"
+              placeholder={t('chef.enterRecipeTitle')}
               placeholderTextColor="#64748B"
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Description *</Text>
+            <Text style={styles.inputLabel}>{t('chef.description')} *</Text>
             <TextInput
               style={[styles.textInput, styles.textArea]}
               value={recipeData.description}
               onChangeText={(text: string) => setRecipeData({ ...recipeData, description: text })}
-              placeholder="Describe your recipe"
+              placeholder={t('chef.describeRecipe')}
               placeholderTextColor="#64748B"
               multiline
               numberOfLines={3}
@@ -5141,13 +5145,13 @@ const RecipeUploadModal: React.FC<{
 
           {/* Category Selector */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Category *</Text>
+            <Text style={styles.inputLabel}>{t('chef.category')} *</Text>
             <TouchableOpacity
               style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
               onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
             >
               <Text style={{ color: recipeData.category === 'Other' ? '#64748B' : 'white', fontSize: 16 }}>
-                {recipeData.category || 'Select category'}
+                {recipeData.category || t('chef.selectCategory')}
               </Text>
               <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
             </TouchableOpacity>
@@ -5175,26 +5179,26 @@ const RecipeUploadModal: React.FC<{
 
           {/* Cuisine Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Cuisine *</Text>
+            <Text style={styles.inputLabel}>{t('chef.cuisine')} *</Text>
             <TextInput
               style={styles.textInput}
               value={recipeData.cuisine}
               onChangeText={(text: string) => setRecipeData({ ...recipeData, cuisine: text })}
-              placeholder="e.g., Italian, Mexican, Chinese"
+              placeholder={t('chef.cuisinePlaceholder')}
               placeholderTextColor="#64748B"
             />
           </View>
 
           {/* Recipe Info Grid */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Recipe Info *</Text>
+            <Text style={styles.inputLabel}>{t('chef.recipeInfo')} *</Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.servings}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, servings: text })}
-                  placeholder="Servings"
+                  placeholder={t('chef.servings')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5204,7 +5208,7 @@ const RecipeUploadModal: React.FC<{
                   style={styles.textInput}
                   value={recipeData.prepTime}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, prepTime: text })}
-                  placeholder="Prep (min)"
+                  placeholder={t('chef.prepTimePlaceholder')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5216,7 +5220,7 @@ const RecipeUploadModal: React.FC<{
                   style={styles.textInput}
                   value={recipeData.cookTime}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, cookTime: text })}
-                  placeholder="Cook (min)"
+                  placeholder={t('chef.cookTimePlaceholder')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5237,9 +5241,9 @@ const RecipeUploadModal: React.FC<{
                   <Ionicons name="checkmark" size={20} color="white" />
                 )}
               </View>
-              <Text style={styles.checkboxLabel}>Premium Recipe</Text>
+              <Text style={styles.checkboxLabel}>{t('chef.premiumRecipe')}</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.checkboxRow, { marginTop: 12 }]}
               onPress={() => setPublishNow(!publishNow)}
@@ -5252,23 +5256,23 @@ const RecipeUploadModal: React.FC<{
                 )}
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Text style={styles.checkboxLabel}>Don't Publish Now</Text>
+                <Text style={styles.checkboxLabel}>{t('chef.dontPublishNow')}</Text>
               </View>
             </TouchableOpacity>
           </View>
 
           {/* Difficulty Selector */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Difficulty Level</Text>
+            <Text style={styles.inputLabel}>{t('chef.difficultyLevel')}</Text>
             <View style={styles.difficultySelector}>
-              {["Easy", "Medium", "Hard"].map((level) => (
+              {[DIFFICULTY_LEVELS.EASY, DIFFICULTY_LEVELS.MEDIUM, DIFFICULTY_LEVELS.HARD].map((level) => (
                 <TouchableOpacity
                   key={level}
                   style={[styles.difficultyButton, recipeData.difficulty === level && styles.difficultyButtonActive]}
                   onPress={() => setRecipeData({ ...recipeData, difficulty: level as any })}
                 >
                   <Text style={[styles.difficultyText, recipeData.difficulty === level && styles.difficultyTextActive]}>
-                    {level}
+                    {getDifficultyTranslation(level, t)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -5277,14 +5281,14 @@ const RecipeUploadModal: React.FC<{
 
           {/* Nutrition Info */}
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nutrition Info (per serving)</Text>
+            <Text style={styles.inputLabel}>{t('chef.nutritionInfo')}</Text>
             <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
               <View style={{ flex: 1 }}>
                 <TextInput
                   style={styles.textInput}
                   value={recipeData.calories}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, calories: text })}
-                  placeholder="Calories"
+                  placeholder={t('chef.calories')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5294,7 +5298,7 @@ const RecipeUploadModal: React.FC<{
                   style={styles.textInput}
                   value={recipeData.protein}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, protein: text })}
-                  placeholder="Protein (g)"
+                  placeholder={t('chef.protein')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5306,7 +5310,7 @@ const RecipeUploadModal: React.FC<{
                   style={styles.textInput}
                   value={recipeData.carbs}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, carbs: text })}
-                  placeholder="Carbs (g)"
+                  placeholder={t('chef.carbs')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5316,7 +5320,7 @@ const RecipeUploadModal: React.FC<{
                   style={styles.textInput}
                   value={recipeData.fat}
                   onChangeText={(text: string) => setRecipeData({ ...recipeData, fat: text })}
-                  placeholder="Fat (g)"
+                  placeholder={t('chef.fat')}
                   placeholderTextColor="#64748B"
                   keyboardType="numeric"
                 />
@@ -5327,21 +5331,21 @@ const RecipeUploadModal: React.FC<{
           {/* Ingredients Section */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Ingredients *</Text>
+              <Text style={styles.inputLabel}>{t('chef.ingredients')} *</Text>
               <TouchableOpacity
                 onPress={handleAddIngredient}
                 style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Ionicons name="add" size={16} color="#22C55E" />
-                  <Text style={{ color: '#22C55E', fontSize: 14, fontWeight: '600' }}>Add</Text>
+                  <Text style={{ color: '#22C55E', fontSize: 14, fontWeight: '600' }}>{t('chef.addIngredient')}</Text>
                 </View>
               </TouchableOpacity>
             </View>
             {ingredients.map((ingredient, index) => (
               <View key={ingredient.id} style={{ marginBottom: 12, backgroundColor: 'rgba(255, 255, 255, 0.04)', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <Text style={{ color: '#FACC15', fontSize: 14, fontWeight: '600' }}>Ingredient {index + 1}</Text>
+                  <Text style={{ color: '#FACC15', fontSize: 14, fontWeight: '600' }}>{t('chef.ingredientName')} {index + 1}</Text>
                   {ingredients.length > 1 && (
                     <TouchableOpacity
                       onPress={() => handleRemoveIngredient(ingredient.id)}
@@ -5349,7 +5353,7 @@ const RecipeUploadModal: React.FC<{
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>Remove</Text>
+                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>{t('chef.remove')}</Text>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -5358,7 +5362,7 @@ const RecipeUploadModal: React.FC<{
                   style={[styles.textInput, { marginBottom: 8 }]}
                   value={ingredient.name}
                   onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'name', text)}
-                  placeholder="Ingredient name"
+                  placeholder={t('chef.ingredientName')}
                   placeholderTextColor="#64748B"
                 />
                 <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -5366,7 +5370,7 @@ const RecipeUploadModal: React.FC<{
                     style={[styles.textInput, { flex: 1 }]}
                     value={ingredient.amount}
                     onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'amount', text)}
-                    placeholder="Amount"
+                    placeholder={t('chef.amount')}
                     placeholderTextColor="#64748B"
                     keyboardType="numeric"
                   />
@@ -5376,7 +5380,7 @@ const RecipeUploadModal: React.FC<{
                       onPress={() => toggleUnitDropdown(ingredient.id)}
                     >
                       <Text style={{ color: ingredient.unit ? 'white' : '#64748B', fontSize: 15 }}>
-                        {ingredient.unit || 'Unit'}
+                        {ingredient.unit || t('chef.unit')}
                       </Text>
                       <Ionicons name={ingredient.showUnitDropdown ? "chevron-up" : "chevron-down"} size={18} color="#64748B" />
                     </TouchableOpacity>
@@ -5403,7 +5407,7 @@ const RecipeUploadModal: React.FC<{
                   style={[styles.textInput, { marginTop: 8 }]}
                   value={ingredient.notes}
                   onChangeText={(text: string) => handleUpdateIngredient(ingredient.id, 'notes', text)}
-                  placeholder="Notes (optional)"
+                  placeholder={`${t('chef.notes')} (${t('chef.optional')})`}
                   placeholderTextColor="#64748B"
                 />
               </View>
@@ -5413,14 +5417,14 @@ const RecipeUploadModal: React.FC<{
           {/* Instructions Section */}
           <View style={styles.inputGroup}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <Text style={styles.inputLabel}>Instructions *</Text>
+              <Text style={styles.inputLabel}>{t('chef.instructions')} *</Text>
               <TouchableOpacity
                 onPress={handleAddInstruction}
                 style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)' }}
               >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <Ionicons name="add" size={16} color="#3B82F6" />
-                  <Text style={{ color: '#3B82F6', fontSize: 14, fontWeight: '600' }}>Add Step</Text>
+                  <Text style={{ color: '#3B82F6', fontSize: 14, fontWeight: '600' }}>{t('chef.addInstruction')}</Text>
                 </View>
               </TouchableOpacity>
             </View>
@@ -5440,7 +5444,7 @@ const RecipeUploadModal: React.FC<{
                     >
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>Remove</Text>
+                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '600' }}>{t('chef.remove')}</Text>
                       </View>
                     </TouchableOpacity>
                   )}
@@ -5449,7 +5453,7 @@ const RecipeUploadModal: React.FC<{
                   style={[styles.textInput, styles.textArea, { marginBottom: 8 }]}
                   value={instruction.instruction}
                   onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'instruction', text)}
-                  placeholder="Enter instruction"
+                  placeholder={t('chef.instructionText')}
                   placeholderTextColor="#64748B"
                   multiline
                   numberOfLines={3}
@@ -5459,7 +5463,7 @@ const RecipeUploadModal: React.FC<{
                     style={[styles.textInput, { flex: 1 }]}
                     value={instruction.duration}
                     onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'duration', text)}
-                    placeholder="Duration (min)"
+                    placeholder={t('chef.durationMinutes')}
                     placeholderTextColor="#64748B"
                     keyboardType="numeric"
                   />
@@ -5467,7 +5471,7 @@ const RecipeUploadModal: React.FC<{
                     style={[styles.textInput, { flex: 2 }]}
                     value={instruction.tips}
                     onChangeText={(text: string) => handleUpdateInstruction(instruction.id, 'tips', text)}
-                    placeholder="Tips (optional)"
+                    placeholder={`${t('chef.tips')} (${t('chef.optional')})`}
                     placeholderTextColor="#64748B"
                   />
                 </View>
@@ -5478,8 +5482,8 @@ const RecipeUploadModal: React.FC<{
 
         {/* Save Button */}
         <View style={{ paddingTop: 8, paddingBottom: 32, paddingHorizontal: 20 }}>
-          <TouchableOpacity 
-            style={[styles.saveButton, isUploading && { opacity: 0.5 }]} 
+          <TouchableOpacity
+            style={[styles.saveButton, isUploading && { opacity: 0.5 }]}
             onPress={handleSave}
             disabled={isUploading}
           >
@@ -5492,7 +5496,7 @@ const RecipeUploadModal: React.FC<{
               ) : (
                 <>
                   <Ionicons name="checkmark-circle" size={20} color="#FACC15" />
-                  <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 18, fontWeight: '700' }]}>{isEditMode ? 'Update Recipe' : 'Upload Recipe'}</Text>
+                  <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 18, fontWeight: '700' }]}>{isEditMode ? t('chef.updateRecipe') : t('chef.uploadRecipe')}</Text>
                 </>
               )}
             </View>
@@ -5528,13 +5532,14 @@ const RecipeUploadModal: React.FC<{
 }
 
 // Course Creation Modal Component
-const CourseCreationModal: React.FC<{ 
-  onClose: () => void; 
+const CourseCreationModal: React.FC<{
+  onClose: () => void;
   onSave: (course: Course) => void;
   editingCourse?: any;
-}> = ({ onClose, onSave, editingCourse }) => {
+  t: (key: string) => string;
+}> = ({ onClose, onSave, editingCourse, t }) => {
   const isEditMode = !!editingCourse
-  
+
   // Course categories - Must match backend enum values
   const COURSE_CATEGORIES = [
     "Baking",
@@ -5559,17 +5564,17 @@ const CourseCreationModal: React.FC<{
         const errorMatch = error.message.match(/\{.*\}/);
         if (errorMatch) {
           const errorData = JSON.parse(errorMatch[0]);
-          
+
           // Check for the new format with counts
           if (errorData.counts) {
             const { free, premium, required, remaining } = errorData.counts;
             const contentType = error.message.includes('course') ? 'course' : 'recipe';
-            
+
             if (remaining > 0) {
               return `You need to create ${remaining} more free ${contentType}${remaining > 1 ? 's' : ''} before you can upload premium content.\n\nCurrent progress: ${free} free ${contentType}${free !== 1 ? 's' : ''} created (${required} required)`;
             }
           }
-          
+
           // Check for custom message
           if (errorData.message) {
             return errorData.message;
@@ -5578,7 +5583,7 @@ const CourseCreationModal: React.FC<{
       } catch (parseError) {
         console.log('Failed to parse premium restriction error:', parseError);
       }
-      
+
       // Fallback messages
       if (error.message?.includes('course')) {
         return 'Create 1 free course first to unlock premium course uploads!';
@@ -5653,19 +5658,19 @@ const CourseCreationModal: React.FC<{
     title: string
     objective: string
     content: string
-    steps: Array<{id: string; text: string}>
-    commonErrors: Array<{id: string; text: string}>
-    bestPractices: Array<{id: string; text: string}>
+    steps: Array<{ id: string; text: string }>
+    commonErrors: Array<{ id: string; text: string }>
+    bestPractices: Array<{ id: string; text: string }>
   }>>([{
     id: '1',
     title: '',
     objective: '',
     content: '',
-    steps: [{id: '1', text: ''}],
-    commonErrors: [{id: '1', text: ''}],
-    bestPractices: [{id: '1', text: ''}]
+    steps: [{ id: '1', text: '' }],
+    commonErrors: [{ id: '1', text: '' }],
+    bestPractices: [{ id: '1', text: '' }]
   }])
-  
+
   // Dialog states
   const [showErrorDialog, setShowErrorDialog] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
@@ -5676,7 +5681,7 @@ const CourseCreationModal: React.FC<{
   useEffect(() => {
     if (editingCourse) {
       console.log('📝 Pre-populating course form with:', editingCourse)
-      
+
       // Set basic course data
       setCourseData({
         title: editingCourse.title || '',
@@ -5687,16 +5692,16 @@ const CourseCreationModal: React.FC<{
         category: editingCourse.category || 'Other',
         isPremium: editingCourse.isPremium || false,
       })
-      
+
       // Set publish status
       setPublishNow(editingCourse.isPublished !== undefined ? editingCourse.isPublished : true)
-      
+
       // Set course image - handle both string and object formats
-      const imageUrl = editingCourse.image || 
-        (editingCourse.coverImage && typeof editingCourse.coverImage === 'object' ? editingCourse.coverImage.url : editingCourse.coverImage) || 
+      const imageUrl = editingCourse.image ||
+        (editingCourse.coverImage && typeof editingCourse.coverImage === 'object' ? editingCourse.coverImage.url : editingCourse.coverImage) ||
         null
       setCourseImage(imageUrl)
-      
+
       // Set units
       if (editingCourse.units && editingCourse.units.length > 0) {
         setUnits(
@@ -5705,24 +5710,24 @@ const CourseCreationModal: React.FC<{
             title: unit.title || '',
             objective: unit.objective || '',
             content: unit.content || '',
-            steps: unit.steps && unit.steps.length > 0 
+            steps: unit.steps && unit.steps.length > 0
               ? unit.steps.map((step: any, stepIndex: number) => ({
-                  id: (stepIndex + 1).toString(),
-                  text: typeof step === 'string' ? step : step.text || ''
-                }))
-              : [{id: '1', text: ''}],
+                id: (stepIndex + 1).toString(),
+                text: typeof step === 'string' ? step : step.text || ''
+              }))
+              : [{ id: '1', text: '' }],
             commonErrors: unit.commonErrors && unit.commonErrors.length > 0
               ? unit.commonErrors.map((error: any, errorIndex: number) => ({
-                  id: (errorIndex + 1).toString(),
-                  text: typeof error === 'string' ? error : error.text || ''
-                }))
-              : [{id: '1', text: ''}],
+                id: (errorIndex + 1).toString(),
+                text: typeof error === 'string' ? error : error.text || ''
+              }))
+              : [{ id: '1', text: '' }],
             bestPractices: unit.bestPractices && unit.bestPractices.length > 0
               ? unit.bestPractices.map((practice: any, practiceIndex: number) => ({
-                  id: (practiceIndex + 1).toString(),
-                  text: typeof practice === 'string' ? practice : practice.text || ''
-                }))
-              : [{id: '1', text: ''}]
+                id: (practiceIndex + 1).toString(),
+                text: typeof practice === 'string' ? practice : practice.text || ''
+              }))
+              : [{ id: '1', text: '' }]
           }))
         )
       }
@@ -5744,9 +5749,9 @@ const CourseCreationModal: React.FC<{
         title: '',
         objective: '',
         content: '',
-        steps: [{id: '1', text: ''}],
-        commonErrors: [{id: '1', text: ''}],
-        bestPractices: [{id: '1', text: ''}]
+        steps: [{ id: '1', text: '' }],
+        commonErrors: [{ id: '1', text: '' }],
+        bestPractices: [{ id: '1', text: '' }]
       }])
     }
   }, [editingCourse])
@@ -5775,9 +5780,9 @@ const CourseCreationModal: React.FC<{
       title: '',
       objective: '',
       content: '',
-      steps: [{id: '1', text: ''}],
-      commonErrors: [{id: '1', text: ''}],
-      bestPractices: [{id: '1', text: ''}]
+      steps: [{ id: '1', text: '' }],
+      commonErrors: [{ id: '1', text: '' }],
+      bestPractices: [{ id: '1', text: '' }]
     }])
   }
 
@@ -5790,72 +5795,72 @@ const CourseCreationModal: React.FC<{
   }
 
   const handleAddStep = (unitId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, steps: [...unit.steps, { id: Date.now().toString(), text: '' }] }
         : unit
     ))
   }
 
   const handleRemoveStep = (unitId: string, stepId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, steps: unit.steps.filter(s => s.id !== stepId) }
         : unit
     ))
   }
 
   const handleUpdateStep = (unitId: string, stepId: string, value: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, steps: unit.steps.map(s => s.id === stepId ? { ...s, text: value } : s) }
         : unit
     ))
   }
 
   const handleAddError = (unitId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, commonErrors: [...unit.commonErrors, { id: Date.now().toString(), text: '' }] }
         : unit
     ))
   }
 
   const handleRemoveError = (unitId: string, errorId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, commonErrors: unit.commonErrors.filter(e => e.id !== errorId) }
         : unit
     ))
   }
 
   const handleUpdateError = (unitId: string, errorId: string, value: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, commonErrors: unit.commonErrors.map(e => e.id === errorId ? { ...e, text: value } : e) }
         : unit
     ))
   }
 
   const handleAddBestPractice = (unitId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, bestPractices: [...unit.bestPractices, { id: Date.now().toString(), text: '' }] }
         : unit
     ))
   }
 
   const handleRemoveBestPractice = (unitId: string, practiceId: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, bestPractices: unit.bestPractices.filter(p => p.id !== practiceId) }
         : unit
     ))
   }
 
   const handleUpdateBestPractice = (unitId: string, practiceId: string, value: string) => {
-    setUnits(units.map(unit => 
-      unit.id === unitId 
+    setUnits(units.map(unit =>
+      unit.id === unitId
         ? { ...unit, bestPractices: unit.bestPractices.map(p => p.id === practiceId ? { ...p, text: value } : p) }
         : unit
     ))
@@ -5864,7 +5869,7 @@ const CourseCreationModal: React.FC<{
   // Navigation functions
   const handleNext = () => {
     // ==================== COMPREHENSIVE COURSE INFO VALIDATION ====================
-    
+
     // 1. Image validation
     if (!courseImage) {
       setErrorMessage("Course cover image is required. Please upload an image before proceeding.")
@@ -5919,14 +5924,14 @@ const CourseCreationModal: React.FC<{
       setShowErrorDialog(true)
       return
     }
-    
+
     const durationNum = parseInt(courseData.durationValue)
     if (isNaN(durationNum) || durationNum <= 0) {
       setErrorMessage("Duration must be a positive number")
       setShowErrorDialog(true)
       return
     }
-    
+
     if (durationNum > 1000) {
       setErrorMessage("Duration value seems too high. Please enter a reasonable duration.")
       setShowErrorDialog(true)
@@ -5956,7 +5961,7 @@ const CourseCreationModal: React.FC<{
 
   const handleSave = () => {
     // ==================== COMPREHENSIVE UNITS VALIDATION ====================
-    
+
     // 1. Check if at least one unit exists
     const validUnits = units.filter(unit => unit.title.trim())
     if (validUnits.length === 0) {
@@ -6018,7 +6023,7 @@ const CourseCreationModal: React.FC<{
         setShowErrorDialog(true)
         return
       }
-      
+
       // Validate each step
       for (let j = 0; j < validSteps.length; j++) {
         const step = validSteps[j]
@@ -6084,10 +6089,10 @@ const CourseCreationModal: React.FC<{
     }
 
     setIsUploading(true)
-    
+
     try {
       console.log(isEditMode ? '📝 Starting course update process...' : '📚 Starting course upload process...')
-      
+
       // Step 1: Upload image to Cloudinary (only if new image)
       let imageUrl: string | undefined = courseImage
       if (courseImage && !courseImage.startsWith('http')) {
@@ -6130,7 +6135,7 @@ const CourseCreationModal: React.FC<{
       }
 
       console.log(isEditMode ? '📤 Updating course on backend...' : '📤 Sending course to backend...')
-      
+
       // Step 3: Create or Update course via API
       let savedCourse: any
       if (isEditMode && editingCourse) {
@@ -6153,8 +6158,8 @@ const CourseCreationModal: React.FC<{
         description: savedCourse.description,
         durationValue: savedCourse.durationValue,
         durationUnit: savedCourse.durationUnit,
-        duration: savedCourse.durationValue && savedCourse.durationUnit 
-          ? `${savedCourse.durationValue} ${savedCourse.durationUnit}` 
+        duration: savedCourse.durationValue && savedCourse.durationUnit
+          ? `${savedCourse.durationValue} ${savedCourse.durationUnit}`
           : undefined,
         skillLevel: savedCourse.skillLevel as "Beginner" | "Intermediate" | "Advanced",
         category: savedCourse.category,
@@ -6188,7 +6193,7 @@ const CourseCreationModal: React.FC<{
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.modalContainer}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
@@ -6216,7 +6221,7 @@ const CourseCreationModal: React.FC<{
         <View style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: currentStep === 'units' ? '#FACC15' : 'rgba(255, 255, 255, 0.1)' }} />
       </View>
 
-      <ScrollView 
+      <ScrollView
         style={styles.modalContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -6225,361 +6230,361 @@ const CourseCreationModal: React.FC<{
         {currentStep === 'info' ? (
           // Step 1: Course Information
           <View style={styles.formContainer}>
-          {/* Course Image Upload */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Course Image *</Text>
-            <TouchableOpacity 
-              style={[styles.imageUploadBox, courseImage && styles.imageUploadBoxFilled]}
-              onPress={handleImagePicker}
-            >
-              {courseImage ? (
-                <>
-                  <Image source={{ uri: courseImage }} style={styles.uploadedImage} />
-                  <TouchableOpacity 
-                    style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(10, 10, 10, 0.55)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#efd044ff' }}
-                    onPress={handleRemoveCourseImage}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="close" size={20} color="#efdb44ff" />
-                  </TouchableOpacity>
-                </>
-              ) : (
-                <View style={styles.imageUploadContent}>
-                  <Ionicons name="image-outline" size={40} color="#64748B" />
-                  <Text style={styles.imageUploadText}>Tap to upload course image *</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Course Title *</Text>
-            <TextInput
-              style={styles.textInput}
-              value={courseData.title}
-              onChangeText={(text: string) => setCourseData({ ...courseData, title: text })}
-              placeholder="Enter course title"
-              placeholderTextColor="#64748B"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Description *</Text>
-            <TextInput
-              style={[styles.textInput, styles.textArea]}
-              value={courseData.description}
-              onChangeText={(text: string) => setCourseData({ ...courseData, description: text })}
-              placeholder="Describe your course"
-              placeholderTextColor="#64748B"
-              multiline
-              numberOfLines={4}
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Category *</Text>
-            <TouchableOpacity
-              style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
-              onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
-            >
-              <Text style={{ color: courseData.category === 'Other' ? '#64748B' : 'white', fontSize: 16 }}>
-                {courseData.category || 'Select category'}
-              </Text>
-              <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
-            </TouchableOpacity>
-            {showCategoryDropdown && (
-              <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                  {COURSE_CATEGORIES.map((cat) => (
+            {/* Course Image Upload */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Course Image *</Text>
+              <TouchableOpacity
+                style={[styles.imageUploadBox, courseImage && styles.imageUploadBoxFilled]}
+                onPress={handleImagePicker}
+              >
+                {courseImage ? (
+                  <>
+                    <Image source={{ uri: courseImage }} style={styles.uploadedImage} />
                     <TouchableOpacity
-                      key={cat}
-                      style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
-                      onPress={() => {
-                        setCourseData({ ...courseData, category: cat })
-                        setShowCategoryDropdown(false)
-                      }}
+                      style={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(10, 10, 10, 0.55)', width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#efd044ff' }}
+                      onPress={handleRemoveCourseImage}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Text style={{ color: courseData.category === cat ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.category === cat ? '600' : '400' }}>
-                        {cat}
-                      </Text>
+                      <Ionicons name="close" size={20} color="#efdb44ff" />
                     </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Duration *</Text>
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  style={styles.textInput}
-                  value={courseData.durationValue}
-                  onChangeText={(text: string) => setCourseData({ ...courseData, durationValue: text })}
-                  placeholder="Enter number"
-                  placeholderTextColor="#64748B"
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={{ flex: 1 }}>
-                <TouchableOpacity
-                  style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
-                  onPress={() => setShowDurationUnitDropdown(!showDurationUnitDropdown)}
-                >
-                  <Text style={{ color: courseData.durationUnit ? 'white' : '#64748B', fontSize: 16 }}>
-                    {courseData.durationUnit || 'Select unit'}
-                  </Text>
-                  <Ionicons name={showDurationUnitDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
-                </TouchableOpacity>
-                {showDurationUnitDropdown && (
-                  <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 1000 }}>
-                    <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
-                      {(['minutes', 'hours', 'days', 'weeks', 'months'] as const).map((unit) => (
-                        <TouchableOpacity
-                          key={unit}
-                          style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
-                          onPress={() => {
-                            setCourseData({ ...courseData, durationUnit: unit })
-                            setShowDurationUnitDropdown(false)
-                          }}
-                        >
-                          <Text style={{ color: courseData.durationUnit === unit ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.durationUnit === unit ? '600' : '400' }}>
-                            {unit}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </ScrollView>
+                  </>
+                ) : (
+                  <View style={styles.imageUploadContent}>
+                    <Ionicons name="image-outline" size={40} color="#64748B" />
+                    <Text style={styles.imageUploadText}>{t('chef.tapToUploadImage')} *</Text>
                   </View>
                 )}
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('chef.courseTitle')} *</Text>
+              <TextInput
+                style={styles.textInput}
+                value={courseData.title}
+                onChangeText={(text: string) => setCourseData({ ...courseData, title: text })}
+                placeholder={t('chef.enterRecipeTitle')}
+                placeholderTextColor="#64748B"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('chef.description')} *</Text>
+              <TextInput
+                style={[styles.textInput, styles.textArea]}
+                value={courseData.description}
+                onChangeText={(text: string) => setCourseData({ ...courseData, description: text })}
+                placeholder={t('chef.courseDescription')}
+                placeholderTextColor="#64748B"
+                multiline
+                numberOfLines={4}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('chef.category')} *</Text>
+              <TouchableOpacity
+                style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
+                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              >
+                <Text style={{ color: courseData.category === 'Other' ? '#64748B' : 'white', fontSize: 16 }}>
+                  {courseData.category || t('chef.selectCategory')}
+                </Text>
+                <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
+              </TouchableOpacity>
+              {showCategoryDropdown && (
+                <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                  <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                    {COURSE_CATEGORIES.map((cat) => (
+                      <TouchableOpacity
+                        key={cat}
+                        style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                        onPress={() => {
+                          setCourseData({ ...courseData, category: cat })
+                          setShowCategoryDropdown(false)
+                        }}
+                      >
+                        <Text style={{ color: courseData.category === cat ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.category === cat ? '600' : '400' }}>
+                          {cat}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('chef.duration')} *</Text>
+              <View style={{ flexDirection: 'row', gap: 12 }}>
+                <View style={{ flex: 1 }}>
+                  <TextInput
+                    style={styles.textInput}
+                    value={courseData.durationValue}
+                    onChangeText={(text: string) => setCourseData({ ...courseData, durationValue: text })}
+                    placeholder={t('chef.durationValue')}
+                    placeholderTextColor="#64748B"
+                    keyboardType="numeric"
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <TouchableOpacity
+                    style={[styles.textInput, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 16 }]}
+                    onPress={() => setShowDurationUnitDropdown(!showDurationUnitDropdown)}
+                  >
+                    <Text style={{ color: courseData.durationUnit ? 'white' : '#64748B', fontSize: 16 }}>
+                      {courseData.durationUnit ? getDurationUnitTranslation(courseData.durationUnit, t) : t('chef.durationUnit')}
+                    </Text>
+                    <Ionicons name={showDurationUnitDropdown ? "chevron-up" : "chevron-down"} size={20} color="#64748B" />
+                  </TouchableOpacity>
+                  {showDurationUnitDropdown && (
+                    <View style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)', borderRadius: 12, marginTop: 8, maxHeight: 200, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', position: 'absolute', top: 60, left: 0, right: 0, zIndex: 1000 }}>
+                      <ScrollView style={{ maxHeight: 200 }} nestedScrollEnabled>
+                        {([DURATION_UNITS.MINUTES, DURATION_UNITS.HOURS, DURATION_UNITS.DAYS, DURATION_UNITS.WEEKS, DURATION_UNITS.MONTHS] as const).map((unit) => (
+                          <TouchableOpacity
+                            key={unit}
+                            style={{ paddingVertical: 12, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.05)' }}
+                            onPress={() => {
+                              setCourseData({ ...courseData, durationUnit: unit })
+                              setShowDurationUnitDropdown(false)
+                            }}
+                          >
+                            <Text style={{ color: courseData.durationUnit === unit ? '#FACC15' : 'white', fontSize: 15, fontWeight: courseData.durationUnit === unit ? '600' : '400' }}>
+                              {getDurationUnitTranslation(unit, t)}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </ScrollView>
+                    </View>
+                  )}
+                </View>
               </View>
             </View>
-          </View>
 
-          {/* Skill Level Selector */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Skill Level *</Text>
-            <View style={styles.difficultySelector}>
-              {["Beginner", "Intermediate", "Advanced"].map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={[styles.difficultyButton, courseData.skillLevel === level && styles.difficultyButtonActive]}
-                  onPress={() => setCourseData({ ...courseData, skillLevel: level as any })}
-                >
-                  <Text style={[styles.difficultyText, courseData.skillLevel === level && styles.difficultyTextActive]}>
-                    {level}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Skill Level Selector */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('chef.skillLevel')} *</Text>
+              <View style={styles.difficultySelector}>
+                {[SKILL_LEVELS.BEGINNER, SKILL_LEVELS.INTERMEDIATE, SKILL_LEVELS.ADVANCED].map((level) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[styles.difficultyButton, courseData.skillLevel === level && styles.difficultyButtonActive]}
+                    onPress={() => setCourseData({ ...courseData, skillLevel: level as any })}
+                  >
+                    <Text style={[styles.difficultyText, courseData.skillLevel === level && styles.difficultyTextActive]}>
+                      {getSkillLevelTranslation(level, t)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Premium & Publish Options */}
+            <View style={styles.inputGroup}>
+              <TouchableOpacity
+                style={styles.checkboxRow}
+                onPress={() => setCourseData({ ...courseData, isPremium: !courseData.isPremium })}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={[styles.checkbox, courseData.isPremium && styles.checkboxActive]}>
+                  {courseData.isPremium && (
+                    <Ionicons name="checkmark" size={20} color="white" />
+                  )}
+                </View>
+                <Text style={styles.checkboxLabel}>{t('chef.premiumCourse')}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.checkboxRow, { marginTop: 12 }]}
+                onPress={() => setPublishNow(!publishNow)}
+                activeOpacity={0.7}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <View style={[styles.checkbox, !publishNow && styles.checkboxActive]}>
+                  {!publishNow && (
+                    <Ionicons name="checkmark" size={20} color="white" />
+                  )}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={styles.checkboxLabel}>{t('chef.dontPublishNow')}</Text>
+                </View>
+              </TouchableOpacity>
             </View>
           </View>
-
-          {/* Premium & Publish Options */}
-          <View style={styles.inputGroup}>
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setCourseData({ ...courseData, isPremium: !courseData.isPremium })}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <View style={[styles.checkbox, courseData.isPremium && styles.checkboxActive]}>
-                {courseData.isPremium && (
-                  <Ionicons name="checkmark" size={20} color="white" />
-                )}
-              </View>
-              <Text style={styles.checkboxLabel}>Premium Course</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[styles.checkboxRow, { marginTop: 12 }]}
-              onPress={() => setPublishNow(!publishNow)}
-              activeOpacity={0.7}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            >
-              <View style={[styles.checkbox, !publishNow && styles.checkboxActive]}>
-                {!publishNow && (
-                  <Ionicons name="checkmark" size={20} color="white" />
-                )}
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text style={styles.checkboxLabel}>Don't Publish Now</Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        </View>
         ) : (
           // Step 2: Course Units
           <View style={styles.formContainer}>
             <View style={styles.inputGroup}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={styles.inputLabel}>Course Units *</Text>
+                <Text style={styles.inputLabel}>{t('chef.courseUnits')} *</Text>
                 <TouchableOpacity
                   onPress={handleAddUnit}
                   style={{ backgroundColor: 'rgba(250, 204, 21, 0.1)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, borderWidth: 1.5, borderColor: 'rgba(250, 204, 21, 0.3)' }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <Ionicons name="add" size={18} color="#FACC15" />
-                    <Text style={{ color: '#FACC15', fontSize: 15, fontWeight: '700' }}>Add Unit</Text>
+                    <Text style={{ color: '#FACC15', fontSize: 15, fontWeight: '700' }}>{t('chef.addUnit')}</Text>
                   </View>
                 </TouchableOpacity>
               </View>
-            {units.map((unit, index) => (
-              <View key={unit.id} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(250, 204, 21, 0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
-                      <Text style={{ color: '#FACC15', fontSize: 16, fontWeight: '800' }}>{index + 1}</Text>
+              {units.map((unit, index) => (
+                <View key={unit.id} style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <View style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: 'rgba(250, 204, 21, 0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(250, 204, 21, 0.3)' }}>
+                        <Text style={{ color: '#FACC15', fontSize: 16, fontWeight: '800' }}>{index + 1}</Text>
+                      </View>
+                      <Text style={{ color: '#FACC15', fontSize: 18, fontWeight: '700' }}>{t('chef.addUnit')} {index + 1}</Text>
                     </View>
-                    <Text style={{ color: '#FACC15', fontSize: 18, fontWeight: '700' }}>Unit {index + 1}</Text>
+                    {units.length > 1 && (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveUnit(unit.id)}
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="trash-outline" size={17} color="#EF4444" />
+                          <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '700' }}>{t('chef.remove')}</Text>
+                        </View>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  {units.length > 1 && (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveUnit(unit.id)}
-                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1.5, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="trash-outline" size={17} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontSize: 14, fontWeight: '700' }}>Remove</Text>
-                      </View>
-                    </TouchableOpacity>
-                  )}
-                </View>
 
-                <TextInput
-                  style={[styles.textInput, { marginBottom: 8 }]}
-                  value={unit.title}
-                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'title', text)}
-                  placeholder="Unit title"
-                  placeholderTextColor="#64748B"
-                />
+                  <TextInput
+                    style={[styles.textInput, { marginBottom: 8 }]}
+                    value={unit.title}
+                    onChangeText={(text: string) => handleUpdateUnit(unit.id, 'title', text)}
+                    placeholder={t('chef.unitTitle')}
+                    placeholderTextColor="#64748B"
+                  />
 
-                <TextInput
-                  style={[styles.textInput, { marginBottom: 8 }]}
-                  value={unit.objective}
-                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'objective', text)}
-                  placeholder="Objective (e.g., Maintain edge integrity)"
-                  placeholderTextColor="#64748B"
-                />
+                  <TextInput
+                    style={[styles.textInput, { marginBottom: 8 }]}
+                    value={unit.objective}
+                    onChangeText={(text: string) => handleUpdateUnit(unit.id, 'objective', text)}
+                    placeholder={t('chef.unitDescription')}
+                    placeholderTextColor="#64748B"
+                  />
 
-                <TextInput
-                  style={[styles.textInput, styles.textArea, { marginBottom: 12 }]}
-                  value={unit.content}
-                  onChangeText={(text: string) => handleUpdateUnit(unit.id, 'content', text)}
-                  placeholder="Instructional content"
-                  placeholderTextColor="#64748B"
-                  multiline
-                  numberOfLines={3}
-                />
+                  <TextInput
+                    style={[styles.textInput, styles.textArea, { marginBottom: 12 }]}
+                    value={unit.content}
+                    onChangeText={(text: string) => handleUpdateUnit(unit.id, 'content', text)}
+                    placeholder={t('chef.unitDescription')}
+                    placeholderTextColor="#64748B"
+                    multiline
+                    numberOfLines={3}
+                  />
 
-                {/* Steps */}
-                <View style={{ marginBottom: 16 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <Text style={{ color: '#3B82F6', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>Steps</Text>
-                    <TouchableOpacity 
-                      onPress={() => handleAddStep(unit.id)}
-                      style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)' }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons name="add" size={16} color="#3B82F6" />
-                        <Text style={{ color: '#3B82F6', fontSize: 13, fontWeight: '700' }}>Add</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                  {unit.steps.map((step, stepIndex) => (
-                    <View key={step.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(59, 130, 246, 0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)' }}>
-                        <Text style={{ color: '#3B82F6', fontSize: 12, fontWeight: '800' }}>{stepIndex + 1}</Text>
-                      </View>
-                      <TextInput
-                        style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
-                        value={step.text}
-                        onChangeText={(text: string) => handleUpdateStep(unit.id, step.id, text)}
-                        placeholder="Step description"
-                        placeholderTextColor="#64748B"
-                      />
-                      {unit.steps.length > 1 && (
-                        <TouchableOpacity 
-                          onPress={() => handleRemoveStep(unit.id, step.id)}
-                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        >
-                          <Ionicons name="close" size={18} color="#EF4444" />
-                        </TouchableOpacity>
-                      )}
+                  {/* Steps */}
+                  <View style={{ marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <Text style={{ color: '#3B82F6', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>{t('chef.instructions')}</Text>
+                      <TouchableOpacity
+                        onPress={() => handleAddStep(unit.id)}
+                        style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)' }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="add" size={16} color="#3B82F6" />
+                          <Text style={{ color: '#3B82F6', fontSize: 13, fontWeight: '700' }}>{t('chef.addInstruction')}</Text>
+                        </View>
+                      </TouchableOpacity>
                     </View>
-                  ))}
-                </View>
-
-                {/* Common Errors */}
-                <View style={{ marginBottom: 16 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <Text style={{ color: '#EF4444', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>Common Errors</Text>
-                    <TouchableOpacity 
-                      onPress={() => handleAddError(unit.id)}
-                      style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons name="add" size={16} color="#EF4444" />
-                        <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '700' }}>Add</Text>
+                    {unit.steps.map((step, stepIndex) => (
+                      <View key={step.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <View style={{ width: 24, height: 24, borderRadius: 6, backgroundColor: 'rgba(59, 130, 246, 0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)' }}>
+                          <Text style={{ color: '#3B82F6', fontSize: 12, fontWeight: '800' }}>{stepIndex + 1}</Text>
+                        </View>
+                        <TextInput
+                          style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
+                          value={step.text}
+                          onChangeText={(text: string) => handleUpdateStep(unit.id, step.id, text)}
+                          placeholder={t('chef.instructionText')}
+                          placeholderTextColor="#64748B"
+                        />
+                        {unit.steps.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleRemoveStep(unit.id, step.id)}
+                            style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          >
+                            <Ionicons name="close" size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                        )}
                       </View>
-                    </TouchableOpacity>
+                    ))}
                   </View>
-                  {unit.commonErrors.map((error, errorIndex) => (
-                    <View key={error.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <TextInput
-                        style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
-                        value={error.text}
-                        onChangeText={(text: string) => handleUpdateError(unit.id, error.id, text)}
-                        placeholder="Common error"
-                        placeholderTextColor="#64748B"
-                      />
-                      {unit.commonErrors.length > 1 && (
-                        <TouchableOpacity 
-                          onPress={() => handleRemoveError(unit.id, error.id)}
-                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        >
-                          <Ionicons name="close" size={18} color="#EF4444" />
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  ))}
-                </View>
 
-                {/* Best Practices */}
-                <View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <Text style={{ color: '#22C55E', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>Best Practices (Optional)</Text>
-                    <TouchableOpacity 
-                      onPress={() => handleAddBestPractice(unit.id)}
-                      style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
-                    >
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <Ionicons name="add" size={16} color="#22C55E" />
-                        <Text style={{ color: '#22C55E', fontSize: 13, fontWeight: '700' }}>Add</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                  {unit.bestPractices.map((practice, practiceIndex) => (
-                    <View key={practice.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                      <TextInput
-                        style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
-                        value={practice.text}
-                        onChangeText={(text: string) => handleUpdateBestPractice(unit.id, practice.id, text)}
-                        placeholder="Best practice tip"
-                        placeholderTextColor="#64748B"
-                      />
-                      {unit.bestPractices.length > 1 && (
-                        <TouchableOpacity 
-                          onPress={() => handleRemoveBestPractice(unit.id, practice.id)}
-                          style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
-                        >
-                          <Ionicons name="close" size={18} color="#EF4444" />
-                        </TouchableOpacity>
-                      )}
+                  {/* Common Errors */}
+                  <View style={{ marginBottom: 16 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <Text style={{ color: '#EF4444', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>Common Errors</Text>
+                      <TouchableOpacity
+                        onPress={() => handleAddError(unit.id)}
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="add" size={16} color="#EF4444" />
+                          <Text style={{ color: '#EF4444', fontSize: 13, fontWeight: '700' }}>Add</Text>
+                        </View>
+                      </TouchableOpacity>
                     </View>
-                  ))}
+                    {unit.commonErrors.map((error, errorIndex) => (
+                      <View key={error.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <TextInput
+                          style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
+                          value={error.text}
+                          onChangeText={(text: string) => handleUpdateError(unit.id, error.id, text)}
+                          placeholder="Common error"
+                          placeholderTextColor="#64748B"
+                        />
+                        {unit.commonErrors.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleRemoveError(unit.id, error.id)}
+                            style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          >
+                            <Ionicons name="close" size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+
+                  {/* Best Practices */}
+                  <View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                      <Text style={{ color: '#22C55E', fontSize: 15, fontWeight: '700', letterSpacing: 0.3 }}>Best Practices (Optional)</Text>
+                      <TouchableOpacity
+                        onPress={() => handleAddBestPractice(unit.id)}
+                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(34, 197, 94, 0.3)' }}
+                      >
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Ionicons name="add" size={16} color="#22C55E" />
+                          <Text style={{ color: '#22C55E', fontSize: 13, fontWeight: '700' }}>Add</Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
+                    {unit.bestPractices.map((practice, practiceIndex) => (
+                      <View key={practice.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                        <TextInput
+                          style={[styles.textInput, { flex: 1, marginBottom: 0 }]}
+                          value={practice.text}
+                          onChangeText={(text: string) => handleUpdateBestPractice(unit.id, practice.id, text)}
+                          placeholder="Best practice tip"
+                          placeholderTextColor="#64748B"
+                        />
+                        {unit.bestPractices.length > 1 && (
+                          <TouchableOpacity
+                            onPress={() => handleRemoveBestPractice(unit.id, practice.id)}
+                            style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          >
+                            <Ionicons name="close" size={18} color="#EF4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              </View>
-            ))}
+              ))}
             </View>
           </View>
         )}
@@ -6587,30 +6592,30 @@ const CourseCreationModal: React.FC<{
         {/* Action Buttons */}
         <View style={{ paddingBottom: 32, paddingTop: 8 }}>
           {currentStep === 'info' ? (
-            <TouchableOpacity 
-              style={[styles.saveButton, { marginBottom: 0 }]} 
+            <TouchableOpacity
+              style={[styles.saveButton, { marginBottom: 0 }]}
               onPress={handleNext}
               activeOpacity={0.8}
             >
               <View style={[styles.saveButtonGradient, { backgroundColor: 'rgba(250, 204, 21, 0.1)', borderWidth: 2, borderRadius: 16, borderColor: 'rgba(250, 204, 21, 0.4)', paddingVertical: 16 }]}>
-                <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 16, fontWeight: '700' }]}>Next: Add Units</Text>
+                <Text style={[styles.saveButtonText, { color: '#FACC15', fontSize: 16, fontWeight: '700' }]}>{t('chef.proceedToUnits')}</Text>
                 <Ionicons name="arrow-forward" size={22} color="#FACC15" />
               </View>
             </TouchableOpacity>
           ) : (
             <View style={{ flexDirection: 'row', gap: 16 }}>
-              <TouchableOpacity 
-                style={[styles.saveButton, { flex: 1, marginBottom: 0 }]} 
+              <TouchableOpacity
+                style={[styles.saveButton, { flex: 1, marginBottom: 0 }]}
                 onPress={handleBack}
                 activeOpacity={0.8}
               >
                 <View style={[styles.saveButtonGradient, { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.2)', borderRadius: 16, paddingVertical: 16 }]}>
                   <Ionicons name="arrow-back" size={22} color="white" />
-                  <Text style={[styles.saveButtonText, { color: 'white', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>Back</Text>
+                  <Text style={[styles.saveButtonText, { color: 'white', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>{t('chef.backToBasicInfo')}</Text>
                 </View>
               </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.saveButton, { flex: 1, marginBottom: 0 }, isUploading && { opacity: 0.5 }]} 
+              <TouchableOpacity
+                style={[styles.saveButton, { flex: 1, marginBottom: 0 }, isUploading && { opacity: 0.5 }]}
                 onPress={handleSave}
                 activeOpacity={0.8}
                 disabled={isUploading}
@@ -6624,7 +6629,7 @@ const CourseCreationModal: React.FC<{
                   ) : (
                     <>
                       <Ionicons name="checkmark-circle" size={22} color="#22C55E" />
-                      <Text style={[styles.saveButtonText, { color: '#22C55E', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>Create Course</Text>
+                      <Text style={[styles.saveButtonText, { color: '#22C55E', fontSize: 16, fontWeight: '700', marginLeft: 4 }]}>{t('chef.createCourse')}</Text>
                     </>
                   )}
                 </View>
@@ -7126,7 +7131,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.08)",
   },
-  
+
   feedbackContent: {
     flex: 1,
   },
@@ -7355,7 +7360,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginLeft: 8,
   },
-  
+
   // Image Upload Styles
   imageUploadBox: {
     height: 120,
@@ -7382,7 +7387,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: "center",
   },
-  
+
   // Checkbox Styles
   checkboxRow: {
     flexDirection: "row",
@@ -7418,7 +7423,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  
+
   // Content Management Styles
   contentManagementContainer: {
     paddingHorizontal: 24,
