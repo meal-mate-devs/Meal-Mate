@@ -47,6 +47,8 @@ export default function RecipeResponseRoute(): JSX.Element {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [showTimeoutDialog, setShowTimeoutDialog] = useState(false)
+  const [showNoIngredientsDialog, setShowNoIngredientsDialog] = useState(false)
+  const [noIngredientsDialogMessage, setNoIngredientsDialogMessage] = useState<string>('')
   const [showUnsafeIngredientsDialog, setShowUnsafeIngredientsDialog] = useState(false)
   const [showSaveSuccessDialog, setShowSaveSuccessDialog] = useState(false)
   const [showRemoveSuccessDialog, setShowRemoveSuccessDialog] = useState(false)
@@ -245,6 +247,13 @@ export default function RecipeResponseRoute(): JSX.Element {
           const errorMatch = errorMessage.match(/\{.*\}/)
           if (errorMatch) {
             const errorData = JSON.parse(errorMatch[0])
+            // Backend returned explicit code for missing pantry + missing recipe choice
+            if (errorData && (errorData.code === 'NO_INGREDIENTS_AND_NO_RECIPE_CHOICE' || errorData.code === 'NO_INGREDIENTS_AND_NO_RECIPE_CHOICE')) {
+              setNoIngredientsDialogMessage(errorData.message || 'Please add pantry items or tell us what to cook.')
+              setShowNoIngredientsDialog(true)
+              return
+            }
+
             if (errorData.flaggedIngredients || errorData.error === "Unsafe ingredients detected") {
               setUnsafeIngredientsData({
                 flaggedIngredients: errorData.flaggedIngredients || [],
@@ -1948,6 +1957,23 @@ export default function RecipeResponseRoute(): JSX.Element {
             }
             onClose={handleUnsafeIngredientsClose}
             confirmText="Go Back"
+            showCancelButton={false}
+          />
+
+          <Dialog
+            visible={showNoIngredientsDialog}
+            type="warning"
+            title="Missing Ingredients"
+            message={noIngredientsDialogMessage}
+            confirmText="Go Back"
+            onClose={() => {
+              setShowNoIngredientsDialog(false)
+              router.back()
+            }}
+            onConfirm={() => {
+              setShowNoIngredientsDialog(false)
+              router.back()
+            }}
             showCancelButton={false}
           />
 
