@@ -45,14 +45,14 @@ const SettingsScreen: React.FC = () => {
   ]
 
   const appSettingsItems = [
-    {
-      id: "theme",
-      icon: "color-palette-outline",
-      title: t('settings.theme'),
-      subtitle: t('settings.themeSubtitle'),
-      link: "/(protected)/(tabs)/(hidden)/settings/theme",
-      showBadge: false,
-    },
+    // {
+    //   id: "theme",
+    //   icon: "color-palette-outline",
+    //   title: t('settings.theme'),
+    //   subtitle: t('settings.themeSubtitle'),
+    //   link: "/(protected)/(tabs)/(hidden)/settings/theme",
+    //   showBadge: false,
+    // },
     {
       id: "language",
       icon: "language-outline",
