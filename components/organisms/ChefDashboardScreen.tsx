@@ -86,7 +86,7 @@ interface Course {
   totalDuration?: number // Total duration in minutes
   skillLevel: "Beginner" | "Intermediate" | "Advanced"
   category: string
-  subscribers?: number // Legacy feeeeld
+  subscribers?: number // Legacy field
   totalReports?: number
   rating?: number
   averageRating?: number // Current field for average rating
