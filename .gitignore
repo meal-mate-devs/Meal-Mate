@@ -46,3 +46,4 @@ app-example
 backend/
 *.md
 /testing-backend
+/android
