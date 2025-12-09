@@ -70,7 +70,6 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "expo-module-scripts": "^4.1.7",
-    "react-native-worklets": "^0.6.1",
     "typescript": "~5.8.3"
   },
   "private": true
