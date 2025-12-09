@@ -8,7 +8,8 @@ import { Ionicons, MaterialIcons } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import { router } from "expo-router"
-import React, { useEffect, useRef, useState } from "react"
+import * as React from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   ActivityIndicator,
   Animated,

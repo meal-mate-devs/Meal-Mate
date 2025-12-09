@@ -10,7 +10,8 @@ import { CUISINES, DIETARY_PREFERENCES, FOOD_CATEGORIES, MEAL_TIMES } from "@/li
 import { Ionicons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useFocusEffect, useRouter } from "expo-router"
-import React, { JSX, useCallback, useEffect, useState } from "react"
+import * as React from "react"
+import { JSX, useCallback, useEffect, useState } from "react"
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native"
 import Dialog from "../../atoms/Dialog"
 import IngredientSearchModal from "../../molecules/IngredientSearchModal"
@@ -157,11 +158,11 @@ export default function RecipeGenerationScreen(): JSX.Element {
         console.log("Selected ingredients:", sanitizedIngredients);
         
         // Update filters with unique ingredients (combine with existing ones)
-        const uniqueIngredients = [...new Set([...filters.ingredients, ...sanitizedIngredients])];
+        const uniqueIngredients = Array.from(new Set([...filters.ingredients, ...sanitizedIngredients]));
         handleFilterChange("ingredients", uniqueIngredients);
         
         // Track scanned ingredients separately
-        const uniqueScannedIngredients = [...new Set([...scannedIngredients, ...sanitizedIngredients])];
+        const uniqueScannedIngredients = Array.from(new Set([...scannedIngredients, ...sanitizedIngredients]));
         setScannedIngredients(uniqueScannedIngredients);
         
         // Update pantry categories for dietary restrictions logic
